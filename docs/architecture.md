@@ -1562,37 +1562,44 @@ FILE_RETENTION_DAYS=7
 
 ---
 
-## 17. MVP Build Order
+## 17. MVP Implementation Order
 
-Build in this order:
+The architecture should be implemented through **vertical slices**. Each slice introduces only the UI, API, database, queue, worker, storage, and integration pieces required to deliver one usable outcome.
 
-1. Auth and protected dashboard
-2. Project creation
-3. Video upload
-4. FFmpeg metadata probe
-5. Credit model and ledger
-6. Stripe Checkout
-7. Stripe webhook handling
-8. Credit deduction before processing
-9. Redis and BullMQ setup
-10. Local worker setup
-11. Whisper transcription
-12. Transcript persistence
-13. Gemini clip selection
-14. Clip preview metadata persistence
-15. Preview editor UI
-16. Caption overlay preview
-17. Trim metadata editing
-18. Clip deletion
-19. Clip regeneration from backup candidates
-20. FFmpeg final clip rendering
-21. MP4 output download
-22. Gemini summary segment selection
-23. Summary preview
-24. Summary final rendering
-25. Cleanup job for 7-day retention
-26. Failure handling and automatic credit refund
-27. Dashboard polish
+Do not build every database table, API route, frontend screen, or worker processor upfront.
+
+Recommended order:
+
+1. **VS0 — Foundation:** repo boots; web, API, worker, PostgreSQL, Redis, Tailwind CSS v4 all work.
+2. **VS1 — Auth:** user can sign up, log in, log out, and reach protected dashboard.
+3. **VS2 — Upload:** user creates project, uploads valid video, and sees metadata plus credit estimate.
+4. **VS3 — Paid processing entry:** user buys credits, credits are safely deducted, and analysis job is queued.
+5. **VS4 — AI preview:** worker extracts audio, Whisper transcribes, Gemini selects clips, and browser previews appear.
+6. **VS5 — Edit preview:** user edits trim, captions, position, size, and keyword highlights as metadata.
+7. **VS6 — First final clip:** one edited clip renders to 9:16 MP4 and downloads securely.
+8. **VS7 — Multi-clip workflow:** user manages candidates, regenerates one bad clip, and renders selected clips only.
+9. **VS8 — Summary workflow:** user generates, edits, renders, and downloads chronological summary video.
+10. **VS9 — Failure/refund:** eligible failures trigger one idempotent credit refund and clear UI messaging.
+11. **VS10 — Retention:** files expire visibly and are deleted automatically after 7 days.
+12. **VS11 — Hardening:** Arcjet, ownership audits, safe subprocesses, idempotency, AI validation, and logging.
+13. **VS12 — Verification:** E2E flows, responsive behavior, real-video demo, and portfolio polish.
+
+Architectural delivery rule:
+
+```text
+introduce infrastructure when a user outcome first needs it
+```
+
+Examples:
+
+- `credit_ledger` first becomes necessary in VS3.
+- Whisper and Gemini first become necessary in VS4.
+- `rendered_outputs` first becomes necessary in VS6.
+- `summary_segments` first becomes necessary in VS8.
+- Scheduled cleanup first becomes necessary in VS10.
+
+The detailed slice plan is in `build-plan.md`, and the coding agent must maintain execution state in `progress-tracker.md`.
+
 
 ---
 

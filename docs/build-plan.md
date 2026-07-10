@@ -2,37 +2,49 @@
 
 ## 1. Purpose
 
-This document defines the implementation plan for **RepurposePro**.
+This document defines the implementation plan for **RepurposePro** using **vertical slices**.
 
-RepurposePro is an AI-powered video repurposing app for podcasters and YouTubers. It turns long-form videos into:
+A vertical slice delivers a complete, testable user outcome across every required layer:
 
-- Short vertical clips
-- Condensed summary videos
+```text
+UI
+-> API
+-> Database
+-> Queue/Worker
+-> External integrations
+-> Verification
+```
 
-The MVP follows this workflow:
+The build plan intentionally avoids organizing delivery as isolated frontend, backend, database, AI, or worker phases. Those horizontal layers are implementation details inside each slice.
+
+Core product flow:
 
 ```text
 Sign up
 -> Create project
 -> Upload video
--> Calculate credit cost
--> Pay/use credits
--> Queue processing
--> Transcribe with Whisper
--> Analyze transcript with Gemini
--> Generate preview metadata
--> Review and edit previews
--> Render final MP4s with FFmpeg
--> Download outputs
+-> See credit cost
+-> Buy/use credits
+-> Start processing
+-> Receive AI-generated preview
+-> Edit metadata
+-> Render final MP4
+-> Download
 ```
 
-Core implementation principle:
+Core engineering principle:
 
 ```text
 metadata first, render later
 ```
 
-The app should not render final MP4 files until the user confirms the preview metadata.
+The canonical coding-agent status file is:
+
+```text
+progress-tracker.md
+```
+
+Task IDs, slice IDs, execution order, timestamps, blockers, verification, and handoff state should stay synchronized with that tracker.
 
 ---
 
@@ -48,34 +60,29 @@ The MVP includes:
 - Pay-per-video-minute credit system
 - Stripe credit purchases
 - Credit deduction before processing
-- Automatic credit refund on failed processing
-- Background job processing
-- Redis + BullMQ queues
+- Automatic credit refund on eligible failed processing
+- Background processing with Redis + BullMQ
 - Local worker machine
 - Self-hosted Whisper transcription
 - Gemini transcript analysis
 - 5–10 short clip candidates
-- Summary video generation
-- Preview-before-render flow
+- Browser preview before final rendering
 - Simple metadata editor
-- Face-aware vertical crop
-- Center-crop fallback
-- Hormozi-style captions by default
-- Caption on/off
-- Caption text editing
-- Caption position editing
-- Caption font size editing
-- Automatic keyword highlighting
+- Face-aware vertical crop with center-crop fallback
+- Default Hormozi-style captions
+- Caption text, position, size, toggle, and keyword-highlight editing
 - Final FFmpeg rendering
 - MP4 downloads
-- Manual file deletion
+- Summary-video generation
 - Automatic file deletion after 7 days
+- Responsive dashboard, upload, billing, and output screens
+- Desktop-first editor with smaller-screen fallback
 
 ---
 
 ## 3. Deferred Features
 
-Do not build these in the MVP:
+Do not build these in the first MVP:
 
 - YouTube URL import
 - Full 1–2 hour processing
@@ -89,15 +96,13 @@ Do not build these in the MVP:
 - B-roll generation
 - Music and sound effects
 - Direct social publishing
-- Mobile-first editor
+- Mobile-first full editor
 - Multi-track editing
 - Drag-and-drop video composition
 
 ---
 
 ## 4. Recommended Repository Structure
-
-Use a monorepo.
 
 ```text
 repurposepro/
@@ -120,1130 +125,578 @@ repurposepro/
     ui-rules.md
     ui-registry.md
     build-plan.md
+    progress-tracker.md
 ```
 
 Recommended tooling:
 
 ```text
 pnpm workspaces
-Turborepo, optional
 TypeScript
-ESLint
-Prettier
+Next.js
+NestJS
+Tailwind CSS v4
+shadcn/ui
+PostgreSQL
+Drizzle ORM
+Redis
+BullMQ
+Better Auth
+Arcjet
+Stripe
+Whisper
+Gemini
+FFmpeg
+ASS subtitles
 ```
 
 ---
 
-## 5. Phase Overview
+## 5. Vertical Slice Overview
 
-Recommended phases:
-
-```text
-Phase 0  Foundation
-Phase 1  Auth and App Shell
-Phase 2  Projects and Upload
-Phase 3  Billing and Credits
-Phase 4  Queue and Worker
-Phase 5  Transcription
-Phase 6  AI Clip Generation
-Phase 7  Clip Preview Editor
-Phase 8  Final Clip Rendering
-Phase 9  Summary Video
-Phase 10 File Retention and Cleanup
-Phase 11 Reliability and Security
-Phase 12 Testing and Demo Polish
-```
+| Slice | User Outcome | Dependency |
+|---|---|---|
+| VS0 | Repo boots and core infrastructure is ready | None |
+| VS1 | User can sign up, log in, and see protected dashboard | VS0 |
+| VS2 | User can create a project and upload a validated video | VS1 |
+| VS3 | User can buy credits and start a paid processing job | VS2 |
+| VS4 | User receives AI-generated clip previews from uploaded video | VS3 |
+| VS5 | User can edit one clip preview before rendering | VS4 |
+| VS6 | User can render and download one final vertical MP4 clip | VS5 |
+| VS7 | User can manage multiple clips and regenerate a bad one | VS6 |
+| VS8 | User can generate, edit, render, and download a summary video | VS6 |
+| VS9 | Failed processing automatically refunds credits and explains why | VS3–VS8 |
+| VS10 | Files expire and are deleted after 7 days | VS6 |
+| VS11 | Critical security, abuse protection, and reliability are hardened | VS1–VS10 |
+| VS12 | Full MVP happy path is tested, responsive, and demo-ready | VS1–VS11 |
 
 ---
 
-# Phase 0 — Foundation
+# VS0 — Repo Boots and Core Infrastructure Is Ready
 
-## Goal
+## User Outcome
 
-Create the project structure, shared configuration, design system foundation, and development environment.
+A developer can clone the repository, install dependencies, and start the web app, API, worker, PostgreSQL connection, and Redis connection.
 
-## Tasks
+This is the only intentionally infrastructure-heavy foundational slice.
 
-### Repository
+## Work Included
 
-- Create monorepo.
-- Add `apps/web`.
-- Add `apps/api`.
-- Add `apps/worker`.
-- Add `packages/db`.
-- Add `packages/shared`.
-- Add `packages/config`.
-
-### Frontend
-
-Set up:
-
-- Next.js
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-- Lucide icons
-
-### Backend
-
-Set up:
-
-- NestJS
-- Environment configuration
-- Validation
-- Structured logging
-
-### Database
-
-Set up:
-
-- PostgreSQL
-- Drizzle ORM
-- Drizzle migrations
-
-### Shared config
-
-Add:
-
-- Shared TypeScript config
-- Shared ESLint config
-- Environment schema
-- Shared domain constants
-- Shared job-status types
-
-### Docs
-
-Add project docs under:
-
-```text
-docs/
-```
-
-## Deliverables
-
-- Monorepo runs locally.
-- Web app starts.
-- API starts.
-- Worker process starts.
-- Database connection works.
-- Redis connection works.
-- Tailwind v4 design tokens work.
-- Basic CI checks pass.
+- Create monorepo structure.
+- Create `apps/web`.
+- Create `apps/api`.
+- Create `apps/worker`.
+- Create `packages/db`, `packages/shared`, and `packages/config`.
+- Configure Next.js.
+- Configure Tailwind CSS v4 using CSS-first configuration.
+- Configure shadcn/ui.
+- Configure NestJS.
+- Configure PostgreSQL + Drizzle.
+- Configure Redis connectivity.
+- Add environment validation.
+- Add structured logging baseline.
+- Add lint, typecheck, test, and startup scripts.
 
 ## Acceptance Criteria
 
-```text
-pnpm dev
-```
-
-should start the required development services or clearly document separate commands.
+- [ ] Web app starts.
+- [ ] API starts.
+- [ ] Worker starts.
+- [ ] PostgreSQL connection succeeds.
+- [ ] Redis connection succeeds.
+- [ ] Tailwind CSS v4 tokens render correctly.
+- [ ] Typecheck passes.
+- [ ] Lint passes.
 
 ---
 
-# Phase 1 — Auth and App Shell
+# VS1 — User Can Sign Up, Log In, and See Protected Dashboard
 
-## Goal
+## User Outcome
 
-Create authentication and the protected app shell.
+A new user can create an account, log in, see the protected RepurposePro dashboard, and log out.
 
-## Tasks
+## Layers Crossed
 
-### Better Auth
+```text
+Web -> Better Auth -> API/session validation -> Database -> Authorization tests
+```
 
-Implement:
+## Work Included
 
-- Signup
-- Login
-- Logout
-- Session handling
-- Protected routes
-
-Optional:
-
-- Password reset
-- Google OAuth
-
-For MVP, email/password is enough.
-
-### App shell
-
-Build:
-
-- `AppSidebar`
-- `AppTopbar`
-- `PageHeader`
-- User menu
-- Credit balance placeholder
-
-### Screens
-
-Build:
-
-- Login
-- Signup
-- Dashboard empty state
-- Settings shell
-
-### Security
-
-Ensure:
-
-- Protected routes require auth.
-- API requests validate session.
-- User ID comes from auth context, not request body.
-
-## Deliverables
-
-- User can sign up.
-- User can log in.
-- User can log out.
-- Protected dashboard works.
-- Unauthenticated users are redirected.
+- Configure Better Auth end to end.
+- Build signup flow.
+- Build login flow.
+- Build logout flow.
+- Persist sessions correctly.
+- Create protected dashboard shell.
+- Create `AppSidebar`, `AppTopbar`, and `PageHeader`.
+- Reject unauthenticated API requests.
+- Verify session persistence.
 
 ## Acceptance Criteria
 
-A user cannot access another authenticated user's data by changing IDs in the URL or request payload.
+- [ ] User can sign up.
+- [ ] User can log in.
+- [ ] User can log out.
+- [ ] Dashboard is protected.
+- [ ] API rejects unauthenticated access.
+- [ ] Session persists correctly.
 
 ---
 
-# Phase 2 — Projects and Upload
+# VS2 — User Can Create a Project and Upload a Validated Video
 
-## Goal
+## User Outcome
 
-Let users create a project and upload a valid source video.
+An authenticated user can create a clips or summary project, upload a local video, and see validated metadata and required credits.
 
-## Tasks
-
-### Database tables
-
-Create:
+## Layers Crossed
 
 ```text
-projects
-uploaded_videos
-processing_jobs
+Web -> API -> Storage -> ffprobe -> Database -> UI result
 ```
 
-### Project creation
+## Work Included
 
-Build:
-
-- `NewProjectForm`
-- `OutputTypeSelector`
-
-Output types:
-
-```text
-clips
-summary
-```
-
-### Upload UI
-
-Build:
-
-- `UploadDropzone`
-- `UploadProgressCard`
-- `VideoMetadataCard`
-
-### Upload backend
-
-Implement:
-
-- Multipart upload handling
-- File size validation
-- MIME validation
-- Secure internal filenames
-- Project ownership checks
-
-### ffprobe
-
-Probe:
-
-- Duration
-- Width
-- Height
-- FPS
-- Codec
-- Audio presence
-
-Reject:
-
-- File over 500 MB
-- Video over 30 minutes
-- Missing audio
-- Corrupted video
-- Unsupported input
-
-### Storage
-
-For MVP, use local or mounted storage.
-
-Recommended layout:
-
-```text
-storage/
-  users/
-    <userId>/
-      projects/
-        <projectId>/
-          source/
-          audio/
-          transcripts/
-          metadata/
-          renders/
-          temp/
-```
-
-## Deliverables
-
-- User creates project.
-- User uploads video.
-- File is validated.
-- Metadata is stored.
-- Required credits are calculated.
+- Add project schema and CRUD.
+- Add uploaded-video schema.
+- Enforce project ownership.
+- Build new-project UI.
+- Build clips/summary output-type selector.
+- Build upload dropzone and upload progress.
+- Implement secure upload endpoint.
+- Generate internal storage paths.
+- Probe duration, resolution, FPS, codec, and audio presence with ffprobe.
+- Enforce 500 MB file-size limit.
+- Enforce 30-minute MVP duration limit.
+- Reject missing-audio and corrupted videos.
+- Calculate required credits from duration.
+- Display validated metadata and credit estimate.
 
 ## Acceptance Criteria
 
-The app rejects:
-
-- Oversized files
-- Over-duration videos
-- Corrupt videos
-- Videos without audio
-
-with clear user-facing errors.
+- [ ] User creates project.
+- [ ] User uploads a local video.
+- [ ] App rejects files over 500 MB.
+- [ ] App rejects videos over 30 minutes.
+- [ ] App rejects corrupted videos and videos without audio.
+- [ ] App shows duration and required credits.
 
 ---
 
-# Phase 3 — Billing and Credits
+# VS3 — User Can Buy Credits and Start a Paid Processing Job
 
-## Goal
+## User Outcome
 
-Implement the pay-per-video-minute business model.
+A user can buy credits through Stripe and spend credits to start background processing.
 
-## Pricing
-
-Recommended MVP:
+## Layers Crossed
 
 ```text
-1 credit = 1 video minute
+Web -> API -> Stripe -> Webhook -> Database transaction -> Credit ledger -> BullMQ -> Processing state UI
 ```
 
-Round partial minutes up.
+## Work Included
 
-Example:
-
-```text
-10.2 minutes = 11 credits
-```
-
-Recommended packs:
-
-| Pack | Price | Credits |
-|---|---:|---:|
-| Starter | $10 | 40 |
-| Creator | $25 | 100 |
-| Pro | $50 | 200 |
-
-## Tasks
-
-### Database tables
-
-Create:
-
-```text
-credit_ledger
-stripe_customers
-stripe_payments
-```
-
-### Credit ledger
-
-Support transaction types:
-
-```text
-purchase
-processing_deduction
-refund
-manual_adjustment
-expiration_adjustment
-```
-
-### Stripe
-
-Implement:
-
-- Stripe Checkout session creation
-- Credit-pack products/prices
-- Webhook verification
-- Webhook idempotency
-- Payment persistence
-- Credit grant after payment confirmation
-
-### Billing UI
-
-Build:
-
-- `CreditBalanceCard`
-- `CreditPackCard`
-- `CreditCostSummary`
-- `CreditLedgerTable`
-
-### Processing deduction
-
-Before analysis starts:
-
-1. Calculate required credits.
-2. Check balance.
-3. Open DB transaction.
-4. Deduct credits.
-5. Write ledger entry.
-6. Create processing job.
-7. Queue job.
-
-## Deliverables
-
-- User can buy credits.
-- User sees balance.
-- Credits are deducted before processing.
-- Failed processing can be refunded.
+- Add credit-ledger schema.
+- Add Stripe customer/payment schemas.
+- Build credit balance UI.
+- Build credit-pack cards.
+- Build credit-cost summary.
+- Create Stripe Checkout session.
+- Verify Stripe webhook signatures.
+- Make webhook processing idempotent.
+- Grant credits only after confirmed payment.
+- Deduct credits before processing.
+- Create processing job inside safe transaction boundaries.
+- Enqueue analysis job in BullMQ.
+- Show queued status.
 
 ## Acceptance Criteria
 
-The system must never:
-
-- Grant credits twice from duplicate Stripe events.
-- Deduct credits twice for one processing job.
-- Lose ledger history.
+- [ ] User can buy credits in Stripe test mode.
+- [ ] Duplicate webhook cannot duplicate credits.
+- [ ] Credits are deducted before processing.
+- [ ] Ledger records purchase and deduction.
+- [ ] Processing job is queued.
+- [ ] User sees queued state.
 
 ---
 
-# Phase 4 — Queue and Worker
+# VS4 — User Receives AI-Generated Clip Previews
 
-## Goal
+## User Outcome
 
-Move long-running work out of HTTP requests.
+After paying for processing, a user can leave the page, return later, and receive 5–10 AI-selected clip previews.
 
-## Tasks
-
-### Redis
-
-Set up Redis connection.
-
-### BullMQ queues
-
-Create:
+## Layers Crossed
 
 ```text
-video-analysis-queue
-video-render-queue
-cleanup-queue
+Processing UI -> BullMQ -> Local worker -> FFmpeg audio extraction -> Whisper -> Gemini -> Database -> Preview UI
 ```
 
-### Job types
+## Work Included
 
-Implement:
-
-```text
-analyze_video
-render_clips
-render_summary
-regenerate_clip_candidate
-cleanup_expired_project_files
-```
-
-### Worker process
-
-Create local worker app.
-
-Recommended approach:
-
-```text
-Node/NestJS worker for BullMQ orchestration
-Python subprocesses for Whisper or ML tasks when useful
-FFmpeg via spawn()
-```
-
-### Job progress
-
-Store:
-
-- Status
-- Current step
-- Progress percentage, when meaningful
-- Error code
-- Error message
-- Started/completed timestamps
-
-## Deliverables
-
-- API queues jobs.
-- Worker receives jobs.
-- Worker updates job status.
-- API remains responsive during processing.
+- Implement worker job lifecycle and progress updates.
+- Extract mono 16 kHz audio with FFmpeg.
+- Run self-hosted Whisper.
+- Persist transcript and timestamps.
+- Create versioned Gemini clip-selection prompt.
+- Send transcript, not raw video, to Gemini.
+- Validate structured AI output.
+- Reject invalid timestamps.
+- Remove near-duplicate clip candidates.
+- Persist 5–10 primary candidates when possible.
+- Persist backup candidates.
+- Show processing steps in UI.
+- Show browser-based source-video clip previews.
 
 ## Acceptance Criteria
 
-No transcription, Gemini analysis, or FFmpeg rendering runs inside a normal HTTP request handler.
+- [ ] Processing continues in background.
+- [ ] Whisper produces usable timestamps.
+- [ ] Gemini receives transcript, not raw video.
+- [ ] 5–10 candidates are generated when possible.
+- [ ] Backup candidates are stored.
+- [ ] User can preview clip segments before final rendering.
+- [ ] No final MP4 has been rendered yet.
 
 ---
 
-# Phase 5 — Transcription
+# VS5 — User Can Edit One Clip Preview Before Rendering
 
-## Goal
+## User Outcome
 
-Convert uploaded video audio into a timestamped English transcript.
+A user can select one AI-generated clip and change trim, captions, caption position, font size, and highlighted keywords before rendering.
 
-## Tasks
-
-### Audio extraction
-
-Use FFmpeg to extract:
+## Layers Crossed
 
 ```text
-mono
-16 kHz
-WAV
+Browser preview -> Metadata editor -> API validation -> Database persistence -> Reload verification
 ```
 
-### Whisper
+## Work Included
 
-Use self-hosted Whisper.
-
-Prefer:
-
-```text
-faster-whisper
-```
-
-if it performs well on the local machine.
-
-### Output
-
-Store:
-
-- Full transcript
-- Segment timestamps
-- Word timestamps if feasible
-- Language
-- Confidence, if available
-
-### Database tables
-
-Create:
-
-```text
-transcripts
-transcript_segments
-```
-
-### Validation
-
-Fail if:
-
-- Transcription returns empty output.
-- Language is unsupported.
-- Worker crashes.
-- Audio cannot be extracted.
-
-## Deliverables
-
-- A valid video produces a timestamped transcript.
-- Transcript is persisted.
-- Job progress updates during transcription.
+- Add editable clip metadata fields.
+- Build `ClipPreviewEditor` shell.
+- Build trim controls.
+- Validate trim boundaries.
+- Build CSS caption overlay preview.
+- Add caption on/off toggle.
+- Add caption text editing.
+- Add caption position presets.
+- Add caption font-size controls.
+- Add keyword-highlight editor.
+- Persist edits.
+- Restore edits after reload.
+- Add unsaved-change protection.
 
 ## Acceptance Criteria
 
-A 30-minute English talking-head video can be transcribed without blocking the API.
+- [ ] User can trim clip.
+- [ ] User can toggle captions.
+- [ ] User can edit caption text.
+- [ ] User can adjust caption position.
+- [ ] User can adjust font size.
+- [ ] User can edit highlighted words.
+- [ ] Refresh restores saved metadata.
+- [ ] No render occurs during normal edits.
 
 ---
 
-# Phase 6 — AI Clip Generation
+# VS6 — User Can Render and Download One Final Vertical MP4 Clip
 
-## Goal
+## User Outcome
 
-Use Gemini to select 5–10 high-quality short-form clip candidates.
+A user can render one edited clip into a final 9:16 MP4 and download it.
 
-## Tasks
-
-### Prompting
-
-Create versioned prompts:
+## Layers Crossed
 
 ```text
-clip-selection.prompt.v1.ts
-clip-regeneration.prompt.v1.ts
+Render CTA -> API -> BullMQ -> Worker -> ASS subtitles -> FFmpeg -> Storage -> Output metadata -> Authorized download
 ```
 
-### Model strategy
+## Work Included
 
-Recommended:
-
-```text
-Gemini Flash-Lite for initial scoring
-Gemini Flash for final ranking when needed
-```
-
-### Input
-
-Send timestamped transcript, not raw video.
-
-### Selection criteria
-
-Optimize for:
-
-- Strong hook
-- Emotional reaction
-- Useful insight
-- Standalone context
-- Clean start
-- Clean ending
-- Low filler
-
-### Output
-
-Require structured JSON.
-
-Example:
-
-```json
-{
-  "clips": [
-    {
-      "title": "Why Most Creators Burn Out",
-      "startTime": 412.5,
-      "endTime": 486.2,
-      "score": 92,
-      "reason": "Strong hook, useful insight, and clear emotional delivery.",
-      "captionHighlights": ["burn out", "consistency", "systems"]
-    }
-  ],
-  "backupCandidates": []
-}
-```
-
-### Validation
-
-Validate:
-
-- Valid JSON
-- Valid timestamps
-- End > start
-- Within source duration
-- Reasonable duration
-- No near-duplicate clips
-- 5–10 primary clips when possible
-
-### Database table
-
-Create:
-
-```text
-clip_candidates
-```
-
-## Deliverables
-
-- Gemini returns clip candidates.
-- Candidates are validated.
-- Backup candidates are stored.
-- Preview-ready state is reached.
+- Create one-clip render endpoint.
+- Enqueue render job.
+- Generate ASS subtitles from saved metadata.
+- Apply trim metadata.
+- Apply vertical crop metadata.
+- Burn captions when enabled.
+- Encode H.264/AAC MP4.
+- Persist output metadata and expiration.
+- Show render progress.
+- Authorize output download.
+- Verify preview-to-render visual parity.
 
 ## Acceptance Criteria
 
-Users can inspect 5–10 candidate clips without any final MP4 rendering having occurred.
+- [ ] User explicitly starts render.
+- [ ] Saved metadata drives render.
+- [ ] Final video is 9:16.
+- [ ] Caption styling is burned in.
+- [ ] Output is stored.
+- [ ] User can download MP4.
+- [ ] Unauthorized users cannot download another user's output.
 
 ---
 
-# Phase 7 — Face-Aware Crop and Clip Preview Editor
+# VS7 — User Can Manage Multiple Clips and Regenerate a Bad One
 
-## Goal
+## User Outcome
 
-Let users preview and edit clips before final rendering.
+A user can review several candidates, select or delete clips, regenerate one bad clip, and render only selected clips.
 
-## Tasks
+## Layers Crossed
 
-### Face-aware crop
+```text
+Clip list UI -> Candidate state -> API -> Backup-candidate logic/Gemini fallback -> Multi-render queue -> Outputs
+```
 
-Implement MVP face-aware crop metadata.
+## Work Included
 
-Suggested flow:
-
-1. Sample frames.
-2. Detect faces.
-3. Estimate stable 9:16 crop.
-4. Smooth crop positions.
-5. Save crop metadata.
-6. Fall back to center crop.
-
-Do not implement dynamic active-speaker switching.
-
-### Clip editor UI
-
-Build:
-
-- `ClipPreviewEditor`
-- `ClipList`
-- `ClipListItem`
-- `ClipPreviewPlayer`
-- `VerticalCropPreview`
-- `CaptionOverlay`
-- `CaptionEditor`
-- `CaptionTextEditor`
-- `CaptionPositionControl`
-- `CaptionFontSizeControl`
-- `KeywordHighlightEditor`
-- `TrimControls`
-- `RegenerateClipButton`
-- `AIReasonCard`
-
-### Preview behavior
-
-Use:
-
-- Source video URL
-- Start/end timestamps
-- HTML video player
-- CSS crop simulation
-- CSS caption overlays
-
-### Editable metadata
-
-Allow:
-
-- Start time
-- End time
-- Captions on/off
-- Caption text
-- Caption position
-- Caption font size
-- Highlighted keywords
-- Delete/deselect clip
-
-### Regeneration
-
-For one bad clip:
-
-1. Use unused backup candidate first.
-2. Avoid new AI call when possible.
-3. Do not charge extra in MVP.
-
-## Deliverables
-
-- User can preview selected clips.
-- User can edit metadata.
-- No final render happens during normal edits.
+- Add selected, deleted, and backup candidate states.
+- Build multi-clip selection behavior.
+- Build clip deletion/deselection behavior.
+- Regenerate from unused backup candidate first.
+- Fall back to Gemini only when backups are exhausted.
+- Do not charge extra for MVP regeneration.
+- Render only selected clips.
+- Show per-clip render progress and failures.
+- Display downloadable output cards.
 
 ## Acceptance Criteria
 
-Edits update preview immediately and are persisted before rendering.
+- [ ] User can select/deselect clips.
+- [ ] User can delete a candidate.
+- [ ] User can regenerate one bad clip.
+- [ ] Backup candidate is preferred.
+- [ ] Regeneration does not charge extra in MVP.
+- [ ] Only selected clips render.
 
 ---
 
-# Phase 8 — Final Clip Rendering
+# VS8 — User Can Generate, Edit, Render, and Download a Summary Video
 
-## Goal
+## User Outcome
 
-Render selected short clips to final vertical MP4 files.
+A user can choose summary mode, receive a chronological summary preview, edit segments, render the summary, and download the final MP4.
 
-## Tasks
-
-### Render queue
-
-Create `render_clips` job.
-
-### FFmpeg pipeline
-
-For each selected clip:
-
-1. Read latest saved metadata.
-2. Trim source.
-3. Apply 9:16 crop.
-4. Generate ASS subtitle file if captions enabled.
-5. Burn captions.
-6. Encode H.264 video.
-7. Encode AAC audio.
-8. Save MP4.
-
-### Caption rendering
-
-Use ASS subtitles.
-
-Support:
-
-- White text
-- Violet keyword highlights
-- Dark outline/stroke
-- Caption position
-- Caption font size
-
-### Output table
-
-Create:
+## Layers Crossed
 
 ```text
-rendered_outputs
+Summary project -> Gemini selection -> Database -> Preview editor -> FFmpeg concatenation -> Storage -> Download
 ```
 
-Store:
+## Work Included
 
-- File path
-- Filename
-- Duration
-- File size
-- Width
-- Height
-- Expiration
-
-### UI
-
-Build:
-
-- `RenderActionBar`
-- `RenderProgress`
-- `RenderClipStatusList`
-- `OutputCard`
-- `OutputVideoPreview`
-- `DownloadButton`
-
-## Deliverables
-
-- Selected clips render as 9:16 MP4s.
-- Captions match preview closely.
-- User can download outputs.
+- Create versioned summary-selection prompt.
+- Generate chronological segments targeting about 10% of source duration.
+- Validate segment boundaries and chronology.
+- Persist summary-segment metadata.
+- Build summary preview editor.
+- Allow trim and removal while preserving chronology.
+- Render concatenated summary MP4.
+- Preserve original speaker audio.
+- Persist summary output.
+- Expose authorized download.
 
 ## Acceptance Criteria
 
-The system renders only selected clips and uses the latest saved metadata.
+- [ ] Summary segments remain chronological.
+- [ ] Target is about 10% of source duration.
+- [ ] User can preview and edit segments.
+- [ ] Original speaker audio is preserved.
+- [ ] User can render and download summary MP4.
 
 ---
 
-# Phase 9 — Summary Video
+# VS9 — Failed Processing Automatically Refunds Credits
 
-## Goal
+## User Outcome
 
-Generate a condensed chronological summary using original speaker audio.
+If processing fails before a usable result is produced, the user automatically receives credits back and sees a clear explanation.
 
-## Tasks
-
-### Gemini summary prompt
-
-Create:
+## Layers Crossed
 
 ```text
-summary-selection.prompt.v1.ts
+Worker failure -> Failure classification -> API transaction -> Credit ledger -> Job state -> Refund UI
 ```
 
-### Summary rules
+## Work Included
 
-- Preserve original order.
-- Keep original speaker audio.
-- Remove filler.
-- Remove repetition.
-- Remove weak tangents.
-- Target about 10% of original duration.
-
-### Database table
-
-Create:
-
-```text
-summary_segments
-```
-
-### Summary UI
-
-Build:
-
-- `SummaryPreviewEditor`
-- `SummarySegmentList`
-- `SummarySegmentCard`
-- `SummaryDurationBar`
-
-Allow:
-
-- Preview segment
-- Adjust start/end
-- Remove segment
-
-Do not allow complex freeform rearrangement in MVP.
-
-### Rendering
-
-Create `render_summary` job.
-
-FFmpeg flow:
-
-1. Trim selected segments.
-2. Preserve chronological order.
-3. Concatenate.
-4. Preserve original audio.
-5. Encode final MP4.
-
-## Deliverables
-
-- Summary candidates are generated.
-- User previews segment list.
-- Final summary MP4 renders.
+- Define refund-eligible failures.
+- Implement idempotent credit refund transaction.
+- Connect worker failures to refund orchestration.
+- Prevent duplicate refunds during retries.
+- Show clear failure reason and refunded amount.
+- Test Whisper failure.
+- Test Gemini failure.
+- Test FFmpeg failure.
 
 ## Acceptance Criteria
 
-A 30-minute video can produce roughly a 3-minute chronological summary video using original audio.
+- [ ] Eligible failure automatically refunds credits.
+- [ ] Refund creates immutable ledger entry.
+- [ ] Duplicate refund is impossible.
+- [ ] User sees failure reason and refunded amount.
+- [ ] Retries do not corrupt balance.
 
 ---
 
-# Phase 10 — File Retention and Cleanup
+# VS10 — Files Expire and Are Deleted After 7 Days
 
-## Goal
+## User Outcome
 
-Automatically delete file assets after 7 days.
+Users see when source files and outputs expire, and expired files are automatically deleted after 7 days.
 
-## Tasks
-
-### Expiration metadata
-
-Ensure file-backed records include:
+## Layers Crossed
 
 ```text
-expires_at
-deleted_at
+Expiration metadata -> UI badges -> Cleanup queue -> Worker -> Storage deletion -> Download denial
 ```
 
-### Cleanup queue
+## Work Included
 
-Implement:
-
-```text
-cleanup_expired_project_files
-```
-
-### Cleanup targets
-
-Delete:
-
-- Source video
-- Extracted audio
-- Temporary files
-- Rendered clips
-- Summary MP4
-- Preview assets, if any
-
-Keep:
-
-- User account
-- Payment records
-- Credit ledger
-- Minimal project/job history
-
-### UI
-
-Build:
-
-- `ExpirationBadge`
-- Expiration notices
-- Expired output state
-
-## Deliverables
-
-- Expired files are deleted.
-- Database metadata is updated.
-- Users see expiration clearly.
+- Add `expires_at` and `deleted_at` where needed.
+- Show expiration badges and notices.
+- Create scheduled cleanup job.
+- Delete source, audio, temp, clip, and summary files safely.
+- Preserve payment, ledger, and minimal job metadata.
+- Make cleanup idempotent.
+- Ensure expired files cannot be downloaded.
 
 ## Acceptance Criteria
 
-Cleanup can run multiple times safely without crashing or deleting unrelated files.
+- [ ] Expiration is visible before deletion.
+- [ ] Files delete after 7 days.
+- [ ] Cleanup is safe to rerun.
+- [ ] Billing and ledger records remain.
+- [ ] Expired files cannot be downloaded.
 
 ---
 
-# Phase 11 — Reliability, Security, and Abuse Protection
+# VS11 — Security, Abuse Protection, and Reliability Are Hardened
 
-## Goal
+## User Outcome
 
-Make the MVP safe and resilient.
+The app behaves safely under abusive traffic, invalid input, duplicate events, cross-user access attempts, unsafe job payloads, and worker failures.
 
-## Tasks
+This is a cross-cutting audit slice. Security and validation should already exist in earlier slices where relevant.
 
-### Arcjet
+## Work Included
 
-Protect:
+- Add Arcjet protection to signup/login.
+- Protect upload, analyze, render, and billing endpoints.
+- Audit ownership checks for all project resources.
+- Audit upload validation and storage paths.
+- Audit worker job-payload validation.
+- Audit safe subprocess execution.
+- Audit Stripe idempotency.
+- Audit Gemini output validation and retries.
+- Add structured logs.
+- Add human-readable error mapping.
 
-```text
-POST /signup
-POST /login
-POST /projects
-POST /projects/:projectId/upload
-POST /projects/:projectId/analyze
-POST /projects/:projectId/render
-POST /billing/checkout
-```
+## Acceptance Criteria
 
-### Authorization
-
-Every project-scoped request verifies:
-
-```text
-authenticated user ID == project.user_id
-```
-
-### Upload security
-
-Enforce:
-
-- File-size limit
-- Duration limit
-- MIME validation
-- FFmpeg probing
-- Safe internal filenames
-- Storage outside public directories
-
-### Worker security
-
-Rules:
-
-- Validate all job payloads.
-- Never pass unsanitized user input to shell.
-- Use `spawn()` argument arrays.
-- Protect internal worker endpoints.
-- Do not expose secrets in logs.
-
-### Stripe
-
-Ensure:
-
-- Webhook signature verification
-- Event idempotency
-- Duplicate-safe processing
-
-### Gemini
-
-Validate all AI output.
-
-### Error handling
-
-Handle explicitly:
-
-- Upload failure
-- Invalid video
-- Video too long
-- Missing audio
-- Whisper failure
-- Gemini failure
-- Invalid Gemini JSON
-- Face detection failure
-- FFmpeg failure
-- Worker crash
-- Redis failure
-- Storage failure
-- Stripe webhook failure
-- Insufficient credits
-
-## Deliverables
-
-- Expensive endpoints are protected.
-- Cross-user access is blocked.
-- Critical operations are idempotent.
-- User-facing errors are clear.
+- [ ] Cross-user access attempts fail.
+- [ ] Expensive endpoints are protected.
+- [ ] Shell commands cannot be injected through user input.
+- [ ] Duplicate Stripe events are harmless.
+- [ ] Invalid AI output cannot corrupt project data.
+- [ ] Logs contain actionable context without secrets.
 
 ---
 
-# Phase 12 — Testing and Demo Polish
+# VS12 — Full MVP Is Tested, Responsive, and Demo-Ready
 
-## Goal
+## User Outcome
 
-Prepare RepurposePro for a reliable portfolio demo.
+A user can complete the full MVP flow reliably on supported viewport sizes, and the portfolio demo is polished.
 
-## Unit Tests
+## Work Included
 
-Prioritize:
+- Add critical domain unit tests.
+- Add billing and queue integration tests.
+- Add E2E clips happy path.
+- Add E2E summary happy path.
+- Validate responsive dashboard.
+- Validate responsive upload flow.
+- Validate responsive billing flow.
+- Validate responsive outputs.
+- Validate desktop-first editor and smaller-screen fallback.
+- Polish loading states.
+- Polish empty states.
+- Polish success states.
+- Polish error/refund states.
+- Polish expired states.
+- Run at least one real video-processing demo.
+- Validate portfolio demo script end to end.
 
-- Credit calculation
-- Credit deduction
-- Credit refund
-- Clip timestamp validation
-- Summary segment validation
-- Gemini response validation
-- Storage path generation
-- Refund eligibility
+## Acceptance Criteria
 
-## Integration Tests
-
-Cover:
-
-- Stripe webhook idempotency
-- Credit ledger transactions
-- Project creation
-- Upload metadata
-- BullMQ job creation
-- Clip metadata edits
-- Render output creation
-
-## End-to-End Tests
-
-Critical path:
-
-1. Sign up.
-2. Buy credits in Stripe test mode.
-3. Create project.
-4. Upload valid video.
-5. Start processing.
-6. Wait for preview.
-7. Edit a clip.
-8. Render clip.
-9. Download MP4.
-
-### Mocking
-
-Mock heavy services in automated tests where appropriate:
-
-- Whisper
-- Gemini
-- FFmpeg rendering
-
-Keep at least one manual real-processing demo flow.
-
-## Demo polish
-
-Improve:
-
-- Empty states
-- Error states
-- Processing copy
-- Progress indicators
-- Responsive dashboard
-- Billing UI
-- Clip editor spacing
-- Final output cards
+- [ ] Clips happy path works end to end.
+- [ ] Summary happy path works end to end.
+- [ ] Critical tests pass.
+- [ ] Responsive pages work as defined.
+- [ ] Editor fallback works on smaller screens.
+- [ ] Demo completes without manual database fixes.
+- [ ] Real source video produces usable output.
 
 ---
 
-## 6. Database Build Order
+## 6. Slice Completion Rule
 
-Recommended table creation order:
+A slice is only complete when:
 
-```text
-1. Better Auth tables
-2. users / app profile data
-3. projects
-4. uploaded_videos
-5. processing_jobs
-6. transcripts
-7. transcript_segments
-8. clip_candidates
-9. summary_segments
-10. rendered_outputs
-11. credit_ledger
-12. stripe_customers
-13. stripe_payments
-```
+- [ ] The user-visible outcome works.
+- [ ] Required UI exists.
+- [ ] Required API exists.
+- [ ] Required persistence exists.
+- [ ] Required queue/worker behavior exists, if applicable.
+- [ ] Authorization is enforced.
+- [ ] Relevant errors are handled.
+- [ ] Verification is recorded.
+- [ ] Start and end timestamps are recorded in `progress-tracker.md`.
+- [ ] Handoff state is updated.
+
+Do not mark a slice complete because only one technical layer is finished.
 
 ---
 
-## 7. API Build Order
+## 7. Database Introduction by Slice
 
-Recommended API order:
+Create tables only when the current vertical slice needs them.
 
-### Projects
+| Slice | Tables Introduced or Extended |
+|---|---|
+| VS0 | Drizzle migration baseline |
+| VS1 | Better Auth tables and app user/profile data as needed |
+| VS2 | `projects`, `uploaded_videos` |
+| VS3 | `processing_jobs`, `credit_ledger`, `stripe_customers`, `stripe_payments` |
+| VS4 | `transcripts`, `transcript_segments`, `clip_candidates` |
+| VS5 | Extend `clip_candidates` with editable metadata fields |
+| VS6 | `rendered_outputs` |
+| VS7 | Extend candidate state for selected/deleted/backup/regenerated states |
+| VS8 | `summary_segments` |
+| VS9 | Extend jobs/ledger with idempotent refund metadata as needed |
+| VS10 | Add/standardize `expires_at` and `deleted_at` on file-backed records |
+
+Do not create all future tables upfront unless a migration dependency genuinely requires it.
+
+---
+
+## 8. API Introduction by Slice
+
+Introduce endpoints when their user outcome becomes deliverable.
+
+### VS1 — Authentication
+
+Better Auth endpoints/session handling.
+
+### VS2 — Projects and Upload
 
 ```text
 POST   /projects
@@ -1251,25 +704,24 @@ GET    /projects
 GET    /projects/:projectId
 PATCH  /projects/:projectId
 DELETE /projects/:projectId
-```
-
-### Uploads
-
-```text
 POST   /projects/:projectId/upload
 GET    /projects/:projectId/video
 DELETE /projects/:projectId/video
 ```
 
-### Processing
+### VS3 — Billing and Start Processing
 
 ```text
+GET    /billing/credits
+GET    /billing/ledger
+POST   /billing/checkout
+POST   /billing/webhook
 POST   /projects/:projectId/analyze
 GET    /projects/:projectId/status
 GET    /projects/:projectId/jobs/:jobId/status
 ```
 
-### Clips
+### VS4–VS7 — Clips
 
 ```text
 GET    /projects/:projectId/clips
@@ -1277,177 +729,237 @@ GET    /projects/:projectId/clips/:clipId
 PATCH  /projects/:projectId/clips/:clipId
 DELETE /projects/:projectId/clips/:clipId
 POST   /projects/:projectId/clips/:clipId/regenerate
-```
-
-### Summary
-
-```text
-GET    /projects/:projectId/summary
-PATCH  /projects/:projectId/summary
-```
-
-### Render
-
-```text
 POST   /projects/:projectId/render
 GET    /projects/:projectId/outputs
 GET    /projects/:projectId/outputs/:outputId/download
 DELETE /projects/:projectId/outputs/:outputId
 ```
 
-### Billing
+### VS8 — Summary
 
 ```text
-GET    /billing/credits
-GET    /billing/ledger
-POST   /billing/checkout
-POST   /billing/webhook
+GET    /projects/:projectId/summary
+PATCH  /projects/:projectId/summary
+```
+
+Do not build unused endpoints early just to complete an API layer.
+
+---
+
+## 9. UI Screen Introduction by Slice
+
+| Slice | Screens First Needed |
+|---|---|
+| VS1 | Signup, Login, Dashboard shell |
+| VS2 | New Project, Upload Video |
+| VS3 | Payment/Credits, Processing queued state, Billing basics |
+| VS4 | Processing Status, Clip Preview list |
+| VS5 | Clip Preview Editor |
+| VS6 | Render Status, Outputs/Download |
+| VS7 | Multi-clip management states |
+| VS8 | Summary Preview Editor |
+| VS9 | Error/Refund states |
+| VS10 | Expiration states |
+| VS12 | Settings polish and full responsive validation |
+
+---
+
+## 10. Component Introduction by Slice
+
+Do not prebuild the entire UI registry. Add components as a slice first needs them.
+
+### VS1
+
+```text
+Button
+Input
+Card
+AppSidebar
+AppTopbar
+PageHeader
+EmptyState
+```
+
+### VS2
+
+```text
+NewProjectForm
+OutputTypeSelector
+UploadDropzone
+UploadProgressCard
+VideoMetadataCard
+```
+
+### VS3
+
+```text
+CreditBalanceCard
+CreditPackCard
+CreditCostSummary
+StatusBadge
+ProcessingProgress
+```
+
+### VS4
+
+```text
+ProcessingStepList
+BackgroundProcessingNotice
+ClipList
+ClipListItem
+ClipPreviewPlayer
+AIReasonCard
+```
+
+### VS5
+
+```text
+ClipPreviewEditor
+VerticalCropPreview
+CaptionOverlay
+CaptionEditor
+CaptionTextEditor
+CaptionPositionControl
+CaptionFontSizeControl
+KeywordHighlightEditor
+TrimControls
+```
+
+### VS6
+
+```text
+RenderActionBar
+RenderProgress
+OutputCard
+OutputVideoPreview
+DownloadButton
+```
+
+### VS7
+
+```text
+RegenerateClipButton
+RenderClipStatusList
+```
+
+### VS8
+
+```text
+SummaryPreviewEditor
+SummarySegmentList
+SummarySegmentCard
+SummaryDurationBar
+```
+
+### VS9
+
+```text
+RefundNotice
+ErrorState
+```
+
+### VS10
+
+```text
+ExpirationBadge
 ```
 
 ---
 
-## 8. UI Screen Build Order
+## 11. Milestones
 
-Build screens in this order:
+Milestones are outcome-based.
 
-1. Signup
-2. Login
-3. Dashboard
-4. New Project
-5. Upload Video
-6. Payment / Credits
-7. Processing Status
-8. Clip Preview Editor
-9. Render Status
-10. Outputs / Download
-11. Billing
-12. Summary Preview Editor
-13. Settings
-14. Error / Refund States
+### Milestone A — Usable Account and Upload
 
----
+Complete when:
 
-## 9. UI Component Build Order
+```text
+VS0 + VS1 + VS2
+```
 
-Build components in this order:
+A user can authenticate, create a project, upload a valid video, and see metadata plus credit estimate.
 
-1. Button
-2. Input
-3. Card
-4. Badge
-5. Dialog
-6. Progress
-7. AppSidebar
-8. AppTopbar
-9. PageHeader
-10. StatusBadge
-11. ProjectCard
-12. UploadDropzone
-13. VideoMetadataCard
-14. CreditBalanceCard
-15. CreditPackCard
-16. CreditCostSummary
-17. ProcessingProgress
-18. ProcessingStepList
-19. ClipList
-20. ClipListItem
-21. ClipPreviewPlayer
-22. CaptionOverlay
-23. CaptionEditor
-24. TrimControls
-25. RegenerateClipButton
-26. RenderProgress
-27. OutputCard
-28. CreditLedgerTable
-29. SummarySegmentCard
-30. SummaryDurationBar
+### Milestone B — Paid Background Processing Entry
 
----
+Complete when:
 
-## 10. Suggested Milestones
+```text
+VS3
+```
 
-## Milestone 1 — Product Shell
+A user can buy credits and start a queued processing job safely.
 
-Done when:
+### Milestone C — AI Preview
 
-- Auth works.
-- Dashboard works.
-- Project creation works.
-- Upload UI works.
+Complete when:
 
-## Milestone 2 — Paid Processing Entry
+```text
+VS4
+```
 
-Done when:
+A user can receive and preview AI-selected clip candidates.
 
-- Video metadata is probed.
-- Credit cost is calculated.
-- Stripe test-mode purchase works.
-- Credits are deducted safely.
+### Milestone D — First Downloadable Clip
 
-## Milestone 3 — Background Pipeline
+Complete when:
 
-Done when:
+```text
+VS5 + VS6
+```
 
-- BullMQ is running.
-- Worker receives jobs.
-- Whisper transcription works.
-- Job progress updates.
+A user can edit one preview, render it, and download a final MP4.
 
-## Milestone 4 — AI Preview
+This is the first strong end-to-end product milestone.
 
-Done when:
+### Milestone E — Complete Clip Workflow
 
-- Gemini selects clips.
-- Backup candidates are stored.
-- Clip preview editor shows metadata previews.
+Complete when:
 
-## Milestone 5 — Final Clip Output
+```text
+VS7
+```
 
-Done when:
+A user can manage multiple clips, regenerate one, and render selected outputs.
 
-- User edits clip metadata.
-- FFmpeg renders vertical clips.
-- ASS captions work.
-- MP4 downloads work.
+### Milestone F — Summary Workflow
 
-## Milestone 6 — Summary Video
+Complete when:
 
-Done when:
+```text
+VS8
+```
 
-- Gemini selects chronological summary segments.
-- User can preview/edit segments.
-- FFmpeg renders summary MP4.
+A user can generate, edit, render, and download a summary video.
 
-## Milestone 7 — MVP Hardening
+### Milestone G — MVP Hardening
 
-Done when:
+Complete when:
 
-- Credits refund on failure.
-- Files auto-delete after 7 days.
-- Arcjet protects expensive endpoints.
-- Critical tests pass.
-- Demo flow is polished.
+```text
+VS9 + VS10 + VS11 + VS12
+```
+
+Refunds, retention, security, testing, responsiveness, and demo polish are complete.
 
 ---
 
-## 11. Risk Register
+## 12. Risk Register
 
-## Risk 1 — Whisper Performance
+### Risk 1 — Whisper Performance
 
 Problem:
 
-Self-hosted transcription can be slow on a local machine.
+Self-hosted transcription may be slow on the local worker machine.
 
 Mitigation:
 
-- Limit videos to 30 minutes.
-- Use one analysis worker at a time.
+- Limit MVP input to 30 minutes.
+- Use analysis concurrency of 1 initially.
 - Consider `faster-whisper`.
-- Use GPU later.
+- Add GPU support later.
 
----
-
-## Risk 2 — Caption Timing Quality
+### Risk 2 — Caption Timing Quality
 
 Problem:
 
@@ -1455,13 +967,11 @@ Segment timestamps may feel too coarse.
 
 Mitigation:
 
-- Prefer word-level timestamps if practical.
-- Allow caption text editing.
-- Group words into readable caption chunks.
+- Prefer word-level timestamps when practical.
+- Start with phrase-level chunks if needed.
+- Allow caption editing.
 
----
-
-## Risk 3 — Face-Aware Crop Instability
+### Risk 3 — Face-Aware Crop Instability
 
 Problem:
 
@@ -1469,14 +979,12 @@ Crop may jump between positions.
 
 Mitigation:
 
-- Sample fewer frames.
+- Sample frames.
 - Smooth coordinates.
 - Prefer stable crop over constant movement.
 - Fall back to center crop.
 
----
-
-## Risk 4 — AI Clip Quality
+### Risk 4 — AI Clip Quality
 
 Problem:
 
@@ -1490,39 +998,33 @@ Mitigation:
 - Show AI reason.
 - Allow regeneration.
 
----
-
-## Risk 5 — Rendering Time
+### Risk 5 — Rendering Time
 
 Problem:
 
-Rendering many clips can be slow.
+Rendering several clips may be slow.
 
 Mitigation:
 
 - Render only selected clips.
 - Queue rendering.
 - Limit concurrency.
-- Avoid re-rendering on every edit.
+- Never render after every metadata edit.
 
----
-
-## Risk 6 — Billing Edge Cases
+### Risk 6 — Billing Edge Cases
 
 Problem:
 
-Duplicate webhooks or failed jobs may corrupt credits.
+Duplicate webhooks or retries may corrupt credits.
 
 Mitigation:
 
 - Immutable ledger.
-- Idempotent Stripe events.
+- Idempotent webhook events.
 - Database transactions.
-- Separate payment records from credit balance.
+- Idempotent refunds.
 
----
-
-## Risk 7 — Scope Creep
+### Risk 7 — Scope Creep
 
 Problem:
 
@@ -1530,7 +1032,7 @@ RepurposePro may turn into a full video editor.
 
 Mitigation:
 
-Keep the MVP editor limited to:
+Keep MVP editor limited to:
 
 ```text
 preview
@@ -1544,75 +1046,46 @@ download
 
 ---
 
-## 12. Definition of Done for MVP
+## 13. Definition of Done for MVP
 
-RepurposePro MVP is done when a user can:
+RepurposePro MVP is complete when a user can:
 
 1. Create an account.
 2. Buy credits.
 3. Create a project.
 4. Upload an English video under 30 minutes and 500 MB.
-5. Pay for processing with credits.
-6. Leave the page while processing continues.
-7. Receive 5–10 AI-generated clip previews or a summary preview.
-8. Edit clip metadata.
-9. Render selected clips or a summary video.
-10. Download final MP4 files.
-11. Receive automatic credit refund if processing fails.
-12. See that files expire after 7 days.
+5. See required credits before processing.
+6. Pay with credits before processing.
+7. Leave while background processing continues.
+8. Receive 5–10 AI-generated clip previews or a summary preview.
+9. Edit clip metadata.
+10. Regenerate one bad clip.
+11. Render selected clips.
+12. Render a summary video.
+13. Download final MP4 files.
+14. Receive automatic credit refund on eligible failure.
+15. See file-expiration notices.
+16. Have file assets automatically deleted after 7 days.
 
 ---
 
-## 13. Portfolio Demo Script
+## 14. Coding Agent Execution Rule
 
-Recommended demo flow:
-
-1. Open RepurposePro landing page.
-2. Sign in.
-3. Show dashboard and credit balance.
-4. Create a short-clips project.
-5. Upload a podcast/talking-head video.
-6. Show detected duration and required credits.
-7. Start processing.
-8. Show processing pipeline:
-   - Transcribing
-   - Analyzing
-   - Preview ready
-9. Open clip editor.
-10. Show 5–10 AI-selected clips.
-11. Preview one clip.
-12. Change trim.
-13. Edit caption text.
-14. Move caption position.
-15. Change font size.
-16. Regenerate one bad clip.
-17. Render selected clips.
-18. Show render progress.
-19. Download final MP4.
-20. Show billing ledger and credit deduction.
-
-Optional second demo:
-
-- Create summary project.
-- Generate chronological summary.
-- Render final summary MP4.
-
----
-
-## 14. Final Build Rule
-
-Whenever implementation choices become unclear, prefer the option that keeps RepurposePro:
+The coding agent should use this loop:
 
 ```text
-simpler
-cheaper
-more reliable
-easier to demo
-easier to maintain
+read relevant docs
+-> read progress-tracker.md
+-> choose next incomplete vertical task
+-> record start date/time
+-> implement every required layer for that task
+-> verify the user outcome
+-> record commands and tests
+-> record end date/time
+-> update progress-tracker.md
+-> update handoff state
 ```
 
-The MVP should prove one thing extremely well:
+Do not optimize for finishing technical layers.
 
-```text
-RepurposePro can turn one long creator video into useful short-form content with minimal editing effort.
-```
+Optimize for finishing usable vertical slices.

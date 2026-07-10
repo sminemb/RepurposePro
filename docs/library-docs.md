@@ -1801,27 +1801,33 @@ Follow these rules across all library usage:
 
 ---
 
-## 24. MVP Library Priorities
+## 24. Library Activation by Vertical Slice
 
-Build the libraries into the app in this order:
+Libraries should be introduced when a vertical slice first needs them, rather than integrating the entire stack upfront.
 
-1. Next.js app shell
-2. Better Auth
-3. NestJS API
-4. Postgres + Drizzle
-5. File upload handling
-6. FFmpeg probing
-7. Stripe Checkout
-8. Credit ledger
-9. Redis + BullMQ
-10. Local worker
-11. Whisper transcription
-12. Gemini analysis
-13. Preview editor
-14. ASS captions
-15. FFmpeg rendering
-16. Arcjet protections
-17. Cleanup jobs
+| Slice | Libraries / Tools First Activated | Why |
+|---|---|---|
+| VS0 | Next.js, Tailwind CSS v4, shadcn/ui, NestJS, PostgreSQL, Drizzle, Redis | Boot the repository and shared infrastructure |
+| VS1 | Better Auth | Deliver signup, login, logout, sessions, and protected dashboard |
+| VS2 | FFmpeg/ffprobe, local file storage | Validate uploaded video and calculate duration-based credit cost |
+| VS3 | Stripe, BullMQ | Buy credits, safely deduct them, and enqueue processing |
+| VS4 | Self-hosted Whisper, Gemini | Produce transcript and AI-selected clip-preview metadata |
+| VS5 | React browser video preview, CSS caption overlay | Edit preview metadata without rendering MP4s |
+| VS6 | ASS subtitles, FFmpeg rendering | Render one final vertical MP4 and burn styled captions |
+| VS7 | Gemini regeneration fallback, multi-render queue behavior | Replace bad clips and render selected outputs only |
+| VS8 | Gemini summary prompt + FFmpeg concatenation | Produce condensed chronological summary video |
+| VS9 | Existing Drizzle transaction and queue primitives | Make failure refunds idempotent across worker/API boundaries |
+| VS10 | BullMQ cleanup jobs + storage deletion | Enforce 7-day file retention |
+| VS11 | Arcjet | Harden expensive endpoints and abuse-sensitive flows |
+| VS12 | Test tooling and visual/responsive verification | Validate the complete MVP and demo flow |
+
+Rules:
+
+- Do not integrate a library merely because it appears in the stack.
+- A library should enter the codebase when a current vertical slice requires it.
+- The exception is VS0, which establishes the minimum bootable platform.
+- Keep `build-plan.md` and `progress-tracker.md` aligned with this activation order.
+
 
 ---
 

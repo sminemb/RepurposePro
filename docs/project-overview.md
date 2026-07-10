@@ -674,32 +674,41 @@ POST   /billing/webhook
 
 ## 24. Recommended Build Order
 
-Build RepurposePro in this order:
+RepurposePro should be built as **vertical slices**, not as isolated frontend, backend, database, AI, or worker phases.
 
-1. Auth and protected dashboard
-2. Project creation
-3. Video upload
-4. FFmpeg duration and metadata probe
-5. Stripe credit purchase flow
-6. Credit ledger
-7. Credit deduction and refund logic
-8. BullMQ setup
-9. Local worker setup
-10. Whisper transcription
-11. Transcript storage
-12. Gemini clip selection
-13. Preview clip UI
-14. Caption overlay preview
-15. Simple trim controls
-16. Clip deletion and regeneration
-17. FFmpeg final clip rendering
-18. Downloadable MP4 outputs
-19. Summary segment selection
-20. Summary preview
-21. Summary final rendering
-22. Auto-delete after 7 days
-23. Basic error handling and retries
-24. Polish dashboard and job status UI
+The canonical execution order is:
+
+| Slice | User Outcome |
+|---|---|
+| VS0 | Repo boots and core infrastructure is ready |
+| VS1 | User can sign up, log in, and see protected dashboard |
+| VS2 | User can create a project and upload a validated video |
+| VS3 | User can buy credits and start a paid processing job |
+| VS4 | User receives AI-generated clip previews from an uploaded video |
+| VS5 | User can edit one clip preview before rendering |
+| VS6 | User can render and download one final vertical MP4 clip |
+| VS7 | User can manage multiple clips and regenerate a bad one |
+| VS8 | User can generate, edit, render, and download a summary video |
+| VS9 | Failed processing automatically refunds credits and explains why |
+| VS10 | Files expire and are deleted after 7 days |
+| VS11 | Critical security, abuse protection, and reliability are hardened |
+| VS12 | Full MVP happy path is tested, responsive, and demo-ready |
+
+By the end of **VS6**, the first complete core journey should work end to end:
+
+```text
+sign up
+-> upload video
+-> buy/use credits
+-> process in background
+-> receive AI preview
+-> edit one clip
+-> render
+-> download MP4
+```
+
+Detailed execution steps live in `build-plan.md`. Coding-agent status, timestamps, blockers, verification, and handoff state live in `progress-tracker.md`.
+
 
 ---
 
