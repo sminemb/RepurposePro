@@ -990,8 +990,7 @@ Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup d
 Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Uncommitted Changes:
-- AGENTS.md — updated guidance; commit once verified.
-- docs/progress-tracker.md — updated task guidance; commit once verified.
+- None
 
 Known Failing Tests:
 - None
