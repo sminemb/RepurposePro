@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">RepurposePro mark</title>
+  <desc id="desc">A geometric R-shaped video frame splitting into three violet output signals.</desc>
+  <defs>
+    <linearGradient id="metal" x1="24" y1="18" x2="126" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5F6F8" />
+      <stop offset="0.55" stop-color="#D4D7E2" />
+      <stop offset="1" stop-color="#8D93A8" />
+    </linearGradient>
+    <linearGradient id="signal" x1="48" y1="112" x2="146" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B3DDF" />
+      <stop offset="1" stop-color="#9B8CFF" />
+    </linearGradient>
+  </defs>
+
+  <path
+    fill="url(#metal)"
+    fill-rule="evenodd"
+    d="M24 20a8 8 0 0 1 8-8h52c27 0 46 17 46 41 0 18-10 32-27 38l28 37a8 8 0 0 1-6 13H98a8 8 0 0 1-6-3L61 98H52v35a8 8 0 0 1-8 8H32a8 8 0 0 1-8-8V20Zm28 20v31h31c12 0 19-6 19-16s-7-15-19-15H52Z"
+  />
+  <path fill="#050608" d="m52 70 27 16-27 16V70Z" />
+  <path fill="url(#signal)" d="m48 82 24 14-24 14V82Z" />
+
+  <path fill="url(#signal)" d="M104 45h28l14 10-14 10h-28l9-10-9-10Z" />
+  <path fill="url(#signal)" d="M104 73h28l14 10-14 10h-28l9-10-9-10Z" />
+  <path fill="url(#signal)" d="M104 101h28l14 10-14 10h-28l9-10-9-10Z" />
+</svg>
