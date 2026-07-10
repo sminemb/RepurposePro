@@ -102,7 +102,7 @@ FAILED
 
 | Slice | User Outcome | Status | Start Date | Start Time | End Date | End Time | Current Task | Progress | Blocker |
 |---|---|---|---|---|---|---|---|---:|---|
-| VS0 | Repo boots and core infrastructure is ready | NOT_STARTED | — | — | — | — | — | 0% | — |
+| VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS2 | User can create a project and upload a validated video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -121,16 +121,16 @@ FAILED
 ## 5. Current Agent State
 
 ```text
-Current Slice: Brand identity support (explicit user request; outside product vertical slices)
-Current Task: BRAND-001 — Generate RepurposePro brandkit overview board
+Current Slice: VS0 — Repo boots and core infrastructure is ready
+Current Task: None
 Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: BRAND-001 — Generate RepurposePro brandkit overview board
-Next Recommended Task: VS0-T1 — Create monorepo with web, api, worker, db, shared, config packages
+Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
+Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Last Updated Date: 2026-07-10
-Last Updated Time: 12:36
+Last Updated Time: 13:55
 Last Updated By: Codex
 ```
 
@@ -149,36 +149,36 @@ This slice is foundational and is the only intentionally infrastructure-heavy sl
 | Field | Value |
 |---|---|
 | Slice ID | VS0 |
-| Status | NOT_STARTED |
-| Start Date | — |
-| Start Time | — |
-| End Date | — |
-| End Time | — |
-| Progress | 0% |
+| Status | COMPLETED |
+| Start Date | 2026-07-10 |
+| Start Time | 13:24 |
+| End Date | 2026-07-10 |
+| End Time | 13:55 |
+| Progress | 100% |
 | Dependency | None |
 
 ## Tasks
 
 | Task ID | Vertical Task | Layers Touched | Status | Start Date | Start Time | End Date | End Time | Verification |
 |---|---|---|---|---|---|---|---|---|
-| VS0-T1 | Create monorepo with web, api, worker, db, shared, config packages | Repo | NOT_STARTED | — | — | — | — | — |
-| VS0-T2 | Boot Next.js + Tailwind CSS v4 + shadcn/ui | Web | NOT_STARTED | — | — | — | — | — |
-| VS0-T3 | Boot NestJS API with config validation and logging | API | NOT_STARTED | — | — | — | — | — |
-| VS0-T4 | Boot worker process and verify startup | Worker | NOT_STARTED | — | — | — | — | — |
-| VS0-T5 | Configure PostgreSQL + Drizzle and run first migration | DB | NOT_STARTED | — | — | — | — | — |
-| VS0-T6 | Configure Redis and verify connectivity from API and worker | API + Worker | NOT_STARTED | — | — | — | — | — |
-| VS0-T7 | Add lint, typecheck, test scripts, and startup docs | Repo | NOT_STARTED | — | — | — | — | — |
+| VS0-T1 | Create monorepo with web, api, worker, db, shared, config packages | Repo | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Seven-project pnpm workspace installs from a frozen lockfile. |
+| VS0-T2 | Boot Next.js + Tailwind CSS v4 + shadcn/ui | Web | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Next.js production build and headless visual check passed. |
+| VS0-T3 | Boot NestJS API with config validation and logging | API | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | API booted; live and ready endpoints returned HTTP 200 with request IDs. |
+| VS0-T4 | Boot worker process and verify startup | Worker | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Non-HTTP worker emitted structured worker.ready with both dependencies up. |
+| VS0-T5 | Configure PostgreSQL + Drizzle and run first migration | DB | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Baseline migration applied twice; only Drizzle's migration table exists. |
+| VS0-T6 | Configure Redis and verify connectivity from API and worker | API + Worker | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Compose health check and Node PING verification passed. |
+| VS0-T7 | Add lint, typecheck, test scripts, and startup docs | Repo | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Frozen install and full pnpm ci:check passed. |
 
 ## Slice Acceptance Criteria
 
-- [ ] `apps/web` starts.
-- [ ] `apps/api` starts.
-- [ ] `apps/worker` starts.
-- [ ] PostgreSQL connection succeeds.
-- [ ] Redis connection succeeds.
-- [ ] Tailwind CSS v4 tokens render correctly.
-- [ ] Typecheck passes.
-- [ ] Lint passes.
+- [x] `apps/web` starts.
+- [x] `apps/api` starts.
+- [x] `apps/worker` starts.
+- [x] PostgreSQL connection succeeds.
+- [x] Redis connection succeeds.
+- [x] Tailwind CSS v4 tokens render correctly.
+- [x] Typecheck passes.
+- [x] Lint passes.
 
 ---
 
@@ -879,6 +879,90 @@ Intentional Deviations:
 Notes:
 - The explicit user request authorizes this static identity artifact despite brand-kit product functionality being deferred from the MVP.
 
+### VS0 — Bootable Monorepo Foundation
+
+Status: COMPLETED
+Start Date: 2026-07-10
+Start Time: 13:24
+End Date: 2026-07-10
+End Time: 13:55
+
+User Outcome:
+- A developer can install one pnpm workspace and start the branded Next.js app, versioned NestJS API, non-HTTP NestJS worker, PostgreSQL, and Redis.
+- The API and worker validate configuration, prove both infrastructure connections, use structured logs, and shut down cleanly.
+
+Layers Touched:
+- Repository and developer tooling
+- Web
+- API
+- Worker
+- PostgreSQL and Drizzle
+- Redis and Docker Compose
+- Tests and documentation
+
+Files Changed:
+- Root workspace/configuration: package.json, pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig.base.json, eslint.config.mjs, vitest.config.ts, prettier.config.mjs, .npmrc, .nvmrc, .gitignore, .prettierignore, and .env.example.
+- Runtime/documentation: compose.yaml, README.md, scripts/check-infrastructure.ts, and docs/progress-tracker.md.
+- Web: apps/web App Router, Tailwind v4 theme, shadcn configuration/primitives, branded smoke page, and package configuration.
+- API: apps/api bootstrap, Pino logging, PostgreSQL/Redis services, health endpoints, tests, and package configuration.
+- Worker: apps/worker standalone bootstrap, structured logging, infrastructure lifecycle service, and package configuration.
+- Shared packages: packages/config, packages/db, packages/shared, and the VS0 Drizzle migration baseline.
+
+Commands Run:
+- Read AGENTS.md and the relevant project, tracker, build, architecture, library, environment, schema, API, code-standard, and UI documentation.
+- Used Context7 to verify current Next.js 16, NestJS 11, Tailwind CSS v4, and Drizzle conventions.
+- pnpm install / pnpm install --frozen-lockfile
+- pnpm dlx shadcn@4.13.0 init and shadcn add button card badge
+- pnpm format / pnpm format:check
+- pnpm build:packages / pnpm lint / pnpm typecheck / pnpm test / pnpm build / pnpm ci:check
+- docker compose config --quiet / pnpm infra:up / pnpm infra:status / pnpm infra:check / pnpm infra:down
+- pnpm db:migrate twice
+- Queried PostgreSQL catalog tables from the container.
+- Started web, API, and worker as hidden background processes and probed all public URLs.
+- Captured and inspected a 1440×1000 headless Chrome screenshot.
+- git diff --check / git status --short
+
+Verification:
+- PASS: `pnpm install --frozen-lockfile` completed for all seven workspace projects.
+- PASS: `pnpm ci:check` completed formatting, ESLint, strict TypeScript, seven Vitest tests, and all production builds.
+- PASS: Web returned HTTP 200 and contained the RepurposePro page.
+- PASS: `/api/v1/health/live` returned the documented success envelope.
+- PASS: `/api/v1/health/ready` returned HTTP 200, PostgreSQL/Redis `up` checks, and an `x-request-id` header.
+- PASS: Worker emitted `worker.ready` with `database=up`, `redis=up`, and `service=worker`.
+- PASS: PostgreSQL and Redis Compose containers became healthy and the Node infrastructure check passed.
+- PASS: The no-op migration was safe to rerun; `drizzle.__drizzle_migrations` is the only non-system table.
+- PASS: Temporary application processes and Compose containers were stopped; named volumes were preserved.
+
+Tests:
+- 2 Vitest files passed; 7 tests passed.
+- Configuration tests cover valid parsing, number/boolean coercion, API/web scoping, missing variables, and secret-safe failures.
+- Health tests cover liveness, successful readiness, and the documented HTTP 503 response payload.
+- Production builds passed for web, API, worker, config, db, and shared packages.
+
+Assumptions:
+- Node 22.18 and pnpm 11.10 are the supported VS0 local toolchain.
+- PostgreSQL 17 and Redis 7.4 Docker images provide the local development services.
+- The root `.env` is the ignored local source of truth; app-specific loaders expose only their owned variables.
+- BullMQ and all later-slice integrations remain intentionally absent.
+
+Known Limitations:
+- No `docs/design/` directory exists, so the VS0 smoke page was verified against written UI tokens/rules and the existing brand board rather than a canonical screen reference.
+- The migration baseline intentionally contains no product tables.
+- VS0 provides foundational health and startup behavior only; authentication begins in VS1.
+
+Design Reference Used:
+- docs/ui-tokens.md, docs/ui-rules.md, docs/ui-registry.md, and docs/brand/repurposepro-brandkit.png.
+
+Design Match Notes:
+- Headless visual review confirmed charcoal surfaces, violet signal accents, subtle grid/glow treatment, Inter typography, consistent radii, restrained borders, and a responsive two-column foundation composition.
+
+Intentional Deviations:
+- None from the available written visual guidance. A side-by-side canonical design comparison was impossible because `docs/design/` is absent.
+
+Notes:
+- The initial shadcn run required the documented `@/*` import alias; the final configuration is the current `base-nova` preset with RepurposePro semantic tokens reapplied.
+- pnpm native-build approvals are explicitly scoped to NestJS, esbuild, and sharp in pnpm-workspace.yaml.
+
 ---
 
 ## 10. Files Changed Log
@@ -887,6 +971,12 @@ Notes:
 |---|---|---|---|
 | 2026-07-10 | BRAND-001 | docs/brand/repurposepro-brandkit.png | Added the generated RepurposePro 3×3 visual brandkit board. |
 | 2026-07-10 | BRAND-001 | docs/progress-tracker.md | Recorded task status, verification, limitations, and handoff. |
+| 2026-07-10 | VS0-T1/T7 | Root workspace and tooling files | Added the pnpm workspace, locked dependencies, strict TypeScript, ESLint, Vitest, Prettier, environment example, and root scripts. |
+| 2026-07-10 | VS0-T2 | apps/web | Added the Next.js 16 App Router app, Tailwind v4 tokens, current shadcn primitives, and branded smoke page. |
+| 2026-07-10 | VS0-T3 | apps/api | Added the NestJS API, Pino request logging, dependency lifecycle services, and health contracts/tests. |
+| 2026-07-10 | VS0-T4 | apps/worker | Added the standalone NestJS worker and structured infrastructure readiness lifecycle. |
+| 2026-07-10 | VS0-T5/T6 | packages/config, packages/db, packages/shared, compose.yaml | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services. |
+| 2026-07-10 | VS0-T7 | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff. |
 
 ---
 
@@ -898,6 +988,13 @@ Notes:
 | 2026-07-10 | BRAND-001 | High-detail visual inspection | PASS — layout, mark consistency, palette, typography, and text verified. |
 | 2026-07-10 | BRAND-001 | PowerShell image metadata and SHA-256 validation | PASS — 1448×1086, 4:3, 24-bit RGB, valid PNG. |
 | 2026-07-10 | BRAND-001 | git status --short | PASS — only tracker and new docs/brand asset are changed. |
+| 2026-07-10 | VS0 | pnpm install --frozen-lockfile | PASS — all seven workspace projects installed from the committed lockfile. |
+| 2026-07-10 | VS0 | pnpm ci:check | PASS — formatting, lint, typecheck, 7 tests, and all builds passed. |
+| 2026-07-10 | VS0-T5/T6 | docker compose config/up/status + pnpm infra:check | PASS — PostgreSQL and Redis became healthy and responded to Node probes. |
+| 2026-07-10 | VS0-T5 | pnpm db:migrate twice + PostgreSQL catalog query | PASS — repeat-safe baseline; only Drizzle migration history exists. |
+| 2026-07-10 | VS0-T2/T4 | Production process startup and HTTP/log probes | PASS — web/API returned 200 and worker emitted worker.ready. |
+| 2026-07-10 | VS0-T2 | Headless Chrome screenshot and high-detail inspection | PASS — Tailwind v4 tokens and shadcn primitives render in the documented visual system. |
+| 2026-07-10 | VS0 | pnpm infra:down + git diff --check | PASS — services stopped with volumes preserved and no whitespace errors. |
 
 Useful commands may include:
 
@@ -926,7 +1023,10 @@ ffmpeg ...
 
 | Date | Time | Decision | Reason | Affected Slice | Files Affected |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| 2026-07-10 | 13:24 | Use pnpm workspaces without Turborepo and Docker Compose for local PostgreSQL/Redis. | Matches the approved plan and keeps the VS0 developer path minimal and reproducible. | VS0 | Root workspace files, compose.yaml |
+| 2026-07-10 | 13:30 | Keep the VS0 migration as a no-op baseline. | Product tables must be introduced only by the slice that needs them. | VS0, VS1+ | packages/db/drizzle |
+| 2026-07-10 | 13:36 | Use shadcn's current base-nova preset, then replace generated theme values with canonical RepurposePro tokens. | Preserves current primitive infrastructure without changing the documented visual system. | VS0 UI | apps/web |
+| 2026-07-10 | 13:40 | Pin TypeScript 6.0.3 instead of the newer TypeScript 7 release. | Current typescript-eslint 8 supports TypeScript versions below 6.1; 6.0.3 is the newest compatible release. | VS0 tooling | package manifests, lockfile |
 
 Record decisions such as:
 
@@ -944,7 +1044,9 @@ Record decisions such as:
 
 | Date | Time | Slice | Task ID | Failure | Root Cause | Fix | Preventive Action |
 |---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — |
+| 2026-07-10 | 13:34 | VS0 | VS0-T2 | Initial shadcn initialization rejected the web scaffold. | The required `@/*` import alias was not yet declared. | Added the TypeScript paths alias and reran initialization successfully. | Keep the alias in the committed Next.js tsconfig. |
+| 2026-07-10 | 13:38 | VS0 | VS0-T1 | Initial pnpm install stopped on ignored native builds. | pnpm 11 requires explicit per-package build approval. | Added `allowBuilds` for NestJS, esbuild, and sharp and reran the install. | Commit the build policy in pnpm-workspace.yaml. |
+| 2026-07-10 | 13:42 | VS0 | VS0-T7 | Initial compiler/lint passes found TypeScript 6 deprecations and unregistered lint-only files. | Legacy module resolution, inherited declaration maps, and ESLint project-service scope needed current configuration. | Moved to Node16 resolution, corrected app overrides, and registered lint-only files. | Full frozen-lockfile `pnpm ci:check` now covers these configurations. |
 
 ---
 
@@ -955,14 +1057,17 @@ The coding agent must update this before ending a session.
 ```text
 Current Slice: VS0 — Repo boots and core infrastructure is ready
 Current Task: None
-Current Status: NOT_STARTED
+Current Status: COMPLETED
 
-Last Completed Task: BRAND-001 — Generate RepurposePro brandkit overview board
-Next Recommended Task: VS0-T1 — Create monorepo with web, api, worker, db, shared, config packages
+Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
+Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Uncommitted Changes:
+- New root pnpm/tooling/environment/Compose/README files
+- New apps/web, apps/api, and apps/worker workspaces
+- New packages/config, packages/db, and packages/shared workspaces
+- scripts/check-infrastructure.ts
 - docs/progress-tracker.md
-- docs/brand/repurposepro-brandkit.png
 
 Known Failing Tests:
 - None
@@ -971,15 +1076,20 @@ Known Blockers:
 - None
 
 Important Context:
-- The user explicitly requested and received a static brandkit artifact. This does not implement the deferred in-product BrandKitEditor feature.
-- No docs/design/ folder is present. BRAND-001 used ui-tokens.md, ui-rules.md, ui-registry.md, project-overview.md, and the linked Brandkit skill as visual sources.
-- The RP logo is a concept direction and should receive trademark/conflict review before commercial registration.
+- VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
+- Docker containers are stopped, but the named PostgreSQL and Redis volumes are preserved.
+- A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
+- The Drizzle baseline creates only `drizzle.__drizzle_migrations`; no product tables exist yet.
+- No docs/design/ folder exists. The VS0 smoke page follows written UI guidance and the brand board.
+- Better Auth, BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage are intentionally absent until their documented slices.
 
 Required Commands Before Continuing:
-- None
+- pnpm infra:up
+- pnpm db:migrate
+- pnpm dev
 
 Last Updated Date: 2026-07-10
-Last Updated Time: 12:36
+Last Updated Time: 13:55
 Last Updated By: Codex
 ```
 

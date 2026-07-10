@@ -1,0 +1,48 @@
+{
+  "name": "repurposepro",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22.18.0 <23",
+    "pnpm": ">=11.10.0 <12"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present run build",
+    "build:packages": "pnpm --filter @repurposepro/shared --filter @repurposepro/config --filter @repurposepro/db -r run build",
+    "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "db:generate": "pnpm --filter @repurposepro/db run db:generate",
+    "db:migrate": "pnpm --filter @repurposepro/db run db:migrate",
+    "dev": "pnpm run build:packages && pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run dev",
+    "dev:api": "pnpm run build:packages && pnpm --filter @repurposepro/api run dev",
+    "dev:web": "pnpm run build:packages && pnpm --filter @repurposepro/web run dev",
+    "dev:worker": "pnpm run build:packages && pnpm --filter @repurposepro/worker run dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:check": "pnpm run build:packages && tsx scripts/check-infrastructure.ts",
+    "infra:down": "docker compose down",
+    "infra:status": "docker compose ps",
+    "infra:up": "docker compose up -d --wait",
+    "lint": "eslint .",
+    "prelint": "pnpm run build:packages",
+    "pretest": "pnpm run build:packages",
+    "start": "pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run start",
+    "test": "vitest run",
+    "typecheck": "pnpm run build:packages && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.2.10",
+    "@repurposepro/config": "workspace:*",
+    "@repurposepro/db": "workspace:*",
+    "@types/node": "26.1.1",
+    "eslint": "10.6.0",
+    "globals": "17.7.0",
+    "ioredis": "5.11.1",
+    "prettier": "3.9.5",
+    "tsx": "4.23.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.63.0",
+    "vitest": "4.1.10"
+  }
+}
