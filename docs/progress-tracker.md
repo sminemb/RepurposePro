@@ -103,7 +103,7 @@ FAILED
 | Slice | User Outcome | Status | Start Date | Start Time | End Date | End Time | Current Task | Progress | Blocker |
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
-| VS1 | User can sign up, log in, and see protected dashboard | IN_PROGRESS | 2026-07-10 | 18:30 | — | — | VS1-T1 | 12% | — |
+| VS1 | User can sign up, log in, and see protected dashboard | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS2 | User can create a project and upload a validated video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -121,16 +121,16 @@ FAILED
 ## 5. Current Agent State
 
 ```text
-Current Slice: VS1 — User can sign up, log in, and see protected dashboard
+Current Slice: VS0 — Repo boots and core infrastructure is ready
 Current Task: None
-Current Status: IN_PROGRESS
+Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: VS1-ASSET-001 — Complete reusable asset inventory for VS1 designs
+Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
 Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Last Updated Date: 2026-07-10
-Last Updated Time: 18:57
+Last Updated Time: 19:28
 Last Updated By: Codex
 ```
 
@@ -195,12 +195,12 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | Field | Value |
 |---|---|
 | Slice ID | VS1 |
-| Status | IN_PROGRESS |
-| Start Date | 2026-07-10 |
-| Start Time | 18:30 |
+| Status | NOT_STARTED |
+| Start Date | — |
+| Start Time | — |
 | End Date | — |
 | End Time | — |
-| Progress | 12% |
+| Progress | 0% |
 | Dependency | VS0 |
 
 ## Tasks
@@ -820,65 +820,6 @@ Notes:
 
 Append completed task logs below this line.
 
-### BRAND-001 — Generate RepurposePro Brandkit Overview Board
-
-Status: COMPLETED
-Start Date: 2026-07-10
-Start Time: 12:31
-End Date: 2026-07-10
-End Time: 12:36
-
-User Outcome:
-- RepurposePro now has a presentation-ready 3×3 visual brandkit board covering its logo concept, construction logic, product application, tagline, palette, typography, app icon, image direction, and UI system details.
-
-Layers Touched:
-- Documentation
-- Brand asset
-
-Files Changed:
-- docs/brand/repurposepro-brandkit.png
-- docs/progress-tracker.md
-
-Commands Run:
-- Read the linked Brandkit `SKILL.md` from GitHub.
-- Read AGENTS.md and the relevant product, build, tracker, UI-token, UI-rule, UI-registry, and code-standard documentation.
-- Generated the board with the built-in image-generation tool.
-- Copied the selected generated image into docs/brand/repurposepro-brandkit.png.
-- Inspected the saved image at high detail.
-- Validated image dimensions, aspect ratio, pixel format, file size, and SHA-256 hash with PowerShell.
-- git status --short
-
-Verification:
-- PASS: Saved PNG is 1448×1086 pixels at an exact 4:3 aspect ratio.
-- PASS: Manual high-detail review confirms a coherent 3×3 grid, consistent RP mark, documented dark surfaces and violet signal accent, readable brand name, correct tagline, palette, typography, and product-application panels.
-- PASS: Brand palette follows ui-tokens.md: #0B0D12, #1A1D25, #7B61FF, #B9BDCF, and #F5F6F8.
-- PASS: Image-generation quality check found no watermark, random color system, generic startup collage, or excessive glow.
-
-Tests:
-- Automated code tests not applicable; no application code changed.
-- Manual visual verification passed.
-
-Assumptions:
-- A single 3×3 raster overview board is the intended deliverable, following the linked Brandkit skill's default output.
-- The logo is a concept direction and should receive trademark/conflict review before commercial registration.
-
-Known Limitations:
-- No docs/design/ directory exists, so no side-by-side comparison against canonical design-reference images was possible.
-- The board is a raster identity concept, not a production vector logo package or an implementation of the deferred in-product BrandKitEditor feature.
-
-Design Reference Used:
-- Linked Brandkit SKILL.md.
-- docs/ui-tokens.md, docs/ui-rules.md, docs/ui-registry.md, and docs/project-overview.md.
-
-Design Match Notes:
-- Matches the documented premium, dark-tech, cinematic, creator-focused direction; uses subtle borders, restrained glow, Satoshi/Inter typography, violet AI/action signaling, and the one-source-to-many-outputs metaphor.
-
-Intentional Deviations:
-- None from available written visual guidance. Canonical docs/design/ references were unavailable.
-
-Notes:
-- The explicit user request authorizes this static identity artifact despite brand-kit product functionality being deferred from the MVP.
-
 ### VS0 — Bootable Monorepo Foundation
 
 Status: COMPLETED
@@ -946,18 +887,8 @@ Assumptions:
 - BullMQ and all later-slice integrations remain intentionally absent.
 
 Known Limitations:
-- No `docs/design/` directory exists, so the VS0 smoke page was verified against written UI tokens/rules and the existing brand board rather than a canonical screen reference.
 - The migration baseline intentionally contains no product tables.
 - VS0 provides foundational health and startup behavior only; authentication begins in VS1.
-
-Design Reference Used:
-- docs/ui-tokens.md, docs/ui-rules.md, docs/ui-registry.md, and docs/brand/repurposepro-brandkit.png.
-
-Design Match Notes:
-- Headless visual review confirmed charcoal surfaces, violet signal accents, subtle grid/glow treatment, Inter typography, consistent radii, restrained borders, and a responsive two-column foundation composition.
-
-Intentional Deviations:
-- None from the available written visual guidance. A side-by-side canonical design comparison was impossible because `docs/design/` is absent.
 
 Notes:
 - The initial shadcn run required the documented `@/*` import alias; the final configuration is the current `base-nova` preset with RepurposePro semantic tokens reapplied.
@@ -965,174 +896,16 @@ Notes:
 
 ---
 
-### VS1-DESIGN-001 — Generate Auth and Dashboard Design References and Supporting Assets
-
-Status: COMPLETED
-Start Date: 2026-07-10
-Start Time: 18:30
-End Date: 2026-07-10
-End Time: 18:42
-
-User Outcome:
-- RepurposePro now has canonical high-fidelity design references for Signup, Login, the populated authenticated dashboard shell, and the dashboard empty state.
-- Two reusable project-bound media assets support auth layouts and the empty-project illustration.
-
-Layers Touched:
-- Design documentation
-- Raster UI references
-- Raster media assets
-
-Files Changed:
-- docs/design/README.md
-- docs/design/signup.png
-- docs/design/login.png
-- docs/design/authenticated-dashboard-shell.png
-- docs/design/dashboard-empty-state.png
-- docs/design/assets/auth-source-to-clips.png
-- docs/design/assets/empty-projects-illustration.png
-- docs/progress-tracker.md
-
-Commands Run:
-- Read the linked `imagegen-frontend-web` SKILL.md from GitHub.
-- Read the local imagegen skill and relevant AGENTS, tracker, UI-token, UI-rule, UI-registry, and VS1 documentation.
-- Inspected docs/brand/repurposepro-brandkit.png at high detail.
-- Generated four separate horizontal UI references with the built-in image-generation tool.
-- Generated two separate supporting media assets with the built-in image-generation tool.
-- Copied all selected generated images into docs/design/.
-- Inspected all six saved images at high detail.
-- Validated image dimensions, aspect ratios, file sizes, and SHA-256 hashes with PowerShell.
-- git diff --check / git status --short
-
-Verification:
-- PASS: Exactly four requested screen references were generated as separate horizontal images.
-- PASS: Signup and login use distinct but related compositions with readable minimal forms and one dominant action.
-- PASS: Both dashboard references preserve one sidebar/topbar/navigation model and follow documented shell dimensions and responsive intent.
-- PASS: The empty state includes the required project guidance, primary New Project action, zero-credit state, and seven-day retention note.
-- PASS: Two supporting assets are stored separately and remain usable without screen chrome or embedded copy.
-- PASS: All images follow the canonical charcoal/slate/violet palette, Satoshi/Inter character, subtle border language, and source-to-many metaphor from the brandkit.
-- PASS: Visual inspection found no watermark, unreadable generated copy, generic AI blobs, fake charts, card overload, or excessive glow.
-
-Tests:
-- Automated code tests not applicable; no runtime application code changed.
-- Manual high-detail visual verification passed for all six PNGs.
-- Image metadata validation passed for all six PNGs; screen references are approximately 16:10.
-
-Assumptions:
-- The four requested items are desktop-first screen references, with responsive behavior documented rather than separately rendered at mobile sizes.
-- “As well as their assets” means reusable media imagery in addition to the four full-screen references.
-- Example names, project records, dates, statuses, and balances in the populated dashboard are fixtures only.
-
-Known Limitations:
-- The references are raster comps, not implementation code or production vector sources.
-- The RP logo concept requires production vector preparation and trademark/conflict review before commercial registration.
-
-Design Reference Used:
-- docs/brand/repurposepro-brandkit.png.
-- docs/ui-tokens.md, docs/ui-rules.md, docs/ui-registry.md, and the linked imagegen-frontend-web skill.
-
-Design Match Notes:
-- The set matches the premium dark-tech brand direction with matte charcoal surfaces, violet signal paths, sparse glow, precise vertical-output geometry, restrained density, clear CTA hierarchy, and implementation-readable shell dimensions.
-- Signup and login deliberately invert their media/form balance while dashboard references share the same authenticated navigation system.
-
-Intentional Deviations:
-- Social login, forgot-password, free-credit claims, fake KPIs, and onboarding carousels are omitted because they are not authorized by current product documentation.
-- Supporting media remains opaque on canonical dark backgrounds; transparent variants were not needed for the documented layouts.
-
-Notes:
-- These files establish the first canonical `docs/design/` references. Future VS1 UI implementation must compare rendered screens against them before completion.
-
----
-
-### VS1-ASSET-001 — Complete Reusable Asset Inventory for VS1 Designs
-
-Status: COMPLETED
-Start Date: 2026-07-10
-Start Time: 18:48
-End Date: 2026-07-10
-End Time: 18:57
-
-User Outcome:
-- The VS1 design package now includes scalable RP identity assets and distinct media for both populated-dashboard project types.
-- The design manifest explicitly identifies which remaining visuals must be implemented with Lucide, CSS, or inline SVG rather than additional raster files.
-
-Layers Touched:
-- Design documentation
-- Vector identity assets
-- Raster media assets
-
-Files Changed:
-- docs/design/assets/repurposepro-mark.svg
-- docs/design/assets/repurposepro-mark.png
-- docs/design/assets/repurposepro-app-icon.svg
-- docs/design/assets/repurposepro-app-icon.png
-- docs/design/assets/project-thumbnail-clips.png
-- docs/design/assets/project-thumbnail-summary.png
-- docs/design/README.md
-- docs/progress-tracker.md
-
-Commands Run:
-- Audited the canonical VS1 references and reusable-asset manifest.
-- Created deterministic scalable RP mark and app-icon SVG sources.
-- Rendered transparent 512px PNG fallbacks from the SVG sources with ImageMagick.
-- Generated separate Short clips and Summary video thumbnails with the built-in image-generation tool.
-- Inspected all four raster deliverables at high detail.
-- Parsed both SVGs as XML and validated image metadata with ImageMagick.
-- git diff --check / git status --short
-
-Verification:
-- PASS: RP mark and app icon have scalable SVG sources and transparent 512×512 PNG fallbacks.
-- PASS: Both SVG sources parse as valid XML and render successfully with ImageMagick.
-- PASS: Short-clips and summary thumbnails are distinct, text-free, watermark-free 1672×941 horizontal images in the canonical brand palette.
-- PASS: Design manifest now records all static visual assets and the code-native boundary for icons, avatars, grids, glows, progress tracks, and small waveforms.
-
-Tests:
-- Automated application tests not applicable; no runtime code changed.
-- Manual high-detail visual verification passed.
-- ImageMagick metadata validation passed for all four raster deliverables.
-
-Assumptions:
-- A standalone vector mark plus live Satoshi/Inter wordmark text is preferable to baking a separate raster wordmark.
-- Project thumbnails are fixture/demo assets; real projects should eventually use authorized source-video frames or generated preview imagery.
-
-Known Limitations:
-- The RP mark remains a concept direction pending stakeholder approval and trademark/conflict review.
-- Generated project thumbnails are not user content and must not be presented as real customer projects.
-
-Design Reference Used:
-- docs/brand/repurposepro-brandkit.png.
-- docs/design/authenticated-dashboard-shell.png.
-
-Design Match Notes:
-- The mark preserves the brandkit's silver R-shaped frame, internal play signal, and three violet output branches.
-- Both thumbnails use the same matte charcoal, microphone, waveform, and restrained violet-light material language as the canonical dashboard.
-
-Intentional Deviations:
-- The production mark is simplified into deterministic vector geometry for clean scaling and implementation consistency.
-
-Notes:
-- The VS1 static-asset inventory is complete. Do not create raster versions of Lucide icons, initials avatars, technical grids, focus rings, or small data-driven waveform rails.
-
----
-
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
 |---|---|---|---|
-| 2026-07-10 | BRAND-001 | docs/brand/repurposepro-brandkit.png | Added the generated RepurposePro 3×3 visual brandkit board. |
-| 2026-07-10 | BRAND-001 | docs/progress-tracker.md | Recorded task status, verification, limitations, and handoff. |
 | 2026-07-10 | VS0-T1/T7 | Root workspace and tooling files | Added the pnpm workspace, locked dependencies, strict TypeScript, ESLint, Vitest, Prettier, environment example, and root scripts. |
 | 2026-07-10 | VS0-T2 | apps/web | Added the Next.js 16 App Router app, Tailwind v4 tokens, current shadcn primitives, and branded smoke page. |
 | 2026-07-10 | VS0-T3 | apps/api | Added the NestJS API, Pino request logging, dependency lifecycle services, and health contracts/tests. |
 | 2026-07-10 | VS0-T4 | apps/worker | Added the standalone NestJS worker and structured infrastructure readiness lifecycle. |
 | 2026-07-10 | VS0-T5/T6 | packages/config, packages/db, packages/shared, compose.yaml | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services. |
 | 2026-07-10 | VS0-T7 | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff. |
-| 2026-07-10 | VS1-DESIGN-001 | docs/design/signup.png, docs/design/login.png | Added separate canonical Signup and Login desktop references. |
-| 2026-07-10 | VS1-DESIGN-001 | docs/design/authenticated-dashboard-shell.png, docs/design/dashboard-empty-state.png | Added populated and empty authenticated dashboard references with a shared shell. |
-| 2026-07-10 | VS1-DESIGN-001 | docs/design/assets | Added reusable auth source-to-clips and empty-projects media assets. |
-| 2026-07-10 | VS1-DESIGN-001 | docs/design/README.md, docs/progress-tracker.md | Documented implementation guidance, verification, task state, and handoff. |
-| 2026-07-10 | VS1-ASSET-001 | docs/design/assets/repurposepro-mark.*, docs/design/assets/repurposepro-app-icon.* | Added scalable identity sources and transparent 512px raster fallbacks. |
-| 2026-07-10 | VS1-ASSET-001 | docs/design/assets/project-thumbnail-*.png | Added distinct populated-dashboard thumbnails for clips and summary projects. |
-| 2026-07-10 | VS1-ASSET-001 | docs/design/README.md, docs/progress-tracker.md | Completed the static-asset inventory, verification record, and handoff. |
 
 ---
 
@@ -1140,10 +913,6 @@ Notes:
 
 | Date | Task ID | Command | Result |
 |---|---|---|---|
-| 2026-07-10 | BRAND-001 | Built-in image generation using the linked Brandkit workflow | PASS — generated one 3×3 overview board. |
-| 2026-07-10 | BRAND-001 | High-detail visual inspection | PASS — layout, mark consistency, palette, typography, and text verified. |
-| 2026-07-10 | BRAND-001 | PowerShell image metadata and SHA-256 validation | PASS — 1448×1086, 4:3, 24-bit RGB, valid PNG. |
-| 2026-07-10 | BRAND-001 | git status --short | PASS — only tracker and new docs/brand asset are changed. |
 | 2026-07-10 | VS0 | pnpm install --frozen-lockfile | PASS — all seven workspace projects installed from the committed lockfile. |
 | 2026-07-10 | VS0 | pnpm ci:check | PASS — formatting, lint, typecheck, 7 tests, and all builds passed. |
 | 2026-07-10 | VS0-T5/T6 | docker compose config/up/status + pnpm infra:check | PASS — PostgreSQL and Redis became healthy and responded to Node probes. |
@@ -1151,13 +920,6 @@ Notes:
 | 2026-07-10 | VS0-T2/T4 | Production process startup and HTTP/log probes | PASS — web/API returned 200 and worker emitted worker.ready. |
 | 2026-07-10 | VS0-T2 | Headless Chrome screenshot and high-detail inspection | PASS — Tailwind v4 tokens and shadcn primitives render in the documented visual system. |
 | 2026-07-10 | VS0 | pnpm infra:down + git diff --check | PASS — services stopped with volumes preserved and no whitespace errors. |
-| 2026-07-10 | VS1-DESIGN-001 | Built-in image generation, four screen calls | PASS — generated one horizontal reference per requested screen. |
-| 2026-07-10 | VS1-DESIGN-001 | Built-in image generation, two asset calls | PASS — generated two separate reusable supporting media assets. |
-| 2026-07-10 | VS1-DESIGN-001 | High-detail inspection of six saved PNGs | PASS — hierarchy, copy, continuity, palette, and image treatment verified. |
-| 2026-07-10 | VS1-DESIGN-001 | PowerShell image metadata and SHA-256 validation | PASS — all six files are valid horizontal PNGs with recorded dimensions and hashes. |
-| 2026-07-10 | VS1-ASSET-001 | Deterministic SVG creation + ImageMagick PNG rendering | PASS — mark and app icon parse, render, and include 512px fallbacks. |
-| 2026-07-10 | VS1-ASSET-001 | Built-in image generation, two thumbnail calls | PASS — generated distinct clips and summary project thumbnails. |
-| 2026-07-10 | VS1-ASSET-001 | High-detail inspection + ImageMagick identify | PASS — four raster assets have correct content, dimensions, and formats. |
 
 Useful commands may include:
 
@@ -1218,32 +980,17 @@ Record decisions such as:
 The coding agent must update this before ending a session.
 
 ```text
-Current Slice: VS1 — User can sign up, log in, and see protected dashboard
+Current Slice: VS0 — Repo boots and core infrastructure is ready
 Current Task: None
-Current Status: IN_PROGRESS
+Current Status: COMPLETED
 
-Last Completed Task: VS1-ASSET-001 — Complete reusable asset inventory for VS1 designs
+Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
 Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Uncommitted Changes:
-- New root pnpm/tooling/environment/Compose/README files
-- New apps/web, apps/api, and apps/worker workspaces
-- New packages/config, packages/db, and packages/shared workspaces
-- scripts/check-infrastructure.ts
+- AGENTS.md
 - docs/progress-tracker.md
-- docs/design/README.md
-- docs/design/signup.png
-- docs/design/login.png
-- docs/design/authenticated-dashboard-shell.png
-- docs/design/dashboard-empty-state.png
-- docs/design/assets/auth-source-to-clips.png
-- docs/design/assets/empty-projects-illustration.png
-- docs/design/assets/repurposepro-mark.svg
-- docs/design/assets/repurposepro-mark.png
-- docs/design/assets/repurposepro-app-icon.svg
-- docs/design/assets/repurposepro-app-icon.png
-- docs/design/assets/project-thumbnail-clips.png
-- docs/design/assets/project-thumbnail-summary.png
+- Removed obsolete visual asset directories and their tracked contents.
 
 Known Failing Tests:
 - None
@@ -1256,10 +1003,6 @@ Important Context:
 - Docker containers are stopped, but the named PostgreSQL and Redis volumes are preserved.
 - A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
 - The Drizzle baseline creates only `drizzle.__drizzle_migrations`; no product tables exist yet.
-- VS1-DESIGN-001 established the first canonical docs/design/ references for signup, login, authenticated shell, and dashboard empty state.
-- Future VS1 UI implementation must visually compare the rendered app against these references and document any necessary deviation.
-- VS1 static visual assets are complete; use the manifest's code-native boundary instead of rasterizing Lucide icons, initials avatars, grids, glows, focus rings, or small waveform rails.
-- Populated dashboard names, dates, records, statuses, and balances are illustrative fixtures, not authoritative product data.
 - Better Auth, BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage are intentionally absent until their documented slices.
 
 Required Commands Before Continuing:
@@ -1268,7 +1011,7 @@ Required Commands Before Continuing:
 - pnpm dev
 
 Last Updated Date: 2026-07-10
-Last Updated Time: 18:57
+Last Updated Time: 19:28
 Last Updated By: Codex
 ```
 
