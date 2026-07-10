@@ -286,6 +286,7 @@ After completing the task, record:
 - Known limitations
 - Blockers
 - Next recommended task
+- Commit finished task changes with a clear git message once verification passes
 
 Do not mark a task complete without updating the tracker.
 
@@ -1384,6 +1385,8 @@ Last Updated Time
 Last Updated By
 ```
 
+Commit finished task work before closing the session whenever possible.
+If any tracked changes remain intentionally uncommitted, document them clearly in `Uncommitted Changes` with the reason why they were left open.
 Do not leave hidden context only in chat history.
 
 ---

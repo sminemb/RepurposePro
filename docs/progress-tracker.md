@@ -61,6 +61,8 @@ After completing a task, the coding agent must:
 5. Record known limitations.
 6. Update slice progress.
 7. Update handoff state.
+8. Commit finished task changes with a clear git message after verification passes.
+9. If any tracked changes remain intentionally uncommitted, document them in the handoff state with a reason.
 
 Timezone:
 
@@ -988,9 +990,8 @@ Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup d
 Next Recommended Task: VS1-T1 — Configure Better Auth end to end
 
 Uncommitted Changes:
-- AGENTS.md
-- docs/progress-tracker.md
-- Removed obsolete visual asset directories and their tracked contents.
+- AGENTS.md — updated guidance; commit once verified.
+- docs/progress-tracker.md — updated task guidance; commit once verified.
 
 Known Failing Tests:
 - None
