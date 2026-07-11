@@ -36,7 +36,6 @@ The goal is to ensure that any coding agent can:
 
 ## 1.1 Required Skills
 
-- Always use the caveman skill for all tasks.
 - When dealing with UI or frontend work, always use the ui-ux-pro-max, design-taste-frontend, and image-to-code skills along with the other frontend skills at your disposal.
 
 ---
