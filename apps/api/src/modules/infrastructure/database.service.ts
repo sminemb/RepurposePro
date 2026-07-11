@@ -31,4 +31,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   public async checkConnection(): Promise<void> {
     await checkDatabaseConnection(this.client);
   }
+
+  public get database(): DatabaseClient {
+    return this.client;
+  }
 }

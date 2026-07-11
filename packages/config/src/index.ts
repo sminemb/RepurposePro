@@ -47,6 +47,18 @@ const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   API_PORT: z.coerce.number().int().min(1).max(65_535),
 });
 
+const authEnvironmentSchema = z.object({
+  APP_ENV: appEnvironmentSchema,
+  APP_URL: z.string().url(),
+  BETTER_AUTH_SECRET: z.string().min(1),
+  BETTER_AUTH_TRUSTED_ORIGINS: z.string().optional(),
+  BETTER_AUTH_URL: z.string().url(),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
+  DATABASE_SSL: booleanFromEnvironment,
+  DATABASE_URL: z.string().min(1),
+  NODE_ENV: nodeEnvironmentSchema,
+});
+
 export interface WebConfig {
   readonly apiUrl: string;
   readonly appEnv: z.infer<typeof appEnvironmentSchema>;
@@ -68,6 +80,18 @@ export interface ServerConfig {
 export interface ApiConfig extends ServerConfig {
   readonly apiPort: number;
   readonly appUrl: string;
+}
+
+export interface AuthConfig {
+  readonly appEnv: z.infer<typeof appEnvironmentSchema>;
+  readonly appUrl: string;
+  readonly databasePoolMax: number;
+  readonly databaseSsl: boolean;
+  readonly databaseUrl: string;
+  readonly nodeEnv: z.infer<typeof nodeEnvironmentSchema>;
+  readonly secret: string;
+  readonly trustedOrigins: readonly string[];
+  readonly url: string;
 }
 
 export type WorkerConfig = ServerConfig;
@@ -145,6 +169,25 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     logPretty: parsed.LOG_PRETTY,
     nodeEnv: parsed.NODE_ENV,
     redisUrl: parsed.REDIS_URL,
+  };
+}
+
+export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
+  const parsed = parseEnvironment(authEnvironmentSchema, "authentication", environment);
+  const trustedOrigins = parsed.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0) ?? [parsed.APP_URL];
+
+  return {
+    appEnv: parsed.APP_ENV,
+    appUrl: parsed.APP_URL,
+    databasePoolMax: parsed.DATABASE_POOL_MAX,
+    databaseSsl: parsed.DATABASE_SSL,
+    databaseUrl: parsed.DATABASE_URL,
+    nodeEnv: parsed.NODE_ENV,
+    secret: parsed.BETTER_AUTH_SECRET,
+    trustedOrigins,
+    url: parsed.BETTER_AUTH_URL,
   };
 }
 

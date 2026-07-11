@@ -105,7 +105,7 @@ FAILED
 | Slice | User Outcome | Status | Start Date | Start Time | End Date | End Time | Current Task | Progress | Blocker |
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
-| VS1 | User can sign up, log in, and see protected dashboard | NOT_STARTED | — | — | — | — | — | 0% | — |
+| VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -123,16 +123,16 @@ FAILED
 ## 5. Current Agent State
 
 ```text
-Current Slice: VS0 — Repo boots and core infrastructure is ready
+Current Slice: VS1 — User can sign up, log in, and see protected dashboard
 Current Task: None
 Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
-Next Recommended Task: VS1-T1 — Configure Better Auth end to end
+Last Completed Task: VS1-T5 — Enforce protected API access and test unauthorized requests
+Next Recommended Task: VS2-T1 — Create project schema and CRUD with ownership checks
 
-Last Updated Date: 2026-07-10
-Last Updated Time: 19:28
+Last Updated Date: 2026-07-12
+Last Updated Time: 06:39
 Last Updated By: Codex
 ```
 
@@ -197,32 +197,32 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | Field | Value |
 |---|---|
 | Slice ID | VS1 |
-| Status | NOT_STARTED |
-| Start Date | — |
-| Start Time | — |
-| End Date | — |
-| End Time | — |
-| Progress | 0% |
+| Status | COMPLETED |
+| Start Date | 2026-07-11 |
+| Start Time | 10:53 |
+| End Date | 2026-07-11 |
+| End Time | 21:34 |
+| Progress | 100% |
 | Dependency | VS0 |
 
 ## Tasks
 
 | Task ID | Vertical Task | Layers Touched | Status | Start Date | Start Time | End Date | End Time | Verification |
 |---|---|---|---|---|---|---|---|---|
-| VS1-T1 | Configure Better Auth end to end | Web + API + DB | NOT_STARTED | — | — | — | — | — |
-| VS1-T2 | Build signup flow and persist user session | Web + API + DB | NOT_STARTED | — | — | — | — | — |
-| VS1-T3 | Build login/logout flow | Web + API | NOT_STARTED | — | — | — | — | — |
-| VS1-T4 | Build protected dashboard shell | Web | NOT_STARTED | — | — | — | — | — |
-| VS1-T5 | Enforce protected API access and test unauthorized requests | API + Tests | NOT_STARTED | — | — | — | — | — |
+| VS1-T1 | Configure Better Auth end to end | Web + API + DB | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Better Auth migrations applied to PostgreSQL; web/API booted with healthy dependencies. |
+| VS1-T2 | Build signup flow and persist user session | Web + API + DB | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Signup returned 200 and the persisted user rendered on a subsequent dashboard request. |
+| VS1-T3 | Build login/logout flow | Web + API | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Login and logout returned 200; logout redirected protected dashboard access to `/login`. |
+| VS1-T4 | Build protected dashboard shell | Web | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Dashboard protection and brand-aligned login UI verified at runtime; mobile overflow fixed. |
+| VS1-T5 | Enforce protected API access and test unauthorized requests | API + Tests | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass. |
 
 ## Slice Acceptance Criteria
 
-- [ ] User can sign up.
-- [ ] User can log in.
-- [ ] User can log out.
-- [ ] Dashboard is protected.
-- [ ] API rejects unauthenticated access.
-- [ ] Session persists correctly.
+- [x] User can sign up.
+- [x] User can log in.
+- [x] User can log out.
+- [x] Dashboard is protected.
+- [x] API rejects unauthenticated access.
+- [x] Session persists correctly.
 
 ---
 
@@ -896,6 +896,48 @@ Notes:
 - The initial shadcn run required the documented `@/*` import alias; the final configuration is the current `base-nova` preset with RepurposePro semantic tokens reapplied.
 - pnpm native-build approvals are explicitly scoped to NestJS, esbuild, and sharp in pnpm-workspace.yaml.
 
+### VS1 — Authentication and Protected Dashboard
+
+Status: COMPLETED
+Start Date: 2026-07-11
+Start Time: 10:53
+End Date: 2026-07-11
+End Time: 21:34
+
+User Outcome:
+- A user can create an email/password account, sign in, retain a database-backed session, open the protected dashboard, call an authenticated API endpoint, and sign out.
+
+Layers Touched:
+- Web, API, PostgreSQL/Drizzle, configuration, tests, and documentation.
+
+Files Changed:
+- Web auth routes, client/server auth helpers, login/signup/dashboard pages, shared app branding, input primitive, and package configuration.
+- API auth module, session guard/controller tests, CORS bootstrap, infrastructure database access, and package configuration.
+- Better Auth environment validation, PostgreSQL auth schema/migrations, ESLint test registration, lockfile, and progress tracker.
+
+Commands Run:
+- Context7 Better Auth documentation lookup; `pnpm db:generate`; `pnpm infra:up`; `pnpm db:migrate`; local web/API/worker startup.
+- HTTP signup, dashboard, authenticated/unauthenticated API, logout, redirect, login, and session-persistence probes.
+- Headless Chrome desktop/mobile captures; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `git diff --check`.
+
+Verification:
+- PASS: PostgreSQL and Redis became healthy and both auth migrations applied successfully.
+- PASS: signup, login, logout, protected dashboard, and persisted sessions returned the expected 200/redirect behavior.
+- PASS: `GET /api/v1/auth/session` returned user data with the cookie and the stable 401 envelope without it.
+- PASS: desktop login visual matches the dark graphite/violet brand direction; a mobile overflow found during capture was corrected with an explicit single-column grid.
+- PASS: formatting, full ESLint, strict TypeScript, 11 Vitest tests, and all production builds pass.
+
+Tests:
+- 3 Vitest files passed; 11 tests passed.
+- Auth guard tests cover accepted sessions, request identity attachment, and the documented unauthorized error envelope.
+
+Known Limitations:
+- Chrome DevTools MCP is not configured. A post-fix mobile recapture was blocked by the environment's GUI approval quota after a transient blank capture; the responsive CSS fix typechecks and builds.
+- Email verification, password reset, OAuth providers, and Arcjet auth rate limiting remain outside VS1 scope.
+
+Notes:
+- Better Auth's Drizzle adapter requires the explicit schema plus `usePlural: true`; runtime verification caught and fixed the missing adapter mapping.
+
 ---
 
 ## 10. Files Changed Log
@@ -908,6 +950,7 @@ Notes:
 | 2026-07-10 | VS0-T4 | apps/worker | Added the standalone NestJS worker and structured infrastructure readiness lifecycle. |
 | 2026-07-10 | VS0-T5/T6 | packages/config, packages/db, packages/shared, compose.yaml | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services. |
 | 2026-07-10 | VS0-T7 | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff. |
+| 2026-07-11 | VS1-T1/T5 | apps/web, apps/api, packages/config, packages/db | Added Better Auth, database-backed sessions, protected web/API routes, auth UI, migrations, tests, and runtime verification. |
 
 ---
 
@@ -922,6 +965,9 @@ Notes:
 | 2026-07-10 | VS0-T2/T4 | Production process startup and HTTP/log probes | PASS — web/API returned 200 and worker emitted worker.ready. |
 | 2026-07-10 | VS0-T2 | Headless Chrome screenshot and high-detail inspection | PASS — Tailwind v4 tokens and shadcn primitives render in the documented visual system. |
 | 2026-07-10 | VS0 | pnpm infra:down + git diff --check | PASS — services stopped with volumes preserved and no whitespace errors. |
+| 2026-07-11 | VS1 | pnpm db:migrate + live auth HTTP probes | PASS — migrations applied; signup/login/logout/session persistence and protected API behavior verified. |
+| 2026-07-11 | VS1 | pnpm format:check / lint / typecheck / test / build | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed. |
+| 2026-07-11 | VS1-T4 | Headless Chrome desktop/mobile inspection | PASS — desktop brand treatment verified; mobile overflow found and fixed. |
 
 Useful commands may include:
 
@@ -982,36 +1028,41 @@ Record decisions such as:
 The coding agent must update this before ending a session.
 
 ```text
-Current Slice: VS0 — Repo boots and core infrastructure is ready
+Current Slice: VS1 — User can sign up, log in, and see protected dashboard
 Current Task: None
 Current Status: COMPLETED
 
-Last Completed Task: VS0-T7 — Add lint, typecheck, test scripts, and startup docs
-Next Recommended Task: VS1-T1 — Configure Better Auth end to end
+Last Completed Task: VS1-T5 — Enforce protected API access and test unauthorized requests
+Next Recommended Task: VS2-T1 — Create project schema and CRUD with ownership checks
 
 Uncommitted Changes:
-- None
+- `docs/repurposepro-brandkit.png` is deleted in the working tree but was not changed by VS1 and is intentionally excluded from the VS1 commit.
+- `apps/web/next-env.d.ts` has a line-ending-only working-tree status and is intentionally excluded from the VS1 commit.
 
 Known Failing Tests:
-- None
+- None. `pnpm test` passes 11 tests.
 
 Known Blockers:
-- None
+- None.
 
 Important Context:
 - VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
-- Docker containers are stopped, but the named PostgreSQL and Redis volumes are preserved.
+- VS1 started 2026-07-11 10:53 Asia/Manila. Better Auth will use Next.js route handling and PostgreSQL/Drizzle sessions; Nest will validate those session cookies for protected API endpoints.
+- VS1 adds Better Auth 1.6.23 with the Drizzle PostgreSQL adapter, email/password forms at `/signup` and `/login`, `/dashboard` session protection, and `GET /api/v1/auth/session` guarded by the same session cookie.
+- `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 11 tests pass.
+- Live PostgreSQL verification passed for signup, login, logout, persisted sessions, dashboard protection, authenticated API access, and the unauthenticated 401 envelope.
+- Local web and API development processes and verification containers are stopped. PostgreSQL and Redis volumes are preserved.
 - A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
-- The Drizzle baseline creates only `drizzle.__drizzle_migrations`; no product tables exist yet.
-- Better Auth, BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage are intentionally absent until their documented slices.
+- The database now contains Better Auth's `users`, `sessions`, `accounts`, and `verifications` tables plus Drizzle migration history.
+- BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage remain intentionally absent until their documented slices.
 
 Required Commands Before Continuing:
 - pnpm infra:up
-- pnpm db:migrate
 - pnpm dev
+- Begin VS2-T1 only after marking it started in this tracker.
 
-Last Updated Date: 2026-07-10
-Last Updated Time: 19:28
+Last Updated Date: 2026-07-12
+Last Updated Time: 06:39
 Last Updated By: Codex
 ```
 

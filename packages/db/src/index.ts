@@ -2,6 +2,10 @@ import { sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import * as schema from "./schema/index.js";
+
+export { schema };
+
 export interface DatabaseClientOptions {
   readonly connectionString: string;
   readonly poolMax: number;
@@ -9,7 +13,7 @@ export interface DatabaseClientOptions {
 }
 
 export interface DatabaseClient {
-  readonly db: NodePgDatabase;
+  readonly db: NodePgDatabase<typeof schema>;
   readonly pool: Pool;
 }
 
@@ -21,7 +25,7 @@ export function createDatabaseClient(options: DatabaseClientOptions): DatabaseCl
   });
 
   return {
-    db: drizzle({ client: pool }),
+    db: drizzle({ client: pool, schema }),
     pool,
   };
 }

@@ -12,6 +12,10 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api/v1");
+  app.enableCors({
+    credentials: true,
+    origin: config.appUrl,
+  });
   app.enableShutdownHooks();
 
   await app.listen(config.apiPort, "0.0.0.0");

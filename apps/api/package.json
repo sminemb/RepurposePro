@@ -9,12 +9,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.23",
     "@nestjs/common": "11.1.28",
     "@nestjs/core": "11.1.28",
     "@nestjs/platform-express": "11.1.28",
     "@repurposepro/config": "workspace:*",
     "@repurposepro/db": "workspace:*",
     "@repurposepro/shared": "workspace:*",
+    "better-auth": "^1.6.23",
     "ioredis": "5.11.1",
     "nestjs-pino": "4.6.1",
     "pino": "10.3.1",

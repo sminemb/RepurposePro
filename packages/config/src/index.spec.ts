@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { ConfigValidationError, loadApiConfig, loadWebConfig, loadWorkerConfig } from "./index";
+import {
+  ConfigValidationError,
+  loadApiConfig,
+  loadAuthConfig,
+  loadWebConfig,
+  loadWorkerConfig,
+} from "./index";
 
 const validServerEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: "development",
@@ -46,6 +52,30 @@ describe("configuration loaders", () => {
 
     expect(config.apiPort).toBe(4000);
     expect(config.appUrl).toBe("http://localhost:3000");
+  });
+
+  it("loads Better Auth settings without exposing them in web configuration", () => {
+    const config = loadAuthConfig({
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      BETTER_AUTH_SECRET: "auth-secret-for-tests-only",
+      BETTER_AUTH_TRUSTED_ORIGINS: "http://localhost:3000,https://app.example.com",
+      BETTER_AUTH_URL: "http://localhost:3000",
+    });
+
+    expect(config.trustedOrigins).toEqual(["http://localhost:3000", "https://app.example.com"]);
+    expect(config.url).toBe("http://localhost:3000");
+  });
+
+  it("rejects an empty Better Auth secret without disclosing its value", () => {
+    const environment = {
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      BETTER_AUTH_SECRET: "",
+      BETTER_AUTH_URL: "http://localhost:3000",
+    };
+
+    expect(() => loadAuthConfig(environment)).toThrow(ConfigValidationError);
   });
 
   it("keeps the web configuration public-only", () => {

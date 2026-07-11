@@ -25,7 +25,6 @@ const foundations = [
 
 export default function HomePage() {
   const config = loadWebConfig();
-  const readinessUrl = `${config.apiUrl}/health/ready`;
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden px-5 py-6 sm:px-8 lg:px-12">
@@ -66,9 +65,9 @@ export default function HomePage() {
               <Button
                 size="lg"
                 className="h-11 bg-rp-primary px-5 text-rp-text shadow-rp-glow hover:bg-rp-primary-hover"
-                render={<a href={readinessUrl} target="_blank" rel="noreferrer" />}
+                render={<a href="/signup" />}
               >
-                Check API readiness <ArrowUpRight data-icon="inline-end" />
+                Create your workspace <ArrowUpRight data-icon="inline-end" />
               </Button>
               <span className="text-sm text-rp-text-disabled">Environment: {config.appEnv}</span>
             </div>
