@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
+import { getAuthResponseError } from "./auth-form-errors";
+import type { AuthFormError } from "./auth-form-errors";
+
 interface AuthFormProps {
   readonly mode: "login" | "signup";
 }
@@ -18,12 +21,7 @@ function formValue(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
-interface FormError {
-  readonly message: string;
-  readonly title: string;
-}
-
-function validateForm(formData: FormData, isSignUp: boolean): FormError | null {
+function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | null {
   if (isSignUp && !formValue(formData, "name").trim()) {
     return {
       title: "Your name is missing",
@@ -66,7 +64,7 @@ function validateForm(formData: FormData, isSignUp: boolean): FormError | null {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<FormError | null>(null);
+  const [error, setError] = useState<AuthFormError | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isSignUp = mode === "signup";
@@ -96,17 +94,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       return;
     }
     if (response.error) {
-      setError(
-        isSignUp
-          ? {
-              title: "We could not create your account",
-              message: "Check your details or sign in instead.",
-            }
-          : {
-              title: "Those details do not match",
-              message: "Check your email and password, then try again.",
-            },
-      );
+      setError(getAuthResponseError(response.error, isSignUp));
       setIsPending(false);
       return;
     }

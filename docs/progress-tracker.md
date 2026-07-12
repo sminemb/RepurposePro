@@ -124,7 +124,7 @@ FAILED
 
 ```text
 Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: None
+Current Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
 Current Status: COMPLETED
 Current Branch: main
 
@@ -132,7 +132,7 @@ Last Completed Task: VS1-UI-R2 — Fix mobile sign-out surface, dashboard icon o
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 13:54
+Last Updated Time: 14:26
 Last Updated By: Codex
 ```
 
@@ -216,6 +216,7 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | VS1-T5 | Enforce protected API access and test unauthorized requests | API + Tests | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass. |
 | VS1-UI-R1 | Rework landing, authentication, and protected dashboard UI | Web + Design + Docs | COMPLETED | 2026-07-12 | 06:53 | 2026-07-12 | 12:54 | `pnpm ci:check` and browser verification pass across landing, auth, dashboard, responsive navigation, protected redirect, and sign-out. |
 | VS1-UI-R2 | Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback | Web + Design + Docs | COMPLETED | 2026-07-12 | 13:33 | 2026-07-12 | 13:50 | Static checks pass; 390px browser verification confirms custom inline auth feedback and no native validation bubble. |
+| VS1-UI-R3 | Fix mobile drawer stacking and duplicate-account sign-up feedback | Web + Tests + Docs | COMPLETED | 2026-07-12 | 14:00 | 2026-07-12 | 14:26 | `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; focused browser sign-up check reached the auth error state but local DB infrastructure was unavailable. |
 | VS1-UI-R1-DT | Configure Chrome DevTools MCP for browser verification | Tooling + Docs | COMPLETED | 2026-07-12 | 11:53 | 2026-07-12 | 11:56 | Added workspace `.mcp.json` with official isolated launcher; JSON and CLI flag validation passed. |
 | VS1-UI-R1-DTG | Move Chrome DevTools MCP to global Codex config | Tooling + Docs | COMPLETED | 2026-07-12 | 12:02 | 2026-07-12 | 12:04 | Removed repo config; added global `chrome-devtools` server without `--isolated`. |
 
@@ -1185,21 +1186,22 @@ The coding agent must update this before ending a session.
 
 ```text
 Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: None
+Current Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
 Current Status: COMPLETED
 
-Last Completed Task: VS1-UI-R1 — Rework landing, authentication, and protected dashboard UI
+Last Completed Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Uncommitted Changes:
-- None. VS1-UI-R2 changes are included in the task commit after verification.
-- Changed `apps/web/components/app/mobile-navigation.tsx`, `apps/web/app/dashboard/page.tsx`, `apps/web/features/auth/components/auth-form.tsx`, and this tracker.
+- None after the VS1-UI-R3 commit.
+- Changed `apps/web/components/app/mobile-navigation.tsx`, `apps/web/features/auth/components/auth-form.tsx`, `apps/web/features/auth/components/auth-form-errors.ts`, `apps/web/features/auth/components/auth-form-errors.spec.ts`, and this tracker.
 
 Known Failing Tests:
-- None. `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` pass; 11 tests pass.
+- None for the changed code. `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 13 tests pass. Focused Prettier checks for all changed files pass.
 
 Known Blockers:
-- None.
+- Full authenticated browser recapture was unavailable because the local Docker command is not usable in this environment (`docker compose` is unavailable and PostgreSQL was not reachable). Static portal rendering, typecheck, and production build pass.
+- The repository-wide `pnpm ci:check` stops at its existing generated `apps/web/next-env.d.ts` formatting warning; the file is intentionally not edited.
 
 Important Context:
 - VS1-UI-R1 started 2026-07-12 06:53 Asia/Manila. Scope is a visual overhaul of `/`, `/login`, `/signup`, and `/dashboard` without auth, API, or database contract changes.
@@ -1210,10 +1212,11 @@ Important Context:
 - VS1-UI-R2 keeps the mobile drawer footer inside a clipped, scroll-safe panel; its sign-out action is full-width and icon-led. The dashboard empty state uses a single contained clapperboard glyph. Auth forms use `noValidate` plus structured inline validation feedback to avoid the native browser warning bubble.
 - The 390px browser pass verified the custom auth error state and a clean console. An authenticated drawer recapture was intentionally skipped to avoid creating persistent test account data; the prior VS1 browser pass covers that flow and the source change is statically verified.
 - Chrome DevTools MCP is declared globally in `C:\Users\Andrey\.codex\config.toml`; restart/reload Codex to load it. Config disables usage statistics and has no `--isolated` flag.
+- VS1-UI-R3 portals the mobile drawer to `document.body`, escaping the sticky topbar stacking context so the backdrop and panel stay above dashboard content. Better Auth `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL` now renders an explicit existing-account message, covered by focused unit tests.
 - VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
 - VS1 started 2026-07-11 10:53 Asia/Manila. Better Auth will use Next.js route handling and PostgreSQL/Drizzle sessions; Nest will validate those session cookies for protected API endpoints.
 - VS1 adds Better Auth 1.6.23 with the Drizzle PostgreSQL adapter, email/password forms at `/signup` and `/login`, `/dashboard` session protection, and `GET /api/v1/auth/session` guarded by the same session cookie.
-- `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 11 tests pass.
+- Focused changed-file formatting, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 13 tests pass.
 - Live PostgreSQL verification passed for signup, login, logout, persisted sessions, dashboard protection, authenticated API access, and the unauthenticated 401 envelope.
 - Local web/API development process was stopped after verification. PostgreSQL and Redis containers remain running because Docker teardown was denied by the local Docker permission boundary; volumes are preserved.
 - A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
@@ -1224,10 +1227,10 @@ Required Commands Before Continuing:
 - `pnpm infra:up` if a live authenticated flow is needed.
 - `pnpm dev` to run the web/API/worker workspace.
 - `pnpm ci:check` before merging the next slice.
-- Begin VS2-T1 after the VS1-UI-R2 commit.
+- Begin VS2-T1 after the VS1-UI-R3 commit.
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 13:12
+Last Updated Time: 14:26
 Last Updated By: Codex
 ```
 
