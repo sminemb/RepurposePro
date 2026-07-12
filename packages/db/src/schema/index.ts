@@ -1,4 +1,32 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+
+export const projectOutputTypeEnum = pgEnum("project_output_type", ["clips", "summary"]);
+
+export const projectStatusEnum = pgEnum("project_status", [
+  "draft",
+  "uploaded",
+  "waiting_for_payment",
+  "queued",
+  "transcribing",
+  "analyzing",
+  "preview_ready",
+  "waiting_for_user_edits",
+  "rendering",
+  "completed",
+  "failed",
+  "refunded",
+  "deleted",
+]);
 
 export const users = pgTable(
   "users",
@@ -67,4 +95,27 @@ export const verifications = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("verifications_identifier_idx").on(table.identifier)],
+);
+
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    outputType: projectOutputTypeEnum("output_type").notNull(),
+    status: projectStatusEnum("status").default("draft").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("projects_user_created_at_idx").on(table.userId, table.createdAt),
+    index("projects_user_status_idx").on(table.userId, table.status),
+  ],
 );

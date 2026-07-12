@@ -5,6 +5,7 @@ import { LoggerModule } from "nestjs-pino";
 import { AuthModule } from "./modules/auth/auth.module";
 import { HealthModule } from "./modules/health/health.module";
 import { InfrastructureModule } from "./modules/infrastructure/infrastructure.module";
+import { ProjectsModule } from "./modules/projects/projects.module";
 import { createLoggingConfig } from "./logging.config";
 
 const config = loadApiConfig();
@@ -15,6 +16,7 @@ const config = loadApiConfig();
     InfrastructureModule,
     HealthModule,
     AuthModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}

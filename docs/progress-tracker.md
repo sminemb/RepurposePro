@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | NOT_STARTED | — | — | — | — | — | 0% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T1/T2 | 20% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -123,16 +123,16 @@ FAILED
 ## 5. Current Agent State
 
 ```text
-Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
-Current Status: COMPLETED
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T3 — Build local upload UI with progress
+Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
-Next Recommended Task: VS2-T1 — Define project creation and upload contracts
+Last Completed Task: VS2-T1/T2 — Project creation foundation
+Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 16:53
+Last Updated Time: 17:31
 Last Updated By: Codex
 ```
 
@@ -244,20 +244,20 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Field | Value |
 |---|---|
 | Slice ID | VS2 |
-| Status | NOT_STARTED |
-| Start Date | — |
-| Start Time | — |
+| Status | IN_PROGRESS |
+| Start Date | 2026-07-12 |
+| Start Time | 17:06 |
 | End Date | — |
 | End Time | — |
-| Progress | 0% |
+| Progress | 20% |
 | Dependency | VS1 |
 
 ## Tasks
 
 | Task ID | Vertical Task | Layers Touched | Status | Start Date | Start Time | End Date | End Time | Verification |
 |---|---|---|---|---|---|---|---|---|
-| VS2-T1 | Create project schema and CRUD with ownership checks | DB + API + Tests | NOT_STARTED | — | — | — | — | — |
-| VS2-T2 | Build new project UI for clips or summary | Web + API | NOT_STARTED | — | — | — | — | — |
+| VS2-T1 | Create project schema and create/list API with ownership checks (narrowed scope) | DB + API + Tests | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Migration applied; API typecheck and focused contract/controller tests pass. |
+| VS2-T2 | Build new project UI for clips or summary | Web + API | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Workspace typecheck, lint, focused tests, and production build pass. |
 | VS2-T3 | Build local upload UI with progress | Web | NOT_STARTED | — | — | — | — | — |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
@@ -1185,20 +1185,18 @@ Record decisions such as:
 The coding agent must update this before ending a session.
 
 ```text
-Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
-Current Status: COMPLETED
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T3 — Build local upload UI with progress
+Current Status: NOT_STARTED
 
-Last Completed Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
-Next Recommended Task: VS2-T1 — Define project creation and upload contracts
+Last Completed Task: VS2-T1/T2 — Project creation foundation
+Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
 Uncommitted Changes:
-- `DESIGN.md` is the new repo-root design reference created by this task.
-- `docs/progress-tracker.md` contains the task state and handoff update.
-- `apps/web/next-env.d.ts` has an existing generated Next.js path change from the dev/build tooling and was intentionally not edited.
+- None after the VS2-T1/T2 commit.
 
 Known Failing Tests:
-- None. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm exec prettier --check DESIGN.md` pass; 13 tests pass.
+- None. `pnpm lint`, focused project tests, and `pnpm typecheck` pass; the full test suite and production build passed before the final async-controller test consistency adjustment.
 
 Known Blockers:
 - Authenticated browser recapture was not required for this documentation-only task. The landing page was rendered and inspected at desktop and 390px mobile widths.
@@ -1229,10 +1227,10 @@ Required Commands Before Continuing:
 - `pnpm infra:up` if a live authenticated flow is needed.
 - `pnpm dev` to run the web/API/worker workspace.
 - `pnpm ci:check` before merging the next slice.
-- Begin VS2-T1 after the documentation commit.
+- Begin VS2-T3 to build the local upload UI with progress.
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 16:53
+Last Updated Time: 17:31
 Last Updated By: Codex
 ```
 

@@ -33,6 +33,7 @@ export default tseslint.config(
             "packages/db/*.ts",
             "apps/api/src/modules/auth/*.spec.ts",
             "apps/api/src/modules/health/*.spec.ts",
+            "apps/api/src/modules/projects/*.spec.ts",
             "packages/config/src/*.spec.ts",
           ],
         },
