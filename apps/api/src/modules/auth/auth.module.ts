@@ -9,6 +9,6 @@ import { AuthService } from "./auth.service";
   imports: [InfrastructureModule],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],
-  exports: [AuthGuard],
+  exports: [AuthGuard, AuthService],
 })
 export class AuthModule {}

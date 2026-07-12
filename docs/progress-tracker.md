@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T1/T2 | 20% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T3 | 20% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -128,11 +128,11 @@ Current Task: VS2-T3 — Build local upload UI with progress
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-T1/T2 — Project creation foundation
+Last Completed Task: VS2-R1 — Restore API startup after protected-project dependency-injection regression
 Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 17:31
+Last Updated Time: 18:03
 Last Updated By: Codex
 ```
 
@@ -258,6 +258,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 |---|---|---|---|---|---|---|---|---|
 | VS2-T1 | Create project schema and create/list API with ownership checks (narrowed scope) | DB + API + Tests | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Migration applied; API typecheck and focused contract/controller tests pass. |
 | VS2-T2 | Build new project UI for clips or summary | Web + API | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Workspace typecheck, lint, focused tests, and production build pass. |
+| VS2-R1 | Restore API startup after protected-project dependency-injection regression | API + Tests | COMPLETED | 2026-07-12 | 17:54 | 2026-07-12 | 18:03 | Exported `AuthService`, added a module-compilation regression test, and verified API liveness returns HTTP 200. |
 | VS2-T3 | Build local upload UI with progress | Web | NOT_STARTED | — | — | — | — | — |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
@@ -1085,6 +1086,49 @@ Known Limitations:
 
 ---
 
+### VS2-R1 — Restore API startup after protected-project dependency-injection regression
+
+Status: COMPLETED
+Start Date: 2026-07-12
+Start Time: 17:54
+End Date: 2026-07-12
+End Time: 18:03
+
+User Outcome:
+- `pnpm dev:api` now resolves the protected projects controller and starts the API successfully.
+
+Layers Touched:
+- API module dependency injection
+- API regression test
+- Typed lint configuration
+
+Files Changed:
+- `apps/api/src/modules/auth/auth.module.ts`
+- `apps/api/src/modules/projects/projects.module.spec.ts`
+- `eslint.config.mjs`
+- `docs/progress-tracker.md`
+
+Commands Run:
+- Added and ran the focused projects-module test before the fix; it reproduced Nest's missing `AuthService` dependency error.
+- `pnpm exec vitest run apps/api/src/modules/projects/projects.module.spec.ts`
+- `pnpm --filter @repurposepro/api run typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm --filter @repurposepro/api run build` plus a temporary API process and `GET /api/v1/health/live` probe
+- `pnpm format:check`
+- `git diff --check`
+
+Verification:
+- PASS: exporting `AuthService` from `AuthModule` lets the importing `ProjectsModule` resolve `AuthGuard`.
+- PASS: focused regression test passes after the fix.
+- PASS: API typecheck, workspace lint, and all 22 Vitest tests pass.
+- PASS: built API liveness endpoint returns HTTP 200 with `{ "data": { "service": "api", "status": "ok" } }`.
+
+Known Limitations:
+- Repository-wide `pnpm format:check` still reports pre-existing formatting issues in 11 unrelated files; no formatter was run to avoid unrelated edits.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1100,6 +1144,7 @@ Known Limitations:
 | 2026-07-12 | VS1-UI-R1-DT | .mcp.json, docs/progress-tracker.md | Configured official Chrome DevTools MCP with isolated profile and usage-statistics opt-out. |
 | 2026-07-12 | VS1-UI-R1-DTG | global Codex config, docs/progress-tracker.md | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode. |
 | 2026-07-12 | VS1-UI-R2 | apps/web auth/dashboard/navigation, docs/progress-tracker.md | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback. |
+| 2026-07-12 | VS2-R1 | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
 
 ---
 
@@ -1125,6 +1170,9 @@ Known Limitations:
 | 2026-07-12 | VS1-UI-R1-DTG | global config inspection + repo file check | PASS — global server configured without `--isolated`; project `.mcp.json` absent. |
 | 2026-07-12 | VS1-UI-R2 | `pnpm typecheck` / targeted ESLint / `pnpm lint` / `pnpm test` / `pnpm build` | PASS — strict types, ESLint, 11 tests, and all production builds passed. |
 | 2026-07-12 | VS1-UI-R2 | Chrome DevTools 390px auth validation check | PASS — custom inline alert rendered; native validation bubble absent; console clean. |
+
+| 2026-07-12 | VS2-R1 | focused module test / API typecheck / `pnpm lint` / `pnpm test` / API liveness probe | PASS — regression test reproduced then passed; API typecheck, lint, 22 tests, and HTTP 200 liveness pass. |
+| 2026-07-12 | VS2-R1 | `pnpm format:check` | KNOWN BASELINE FAILURE — Prettier reports 11 unrelated files; task files are not listed. |
 
 Useful commands may include:
 
@@ -1178,6 +1226,8 @@ Record decisions such as:
 | 2026-07-10 | 13:38 | VS0 | VS0-T1 | Initial pnpm install stopped on ignored native builds. | pnpm 11 requires explicit per-package build approval. | Added `allowBuilds` for NestJS, esbuild, and sharp and reran the install. | Commit the build policy in pnpm-workspace.yaml. |
 | 2026-07-10 | 13:42 | VS0 | VS0-T7 | Initial compiler/lint passes found TypeScript 6 deprecations and unregistered lint-only files. | Legacy module resolution, inherited declaration maps, and ESLint project-service scope needed current configuration. | Moved to Node16 resolution, corrected app overrides, and registered lint-only files. | Full frozen-lockfile `pnpm ci:check` now covers these configurations. |
 
+| 2026-07-12 | 17:55 | VS2 | VS2-R1 | API exited before binding its port when the protected projects controller was loaded. | `AuthModule` exported `AuthGuard` without its `AuthService` dependency. | Exported `AuthService` and added a module-compilation regression test. | The test now proves all dependencies for the reusable guard resolve in `ProjectsModule`. |
+
 ---
 
 ## 15. Handoff State
@@ -1189,18 +1239,17 @@ Current Slice: VS2 — User can create a project and upload a validated video
 Current Task: VS2-T3 — Build local upload UI with progress
 Current Status: NOT_STARTED
 
-Last Completed Task: VS2-T1/T2 — Project creation foundation
+Last Completed Task: VS2-R1 — Restore API startup after protected-project dependency-injection regression
 Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
 Uncommitted Changes:
-- None after the VS2-T1/T2 commit.
+- None after the VS2-R1 commit.
 
 Known Failing Tests:
-- None. `pnpm lint`, focused project tests, and `pnpm typecheck` pass; the full test suite and production build passed before the final async-controller test consistency adjustment.
+- None. API typecheck, workspace lint, the focused module test, and all 22 Vitest tests pass.
 
 Known Blockers:
-- Authenticated browser recapture was not required for this documentation-only task. The landing page was rendered and inspected at desktop and 390px mobile widths.
-- The repository-wide `pnpm ci:check` may still report the existing generated `apps/web/next-env.d.ts` formatting warning; the file is intentionally not edited.
+- `pnpm format:check` reports 11 pre-existing formatting issues in unrelated files; no formatter was run to avoid scope expansion.
 
 Important Context:
 - VS1-UI-R1 started 2026-07-12 06:53 Asia/Manila. Scope is a visual overhaul of `/`, `/login`, `/signup`, and `/dashboard` without auth, API, or database contract changes.
@@ -1222,15 +1271,16 @@ Important Context:
 - A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
 - The database now contains Better Auth's `users`, `sessions`, `accounts`, and `verifications` tables plus Drizzle migration history.
 - BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage remain intentionally absent until their documented slices.
+- VS2-R1 exports `AuthService` from `AuthModule` so importing modules can instantiate the exported `AuthGuard`; `projects.module.spec.ts` prevents this startup regression.
 
 Required Commands Before Continuing:
 - `pnpm infra:up` if a live authenticated flow is needed.
-- `pnpm dev` to run the web/API/worker workspace.
+- `pnpm dev:api` to run the repaired API alone, or `pnpm dev` to run the full workspace.
 - `pnpm ci:check` before merging the next slice.
 - Begin VS2-T3 to build the local upload UI with progress.
 
-Last Updated Date: 2026-07-12
-Last Updated Time: 17:31
+Last Updated Date: 2026-07-13
+Last Updated Time: 07:02
 Last Updated By: Codex
 ```
 

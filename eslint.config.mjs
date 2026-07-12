@@ -36,6 +36,7 @@ export default tseslint.config(
             "apps/api/src/modules/projects/*.spec.ts",
             "packages/config/src/*.spec.ts",
           ],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10,
         },
         tsconfigRootDir: import.meta.dirname,
       },
