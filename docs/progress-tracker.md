@@ -124,15 +124,15 @@ FAILED
 
 ```text
 Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
+Current Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
 Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: VS1-UI-R2 — Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback
+Last Completed Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 14:26
+Last Updated Time: 16:53
 Last Updated By: Codex
 ```
 
@@ -1186,22 +1186,23 @@ The coding agent must update this before ending a session.
 
 ```text
 Current Slice: VS1 — User can sign up, log in, and see protected dashboard
-Current Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
+Current Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
 Current Status: COMPLETED
 
-Last Completed Task: VS1-UI-R3 — Fix mobile drawer stacking and duplicate-account sign-up feedback
+Last Completed Task: DOCS-UI-DESIGN — Analyze current UI and generate repo-root DESIGN.md
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Uncommitted Changes:
-- None after the VS1-UI-R3 commit.
-- Changed `apps/web/components/app/mobile-navigation.tsx`, `apps/web/features/auth/components/auth-form.tsx`, `apps/web/features/auth/components/auth-form-errors.ts`, `apps/web/features/auth/components/auth-form-errors.spec.ts`, and this tracker.
+- `DESIGN.md` is the new repo-root design reference created by this task.
+- `docs/progress-tracker.md` contains the task state and handoff update.
+- `apps/web/next-env.d.ts` has an existing generated Next.js path change from the dev/build tooling and was intentionally not edited.
 
 Known Failing Tests:
-- None for the changed code. `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 13 tests pass. Focused Prettier checks for all changed files pass.
+- None. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm exec prettier --check DESIGN.md` pass; 13 tests pass.
 
 Known Blockers:
-- Full authenticated browser recapture was unavailable because the local Docker command is not usable in this environment (`docker compose` is unavailable and PostgreSQL was not reachable). Static portal rendering, typecheck, and production build pass.
-- The repository-wide `pnpm ci:check` stops at its existing generated `apps/web/next-env.d.ts` formatting warning; the file is intentionally not edited.
+- Authenticated browser recapture was not required for this documentation-only task. The landing page was rendered and inspected at desktop and 390px mobile widths.
+- The repository-wide `pnpm ci:check` may still report the existing generated `apps/web/next-env.d.ts` formatting warning; the file is intentionally not edited.
 
 Important Context:
 - VS1-UI-R1 started 2026-07-12 06:53 Asia/Manila. Scope is a visual overhaul of `/`, `/login`, `/signup`, and `/dashboard` without auth, API, or database contract changes.
@@ -1212,7 +1213,8 @@ Important Context:
 - VS1-UI-R2 keeps the mobile drawer footer inside a clipped, scroll-safe panel; its sign-out action is full-width and icon-led. The dashboard empty state uses a single contained clapperboard glyph. Auth forms use `noValidate` plus structured inline validation feedback to avoid the native browser warning bubble.
 - The 390px browser pass verified the custom auth error state and a clean console. An authenticated drawer recapture was intentionally skipped to avoid creating persistent test account data; the prior VS1 browser pass covers that flow and the source change is statically verified.
 - Chrome DevTools MCP is declared globally in `C:\Users\Andrey\.codex\config.toml`; restart/reload Codex to load it. Config disables usage statistics and has no `--isolated` flag.
-- VS1-UI-R3 portals the mobile drawer to `document.body`, escaping the sticky topbar stacking context so the backdrop and panel stay above dashboard content. Better Auth `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL` now renders an explicit existing-account message, covered by focused unit tests.
+- `DESIGN.md` documents the current dark/violet/cinematic visual language, page blueprints, responsive behavior, component ownership, accessibility rules, and the current font-source normalization note.
+- Local browser audit confirmed the landing page composition, responsive stacking, 9:16 media treatment, featured pricing card, and footer wrapping. The browser console had one existing Next.js image LCP warning and no runtime error.
 - VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
 - VS1 started 2026-07-11 10:53 Asia/Manila. Better Auth will use Next.js route handling and PostgreSQL/Drizzle sessions; Nest will validate those session cookies for protected API endpoints.
 - VS1 adds Better Auth 1.6.23 with the Drizzle PostgreSQL adapter, email/password forms at `/signup` and `/login`, `/dashboard` session protection, and `GET /api/v1/auth/session` guarded by the same session cookie.
@@ -1227,10 +1229,10 @@ Required Commands Before Continuing:
 - `pnpm infra:up` if a live authenticated flow is needed.
 - `pnpm dev` to run the web/API/worker workspace.
 - `pnpm ci:check` before merging the next slice.
-- Begin VS2-T1 after the VS1-UI-R3 commit.
+- Begin VS2-T1 after the documentation commit.
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 14:26
+Last Updated Time: 16:53
 Last Updated By: Codex
 ```
 
