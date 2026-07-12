@@ -128,11 +128,11 @@ Current Task: None
 Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: VS1-T5 — Enforce protected API access and test unauthorized requests
-Next Recommended Task: VS2-T1 — Create project schema and CRUD with ownership checks
+Last Completed Task: VS1-UI-R1 — Rework landing, authentication, and protected dashboard UI
+Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 06:39
+Last Updated Time: 12:54
 Last Updated By: Codex
 ```
 
@@ -214,6 +214,9 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | VS1-T3 | Build login/logout flow | Web + API | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Login and logout returned 200; logout redirected protected dashboard access to `/login`. |
 | VS1-T4 | Build protected dashboard shell | Web | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Dashboard protection and brand-aligned login UI verified at runtime; mobile overflow fixed. |
 | VS1-T5 | Enforce protected API access and test unauthorized requests | API + Tests | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass. |
+| VS1-UI-R1 | Rework landing, authentication, and protected dashboard UI | Web + Design + Docs | COMPLETED | 2026-07-12 | 06:53 | 2026-07-12 | 12:54 | `pnpm ci:check` and browser verification pass across landing, auth, dashboard, responsive navigation, protected redirect, and sign-out. |
+| VS1-UI-R1-DT | Configure Chrome DevTools MCP for browser verification | Tooling + Docs | COMPLETED | 2026-07-12 | 11:53 | 2026-07-12 | 11:56 | Added workspace `.mcp.json` with official isolated launcher; JSON and CLI flag validation passed. |
+| VS1-UI-R1-DTG | Move Chrome DevTools MCP to global Codex config | Tooling + Docs | COMPLETED | 2026-07-12 | 12:02 | 2026-07-12 | 12:04 | Removed repo config; added global `chrome-devtools` server without `--isolated`. |
 
 ## Slice Acceptance Criteria
 
@@ -932,11 +935,117 @@ Tests:
 - Auth guard tests cover accepted sessions, request identity attachment, and the documented unauthorized error envelope.
 
 Known Limitations:
-- Chrome DevTools MCP is not configured. A post-fix mobile recapture was blocked by the environment's GUI approval quota after a transient blank capture; the responsive CSS fix typechecks and builds.
+- Chrome DevTools MCP is now configured in the workspace with a stdio launcher for the official package. A post-fix mobile recapture may still require a local Chrome/Chromium binary or an already-running debuggable browser instance; the responsive CSS fix typechecks and builds.
 - Email verification, password reset, OAuth providers, and Arcjet auth rate limiting remain outside VS1 scope.
 
 Notes:
 - Better Auth's Drizzle adapter requires the explicit schema plus `usePlural: true`; runtime verification caught and fixed the missing adapter mapping.
+
+---
+
+### VS1-UI-R1 — Rework landing, authentication, and protected dashboard UI
+
+Status: COMPLETED
+Start Date: 2026-07-12
+Start Time: 06:53
+Implementation End Date: 2026-07-12
+Implementation End Time: 07:28
+
+User Outcome:
+- Visitors receive a creator-focused landing experience, users receive clearer login/signup forms, and authenticated users receive a responsive protected workspace shell.
+
+Files Changed:
+- Reworked `/`, `/login`, `/signup`, and `/dashboard` pages plus the shared brand mark and auth form.
+- Added marketing sections, authentication shell, app sidebar/topbar, page header, empty state, mobile navigation, and generated podcast media.
+- Added a server-post sign-out adapter at `/api/auth/sign-out` to preserve Better Auth session-cookie behavior with native forms.
+- Updated the UI registry and progress tracker.
+
+Commands Run:
+- `ui-ux-pro-max` design-system and UX searches; nine built-in image-generation reference calls plus one production media generation.
+- `pnpm exec prettier --write ...`; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm ci:check`; `git diff --check`.
+- `pnpm infra:up`; `pnpm db:migrate`; Chrome DevTools screenshots, accessibility snapshots, responsive overflow checks, and Lighthouse audit.
+
+Verification:
+- PASS: `pnpm ci:check` completes formatting, ESLint, strict TypeScript, all 11 Vitest tests, and all production builds.
+- PASS: route build output includes `/`, `/login`, `/signup`, `/dashboard`, and Better Auth API handling.
+- PASS: review found no API, database, dependency, or auth-contract changes; no secrets or fabricated customer data were introduced.
+- PASS: landing anchors and session-aware CTA labels; login/signup shells; password visibility; signup, login, session persistence, protected redirect, and server-post sign-out.
+- PASS: dashboard desktop/mobile screenshots; locked navigation `aria-disabled` semantics; mobile drawer Escape handling and focus return; no horizontal overflow at 375px, 768px, 1024px, or 1440px.
+- PASS: landing console clean and Lighthouse accessibility 100, SEO 100, agentic browsing 100; remaining best-practices failure is expected HTTP-on-localhost development mode.
+
+Known Limitations:
+- Billing checkout and project creation remain intentionally locked until VS2/VS3.
+
+---
+
+### VS1-UI-R1-DT — Configure Chrome DevTools MCP for browser verification
+
+Status: COMPLETED
+Start Date: 2026-07-12
+Start Time: 11:53
+End Date: 2026-07-12
+End Time: 11:58
+
+User Outcome:
+- Workspace now declares official Chrome DevTools MCP launcher for isolated browser testing.
+
+Files Changed:
+- Added `.mcp.json` with `npx -y chrome-devtools-mcp@latest --isolated --no-usage-statistics`.
+- Updated this tracker with setup and verification evidence.
+
+Commands Run:
+- Context7 resolved `/chromedevtools/chrome-devtools-mcp` and queried configuration, isolation, auto-connect, and Windows troubleshooting docs.
+- `Get-Content -Raw .mcp.json | ConvertFrom-Json`.
+- `npx --yes chrome-devtools-mcp@latest --help`.
+- `npx --yes chrome-devtools-mcp@latest --isolated --no-usage-statistics --help`.
+- `pnpm exec prettier --check .mcp.json docs/progress-tracker.md`.
+- Checked standard Windows Chrome install path.
+
+Verification:
+- PASS: `.mcp.json` parses as valid JSON.
+- PASS: Official package fetched successfully and CLI help returned.
+- PASS: `--isolated` and `--no-usage-statistics` are recognized by installed package.
+- PASS: Prettier check passes for config and tracker.
+- PASS: Chrome executable exists at `C:\Program Files\Google\Chrome\Application\chrome.exe`.
+
+Known Limitations:
+- MCP clients must restart or reload workspace configuration before newly added server becomes available.
+- Live page inspection remains pending VS1-UI-R1 browser verification.
+
+---
+
+### VS1-UI-R1-DTG — Move Chrome DevTools MCP to global Codex config
+
+Status: COMPLETED
+Start Date: 2026-07-12
+Start Time: 12:02
+End Date: 2026-07-12
+End Time: 12:04
+
+User Outcome:
+- Chrome DevTools MCP is configured globally for Codex; project no longer owns an `.mcp.json`.
+
+Files Changed:
+- Deleted project `.mcp.json`.
+- Updated global `C:\Users\Andrey\.codex\config.toml` with `chrome-devtools` MCP entry.
+- Updated this tracker.
+
+Commands Run:
+- Inspected global Codex config and confirmed no previous Chrome DevTools entry.
+- Added global stdio server using `npx -y chrome-devtools-mcp@latest --no-usage-statistics`.
+- Verified repo `.mcp.json` is absent.
+- Inspected global MCP entry with `rg`.
+- Ran `git diff --check`.
+
+Verification:
+- PASS: Global config contains `[mcp_servers.chrome-devtools]`.
+- PASS: Global args contain no `--isolated` flag.
+- PASS: Project `.mcp.json` no longer exists.
+- PASS: No whitespace errors; existing line-ending warnings only.
+
+Known Limitations:
+- Codex must restart/reload global config before new MCP server becomes available.
+- Live page inspection remains pending VS1-UI-R1 browser verification.
 
 ---
 
@@ -951,6 +1060,9 @@ Notes:
 | 2026-07-10 | VS0-T5/T6 | packages/config, packages/db, packages/shared, compose.yaml | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services. |
 | 2026-07-10 | VS0-T7 | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff. |
 | 2026-07-11 | VS1-T1/T5 | apps/web, apps/api, packages/config, packages/db | Added Better Auth, database-backed sessions, protected web/API routes, auth UI, migrations, tests, and runtime verification. |
+| 2026-07-12 | VS1-UI-R1 | apps/web, docs/ui-registry.md, docs/progress-tracker.md | Reworked the landing, auth, and protected dashboard UI; added shared shell components and generated creator media. |
+| 2026-07-12 | VS1-UI-R1-DT | .mcp.json, docs/progress-tracker.md | Configured official Chrome DevTools MCP with isolated profile and usage-statistics opt-out. |
+| 2026-07-12 | VS1-UI-R1-DTG | global Codex config, docs/progress-tracker.md | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode. |
 
 ---
 
@@ -968,6 +1080,12 @@ Notes:
 | 2026-07-11 | VS1 | pnpm db:migrate + live auth HTTP probes | PASS — migrations applied; signup/login/logout/session persistence and protected API behavior verified. |
 | 2026-07-11 | VS1 | pnpm format:check / lint / typecheck / test / build | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed. |
 | 2026-07-11 | VS1-T4 | Headless Chrome desktop/mobile inspection | PASS — desktop brand treatment verified; mobile overflow found and fixed. |
+| 2026-07-12 | VS1-UI-R1 | pnpm ci:check | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed. |
+| 2026-07-12 | VS1-UI-R1 | Chrome DevTools responsive + auth verification | PASS — landing, login, signup, dashboard, mobile drawer focus return, protected redirect, and sign-out verified; no console errors or horizontal overflow. |
+| 2026-07-12 | VS1-UI-R1 | Lighthouse desktop audit | PASS — accessibility 100, SEO 100, agentic browsing 100; HTTP-only best-practices finding is local-development expected. |
+| 2026-07-12 | VS1-UI-R1 | `git commit` | PASS — verified UI overhaul committed on `main`. |
+| 2026-07-12 | VS1-UI-R1-DT | `.mcp.json` parse + Chrome DevTools MCP CLI help | PASS — workspace config parses; official package and requested flags validated. |
+| 2026-07-12 | VS1-UI-R1-DTG | global config inspection + repo file check | PASS — global server configured without `--isolated`; project `.mcp.json` absent. |
 
 Useful commands may include:
 
@@ -1032,37 +1150,46 @@ Current Slice: VS1 — User can sign up, log in, and see protected dashboard
 Current Task: None
 Current Status: COMPLETED
 
-Last Completed Task: VS1-T5 — Enforce protected API access and test unauthorized requests
-Next Recommended Task: VS2-T1 — Create project schema and CRUD with ownership checks
+Last Completed Task: VS1-UI-R1 — Rework landing, authentication, and protected dashboard UI
+Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Uncommitted Changes:
-- `docs/repurposepro-brandkit.png` is deleted in the working tree but was not changed by VS1 and is intentionally excluded from the VS1 commit.
-- `apps/web/next-env.d.ts` has a line-ending-only working-tree status and is intentionally excluded from the VS1 commit.
+- None. Verified UI overhaul committed on `main` (`feat(web): overhaul landing and VS1 UI`).
+- Changed routes: `/`, `/login`, `/signup`, and `/dashboard`.
+- Added marketing sections, shared app shell components, auth shell, mobile navigation, and `apps/web/public/images/podcast-studio.png`.
 
 Known Failing Tests:
-- None. `pnpm test` passes 11 tests.
+- None. `pnpm ci:check` passes, including 11 tests and the production build.
 
 Known Blockers:
 - None.
 
 Important Context:
+- VS1-UI-R1 started 2026-07-12 06:53 Asia/Manila. Scope is a visual overhaul of `/`, `/login`, `/signup`, and `/dashboard` without auth, API, or database contract changes.
+- Nine separate design references and one project-bound podcast media asset were generated before implementation. The reference system uses charcoal surfaces, restrained violet accents, editorial media framing, and open layouts.
+- Landing now contains six creator-facing sections, session-aware calls to action, documented pricing, and no infrastructure-facing copy or fabricated proof.
+- Authentication retains Better Auth behavior while adding a split visual shell, password visibility, pending states, connection failure handling, and accessible errors.
+- Dashboard now uses `AppSidebar`, `AppTopbar`, `PageHeader`, `EmptyState`, and a focus-trapped mobile drawer. Future routes are visibly locked non-links.
+- Chrome DevTools MCP is declared globally in `C:\Users\Andrey\.codex\config.toml`; restart/reload Codex to load it. Config disables usage statistics and has no `--isolated` flag.
 - VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
 - VS1 started 2026-07-11 10:53 Asia/Manila. Better Auth will use Next.js route handling and PostgreSQL/Drizzle sessions; Nest will validate those session cookies for protected API endpoints.
 - VS1 adds Better Auth 1.6.23 with the Drizzle PostgreSQL adapter, email/password forms at `/signup` and `/login`, `/dashboard` session protection, and `GET /api/v1/auth/session` guarded by the same session cookie.
 - `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; 11 tests pass.
 - Live PostgreSQL verification passed for signup, login, logout, persisted sessions, dashboard protection, authenticated API access, and the unauthenticated 401 envelope.
-- Local web and API development processes and verification containers are stopped. PostgreSQL and Redis volumes are preserved.
+- Local web/API development process was stopped after verification. PostgreSQL and Redis containers remain running because Docker teardown was denied by the local Docker permission boundary; volumes are preserved.
 - A local ignored `.env` was copied from `.env.example` for verification; fresh clones must do the same.
 - The database now contains Better Auth's `users`, `sessions`, `accounts`, and `verifications` tables plus Drizzle migration history.
 - BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage remain intentionally absent until their documented slices.
 
 Required Commands Before Continuing:
-- pnpm infra:up
-- pnpm dev
-- Begin VS2-T1 only after marking it started in this tracker.
+- Start PostgreSQL and Redis with `pnpm infra:up`.
+- Start the app with `pnpm dev`.
+- Restart/reload Codex so global config loads `chrome-devtools` server.
+- Verify 375px, 768px, 1024px, and 1440px layouts; login, signup, password visibility, mobile drawer focus trapping, protected redirect, and sign-out.
+- Commit the completed VS1-UI-R1 changes, then begin VS2-T1. Stop the verification containers when Docker permissions allow.
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 06:39
+Last Updated Time: 13:12
 Last Updated By: Codex
 ```
 

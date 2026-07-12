@@ -531,6 +531,8 @@ Avoid hiding major workflow controls inside popovers.
 
 ## 5.1 AppSidebar
 
+Implementation status: `IMPLEMENTED` in VS1-UI-R1.
+
 Location:
 
 ```text
@@ -572,10 +574,13 @@ Rules:
 - Show active route.
 - Keep credit balance shortcut optional.
 - Do not include project-specific editing controls.
+- Until later slices ship their routes, New Project, Billing, and Settings render as visibly locked, non-interactive items with `aria-disabled` semantics.
 
 ---
 
 ## 5.2 AppTopbar
+
+Implementation status: `IMPLEMENTED` in VS1-UI-R1.
 
 Purpose:
 
@@ -601,9 +606,13 @@ tablet: compact
 desktop: full
 ```
 
+The VS1 implementation composes a client-only `MobileNavigation` drawer. It traps focus, closes with Escape or backdrop interaction, restores focus to its trigger, and disables page scrolling while open.
+
 ---
 
 ## 5.3 PageHeader
+
+Implementation status: `IMPLEMENTED` in VS1-UI-R1.
 
 Purpose:
 
@@ -616,7 +625,6 @@ type PageHeaderProps = {
   title: string;
   description?: string;
   actions?: React.ReactNode;
-  eyebrow?: string;
 };
 ```
 
@@ -632,6 +640,8 @@ Outputs
 ---
 
 ## 5.4 EmptyState
+
+Implementation status: `IMPLEMENTED` in VS1-UI-R1.
 
 Purpose:
 
