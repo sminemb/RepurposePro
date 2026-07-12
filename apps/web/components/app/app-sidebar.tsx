@@ -1,30 +1,51 @@
+"use client";
+
 import { CreditCard, LayoutDashboard, LockKeyhole, Plus, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { BrandMark } from "@/components/app/brand-mark";
 import { cn } from "@/lib/utils";
+
+import { isNavigationItemActive } from "./app-navigation";
 
 interface AppSidebarProps {
   readonly className?: string;
 }
 
 interface NavigationItem {
-  readonly active: boolean;
+  readonly activePath?: string;
   readonly href?: string;
   readonly icon: LucideIcon;
   readonly label: string;
   readonly locked: boolean;
+  readonly matchDescendants?: boolean;
 }
 
 const navigation: readonly NavigationItem[] = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", active: true, locked: false },
-  { label: "New Project", icon: Plus, href: "/projects/new", active: false, locked: false },
-  { label: "Billing", icon: CreditCard, active: false, locked: true },
-  { label: "Settings", icon: Settings, active: false, locked: true },
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    href: "/dashboard",
+    activePath: "/dashboard",
+    locked: false,
+  },
+  {
+    label: "New Project",
+    icon: Plus,
+    href: "/projects/new",
+    activePath: "/projects",
+    locked: false,
+    matchDescendants: true,
+  },
+  { label: "Billing", icon: CreditCard, locked: true },
+  { label: "Settings", icon: Settings, locked: true },
 ];
 
 export function AppSidebar({ className }: AppSidebarProps) {
+  const pathname = usePathname();
+
   return (
     <aside
       aria-label="Primary"
@@ -35,8 +56,12 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <BrandMark className="px-2" href="/" />
       <nav className="mt-10 grid gap-2">
-        {navigation.map(({ active, href, icon: Icon, label, locked }) =>
-          href ? (
+        {navigation.map(({ activePath, href, icon: Icon, label, locked, matchDescendants }) => {
+          const active = activePath
+            ? isNavigationItemActive(pathname, activePath, matchDescendants)
+            : false;
+
+          return href ? (
             <Link
               aria-current={active ? "page" : undefined}
               className={cn(
@@ -59,8 +84,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
               <Icon aria-hidden="true" className="size-5" /> {label}
               <LockKeyhole aria-hidden="true" className="ml-auto size-4" />
             </span>
-          ),
-        )}
+          );
+        })}
       </nav>
       <div className="mt-auto rounded-rp-md border border-rp-border bg-rp-bg/70 p-4">
         <div className="flex gap-3">

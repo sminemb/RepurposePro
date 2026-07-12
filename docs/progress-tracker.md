@@ -128,11 +128,11 @@ Current Task: VS2-T3 — Build local upload UI with progress
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-R1 — Restore API startup after protected-project dependency-injection regression
+Last Completed Task: VS2-UI-R3 — Fix active project navigation state
 Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
-Last Updated Date: 2026-07-12
-Last Updated Time: 18:03
+Last Updated Date: 2026-07-13
+Last Updated Time: 07:29
 Last Updated By: Codex
 ```
 
@@ -259,6 +259,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-T1 | Create project schema and create/list API with ownership checks (narrowed scope) | DB + API + Tests | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Migration applied; API typecheck and focused contract/controller tests pass. |
 | VS2-T2 | Build new project UI for clips or summary | Web + API | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Workspace typecheck, lint, focused tests, and production build pass. |
 | VS2-R1 | Restore API startup after protected-project dependency-injection regression | API + Tests | COMPLETED | 2026-07-12 | 17:54 | 2026-07-12 | 18:03 | Exported `AuthService`, added a module-compilation regression test, and verified API liveness returns HTTP 200. |
+| VS2-UI-R3 | Fix active project navigation state | Web + Tests | COMPLETED | 2026-07-13 | 07:19 | 2026-07-13 | 07:29 | Route matcher tests pass; desktop and 390px mobile browser checks show New Project active on `/projects/new`. |
 | VS2-T3 | Build local upload UI with progress | Web | NOT_STARTED | — | — | — | — | — |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
@@ -1129,6 +1130,58 @@ Known Limitations:
 
 ---
 
+### VS2-UI-R3 — Fix active project navigation state
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 07:19
+End Date: 2026-07-13
+End Time: 07:29
+
+User Outcome:
+- The New Project navigation item now highlights on `/projects` and all nested project routes in both desktop and mobile navigation.
+
+Layers Touched:
+- Web navigation
+- Tests
+
+Files Changed:
+- `apps/web/components/app/app-sidebar.tsx`
+- `apps/web/components/app/app-navigation.ts`
+- `apps/web/components/app/app-sidebar.spec.ts`
+- `docs/progress-tracker.md`
+
+Commands Run:
+- `pnpm exec vitest run apps/web/components/app/app-sidebar.spec.ts`
+- `pnpm --filter @repurposepro/web typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm build`
+- Chrome DevTools desktop and 390px mobile navigation snapshots, DOM state checks, screenshots, and console inspection
+- `git diff --check`
+
+Verification:
+- PASS: route matcher tests cover `/dashboard`, `/projects`, `/projects/new`, `/projects/example`, and the `/projects-other` boundary.
+- PASS: web typecheck, workspace lint, all 27 Vitest tests, and all production builds pass.
+- PASS: desktop `/projects/new` renders `New Project` with `aria-current="page"` and active violet styling.
+- PASS: 390px mobile drawer renders the same active state with no console errors.
+
+Tests:
+- Focused navigation test: 1 file passed; 5 tests passed.
+- Full Vitest suite: 8 files passed; 27 tests passed.
+
+Assumptions:
+- The existing `/projects/new` href remains unchanged; `/projects` is treated as the active section path for future project routes.
+- The unrelated existing modification to `apps/web/next-env.d.ts` remains untouched.
+
+Known Limitations:
+- Repository-wide `pnpm format:check` was not rerun because the tracker records 11 pre-existing unrelated formatting failures; no formatter was run.
+
+Notes:
+- The browser check used an isolated local test account and verified desktop and mobile active navigation behavior without changing product code or API contracts.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1145,6 +1198,7 @@ Known Limitations:
 | 2026-07-12 | VS1-UI-R1-DTG | global Codex config, docs/progress-tracker.md | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode. |
 | 2026-07-12 | VS1-UI-R2 | apps/web auth/dashboard/navigation, docs/progress-tracker.md | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback. |
 | 2026-07-12 | VS2-R1 | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
+| 2026-07-13 | VS2-UI-R3 | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests. |
 
 ---
 
@@ -1173,6 +1227,7 @@ Known Limitations:
 
 | 2026-07-12 | VS2-R1 | focused module test / API typecheck / `pnpm lint` / `pnpm test` / API liveness probe | PASS — regression test reproduced then passed; API typecheck, lint, 22 tests, and HTTP 200 liveness pass. |
 | 2026-07-12 | VS2-R1 | `pnpm format:check` | KNOWN BASELINE FAILURE — Prettier reports 11 unrelated files; task files are not listed. |
+| 2026-07-13 | VS2-UI-R3 | focused Vitest / web typecheck / lint / full test / build / Chrome DevTools / git diff --check | PASS — 5 route-matcher tests, 27 total tests, typecheck, lint, production builds, desktop/mobile active-state checks, clean browser console, and whitespace validation pass. |
 
 Useful commands may include:
 
@@ -1243,10 +1298,11 @@ Last Completed Task: VS2-R1 — Restore API startup after protected-project depe
 Next Recommended Task: VS2-T3 — Build local upload UI with progress
 
 Uncommitted Changes:
-- None after the VS2-R1 commit.
+- VS2-UI-R3 changes are ready to commit.
+- Pre-existing `apps/web/next-env.d.ts` modification is intentionally preserved and excluded from the task commit.
 
 Known Failing Tests:
-- None. API typecheck, workspace lint, the focused module test, and all 22 Vitest tests pass.
+- None for VS2-UI-R3. The focused navigation test and all 27 Vitest tests pass.
 
 Known Blockers:
 - `pnpm format:check` reports 11 pre-existing formatting issues in unrelated files; no formatter was run to avoid scope expansion.
@@ -1272,6 +1328,7 @@ Important Context:
 - The database now contains Better Auth's `users`, `sessions`, `accounts`, and `verifications` tables plus Drizzle migration history.
 - BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage remain intentionally absent until their documented slices.
 - VS2-R1 exports `AuthService` from `AuthModule` so importing modules can instantiate the exported `AuthGuard`; `projects.module.spec.ts` prevents this startup regression.
+- VS2-UI-R3 derives active navigation state from `usePathname`; Dashboard matches exactly, while New Project matches `/projects` and nested routes. Desktop and mobile drawer browser verification passed.
 
 Required Commands Before Continuing:
 - `pnpm infra:up` if a live authenticated flow is needed.
@@ -1280,7 +1337,7 @@ Required Commands Before Continuing:
 - Begin VS2-T3 to build the local upload UI with progress.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 07:02
+Last Updated Time: 07:29
 Last Updated By: Codex
 ```
 
