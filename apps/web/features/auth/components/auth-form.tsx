@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { CircleAlert, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,9 +18,55 @@ function formValue(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
+interface FormError {
+  readonly message: string;
+  readonly title: string;
+}
+
+function validateForm(formData: FormData, isSignUp: boolean): FormError | null {
+  if (isSignUp && !formValue(formData, "name").trim()) {
+    return {
+      title: "Your name is missing",
+      message: "Add your name so we know what to call you.",
+    };
+  }
+
+  const email = formValue(formData, "email").trim();
+  if (!email) {
+    return {
+      title: "Your email is missing",
+      message: "Add the email you use for your RepurposePro account.",
+    };
+  }
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return {
+      title: "Check your email",
+      message: "Use a valid email address to continue.",
+    };
+  }
+
+  const password = formValue(formData, "password");
+  if (!password) {
+    return {
+      title: "Your password is missing",
+      message: "Enter your password to continue.",
+    };
+  }
+
+  if (password.length < 8) {
+    return {
+      title: "Your password is too short",
+      message: "Use at least 8 characters for your password.",
+    };
+  }
+
+  return null;
+}
+
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FormError | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isSignUp = mode === "signup";
@@ -28,6 +74,12 @@ export function AuthForm({ mode }: AuthFormProps) {
   async function submit(formData: FormData) {
     setError(null);
     setIsPending(true);
+    const validationError = validateForm(formData, isSignUp);
+    if (validationError) {
+      setError(validationError);
+      setIsPending(false);
+      return;
+    }
     const email = formValue(formData, "email").trim();
     const password = formValue(formData, "password");
     const response = await (
@@ -36,15 +88,24 @@ export function AuthForm({ mode }: AuthFormProps) {
         : authClient.signIn.email({ email, password })
     ).catch(() => null);
     if (!response) {
-      setError("We could not reach RepurposePro. Check your connection and try again.");
+      setError({
+        title: "RepurposePro is unreachable",
+        message: "Check your connection and try again.",
+      });
       setIsPending(false);
       return;
     }
     if (response.error) {
       setError(
         isSignUp
-          ? "We could not create that account. Check your details or sign in instead."
-          : "That email or password is not correct.",
+          ? {
+              title: "We could not create your account",
+              message: "Check your details or sign in instead.",
+            }
+          : {
+              title: "Those details do not match",
+              message: "Check your email and password, then try again.",
+            },
       );
       setIsPending(false);
       return;
@@ -58,6 +119,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       action={submit}
       aria-describedby={error ? "auth-error" : undefined}
       className="grid gap-5"
+      noValidate
     >
       {isSignUp ? (
         <div className="grid gap-2">
@@ -118,14 +180,20 @@ export function AuthForm({ mode }: AuthFormProps) {
         ) : null}
       </div>
       {error ? (
-        <p
+        <div
           aria-live="assertive"
-          className="rounded-rp-sm border border-rp-danger/30 bg-rp-danger-soft px-3 py-2 text-sm text-rp-danger"
+          className="flex items-start gap-3 rounded-rp-md border border-rp-danger/35 bg-rp-danger-soft/45 px-4 py-3.5"
           id="auth-error"
           role="alert"
         >
-          {error}
-        </p>
+          <span className="grid size-9 shrink-0 place-items-center rounded-rp-sm border border-rp-danger/30 bg-rp-danger/10 text-rp-danger">
+            <CircleAlert aria-hidden="true" className="size-5" />
+          </span>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-sm font-semibold text-rp-text">{error.title}</p>
+            <p className="mt-1 text-sm leading-5 text-rp-text-muted">{error.message}</p>
+          </div>
+        </div>
       ) : null}
       <Button
         className="h-11 bg-rp-primary text-rp-bg-deep hover:bg-rp-primary-hover"

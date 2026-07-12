@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AppSidebar } from "@/components/app/app-sidebar";
@@ -80,7 +80,7 @@ export function MobileNavigation({ userEmail, userName }: MobileNavigationProps)
           }}
         >
           <div
-            className="ml-auto flex h-full w-[min(88vw,20rem)] flex-col bg-rp-surface shadow-rp-modal motion-safe:animate-in motion-safe:slide-in-from-right"
+            className="relative ml-auto flex h-full min-h-0 w-[min(88vw,20rem)] flex-col overflow-hidden bg-rp-surface shadow-rp-modal motion-safe:animate-in motion-safe:slide-in-from-right"
             ref={panelRef}
           >
             <button
@@ -92,15 +92,18 @@ export function MobileNavigation({ userEmail, userName }: MobileNavigationProps)
             >
               <X aria-hidden="true" className="size-5" />
             </button>
-            <AppSidebar className="h-auto min-h-0 w-full flex-1 border-r-0 pt-20" />
-            <div className="border-t border-rp-border bg-rp-surface px-5 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <AppSidebar className="h-auto min-h-full w-full border-r-0 pt-20" />
+            </div>
+            <div className="shrink-0 border-t border-rp-border bg-rp-surface px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <p className="text-sm font-medium text-rp-text">{userName}</p>
               <p className="mt-1 truncate text-xs text-rp-text-muted">{userEmail}</p>
               <form action="/api/auth/sign-out" className="mt-4" method="post">
                 <button
-                  className="min-h-11 text-sm text-rp-text-muted hover:text-rp-text"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-rp-md border border-rp-border bg-rp-bg/45 px-3 text-sm font-medium text-rp-text-muted transition-colors hover:border-rp-primary/50 hover:bg-rp-primary-soft/40 hover:text-rp-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary"
                   type="submit"
                 >
+                  <LogOut aria-hidden="true" className="size-4 text-rp-primary" />
                   Sign out
                 </button>
               </form>

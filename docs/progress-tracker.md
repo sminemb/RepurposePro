@@ -128,11 +128,11 @@ Current Task: None
 Current Status: COMPLETED
 Current Branch: main
 
-Last Completed Task: VS1-UI-R1 — Rework landing, authentication, and protected dashboard UI
+Last Completed Task: VS1-UI-R2 — Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Last Updated Date: 2026-07-12
-Last Updated Time: 12:54
+Last Updated Time: 13:54
 Last Updated By: Codex
 ```
 
@@ -215,6 +215,7 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | VS1-T4 | Build protected dashboard shell | Web | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Dashboard protection and brand-aligned login UI verified at runtime; mobile overflow fixed. |
 | VS1-T5 | Enforce protected API access and test unauthorized requests | API + Tests | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass. |
 | VS1-UI-R1 | Rework landing, authentication, and protected dashboard UI | Web + Design + Docs | COMPLETED | 2026-07-12 | 06:53 | 2026-07-12 | 12:54 | `pnpm ci:check` and browser verification pass across landing, auth, dashboard, responsive navigation, protected redirect, and sign-out. |
+| VS1-UI-R2 | Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback | Web + Design + Docs | COMPLETED | 2026-07-12 | 13:33 | 2026-07-12 | 13:50 | Static checks pass; 390px browser verification confirms custom inline auth feedback and no native validation bubble. |
 | VS1-UI-R1-DT | Configure Chrome DevTools MCP for browser verification | Tooling + Docs | COMPLETED | 2026-07-12 | 11:53 | 2026-07-12 | 11:56 | Added workspace `.mcp.json` with official isolated launcher; JSON and CLI flag validation passed. |
 | VS1-UI-R1-DTG | Move Chrome DevTools MCP to global Codex config | Tooling + Docs | COMPLETED | 2026-07-12 | 12:02 | 2026-07-12 | 12:04 | Removed repo config; added global `chrome-devtools` server without `--isolated`. |
 
@@ -1049,6 +1050,40 @@ Known Limitations:
 
 ---
 
+### VS1-UI-R2 — Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback
+
+Status: COMPLETED
+Start Date: 2026-07-12
+Start Time: 13:33
+End Date: 2026-07-12
+End Time: 13:50
+
+User Outcome:
+- Small-screen sign-out is now a contained, full-width touch action with a protected drawer footer; the dashboard empty-state glyph no longer overflows its frame; auth form validation now uses branded inline feedback instead of the browser-native warning bubble.
+
+Files Changed:
+- `apps/web/components/app/mobile-navigation.tsx`
+- `apps/web/app/dashboard/page.tsx`
+- `apps/web/features/auth/components/auth-form.tsx`
+- `docs/progress-tracker.md`
+
+Commands Run:
+- `pnpm exec prettier --check apps/web/components/app/mobile-navigation.tsx apps/web/app/dashboard/page.tsx apps/web/features/auth/components/auth-form.tsx docs/progress-tracker.md`
+- `pnpm typecheck`; targeted ESLint; `pnpm lint`; `pnpm test`; `pnpm build`
+- `git diff --check`; Chrome DevTools 390px auth interaction, snapshot, screenshot, and console check
+
+Verification:
+- PASS: full workspace typecheck, full lint, 11 Vitest tests, and all production builds.
+- PASS: 390px login submit with empty fields renders the custom “Your email is missing” alert and no native “Please fill out this field” bubble.
+- PASS: browser console has no error or warning messages during the auth validation check.
+- PASS: mobile drawer source now has a relative clipped panel, scrollable navigation region, safe-area-aware footer, full-width sign-out target, and logout icon.
+- PASS: dashboard empty state now uses one contained `Clapperboard` icon rather than an over-wide icon cluster.
+
+Known Limitations:
+- A new authenticated drawer screenshot was not captured in this pass because creating a test account would add persistent local application data; the existing VS1 browser verification already covers the authenticated drawer interaction, and this change is covered by static validation plus the focused source review.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1063,6 +1098,7 @@ Known Limitations:
 | 2026-07-12 | VS1-UI-R1 | apps/web, docs/ui-registry.md, docs/progress-tracker.md | Reworked the landing, auth, and protected dashboard UI; added shared shell components and generated creator media. |
 | 2026-07-12 | VS1-UI-R1-DT | .mcp.json, docs/progress-tracker.md | Configured official Chrome DevTools MCP with isolated profile and usage-statistics opt-out. |
 | 2026-07-12 | VS1-UI-R1-DTG | global Codex config, docs/progress-tracker.md | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode. |
+| 2026-07-12 | VS1-UI-R2 | apps/web auth/dashboard/navigation, docs/progress-tracker.md | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback. |
 
 ---
 
@@ -1086,6 +1122,8 @@ Known Limitations:
 | 2026-07-12 | VS1-UI-R1 | `git commit` | PASS — verified UI overhaul committed on `main`. |
 | 2026-07-12 | VS1-UI-R1-DT | `.mcp.json` parse + Chrome DevTools MCP CLI help | PASS — workspace config parses; official package and requested flags validated. |
 | 2026-07-12 | VS1-UI-R1-DTG | global config inspection + repo file check | PASS — global server configured without `--isolated`; project `.mcp.json` absent. |
+| 2026-07-12 | VS1-UI-R2 | `pnpm typecheck` / targeted ESLint / `pnpm lint` / `pnpm test` / `pnpm build` | PASS — strict types, ESLint, 11 tests, and all production builds passed. |
+| 2026-07-12 | VS1-UI-R2 | Chrome DevTools 390px auth validation check | PASS — custom inline alert rendered; native validation bubble absent; console clean. |
 
 Useful commands may include:
 
@@ -1154,12 +1192,11 @@ Last Completed Task: VS1-UI-R1 — Rework landing, authentication, and protected
 Next Recommended Task: VS2-T1 — Define project creation and upload contracts
 
 Uncommitted Changes:
-- None. Verified UI overhaul committed on `main` (`feat(web): overhaul landing and VS1 UI`).
-- Changed routes: `/`, `/login`, `/signup`, and `/dashboard`.
-- Added marketing sections, shared app shell components, auth shell, mobile navigation, and `apps/web/public/images/podcast-studio.png`.
+- None. VS1-UI-R2 changes are included in the task commit after verification.
+- Changed `apps/web/components/app/mobile-navigation.tsx`, `apps/web/app/dashboard/page.tsx`, `apps/web/features/auth/components/auth-form.tsx`, and this tracker.
 
 Known Failing Tests:
-- None. `pnpm ci:check` passes, including 11 tests and the production build.
+- None. `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` pass; 11 tests pass.
 
 Known Blockers:
 - None.
@@ -1170,6 +1207,8 @@ Important Context:
 - Landing now contains six creator-facing sections, session-aware calls to action, documented pricing, and no infrastructure-facing copy or fabricated proof.
 - Authentication retains Better Auth behavior while adding a split visual shell, password visibility, pending states, connection failure handling, and accessible errors.
 - Dashboard now uses `AppSidebar`, `AppTopbar`, `PageHeader`, `EmptyState`, and a focus-trapped mobile drawer. Future routes are visibly locked non-links.
+- VS1-UI-R2 keeps the mobile drawer footer inside a clipped, scroll-safe panel; its sign-out action is full-width and icon-led. The dashboard empty state uses a single contained clapperboard glyph. Auth forms use `noValidate` plus structured inline validation feedback to avoid the native browser warning bubble.
+- The 390px browser pass verified the custom auth error state and a clean console. An authenticated drawer recapture was intentionally skipped to avoid creating persistent test account data; the prior VS1 browser pass covers that flow and the source change is statically verified.
 - Chrome DevTools MCP is declared globally in `C:\Users\Andrey\.codex\config.toml`; restart/reload Codex to load it. Config disables usage statistics and has no `--isolated` flag.
 - VS0 is complete; `pnpm ci:check` and runtime/visual verification passed.
 - VS1 started 2026-07-11 10:53 Asia/Manila. Better Auth will use Next.js route handling and PostgreSQL/Drizzle sessions; Nest will validate those session cookies for protected API endpoints.
@@ -1182,11 +1221,10 @@ Important Context:
 - BullMQ, Stripe, Arcjet, FFmpeg, Whisper, Gemini, and product storage remain intentionally absent until their documented slices.
 
 Required Commands Before Continuing:
-- Start PostgreSQL and Redis with `pnpm infra:up`.
-- Start the app with `pnpm dev`.
-- Restart/reload Codex so global config loads `chrome-devtools` server.
-- Verify 375px, 768px, 1024px, and 1440px layouts; login, signup, password visibility, mobile drawer focus trapping, protected redirect, and sign-out.
-- Commit the completed VS1-UI-R1 changes, then begin VS2-T1. Stop the verification containers when Docker permissions allow.
+- `pnpm infra:up` if a live authenticated flow is needed.
+- `pnpm dev` to run the web/API/worker workspace.
+- `pnpm ci:check` before merging the next slice.
+- Begin VS2-T1 after the VS1-UI-R2 commit.
 
 Last Updated Date: 2026-07-12
 Last Updated Time: 13:12

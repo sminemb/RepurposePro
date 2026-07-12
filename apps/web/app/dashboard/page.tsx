@@ -1,4 +1,4 @@
-import { Check, Clapperboard, LockKeyhole, Play, Rows3 } from "lucide-react";
+import { Check, Clapperboard, LockKeyhole } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -48,13 +48,7 @@ export default async function DashboardPage() {
           <div className="mt-8">
             <EmptyState
               description="Project creation arrives next. Soon, this space will hold every source video, selected clip, summary, and final output."
-              icon={
-                <span className="flex items-center gap-1.5" aria-hidden="true">
-                  <Play className="size-4" />
-                  <span className="h-px w-4 bg-rp-primary" />
-                  <Rows3 className="size-4" />
-                </span>
-              }
+              icon={<Clapperboard aria-hidden="true" className="size-7" />}
               title="No projects yet"
             />
           </div>
