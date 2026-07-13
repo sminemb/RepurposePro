@@ -124,15 +124,15 @@ FAILED
 
 ```text
 Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Current Task: VS2-T6 — Calculate required credits from validated duration
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-T4 — Implement secure upload endpoint and storage pathing
-Next Recommended Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 10:07
+Last Updated Time: 10:59
 Last Updated By: Codex
 ```
 
