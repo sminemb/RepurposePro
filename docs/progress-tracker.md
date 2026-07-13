@@ -1678,7 +1678,7 @@ Current Task: VS2-T6 — Calculate required credits from validated duration
 Current Status: NOT_STARTED
 Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
 Next Recommended Task: VS2-T6 — Calculate and persist/display the required credits from uploaded_videos.duration_seconds.
-Uncommitted Changes: VS2-T5 changes are ready to commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally uncommitted.
+Uncommitted Changes: None after commit bdaa6e1.
 Known Failing Tests: None. `pnpm test` passes 58 tests.
 Known Blockers: `pnpm ci:check` stops at 8 unrelated pre-existing formatting violations. Live authenticated upload verification is blocked because Docker cannot access C:\Users\Andrey\.docker\config.json; `pnpm infra:status` cannot run.
 Important Context: The upload endpoint now probes only the generated private source path. Validated metadata is stored in uploaded_videos and the project transitions atomically to uploaded. Invalid or unprobeable source files are removed and return safe 422/500 envelopes without filesystem details.
