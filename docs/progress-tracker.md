@@ -128,11 +128,11 @@ Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-T3-R1 — Fix Create Project Server Action export error
+Last Completed Task: DOCS-SKILLS-20260713 — Require installed addyosmani/agent-skills usage
 Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 09:11
+Last Updated Time: 09:22
 Last Updated By: Codex
 ```
 
@@ -1268,6 +1268,30 @@ Known Limitations:
 
 ---
 
+### DOCS-SKILLS-20260713 — Require Installed addyosmani/agent-skills Usage
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 09:22
+End Date: 2026-07-13
+End Time: 09:22
+
+User Outcome:
+- Project instructions now explicitly require agents to use relevant installed skills from `addyosmani/agent-skills` before acting.
+
+Files Changed:
+- AGENTS.md
+- docs/progress-tracker.md
+
+Verification:
+- PASS: `AGENTS.md` Required Skills section contains the new installed-skills rule.
+- PASS: Documentation-only diff reviewed.
+
+Known Limitations:
+- No runtime tests were needed for this documentation-only task.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1287,6 +1311,7 @@ Known Limitations:
 | 2026-07-13 | VS2-UI-R3 | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests. |
 | 2026-07-13 | VS2-T3 | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it. |
 | 2026-07-13 | VS2-T3-R1 | apps/web project action/form, docs/progress-tracker.md | Removed the invalid runtime export from the Server Action module and guarded the Next.js export restriction. |
+| 2026-07-13 | DOCS-SKILLS-20260713 | AGENTS.md, docs/progress-tracker.md | Required agents to use relevant installed skills from `addyosmani/agent-skills` and recorded the docs-only update. |
 
 ---
 
@@ -1316,6 +1341,7 @@ Known Limitations:
 | 2026-07-12 | VS2-R1 | focused module test / API typecheck / `pnpm lint` / `pnpm test` / API liveness probe | PASS — regression test reproduced then passed; API typecheck, lint, 22 tests, and HTTP 200 liveness pass. |
 | 2026-07-12 | VS2-R1 | `pnpm format:check` | KNOWN BASELINE FAILURE — Prettier reports 11 unrelated files; task files are not listed. |
 | 2026-07-13 | VS2-UI-R3 | focused Vitest / web typecheck / lint / full test / build / Chrome DevTools / git diff --check | PASS — 5 route-matcher tests, 27 total tests, typecheck, lint, production builds, desktop/mobile active-state checks, clean browser console, and whitespace validation pass. |
+| 2026-07-13 | DOCS-SKILLS-20260713 | `Get-Content` docs reads + `git diff --check -- AGENTS.md docs/progress-tracker.md` + `git diff -- AGENTS.md docs/progress-tracker.md` + `git commit` | PASS - required docs were read, whitespace check passed, the documentation-only diff was reviewed, and task files were committed. |
 
 Useful commands may include:
 
@@ -1464,6 +1490,26 @@ Known Failing Tests: None; 31 Vitest tests pass.
 Known Blockers: Authenticated browser submission remains unverified because the isolated browser has no test session.
 Important Context: Server Action modules with module-level `"use server"` may export only async functions at runtime. Keep form initial state in the client component.
 Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check.
+Last Updated By: Codex
+```
+
+---
+
+### DOCS-SKILLS-20260713 Handoff Update — 2026-07-13 09:22 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Current Status: NOT_STARTED
+Last Completed Task: DOCS-SKILLS-20260713 — Require installed addyosmani/agent-skills usage
+Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Uncommitted Changes: None for this task after commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None for this docs-only task; no runtime tests were needed.
+Known Blockers: None for this docs-only task.
+Important Context: AGENTS.md now requires agents to use relevant installed skills from addyosmani/agent-skills by reading each applicable SKILL.md before acting, while continuing to follow RepurposePro rules.
+Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check before the next implementation merge.
+Last Updated Date: 2026-07-13
+Last Updated Time: 09:22
 Last Updated By: Codex
 ```
 
