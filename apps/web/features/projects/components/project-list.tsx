@@ -51,7 +51,12 @@ export function ProjectList({ projects }: ProjectListProps) {
             <p className="mt-2 text-sm text-rp-text-muted">{outputLabel}</p>
             <div className="mt-auto border-t border-rp-border pt-4 text-xs leading-5 text-rp-text-muted">
               <p>Created {formatCreatedAt(project.createdAt)}</p>
-              <p className="mt-1">Video upload opens in the next VS2 task.</p>
+              <Link
+                className="mt-3 inline-flex min-h-9 items-center text-sm font-semibold text-rp-primary hover:text-rp-text"
+                href={`/projects/${project.id}/upload`}
+              >
+                Upload video
+              </Link>
             </div>
           </article>
         );

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { loadWebConfig } from "@repurposepro/config";
-import type { ApiError, ApiListSuccess, CreateProjectInput, ProjectSummary } from "@repurposepro/shared";
+import type { ApiError, ApiListSuccess, ApiSuccess, CreateProjectInput, ProjectSummary } from "@repurposepro/shared";
 import { headers } from "next/headers";
 
 interface ProjectsResult {
@@ -11,6 +11,7 @@ interface ProjectsResult {
 
 interface CreateProjectResult {
   readonly error: string | null;
+  readonly projectId: string | null;
 }
 
 async function requestApi(path: string, init?: RequestInit): Promise<Response> {
@@ -43,12 +44,13 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
     });
 
     if (!response.ok) {
-      return { error: await errorMessage(response, "We could not create this project. Try again.") };
+      return { error: await errorMessage(response, "We could not create this project. Try again."), projectId: null };
     }
 
-    return { error: null };
+    const body = (await response.json()) as ApiSuccess<ProjectSummary>;
+    return { error: null, projectId: body.data.id };
   } catch {
-    return { error: "RepurposePro is unreachable. Check your connection and try again." };
+    return { error: "RepurposePro is unreachable. Check your connection and try again.", projectId: null };
   }
 }
 

@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T3 | 20% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T4 | 35% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -124,15 +124,15 @@ FAILED
 
 ```text
 Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T3 — Build local upload UI with progress
+Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-UI-R3 — Fix active project navigation state
-Next Recommended Task: VS2-T3 — Build local upload UI with progress
+Last Completed Task: VS2-T3 — Build local upload UI with progress
+Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 07:29
+Last Updated Time: 08:55
 Last Updated By: Codex
 ```
 
@@ -260,7 +260,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-T2 | Build new project UI for clips or summary | Web + API | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Workspace typecheck, lint, focused tests, and production build pass. |
 | VS2-R1 | Restore API startup after protected-project dependency-injection regression | API + Tests | COMPLETED | 2026-07-12 | 17:54 | 2026-07-12 | 18:03 | Exported `AuthService`, added a module-compilation regression test, and verified API liveness returns HTTP 200. |
 | VS2-UI-R3 | Fix active project navigation state | Web + Tests | COMPLETED | 2026-07-13 | 07:19 | 2026-07-13 | 07:29 | Route matcher tests pass; desktop and 390px mobile browser checks show New Project active on `/projects/new`. |
-| VS2-T3 | Build local upload UI with progress | Web | NOT_STARTED | — | — | — | — | — |
+| VS2-T3 | Build local upload UI with progress | Web | COMPLETED | 2026-07-13 | 08:44 | 2026-07-13 | 08:55 | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass. |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
 | VS2-T6 | Enforce 500 MB and 30-minute MVP limits | Web + API + Tests | NOT_STARTED | — | — | — | — | — |
@@ -1182,6 +1182,64 @@ Notes:
 
 ---
 
+### VS2-T3 — Build Local Upload UI with Progress
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 08:44
+End Date: 2026-07-13
+End Time: 08:55
+
+User Outcome:
+- Creating or reopening a draft project now opens a project-scoped upload screen with drag/drop, a file picker, and genuine multipart byte-progress feedback.
+
+Layers Touched:
+- Web
+- Tests
+
+Files Changed:
+- apps/web/app/projects/[projectId]/upload/page.tsx
+- apps/web/features/upload/client/upload-video.ts
+- apps/web/features/upload/client/upload-video.spec.ts
+- apps/web/features/upload/components/upload-dropzone.tsx
+- apps/web/features/projects/actions/create-project.ts
+- apps/web/features/projects/components/project-list.tsx
+- apps/web/features/projects/server/projects-api.ts
+- docs/progress-tracker.md
+
+Commands Run:
+- Context7 Next.js documentation lookup for Server Action redirects and multipart client requests.
+- pnpm exec vitest run apps/web/features/upload/client/upload-video.spec.ts
+- pnpm lint
+- pnpm test
+- pnpm typecheck
+- pnpm --filter @repurposepro/web run build
+- pnpm format:check
+- pnpm exec prettier --check on the new upload files
+- git diff --check
+
+Verification:
+- PASS: upload endpoint construction percent-encodes the project ID and targets the documented multipart route.
+- PASS: client progress is driven only by browser XHR upload events; unknown totals never display a fabricated percentage.
+- PASS: project creation redirects to its upload page and draft project cards expose the same route.
+- PASS: workspace lint, typecheck, 30 Vitest tests, and the web production build pass.
+
+Tests:
+- Focused upload helper suite: 1 file passed; 3 tests passed.
+- Full Vitest suite: 9 files passed; 30 tests passed.
+
+Assumptions:
+- VS2-T4 will implement the documented `POST /projects/:projectId/upload` endpoint; this UI deliberately reports its real response rather than simulating progress or success.
+
+Known Limitations:
+- A full authenticated browser upload could not be run: `pnpm infra:status` cannot access the local Docker configuration, and a temporary local web server could not remain available to the DevTools browser. VS2-T4 is also not implemented, so a submitted file will correctly surface its endpoint error until then.
+- `pnpm format:check` still reports 11 pre-existing formatting issues in unrelated files. The new upload files pass targeted Prettier verification.
+
+Notes:
+- The route itself requires a valid web session. The forthcoming API endpoint remains the authorization boundary for project ownership and file handling.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1199,6 +1257,7 @@ Notes:
 | 2026-07-12 | VS1-UI-R2 | apps/web auth/dashboard/navigation, docs/progress-tracker.md | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback. |
 | 2026-07-12 | VS2-R1 | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
 | 2026-07-13 | VS2-UI-R3 | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests. |
+| 2026-07-13 | VS2-T3 | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it. |
 
 ---
 
@@ -1338,6 +1397,26 @@ Required Commands Before Continuing:
 
 Last Updated Date: 2026-07-13
 Last Updated Time: 07:29
+Last Updated By: Codex
+```
+
+---
+
+### VS2-T3 Handoff Update — 2026-07-13 08:55 Asia/Manila
+
+This update supersedes the older VS2 handoff text above.
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Current Status: NOT_STARTED
+Last Completed Task: VS2-T3 — Build local upload UI with progress
+Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Uncommitted Changes: None.
+Known Failing Tests: None for VS2-T3; 30 Vitest tests pass.
+Known Blockers: Full `pnpm format:check` has 11 unrelated pre-existing failures; Docker config access prevents live authenticated browser verification.
+Important Context: The UI posts multipart `FormData` with real XMLHttpRequest byte progress to the documented endpoint. VS2-T4 must implement that endpoint, storage pathing, and ownership enforcement before a successful upload is possible.
+Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check.
 Last Updated By: Codex
 ```
 

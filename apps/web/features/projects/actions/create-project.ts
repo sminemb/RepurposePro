@@ -22,10 +22,10 @@ export async function createProjectAction(
     outputType: outputType === "summary" ? "summary" : "clips",
   });
 
-  if (result.error) {
-    return { error: result.error };
+  if (result.error || !result.projectId) {
+    return { error: result.error ?? "We could not create this project. Try again." };
   }
 
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect(`/projects/${result.projectId}/upload`);
 }
