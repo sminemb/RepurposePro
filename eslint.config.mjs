@@ -36,7 +36,7 @@ export default tseslint.config(
             "apps/api/src/modules/projects/*.spec.ts",
             "packages/config/src/*.spec.ts",
           ],
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10,
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 11,
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -45,6 +45,16 @@ export default tseslint.config(
       "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
       "@typescript-eslint/no-misused-promises": ["error", { checksVoidReturn: false }],
       "@typescript-eslint/require-await": "off",
+    },
+  },
+  {
+    files: ["apps/api/src/modules/storage/*.spec.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./apps/api/tsconfig.eslint.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
   {

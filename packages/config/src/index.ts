@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 import { config as loadDotEnv } from "dotenv";
 import { z } from "zod";
@@ -45,6 +45,9 @@ const serverEnvironmentSchema = z.object({
 const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   APP_URL: z.string().url(),
   API_PORT: z.coerce.number().int().min(1).max(65_535),
+  MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
+  STORAGE_DRIVER: z.literal("local"),
+  STORAGE_ROOT: z.string().trim().min(1),
 });
 
 const authEnvironmentSchema = z.object({
@@ -80,6 +83,9 @@ export interface ServerConfig {
 export interface ApiConfig extends ServerConfig {
   readonly apiPort: number;
   readonly appUrl: string;
+  readonly maxUploadBytes: number;
+  readonly storageDriver: "local";
+  readonly storageRoot: string;
 }
 
 export interface AuthConfig {
@@ -130,6 +136,18 @@ function environmentSource(environment?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return process.env;
 }
 
+function workspaceRoot(): string {
+  const candidates = [process.cwd(), resolve(process.cwd(), ".."), resolve(process.cwd(), "../..")];
+  return (
+    candidates.find((candidate) => existsSync(resolve(candidate, "pnpm-workspace.yaml"))) ??
+    process.cwd()
+  );
+}
+
+function resolveStorageRoot(storageRoot: string): string {
+  return isAbsolute(storageRoot) ? storageRoot : resolve(workspaceRoot(), storageRoot);
+}
+
 function parseEnvironment<TSchema extends z.ZodType>(
   schema: TSchema,
   scope: string,
@@ -167,8 +185,11 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     databaseUrl: parsed.DATABASE_URL,
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
+    maxUploadBytes: parsed.MAX_UPLOAD_BYTES,
     nodeEnv: parsed.NODE_ENV,
     redisUrl: parsed.REDIS_URL,
+    storageDriver: parsed.STORAGE_DRIVER,
+    storageRoot: resolveStorageRoot(parsed.STORAGE_ROOT),
   };
 }
 

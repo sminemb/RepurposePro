@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -17,6 +19,9 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   REDIS_URL: "redis://localhost:6379",
   LOG_LEVEL: "debug",
   LOG_PRETTY: "true",
+  STORAGE_DRIVER: "local",
+  STORAGE_ROOT: "./storage",
+  MAX_UPLOAD_BYTES: "524288000",
 };
 
 describe("configuration loaders", () => {
@@ -43,6 +48,17 @@ describe("configuration loaders", () => {
     }
   });
 
+  it("rejects API startup when local storage configuration is incomplete", () => {
+    const environment = {
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      API_PORT: "4000",
+    };
+    delete environment.STORAGE_ROOT;
+
+    expect(() => loadApiConfig(environment)).toThrow(ConfigValidationError);
+  });
+
   it("loads API-only values", () => {
     const config = loadApiConfig({
       ...validServerEnvironment,
@@ -51,6 +67,9 @@ describe("configuration loaders", () => {
     });
 
     expect(config.apiPort).toBe(4000);
+    expect(config.maxUploadBytes).toBe(524_288_000);
+    expect(config.storageDriver).toBe("local");
+    expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
     expect(config.appUrl).toBe("http://localhost:3000");
   });
 

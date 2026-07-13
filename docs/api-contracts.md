@@ -515,43 +515,27 @@ file
 
 ```text
 Maximum file size: 500 MB
-Maximum duration: 30 minutes
-Language: English only
-Audio track: required
+Accepted containers: MP4, MOV, WebM, MKV
 ```
 
-### Processing
+### Current VS2-T4 Processing
 
 The endpoint should:
 
 1. Verify ownership.
 2. Validate file size.
-3. Save with secure internal filename.
-4. Run `ffprobe`.
-5. Validate duration and audio.
-6. Persist metadata.
-7. Calculate required credits.
-8. Return validated upload summary.
+3. Validate the declared MIME type and file extension.
+4. Save the source with generated private filenames under the configured storage root.
+5. Return a stored-but-unvalidated success response.
+
+`ffprobe`, duration/audio validation, uploaded-video persistence, and credit calculation are introduced by VS2-T5 through VS2-T7.
 
 ### Response — 201
 
 ```json
 {
   "data": {
-    "video": {
-      "id": "vid_...",
-      "fileName": "podcast-episode.mp4",
-      "durationSeconds": 612.4,
-      "fileSizeBytes": 184233991,
-      "width": 1920,
-      "height": 1080,
-      "fps": 30,
-      "hasAudio": true
-    },
-    "billing": {
-      "requiredCredits": 11,
-      "pricingRule": "ceil(durationMinutes)"
-    }
+    "success": true
   }
 }
 ```
@@ -560,11 +544,10 @@ The endpoint should:
 
 ```text
 UPLOAD_FILE_TOO_LARGE
-UPLOAD_VIDEO_TOO_LONG
 UPLOAD_INVALID_FILE
-UPLOAD_MISSING_AUDIO
-UPLOAD_FFPROBE_FAILED
 UPLOAD_STORAGE_FAILED
+PROJECT_NOT_FOUND
+PROJECT_UPLOAD_NOT_ALLOWED
 ```
 
 ### Error Example — 413

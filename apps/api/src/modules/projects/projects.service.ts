@@ -1,25 +1,38 @@
 import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
-import type {
-  ApiListSuccess,
-  CreateProjectInput,
-  ProjectSummary,
-} from "@repurposepro/shared";
+import type { ApiListSuccess, CreateProjectInput, ProjectSummary } from "@repurposepro/shared";
 import { Injectable } from "@nestjs/common";
 
 import { DatabaseService } from "../infrastructure/database.service";
+import { LocalStorageService } from "../storage/local-storage.service";
 import { schema } from "@repurposepro/db";
 
 import {
   decodeProjectsCursor,
   encodeProjectsCursor,
   type ListProjectsInput,
+  type SourceVideoUploadInput,
 } from "./projects.contracts";
 
 const { projects } = schema;
 
+export class ProjectUploadError extends Error {
+  public constructor(
+    public readonly code:
+      "PROJECT_NOT_FOUND" | "PROJECT_UPLOAD_NOT_ALLOWED" | "UPLOAD_STORAGE_FAILED",
+    public readonly statusCode: 404 | 409 | 500,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProjectUploadError";
+  }
+}
+
 @Injectable()
 export class ProjectsService {
-  public constructor(private readonly databaseService: DatabaseService) {}
+  public constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly localStorageService: LocalStorageService,
+  ) {}
 
   public async create(userId: string, input: CreateProjectInput): Promise<ProjectSummary> {
     const [project] = await this.databaseService.database.db
@@ -89,6 +102,64 @@ export class ProjectsService {
             : null,
       },
     };
+  }
+
+  public async storeSourceUpload(
+    userId: string,
+    projectId: string,
+    upload: SourceVideoUploadInput,
+  ): Promise<void> {
+    let project: typeof projects.$inferSelect | undefined;
+
+    try {
+      [project] = await this.databaseService.database.db
+        .select()
+        .from(projects)
+        .where(
+          and(eq(projects.id, projectId), eq(projects.userId, userId), isNull(projects.deletedAt)),
+        )
+        .limit(1);
+    } catch {
+      await this.discardStagedUpload(upload.stagedPath);
+      throw new ProjectUploadError(
+        "UPLOAD_STORAGE_FAILED",
+        500,
+        "We could not store this video. Please try again.",
+      );
+    }
+
+    if (!project) {
+      await this.discardStagedUpload(upload.stagedPath);
+      throw new ProjectUploadError("PROJECT_NOT_FOUND", 404, "Project not found.");
+    }
+
+    if (project.status !== "draft") {
+      await this.discardStagedUpload(upload.stagedPath);
+      throw new ProjectUploadError(
+        "PROJECT_UPLOAD_NOT_ALLOWED",
+        409,
+        "This project can no longer accept a source video.",
+      );
+    }
+
+    try {
+      await this.localStorageService.commitSourceUpload({ ...upload, projectId, userId });
+    } catch {
+      await this.discardStagedUpload(upload.stagedPath);
+      throw new ProjectUploadError(
+        "UPLOAD_STORAGE_FAILED",
+        500,
+        "We could not store this video. Please try again.",
+      );
+    }
+  }
+
+  public async discardStagedUpload(stagedPath: string): Promise<void> {
+    try {
+      await this.localStorageService.discardStagedUpload(stagedPath);
+    } catch {
+      // Cleanup must never replace a safe user-facing upload error.
+    }
   }
 
   private toSummary(project: typeof projects.$inferSelect): ProjectSummary {

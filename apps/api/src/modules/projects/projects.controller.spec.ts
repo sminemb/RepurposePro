@@ -1,5 +1,5 @@
 import type { ProjectSummary } from "@repurposepro/shared";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, UnprocessableEntityException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthenticatedRequest } from "../auth/auth.guard";
@@ -26,17 +26,24 @@ describe("ProjectsController", () => {
     const create = vi.fn().mockResolvedValue(project);
     const controller = new ProjectsController({ create } as unknown as ProjectsService);
 
-    await expect(controller.create({ name: " Creator breakdown ", outputType: "clips" }, request)).resolves.toEqual({
+    await expect(
+      controller.create({ name: " Creator breakdown ", outputType: "clips" }, request),
+    ).resolves.toEqual({
       data: project,
     });
-    expect(create).toHaveBeenCalledWith("user_1", { name: "Creator breakdown", outputType: "clips" });
+    expect(create).toHaveBeenCalledWith("user_1", {
+      name: "Creator breakdown",
+      outputType: "clips",
+    });
   });
 
   it("lists only the authenticated user's projects with validated filters", async () => {
     const list = vi.fn().mockResolvedValue({ data: [project], meta: { nextCursor: null } });
     const controller = new ProjectsController({ list } as unknown as ProjectsService);
 
-    await expect(controller.list({ limit: "5", outputType: "clips", status: "draft" }, request)).resolves.toEqual({
+    await expect(
+      controller.list({ limit: "5", outputType: "clips", status: "draft" }, request),
+    ).resolves.toEqual({
       data: [project],
       meta: { nextCursor: null },
     });
@@ -58,5 +65,63 @@ describe("ProjectsController", () => {
         requestId: "req_project_test",
       },
     });
+  });
+
+  it("stores an allowed source video only for the authenticated user", async () => {
+    const storeSourceUpload = vi.fn().mockResolvedValue(undefined);
+    const controller = new ProjectsController({ storeSourceUpload } as unknown as ProjectsService);
+    const file = {
+      mimetype: "video/mp4",
+      originalname: "episode.mp4",
+      path: "C:/private/staging/upload",
+      size: 1024,
+    } as Express.Multer.File;
+
+    await expect(controller.upload(project.id, file, request)).resolves.toEqual({
+      data: { success: true },
+    });
+    expect(storeSourceUpload).toHaveBeenCalledWith("user_1", project.id, {
+      fileSizeBytes: 1024,
+      mimeType: "video/mp4",
+      originalFileName: "episode.mp4",
+      stagedPath: "C:/private/staging/upload",
+    });
+  });
+
+  it("returns the documented upload validation envelope without calling storage", async () => {
+    const storeSourceUpload = vi.fn();
+    const controller = new ProjectsController({ storeSourceUpload } as unknown as ProjectsService);
+    const error = await controller
+      .upload(project.id, undefined, request)
+      .catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(UnprocessableEntityException);
+    expect((error as UnprocessableEntityException).getResponse()).toEqual({
+      error: {
+        code: "UPLOAD_INVALID_FILE",
+        details: null,
+        message: "Choose a video file to upload.",
+        requestId: "req_project_test",
+      },
+    });
+    expect(storeSourceUpload).not.toHaveBeenCalled();
+  });
+
+  it("removes a staged file when the project ID is invalid", async () => {
+    const discardStagedUpload = vi.fn().mockResolvedValue(undefined);
+    const controller = new ProjectsController({
+      discardStagedUpload,
+    } as unknown as ProjectsService);
+    const file = {
+      mimetype: "video/mp4",
+      originalname: "episode.mp4",
+      path: "C:/private/staging/upload",
+      size: 1024,
+    } as Express.Multer.File;
+
+    await expect(controller.upload("not-a-project-id", file, request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(discardStagedUpload).toHaveBeenCalledWith(file.path);
   });
 });

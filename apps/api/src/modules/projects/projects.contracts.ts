@@ -1,5 +1,6 @@
 import type { CreateProjectInput } from "@repurposepro/shared";
 import { ProjectOutputType, ProjectStatus } from "@repurposepro/shared";
+import { extname } from "node:path";
 import { z } from "zod";
 
 const projectOutputTypes = Object.values(ProjectOutputType);
@@ -22,11 +23,34 @@ const cursorSchema = z.object({
   id: z.string().min(1),
 });
 
+const projectIdSchema = z.string().uuid();
+
+const sourceVideoFormats = {
+  ".mkv": "video/x-matroska",
+  ".mov": "video/quicktime",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+} as const;
+
 export type ListProjectsInput = z.output<typeof listProjectsSchema>;
 
 export interface ProjectsCursor {
   readonly createdAt: string;
   readonly id: string;
+}
+
+export interface SourceVideoUploadInput {
+  readonly fileSizeBytes: number;
+  readonly mimeType: (typeof sourceVideoFormats)[keyof typeof sourceVideoFormats];
+  readonly originalFileName: string;
+  readonly stagedPath: string;
+}
+
+export interface SourceVideoFile {
+  readonly mimetype: string;
+  readonly originalname: string;
+  readonly path: string;
+  readonly size: number;
 }
 
 export class ProjectContractValidationError extends Error {
@@ -62,6 +86,36 @@ export function parseListProjectsInput(input: unknown): ListProjectsInput {
   }
 
   return result.data;
+}
+
+export function parseProjectId(input: unknown): string {
+  const result = projectIdSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new ProjectContractValidationError("Invalid project ID.");
+  }
+
+  return result.data;
+}
+
+export function parseSourceVideoUpload(file: SourceVideoFile | undefined): SourceVideoUploadInput {
+  if (!file) {
+    throw new ProjectContractValidationError("Choose a video file to upload.");
+  }
+
+  const extension = extname(file.originalname).toLowerCase() as keyof typeof sourceVideoFormats;
+  const expectedMimeType = sourceVideoFormats[extension];
+
+  if (!expectedMimeType || file.mimetype !== expectedMimeType || file.size <= 0 || !file.path) {
+    throw new ProjectContractValidationError("Upload an MP4, MOV, WebM, or MKV video.");
+  }
+
+  return {
+    fileSizeBytes: file.size,
+    mimeType: expectedMimeType,
+    originalFileName: file.originalname,
+    stagedPath: file.path,
+  };
 }
 
 export function encodeProjectsCursor(cursor: ProjectsCursor): string {

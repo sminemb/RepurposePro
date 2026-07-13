@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T4 | 35% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T5 | 50% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -124,15 +124,15 @@ FAILED
 
 ```text
 Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Current Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: DOCS-SKILLS-20260713 — Require installed addyosmani/agent-skills usage
-Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Last Completed Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Next Recommended Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 09:22
+Last Updated Time: 10:07
 Last Updated By: Codex
 ```
 
@@ -249,7 +249,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Start Time | 17:06 |
 | End Date | — |
 | End Time | — |
-| Progress | 20% |
+| Progress | 50% |
 | Dependency | VS1 |
 
 ## Tasks
@@ -262,7 +262,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-UI-R3 | Fix active project navigation state | Web + Tests | COMPLETED | 2026-07-13 | 07:19 | 2026-07-13 | 07:29 | Route matcher tests pass; desktop and 390px mobile browser checks show New Project active on `/projects/new`. |
 | VS2-T3-R1 | Fix Create Project Server Action export error | Web + Tests | COMPLETED | 2026-07-13 | 09:08 | 2026-07-13 | 09:11 | Server Action module now exports only its async action; regression test and dev loader check pass. |
 | VS2-T3 | Build local upload UI with progress | Web | COMPLETED | 2026-07-13 | 08:44 | 2026-07-13 | 08:55 | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass. |
-| VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
+| VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | COMPLETED | 2026-07-13 | 09:40 | 2026-07-13 | 10:07 | Private storage, ownership, multipart limits, and focused API/storage tests pass. |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
 | VS2-T6 | Enforce 500 MB and 30-minute MVP limits | Web + API + Tests | NOT_STARTED | — | — | — | — | — |
 | VS2-T7 | Display validated video metadata and required credits estimate | Web + API | NOT_STARTED | — | — | — | — | — |
@@ -1312,6 +1312,7 @@ Known Limitations:
 | 2026-07-13 | VS2-T3 | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it. |
 | 2026-07-13 | VS2-T3-R1 | apps/web project action/form, docs/progress-tracker.md | Removed the invalid runtime export from the Server Action module and guarded the Next.js export restriction. |
 | 2026-07-13 | DOCS-SKILLS-20260713 | AGENTS.md, docs/progress-tracker.md | Required agents to use relevant installed skills from `addyosmani/agent-skills` and recorded the docs-only update. |
+| 2026-07-13 | VS2-T4 | apps/api projects/storage, packages/config, API docs, tests, lint config | Added private local source storage, protected bounded multipart upload handling, startup configuration, contract/error coverage, and task handoff. |
 
 ---
 
@@ -1342,6 +1343,8 @@ Known Limitations:
 | 2026-07-12 | VS2-R1 | `pnpm format:check` | KNOWN BASELINE FAILURE — Prettier reports 11 unrelated files; task files are not listed. |
 | 2026-07-13 | VS2-UI-R3 | focused Vitest / web typecheck / lint / full test / build / Chrome DevTools / git diff --check | PASS — 5 route-matcher tests, 27 total tests, typecheck, lint, production builds, desktop/mobile active-state checks, clean browser console, and whitespace validation pass. |
 | 2026-07-13 | DOCS-SKILLS-20260713 | `Get-Content` docs reads + `git diff --check -- AGENTS.md docs/progress-tracker.md` + `git diff -- AGENTS.md docs/progress-tracker.md` + `git commit` | PASS - required docs were read, whitespace check passed, the documentation-only diff was reviewed, and task files were committed. |
+| 2026-07-13 | VS2-T4 | Focused Vitest, `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm build`, targeted Prettier check, `git diff --check` | PASS — 47 tests, lint, strict types, and production builds pass; targeted formatting and whitespace checks pass. |
+| 2026-07-13 | VS2-T4 | `pnpm audit --prod` | KNOWN BASELINE — reports two moderate transitive vulnerabilities in existing Better Auth/Next development dependencies; no high or critical finding and no task-scoped upgrade applied. |
 
 Useful commands may include:
 
@@ -1374,6 +1377,7 @@ ffmpeg ...
 | 2026-07-10 | 13:30 | Keep the VS0 migration as a no-op baseline. | Product tables must be introduced only by the slice that needs them. | VS0, VS1+ | packages/db/drizzle |
 | 2026-07-10 | 13:36 | Use shadcn's current base-nova preset, then replace generated theme values with canonical RepurposePro tokens. | Preserves current primitive infrastructure without changing the documented visual system. | VS0 UI | apps/web |
 | 2026-07-10 | 13:40 | Pin TypeScript 6.0.3 instead of the newer TypeScript 7 release. | Current typescript-eslint 8 supports TypeScript versions below 6.1; 6.0.3 is the newest compatible release. | VS0 tooling | package manifests, lockfile |
+| 2026-07-13 | 10:07 | Store VS2-T4 uploads privately without an `uploaded_videos` row. | Keeps the task scoped to bounded storage while retaining a private manifest for VS2-T5 probing and VS2-T7 persistence. | VS2 | apps/api storage/projects, docs/api-contracts.md |
 
 Record decisions such as:
 
@@ -1596,3 +1600,48 @@ read docs
 ```
 
 The tracker must always make it possible for another coding agent to continue without guessing.
+
+---
+
+### VS2-T4 — Secure Upload Endpoint and Private Storage
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 09:40
+End Date: 2026-07-13
+End Time: 10:07
+
+User Outcome:
+- An authenticated project owner can send one bounded MP4, MOV, WebM, or MKV source upload to `POST /api/v1/projects/:projectId/upload`; the API stores it privately and returns `201 { data: { success: true } }`.
+
+Files Changed:
+- apps/api project and storage modules, tests, API package dependencies, and API test TypeScript configuration.
+- packages/config, `.env.example`, `.gitignore`, ESLint configuration, API contract, and this tracker.
+
+Verification:
+- PASS: private generated source paths, sidecar manifests, replacement behavior, and traversal resistance are covered by storage tests.
+- PASS: ownership lookup, non-draft rejection, staged-file cleanup, MIME/extension validation, Multer size mapping, and standard error envelopes are covered by API tests.
+- PASS: `pnpm lint`, `pnpm test` (47 tests), `pnpm typecheck`, `pnpm build`, targeted Prettier checks, and `git diff --check`.
+
+Known Limitations:
+- The local ignored `.env` must add `STORAGE_DRIVER`, `STORAGE_ROOT`, and `MAX_UPLOAD_BYTES` from `.env.example` before the API can start with this feature.
+- Authenticated live upload verification remains pending because local database/browser infrastructure is unavailable. Automated API and storage coverage verifies the behavior.
+- `pnpm audit --prod` reports two existing moderate transitive findings through Better Auth/Next; no high or critical finding was reported and no dependency upgrade was made in this scoped task.
+
+### VS2-T4 Handoff Update — 2026-07-13 10:07 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Current Status: NOT_STARTED
+Last Completed Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Next Recommended Task: VS2-T5 — Probe the generated source/video path with ffprobe, read its private manifest, then persist validated metadata.
+Uncommitted Changes: None.
+Known Failing Tests: None. `pnpm test` passes 47 tests.
+Known Blockers: Local ignored `.env` needs the three documented storage settings for API startup; authenticated browser verification still needs local database/browser infrastructure.
+Important Context: Private source files live at `<STORAGE_ROOT>/users/<encoded-user-id>/projects/<encoded-project-id>/source/{video,manifest.json}`. The API never exposes that path or uses the original filename as a filesystem path.
+Required Commands Before Continuing: Add the storage variables to local `.env`; run `pnpm infra:up`; then use `pnpm dev:api` or `pnpm dev` before VS2-T5 integration work.
+Last Updated Date: 2026-07-13
+Last Updated Time: 10:07
+Last Updated By: Codex
+```
