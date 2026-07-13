@@ -518,17 +518,17 @@ Maximum file size: 500 MB
 Accepted containers: MP4, MOV, WebM, MKV
 ```
 
-### Current VS2-T4 Processing
+### Current VS2-T5 Processing
 
 The endpoint should:
 
-1. Verify ownership.
-2. Validate file size.
-3. Validate the declared MIME type and file extension.
-4. Save the source with generated private filenames under the configured storage root.
-5. Return a stored-but-unvalidated success response.
+1. Verify ownership and draft status.
+2. Validate file size, declared MIME type, and extension.
+3. Save the source with generated private filenames under the configured storage root.
+4. Probe the generated source path with `ffprobe` and reject unreadable, unsupported, over-limit, or audio-less media.
+5. Persist the validated metadata and mark the project uploaded.
 
-`ffprobe`, duration/audio validation, uploaded-video persistence, and credit calculation are introduced by VS2-T5 through VS2-T7.
+Credit calculation and the metadata UI are introduced by VS2-T6 through VS2-T7.
 
 ### Response — 201
 
@@ -545,6 +545,8 @@ The endpoint should:
 ```text
 UPLOAD_FILE_TOO_LARGE
 UPLOAD_INVALID_FILE
+UPLOAD_INVALID_VIDEO
+UPLOAD_PROBE_FAILED
 UPLOAD_STORAGE_FAILED
 PROJECT_NOT_FOUND
 PROJECT_UPLOAD_NOT_ALLOWED

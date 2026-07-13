@@ -45,7 +45,10 @@ const serverEnvironmentSchema = z.object({
 const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   APP_URL: z.string().url(),
   API_PORT: z.coerce.number().int().min(1).max(65_535),
+  FFPROBE_PATH: z.string().trim().min(1),
+  FILE_RETENTION_DAYS: z.coerce.number().int().positive(),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
+  MAX_VIDEO_DURATION_SECONDS: z.coerce.number().int().positive(),
   STORAGE_DRIVER: z.literal("local"),
   STORAGE_ROOT: z.string().trim().min(1),
 });
@@ -83,7 +86,10 @@ export interface ServerConfig {
 export interface ApiConfig extends ServerConfig {
   readonly apiPort: number;
   readonly appUrl: string;
+  readonly ffprobePath: string;
+  readonly fileRetentionDays: number;
   readonly maxUploadBytes: number;
+  readonly maxVideoDurationSeconds: number;
   readonly storageDriver: "local";
   readonly storageRoot: string;
 }
@@ -183,9 +189,12 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
+    ffprobePath: parsed.FFPROBE_PATH,
+    fileRetentionDays: parsed.FILE_RETENTION_DAYS,
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
     maxUploadBytes: parsed.MAX_UPLOAD_BYTES,
+    maxVideoDurationSeconds: parsed.MAX_VIDEO_DURATION_SECONDS,
     nodeEnv: parsed.NODE_ENV,
     redisUrl: parsed.REDIS_URL,
     storageDriver: parsed.STORAGE_DRIVER,

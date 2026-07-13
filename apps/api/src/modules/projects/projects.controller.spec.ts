@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AuthenticatedRequest } from "../auth/auth.guard";
 import { ProjectsController } from "./projects.controller";
-import type { ProjectsService } from "./projects.service";
+import { ProjectUploadError, type ProjectsService } from "./projects.service";
 
 const request = {
   id: "req_project_test",
@@ -123,5 +123,39 @@ describe("ProjectsController", () => {
       BadRequestException,
     );
     expect(discardStagedUpload).toHaveBeenCalledWith(file.path);
+  });
+
+  it("returns the standard invalid-video envelope without leaking source details", async () => {
+    const controller = new ProjectsController({
+      storeSourceUpload: vi
+        .fn()
+        .mockRejectedValue(
+          new ProjectUploadError(
+            "UPLOAD_INVALID_VIDEO",
+            422,
+            "This video does not contain an audio track.",
+          ),
+        ),
+    } as unknown as ProjectsService);
+    const file = {
+      mimetype: "video/mp4",
+      originalname: "episode.mp4",
+      path: "C:/private/staging/upload",
+      size: 1024,
+    } as Express.Multer.File;
+
+    const error = await controller
+      .upload(project.id, file, request)
+      .catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(UnprocessableEntityException);
+    expect((error as UnprocessableEntityException).getResponse()).toEqual({
+      error: {
+        code: "UPLOAD_INVALID_VIDEO",
+        details: null,
+        message: "This video does not contain an audio track.",
+        requestId: "req_project_test",
+      },
+    });
   });
 });

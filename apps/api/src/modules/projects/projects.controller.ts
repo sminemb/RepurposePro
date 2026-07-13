@@ -126,6 +126,10 @@ export class ProjectsController {
           throw new ConflictException(response);
         }
 
+        if (error.statusCode === 422) {
+          throw new UnprocessableEntityException(response);
+        }
+
         throw new InternalServerErrorException(response);
       }
 

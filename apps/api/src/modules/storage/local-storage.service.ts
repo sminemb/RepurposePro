@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { access, mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export interface LocalStorageConfig {
@@ -21,12 +21,17 @@ export interface SourcePaths {
   readonly video: string;
 }
 
-interface SourceManifest {
+export interface SourceManifest {
   readonly fileSizeBytes: number;
   readonly mimeType: string;
   readonly originalFileName: string;
   readonly storedAt: string;
   readonly version: 1;
+}
+
+export interface StoredSourceUpload {
+  readonly manifest: SourceManifest;
+  readonly videoPath: string;
 }
 
 export class LocalStorageService {
@@ -116,6 +121,20 @@ export class LocalStorageService {
     await rm(this.assertStagedPath(stagedPath), { force: true });
   }
 
+  public async readSourceUpload(userId: string, projectId: string): Promise<StoredSourceUpload> {
+    const sourcePaths = this.sourcePaths(userId, projectId);
+    const contents = await readFile(sourcePaths.manifest, "utf8");
+    const manifest = this.parseManifest(contents);
+    await stat(sourcePaths.video);
+
+    return { manifest, videoPath: sourcePaths.video };
+  }
+
+  public async removeSourceUpload(userId: string, projectId: string): Promise<void> {
+    const sourcePaths = this.sourcePaths(userId, projectId);
+    await rm(sourcePaths.directory, { force: true, recursive: true });
+  }
+
   private assertStagedPath(stagedPath: string): string {
     const resolvedPath = this.assertWithinRoot(stagedPath);
     const stagingRelativePath = relative(this.stagingRoot, resolvedPath);
@@ -157,6 +176,42 @@ export class LocalStorageService {
       storedAt: new Date().toISOString(),
       version: 1,
     };
+  }
+
+  private parseManifest(contents: string): SourceManifest {
+    try {
+      const parsed: unknown = JSON.parse(contents);
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        !("fileSizeBytes" in parsed) ||
+        !("mimeType" in parsed) ||
+        !("originalFileName" in parsed) ||
+        !("storedAt" in parsed) ||
+        !("version" in parsed)
+      ) {
+        throw new Error("Invalid manifest.");
+      }
+
+      const manifest = parsed as SourceManifest;
+      if (
+        !Number.isSafeInteger(manifest.fileSizeBytes) ||
+        manifest.fileSizeBytes <= 0 ||
+        typeof manifest.mimeType !== "string" ||
+        manifest.mimeType.length === 0 ||
+        typeof manifest.originalFileName !== "string" ||
+        manifest.originalFileName.length === 0 ||
+        typeof manifest.storedAt !== "string" ||
+        Number.isNaN(Date.parse(manifest.storedAt)) ||
+        manifest.version !== 1
+      ) {
+        throw new Error("Invalid manifest.");
+      }
+
+      return manifest;
+    } catch {
+      throw new Error("Stored source metadata is invalid.");
+    }
   }
 
   private storagePathSegment(value: string): string {

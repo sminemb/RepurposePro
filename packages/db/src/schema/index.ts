@@ -1,6 +1,9 @@
 import {
+  bigint,
   boolean,
+  integer,
   index,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -117,5 +120,37 @@ export const projects = pgTable(
   (table) => [
     index("projects_user_created_at_idx").on(table.userId, table.createdAt),
     index("projects_user_status_idx").on(table.userId, table.status),
+  ],
+);
+
+export const uploadedVideos = pgTable(
+  "uploaded_videos",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    originalFileName: text("original_file_name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    mimeType: text("mime_type").notNull(),
+    fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull(),
+    durationSeconds: numeric("duration_seconds", { precision: 12, scale: 3 }).notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    fps: numeric("fps", { precision: 12, scale: 6 }),
+    videoCodec: text("video_codec"),
+    audioCodec: text("audio_codec"),
+    hasAudio: boolean("has_audio").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("uploaded_videos_project_id_unique").on(table.projectId),
+    index("uploaded_videos_expires_at_idx").on(table.expiresAt),
   ],
 );

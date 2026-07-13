@@ -21,7 +21,10 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   LOG_PRETTY: "true",
   STORAGE_DRIVER: "local",
   STORAGE_ROOT: "./storage",
+  FFPROBE_PATH: "ffprobe",
+  FILE_RETENTION_DAYS: "7",
   MAX_UPLOAD_BYTES: "524288000",
+  MAX_VIDEO_DURATION_SECONDS: "1800",
 };
 
 describe("configuration loaders", () => {
@@ -67,7 +70,10 @@ describe("configuration loaders", () => {
     });
 
     expect(config.apiPort).toBe(4000);
+    expect(config.ffprobePath).toBe("ffprobe");
+    expect(config.fileRetentionDays).toBe(7);
     expect(config.maxUploadBytes).toBe(524_288_000);
+    expect(config.maxVideoDurationSeconds).toBe(1_800);
     expect(config.storageDriver).toBe("local");
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
     expect(config.appUrl).toBe("http://localhost:3000");

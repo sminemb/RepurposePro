@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 
 import { DatabaseService } from "../infrastructure/database.service";
 import { LocalStorageService } from "../storage/local-storage.service";
+import { VideoProbeError, VideoProbeService } from "../storage/video-probe.service";
 import { schema } from "@repurposepro/db";
 
 import {
@@ -13,13 +14,17 @@ import {
   type SourceVideoUploadInput,
 } from "./projects.contracts";
 
-const { projects } = schema;
+const { projects, uploadedVideos } = schema;
 
 export class ProjectUploadError extends Error {
   public constructor(
     public readonly code:
-      "PROJECT_NOT_FOUND" | "PROJECT_UPLOAD_NOT_ALLOWED" | "UPLOAD_STORAGE_FAILED",
-    public readonly statusCode: 404 | 409 | 500,
+      | "PROJECT_NOT_FOUND"
+      | "PROJECT_UPLOAD_NOT_ALLOWED"
+      | "UPLOAD_INVALID_VIDEO"
+      | "UPLOAD_PROBE_FAILED"
+      | "UPLOAD_STORAGE_FAILED",
+    public readonly statusCode: 404 | 409 | 422 | 500,
     message: string,
   ) {
     super(message);
@@ -32,6 +37,7 @@ export class ProjectsService {
   public constructor(
     private readonly databaseService: DatabaseService,
     private readonly localStorageService: LocalStorageService,
+    private readonly videoProbeService: VideoProbeService,
   ) {}
 
   public async create(userId: string, input: CreateProjectInput): Promise<ProjectSummary> {
@@ -144,7 +150,65 @@ export class ProjectsService {
 
     try {
       await this.localStorageService.commitSourceUpload({ ...upload, projectId, userId });
-    } catch {
+      const source = await this.localStorageService.readSourceUpload(userId, projectId);
+      const metadata = await this.videoProbeService.probe(source.videoPath);
+      const expiresAt = new Date(
+        Date.now() + this.videoProbeService.fileRetentionDays * 24 * 60 * 60 * 1000,
+      );
+
+      await this.databaseService.database.db.transaction(async (transaction) => {
+        const [updatedProject] = await transaction
+          .update(projects)
+          .set({ status: "uploaded" })
+          .where(
+            and(
+              eq(projects.id, projectId),
+              eq(projects.userId, userId),
+              eq(projects.status, "draft"),
+              isNull(projects.deletedAt),
+            ),
+          )
+          .returning({ id: projects.id });
+
+        if (!updatedProject) {
+          throw new ProjectUploadError(
+            "PROJECT_UPLOAD_NOT_ALLOWED",
+            409,
+            "This project can no longer accept a source video.",
+          );
+        }
+
+        await transaction.insert(uploadedVideos).values({
+          audioCodec: metadata.audioCodec,
+          durationSeconds: metadata.durationSeconds.toString(),
+          expiresAt,
+          fileSizeBytes: source.manifest.fileSizeBytes,
+          fps: metadata.fps?.toString() ?? null,
+          hasAudio: metadata.hasAudio,
+          height: metadata.height,
+          mimeType: source.manifest.mimeType,
+          originalFileName: source.manifest.originalFileName,
+          projectId,
+          storagePath: source.videoPath,
+          videoCodec: metadata.videoCodec,
+          width: metadata.width,
+        });
+      });
+    } catch (error) {
+      await this.removeSourceUpload(userId, projectId);
+
+      if (error instanceof ProjectUploadError) {
+        throw error;
+      }
+
+      if (error instanceof VideoProbeError) {
+        if (error.failure === "probe_failed") {
+          throw new ProjectUploadError("UPLOAD_PROBE_FAILED", 500, error.message);
+        }
+
+        throw new ProjectUploadError("UPLOAD_INVALID_VIDEO", 422, error.message);
+      }
+
       await this.discardStagedUpload(upload.stagedPath);
       throw new ProjectUploadError(
         "UPLOAD_STORAGE_FAILED",
@@ -157,6 +221,14 @@ export class ProjectsService {
   public async discardStagedUpload(stagedPath: string): Promise<void> {
     try {
       await this.localStorageService.discardStagedUpload(stagedPath);
+    } catch {
+      // Cleanup must never replace a safe user-facing upload error.
+    }
+  }
+
+  private async removeSourceUpload(userId: string, projectId: string): Promise<void> {
+    try {
+      await this.localStorageService.removeSourceUpload(userId, projectId);
     } catch {
       // Cleanup must never replace a safe user-facing upload error.
     }

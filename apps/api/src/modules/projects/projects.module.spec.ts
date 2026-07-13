@@ -11,7 +11,10 @@ import { UploadFileInterceptor } from "./upload-file.interceptor";
 
 describe("ProjectsModule", () => {
   beforeEach(() => {
+    vi.stubEnv("FFPROBE_PATH", "ffprobe");
+    vi.stubEnv("FILE_RETENTION_DAYS", "7");
     vi.stubEnv("MAX_UPLOAD_BYTES", "524288000");
+    vi.stubEnv("MAX_VIDEO_DURATION_SECONDS", "1800");
     vi.stubEnv("STORAGE_DRIVER", "local");
     vi.stubEnv("STORAGE_ROOT", "./storage");
   });

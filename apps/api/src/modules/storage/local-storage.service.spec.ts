@@ -110,4 +110,30 @@ describe("LocalStorageService", () => {
       "source",
     ]);
   });
+
+  it("reads trusted source metadata and removes an invalid committed source", async () => {
+    const service = await createService();
+    const stagedPath = await stageFile(service, "staged-upload");
+    await service.commitSourceUpload({
+      fileSizeBytes: 12,
+      mimeType: "video/mp4",
+      originalFileName: "episode.mp4",
+      projectId: "project-123",
+      stagedPath,
+      userId: "user-123",
+    });
+
+    await expect(service.readSourceUpload("user-123", "project-123")).resolves.toMatchObject({
+      manifest: {
+        fileSizeBytes: 12,
+        mimeType: "video/mp4",
+        originalFileName: "episode.mp4",
+      },
+    });
+
+    await service.removeSourceUpload("user-123", "project-123");
+    await expect(
+      readFile(service.sourcePaths("user-123", "project-123").video, "utf8"),
+    ).rejects.toThrow();
+  });
 });

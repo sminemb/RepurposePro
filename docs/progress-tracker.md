@@ -1645,3 +1645,47 @@ Last Updated Date: 2026-07-13
 Last Updated Time: 10:07
 Last Updated By: Codex
 ```
+
+---
+
+### VS2-T5 Start Update — 2026-07-13 10:28 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Current Status: IN_PROGRESS
+Start Date: 2026-07-13
+Start Time: 10:28
+Last Completed Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Next Recommended Task: Complete VS2-T5 validation, metadata persistence, and verification.
+Uncommitted Changes: Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None. `pnpm test` passed 47 tests before VS2-T5.
+Known Blockers: Local ignored `.env` needs the documented storage configuration for live API verification.
+Important Context: VS2-T5 will probe only generated private source paths; source metadata becomes durable only after a successful validated probe.
+Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check before merge.
+Last Updated Date: 2026-07-13
+Last Updated Time: 10:28
+Last Updated By: Codex
+```
+
+---
+
+### VS2-T5 Completion Update — 2026-07-13 10:54 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Status: NOT_STARTED
+Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Next Recommended Task: VS2-T6 — Calculate and persist/display the required credits from uploaded_videos.duration_seconds.
+Uncommitted Changes: VS2-T5 changes are ready to commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally uncommitted.
+Known Failing Tests: None. `pnpm test` passes 58 tests.
+Known Blockers: `pnpm ci:check` stops at 8 unrelated pre-existing formatting violations. Live authenticated upload verification is blocked because Docker cannot access C:\Users\Andrey\.docker\config.json; `pnpm infra:status` cannot run.
+Important Context: The upload endpoint now probes only the generated private source path. Validated metadata is stored in uploaded_videos and the project transitions atomically to uploaded. Invalid or unprobeable source files are removed and return safe 422/500 envelopes without filesystem details.
+Files Changed: API storage/projects modules and tests; API configuration and .env.example; uploaded_videos Drizzle schema/migration; API contract; progress tracker.
+Commands Run: pnpm db:generate; targeted Vitest runs; pnpm test; pnpm lint; focused ESLint; pnpm typecheck; pnpm build; pnpm ci:check; targeted Prettier check; git diff --check; ffprobe -version.
+Verification Results: PASS — 58 tests, focused final-file lint, typecheck, build, targeted Prettier, diff check, and ffprobe availability. The full lint passed before the final malformed-output regression guard; its repeat exceeded the 120-second command limit without reporting an ESLint error. EXPECTED BLOCKER — full CI format check reports only 8 pre-existing unrelated files.
+Last Updated Date: 2026-07-13
+Last Updated Time: 10:54
+Last Updated By: Codex
+```
