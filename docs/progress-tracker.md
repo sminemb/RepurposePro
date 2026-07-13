@@ -129,11 +129,11 @@ Current Status: NOT_STARTED
 Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
-Last Completed Task: VS2-DOCS-1 — Reconcile completed VS2 tasks with their execution logs
+Last Completed Task: DOCS-CAVEMAN-20260713 — Require caveman skill for every agent reply
 Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 14:46
+Last Updated Time: 14:55
 Last Updated By: Codex
 ```
 
@@ -1754,5 +1754,27 @@ Commands Run: pnpm exec prettier --check docs/progress-tracker.md; git diff --ch
 Verification Results: PASS — Prettier and git diff checks pass; the tracker now matches the VS2 execution and diagnostic logs.
 Last Updated Date: 2026-07-13
 Last Updated Time: 14:46
+Last Updated By: Codex
+```
+
+---
+
+### DOCS-CAVEMAN-20260713 Completion Update — 2026-07-13 14:55 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Status: NOT_STARTED
+Last Completed Task: DOCS-CAVEMAN-20260713 — Require caveman skill for every agent reply
+Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
+Uncommitted Changes: None after the task commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None for this docs-only task.
+Known Blockers: None for this docs-only task.
+Important Context: AGENTS.md now requires every project agent reply to use the installed caveman skill, including reading its SKILL.md before responding and keeping it active until the user explicitly asks to stop caveman or return to normal mode.
+Files Changed: AGENTS.md; docs/progress-tracker.md.
+Commands Run: Get-Content required docs and caveman SKILL.md; rg --files for doc discovery; Get-Date; pnpm exec prettier --check AGENTS.md docs\progress-tracker.md; git diff --check; git diff -- AGENTS.md docs\progress-tracker.md; git status --short.
+Verification Results: PASS — Prettier check and git diff whitespace check passed.
+Last Updated Date: 2026-07-13
+Last Updated Time: 14:55
 Last Updated By: Codex
 ```

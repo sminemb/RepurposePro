@@ -37,6 +37,7 @@ The goal is to ensure that any coding agent can:
 ## 1.1 Required Skills
 
 - This project uses the installed skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills). For any task that matches an installed skill's description, agents must use that skill before acting: read its `SKILL.md`, follow its workflow, and combine it with these RepurposePro rules.
+- Always use the installed `caveman` skill for every reply in this project. Read its `SKILL.md` before responding, keep the skill active across turns, and stop only if the user explicitly asks to stop caveman or return to normal mode.
 - When dealing with UI or frontend work, always use the ui-ux-pro-max, design-taste-frontend, and image-to-code skills along with the other frontend skills at your disposal.
 
 ---
