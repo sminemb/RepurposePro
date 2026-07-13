@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T5 | 50% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T6 | 71% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -129,11 +129,11 @@ Current Status: NOT_STARTED
 Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
-Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Last Completed Task: VS2-DOCS-1 — Reconcile completed VS2 tasks with their execution logs
 Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 14:37
+Last Updated Time: 14:46
 Last Updated By: Codex
 ```
 
@@ -250,7 +250,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Start Time | 17:06 |
 | End Date | — |
 | End Time | — |
-| Progress | 50% |
+| Progress | 71% |
 | Dependency | VS1 |
 
 ## Tasks
@@ -264,8 +264,10 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-T3-R1 | Fix Create Project Server Action export error | Web + Tests | COMPLETED | 2026-07-13 | 09:08 | 2026-07-13 | 09:11 | Server Action module now exports only its async action; regression test and dev loader check pass. |
 | VS2-T3 | Build local upload UI with progress | Web | COMPLETED | 2026-07-13 | 08:44 | 2026-07-13 | 08:55 | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass. |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | COMPLETED | 2026-07-13 | 09:40 | 2026-07-13 | 10:07 | Private storage, ownership, multipart limits, and focused API/storage tests pass. |
-| VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
-| VS2-T6 | Enforce 500 MB and 30-minute MVP limits | Web + API + Tests | NOT_STARTED | — | — | — | — | — |
+| VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | COMPLETED | 2026-07-13 | 10:28 | 2026-07-13 | 10:54 | Metadata persistence, focused tests, typecheck, build, and ffprobe availability verified. |
+| VS2-DEBUG-1 | Apply the pending uploaded_videos database migration | Database + API verification | COMPLETED | 2026-07-13 | 14:31 | 2026-07-13 | 14:37 | Migration applied; API readiness, 35 focused tests, and API typecheck pass. |
+| VS2-DOCS-1 | Reconcile completed VS2 tasks with their execution logs | Documentation | COMPLETED | 2026-07-13 | 14:46 | 2026-07-13 | 14:46 | VS2 task table, slice summary, and handoff reflect the completed upload and diagnostic work. |
+| VS2-T6 | Calculate required credits from validated duration | API + Tests | NOT_STARTED | — | — | — | — | — |
 | VS2-T7 | Display validated video metadata and required credits estimate | Web + API | NOT_STARTED | — | — | — | — | — |
 
 ## Slice Acceptance Criteria
@@ -1730,5 +1732,27 @@ Commands Run: pnpm --filter @repurposepro/db run db:migrate (applied, then idemp
 Verification Results: PASS — migration application succeeded, the API readiness endpoint reports database and Redis up, 35 focused tests pass, API typecheck passes, and diff check passes.
 Last Updated Date: 2026-07-13
 Last Updated Time: 14:37
+Last Updated By: Codex
+```
+
+---
+
+### VS2-DOCS-1 Completion Update — 2026-07-13 14:46 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Status: NOT_STARTED
+Last Completed Task: VS2-DOCS-1 — Reconcile completed VS2 tasks with their execution logs
+Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
+Uncommitted Changes: Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None. This is a documentation reconciliation only.
+Known Blockers: Full uploaded-source playback remains unimplemented; it requires an authorized streaming endpoint and UI player, while browser clip previews are planned in VS4-T8.
+Important Context: VS2-T1 through VS2-T5 are complete. VS2-DEBUG-1 is also complete after applying the pending uploaded_videos migration. VS2-T6 and VS2-T7 remain the only planned product tasks not started.
+Files Changed: docs/progress-tracker.md.
+Commands Run: pnpm exec prettier --check docs/progress-tracker.md; git diff --check; git diff -- docs/progress-tracker.md.
+Verification Results: PASS — Prettier and git diff checks pass; the tracker now matches the VS2 execution and diagnostic logs.
+Last Updated Date: 2026-07-13
+Last Updated Time: 14:46
 Last Updated By: Codex
 ```
