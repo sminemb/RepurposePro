@@ -5,11 +5,9 @@ import { redirect } from "next/navigation";
 
 import { createProject } from "../server/projects-api";
 
-export interface CreateProjectFormState {
+interface CreateProjectFormState {
   readonly error: string | null;
 }
-
-export const initialCreateProjectFormState: CreateProjectFormState = { error: null };
 
 export async function createProjectAction(
   _previousState: CreateProjectFormState,

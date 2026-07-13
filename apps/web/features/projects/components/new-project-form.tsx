@@ -3,7 +3,7 @@
 import { Check, Clapperboard, FileVideo, LoaderCircle } from "lucide-react";
 import { useActionState, useState } from "react";
 
-import { createProjectAction, initialCreateProjectFormState } from "../actions/create-project";
+import { createProjectAction } from "../actions/create-project";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,8 @@ const outputTypes = [
     value: "summary",
   },
 ] as const;
+
+const initialCreateProjectFormState: { readonly error: string | null } = { error: null };
 
 export function NewProjectForm() {
   const [selectedOutputType, setSelectedOutputType] = useState<(typeof outputTypes)[number]["value"]>(

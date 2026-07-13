@@ -128,11 +128,11 @@ Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 Current Status: NOT_STARTED
 Current Branch: main
 
-Last Completed Task: VS2-T3 — Build local upload UI with progress
+Last Completed Task: VS2-T3-R1 — Fix Create Project Server Action export error
 Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 08:55
+Last Updated Time: 09:11
 Last Updated By: Codex
 ```
 
@@ -260,6 +260,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-T2 | Build new project UI for clips or summary | Web + API | COMPLETED | 2026-07-12 | 17:06 | 2026-07-12 | 17:31 | Workspace typecheck, lint, focused tests, and production build pass. |
 | VS2-R1 | Restore API startup after protected-project dependency-injection regression | API + Tests | COMPLETED | 2026-07-12 | 17:54 | 2026-07-12 | 18:03 | Exported `AuthService`, added a module-compilation regression test, and verified API liveness returns HTTP 200. |
 | VS2-UI-R3 | Fix active project navigation state | Web + Tests | COMPLETED | 2026-07-13 | 07:19 | 2026-07-13 | 07:29 | Route matcher tests pass; desktop and 390px mobile browser checks show New Project active on `/projects/new`. |
+| VS2-T3-R1 | Fix Create Project Server Action export error | Web + Tests | COMPLETED | 2026-07-13 | 09:08 | 2026-07-13 | 09:11 | Server Action module now exports only its async action; regression test and dev loader check pass. |
 | VS2-T3 | Build local upload UI with progress | Web | COMPLETED | 2026-07-13 | 08:44 | 2026-07-13 | 08:55 | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass. |
 | VS2-T4 | Implement secure upload endpoint and storage pathing | API + Storage | NOT_STARTED | — | — | — | — | — |
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | NOT_STARTED | — | — | — | — | — |
@@ -1240,6 +1241,33 @@ Notes:
 
 ---
 
+### VS2-T3-R1 — Fix Create Project Server Action Export Error
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 09:08
+End Date: 2026-07-13
+End Time: 09:11
+
+User Outcome:
+- The Create project form loads and submits without Next.js rejecting the Server Action module.
+
+Files Changed:
+- apps/web/features/projects/actions/create-project.ts
+- apps/web/features/projects/actions/create-project-server-action.spec.ts
+- apps/web/features/projects/components/new-project-form.tsx
+- docs/progress-tracker.md
+
+Verification:
+- PASS: The regression test failed with the invalid object export, then passed after the fix.
+- PASS: workspace typecheck, lint, 31 Vitest tests, and the production web build pass.
+- PASS: the development server loads `/projects/new` without a Server Action loader error or browser-console errors; it redirects the unauthenticated test browser to login.
+
+Known Limitations:
+- Authenticated form submission was not run because the isolated browser has no test session. The action's API and redirect behavior are unchanged.
+
+---
+
 ## 10. Files Changed Log
 
 | Date | Task ID | File | Change Summary |
@@ -1258,6 +1286,7 @@ Notes:
 | 2026-07-12 | VS2-R1 | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
 | 2026-07-13 | VS2-UI-R3 | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests. |
 | 2026-07-13 | VS2-T3 | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it. |
+| 2026-07-13 | VS2-T3-R1 | apps/web project action/form, docs/progress-tracker.md | Removed the invalid runtime export from the Server Action module and guarded the Next.js export restriction. |
 
 ---
 
@@ -1416,6 +1445,24 @@ Uncommitted Changes: None.
 Known Failing Tests: None for VS2-T3; 30 Vitest tests pass.
 Known Blockers: Full `pnpm format:check` has 11 unrelated pre-existing failures; Docker config access prevents live authenticated browser verification.
 Important Context: The UI posts multipart `FormData` with real XMLHttpRequest byte progress to the documented endpoint. VS2-T4 must implement that endpoint, storage pathing, and ownership enforcement before a successful upload is possible.
+Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check.
+Last Updated By: Codex
+```
+
+---
+
+### VS2-T3-R1 Handoff Update — 2026-07-13 09:11 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Current Status: NOT_STARTED
+Last Completed Task: VS2-T3-R1 — Fix Create Project Server Action export error
+Next Recommended Task: VS2-T4 — Implement secure upload endpoint and storage pathing
+Uncommitted Changes: None after the task commit.
+Known Failing Tests: None; 31 Vitest tests pass.
+Known Blockers: Authenticated browser submission remains unverified because the isolated browser has no test session.
+Important Context: Server Action modules with module-level `"use server"` may export only async functions at runtime. Keep form initial state in the client component.
 Required Commands Before Continuing: pnpm infra:up; pnpm dev:api or pnpm dev; pnpm ci:check.
 Last Updated By: Codex
 ```
