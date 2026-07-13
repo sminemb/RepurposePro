@@ -126,13 +126,14 @@ FAILED
 Current Slice: VS2 — User can create a project and upload a validated video
 Current Task: VS2-T6 — Calculate required credits from validated duration
 Current Status: NOT_STARTED
+Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
 Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
 Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 10:59
+Last Updated Time: 14:37
 Last Updated By: Codex
 ```
 
@@ -1687,5 +1688,47 @@ Commands Run: pnpm db:generate; targeted Vitest runs; pnpm test; pnpm lint; focu
 Verification Results: PASS — 58 tests, focused final-file lint, typecheck, build, targeted Prettier, diff check, and ffprobe availability. The full lint passed before the final malformed-output regression guard; its repeat exceeded the 120-second command limit without reporting an ESLint error. EXPECTED BLOCKER — full CI format check reports only 8 pre-existing unrelated files.
 Last Updated Date: 2026-07-13
 Last Updated Time: 10:54
+Last Updated By: Codex
+```
+
+---
+
+### VS2-DEBUG-1 Start Update — 2026-07-13 14:31 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-DEBUG-1 — Diagnose API upload 500 response
+Current Status: IN_PROGRESS
+Last Completed Task: VS2-T5 — Probe duration, resolution, audio presence, and format with ffprobe
+Next Recommended Task: Resolve the reported API 500 before resuming VS2-T6.
+Uncommitted Changes: Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None observed.
+Known Blockers: The report includes only Pino's completion log, not the request URL or response body. Health endpoints are live and ready.
+Important Context: Pino's `failed with status code 500` entry is an automatic completion log. It does not contain the original error; current investigation is focused on the active VS2 upload route.
+Required Commands Before Continuing: Run the focused API tests and reproduce the failing authenticated upload request.
+Last Updated Date: 2026-07-13
+Last Updated Time: 14:31
+Last Updated By: Codex
+```
+
+---
+
+### VS2-DEBUG-1 Completion Update — 2026-07-13 14:37 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Status: NOT_STARTED
+Last Completed Task: VS2-DEBUG-1 — Apply the pending uploaded_videos database migration
+Next Recommended Task: Resume VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
+Uncommitted Changes: Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None. Focused projects/storage tests pass (35 tests) and API typecheck passes.
+Known Blockers: Authenticated end-to-end upload was not replayed because the report omitted the request URL/body and no disposable authenticated session was available. The schema migration was pending and is now applied.
+Important Context: The Pino `failed with status code 500` line is emitted after a failing response. The new upload flow writes to uploaded_videos; the pending migration prevented that write and caused the upload's safe 500 envelope. `pnpm --filter @repurposepro/db run db:migrate` applied it successfully.
+Files Changed: docs/progress-tracker.md. Local database schema advanced by the existing uploaded_videos migration.
+Commands Run: pnpm --filter @repurposepro/db run db:migrate (applied, then idempotently rechecked); pnpm exec vitest run apps/api/src/modules/projects apps/api/src/modules/storage; pnpm --filter @repurposepro/api run typecheck; curl http://127.0.0.1:4000/api/v1/health/ready; git diff --check.
+Verification Results: PASS — migration application succeeded, the API readiness endpoint reports database and Redis up, 35 focused tests pass, API typecheck passes, and diff check passes.
+Last Updated Date: 2026-07-13
+Last Updated Time: 14:37
 Last Updated By: Codex
 ```
