@@ -227,6 +227,7 @@ Use regular CSS custom properties for values that may be referenced by Tailwind,
   --rp-primary-foreground: #FFFFFF;
   --rp-primary-ambient: rgb(196 82 42 / 0.14);
   --rp-primary-ambient-subtle: rgb(196 82 42 / 0.13);
+  --rp-primary-ambient-strong: rgb(196 82 42 / 0.15);
 
   --rp-success: #42D392;
   --rp-success-soft: #123A2A;

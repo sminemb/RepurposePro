@@ -24,6 +24,7 @@
   --rp-primary-foreground: #ffffff;
   --rp-primary-ambient: rgb(196 82 42 / 0.14);
   --rp-primary-ambient-subtle: rgb(196 82 42 / 0.13);
+  --rp-primary-ambient-strong: rgb(196 82 42 / 0.15);
   --rp-success: #42d392;
   --rp-success-soft: #123a2a;
   --rp-warning: #f5c542;
