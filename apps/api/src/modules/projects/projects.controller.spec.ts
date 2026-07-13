@@ -1,5 +1,9 @@
-import type { ProjectSummary } from "@repurposepro/shared";
-import { BadRequestException, UnprocessableEntityException } from "@nestjs/common";
+import type { ProjectSummary, SourceVideoMetadata } from "@repurposepro/shared";
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthenticatedRequest } from "../auth/auth.guard";
@@ -19,6 +23,19 @@ const project: ProjectSummary = {
   name: "Creator breakdown",
   outputType: "clips",
   status: "draft",
+};
+
+const sourceVideo: SourceVideoMetadata = {
+  durationSeconds: 60.001,
+  expiresAt: "2026-07-20T02:00:00.000Z",
+  fileName: "episode.mp4",
+  fileSizeBytes: 1024,
+  fps: 30,
+  hasAudio: true,
+  height: 1080,
+  id: "f5e14a5f-6d36-4449-a9c3-5e5c67a5344e",
+  requiredCredits: 2,
+  width: 1920,
 };
 
 describe("ProjectsController", () => {
@@ -48,6 +65,40 @@ describe("ProjectsController", () => {
       meta: { nextCursor: null },
     });
     expect(list).toHaveBeenCalledWith("user_1", { limit: 5, outputType: "clips", status: "draft" });
+  });
+
+  it("returns source video metadata for the authenticated project owner", async () => {
+    const getSourceVideo = vi.fn().mockResolvedValue(sourceVideo);
+    const controller = new ProjectsController({ getSourceVideo } as unknown as ProjectsService);
+
+    await expect(controller.getSourceVideo(project.id, request)).resolves.toEqual({
+      data: sourceVideo,
+    });
+    expect(getSourceVideo).toHaveBeenCalledWith("user_1", project.id);
+  });
+
+  it("returns a safe not-found envelope when no owned source video exists", async () => {
+    const controller = new ProjectsController({
+      getSourceVideo: vi
+        .fn()
+        .mockRejectedValue(
+          new ProjectUploadError("PROJECT_NOT_FOUND", 404, "Project or source video not found."),
+        ),
+    } as unknown as ProjectsService);
+
+    const error = await controller
+      .getSourceVideo(project.id, request)
+      .catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(NotFoundException);
+    expect((error as NotFoundException).getResponse()).toEqual({
+      error: {
+        code: "PROJECT_NOT_FOUND",
+        details: null,
+        message: "Project or source video not found.",
+        requestId: "req_project_test",
+      },
+    });
   });
 
   it("returns the standard validation error envelope for invalid input", async () => {

@@ -1,4 +1,9 @@
-import type { ApiListSuccess, ApiSuccess, ProjectSummary } from "@repurposepro/shared";
+import type {
+  ApiListSuccess,
+  ApiSuccess,
+  ProjectSummary,
+  SourceVideoMetadata,
+} from "@repurposepro/shared";
 import {
   BadRequestException,
   Body,
@@ -59,6 +64,33 @@ export class ProjectsController {
     const input = this.parseOrThrow(() => parseListProjectsInput(query), request);
 
     return this.projectsService.list(this.userId(request), input);
+  }
+
+  @Get(":projectId/video")
+  public async getSourceVideo(
+    @Param("projectId") projectId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ApiSuccess<SourceVideoMetadata>> {
+    const parsedProjectId = this.parseOrThrow(() => parseProjectId(projectId), request);
+
+    try {
+      return {
+        data: await this.projectsService.getSourceVideo(this.userId(request), parsedProjectId),
+      };
+    } catch (error) {
+      if (error instanceof ProjectUploadError) {
+        throw new NotFoundException({
+          error: {
+            code: error.code,
+            details: null,
+            message: error.message,
+            requestId: request.id ?? "req_unknown",
+          },
+        });
+      }
+
+      throw error;
+    }
   }
 
   @Post(":projectId/upload")

@@ -1,5 +1,11 @@
 import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
-import type { ApiListSuccess, CreateProjectInput, ProjectSummary } from "@repurposepro/shared";
+import {
+  calculateRequiredCredits,
+  type ApiListSuccess,
+  type CreateProjectInput,
+  type ProjectSummary,
+  type SourceVideoMetadata,
+} from "@repurposepro/shared";
 import { Injectable } from "@nestjs/common";
 
 import { DatabaseService } from "../infrastructure/database.service";
@@ -216,6 +222,51 @@ export class ProjectsService {
         "We could not store this video. Please try again.",
       );
     }
+  }
+
+  public async getSourceVideo(userId: string, projectId: string): Promise<SourceVideoMetadata> {
+    const [video] = await this.databaseService.database.db
+      .select({
+        durationSeconds: uploadedVideos.durationSeconds,
+        expiresAt: uploadedVideos.expiresAt,
+        fileSizeBytes: uploadedVideos.fileSizeBytes,
+        fps: uploadedVideos.fps,
+        hasAudio: uploadedVideos.hasAudio,
+        height: uploadedVideos.height,
+        id: uploadedVideos.id,
+        originalFileName: uploadedVideos.originalFileName,
+        width: uploadedVideos.width,
+      })
+      .from(uploadedVideos)
+      .innerJoin(projects, eq(projects.id, uploadedVideos.projectId))
+      .where(
+        and(
+          eq(projects.userId, userId),
+          eq(uploadedVideos.projectId, projectId),
+          isNull(projects.deletedAt),
+          isNull(uploadedVideos.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!video) {
+      throw new ProjectUploadError("PROJECT_NOT_FOUND", 404, "Project or source video not found.");
+    }
+
+    const durationSeconds = Number(video.durationSeconds);
+
+    return {
+      durationSeconds,
+      expiresAt: video.expiresAt.toISOString(),
+      fileName: video.originalFileName,
+      fileSizeBytes: video.fileSizeBytes,
+      fps: video.fps === null ? null : Number(video.fps),
+      hasAudio: video.hasAudio,
+      height: video.height,
+      id: video.id,
+      requiredCredits: calculateRequiredCredits(durationSeconds),
+      width: video.width,
+    };
   }
 
   public async discardStagedUpload(stagedPath: string): Promise<void> {

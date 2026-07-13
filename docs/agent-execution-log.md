@@ -583,6 +583,28 @@ Last Updated By: Codex
 
 ---
 
+### VS2-T6 Completion Update — 2026-07-13 16:56 Asia/Manila
+
+```text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS2-T7 — Display validated video metadata and required credits estimate
+Current Status: NOT_STARTED
+Last Completed Task: VS2-T6 — Calculate required credits from validated duration
+Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
+Uncommitted Changes: None after the task commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Known Failing Tests: None. `pnpm test` passes 66 tests.
+Known Blockers: None.
+Important Context: Added `calculateRequiredCredits` and `GET /projects/:projectId/video`. Endpoint verifies project ownership and soft-delete state, returns no storage path, and derives its estimate from durable `duration_seconds`; it does not persist duplicate credit state. VS2-T7 must consume this endpoint to display metadata after upload.
+Files Changed: apps/api projects controller/service and tests; packages/shared project types and tests; eslint.config.mjs; docs/api-contracts.md; docs/progress-tracker.md; docs/agent-execution-log.md; docs/agent-operational-logs.md.
+Commands Run: Focused Vitest red/green runs; pnpm typecheck; pnpm lint; pnpm test; pnpm build; git diff --check; scoped diff review.
+Verification Results: PASS — 66 tests, strict typecheck, lint, and production build pass. Build emitted existing non-blocking Next.js NFT tracing warning from apps/web/next.config.ts.
+Last Updated Date: 2026-07-13
+Last Updated Time: 16:56
+Last Updated By: Codex
+```
+
+---
+
 ### DOCS-TRACKER-SPLIT-20260713 Completion Update — 2026-07-13 15:19 Asia/Manila
 
 ```text

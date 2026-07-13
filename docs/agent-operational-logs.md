@@ -24,6 +24,7 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-13 | DOCS-SKILLS-20260713 | AGENTS.md, docs/progress-tracker.md | Required agents to use relevant installed skills from `addyosmani/agent-skills` and recorded the docs-only update. |
 | 2026-07-13 | VS2-T4 | apps/api projects/storage, packages/config, API docs, tests, lint config | Added private local source storage, protected bounded multipart upload handling, startup configuration, contract/error coverage, and task handoff. |
 | 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md | Moved historical tracker content into focused archive docs and kept the tracker focused on live slice status plus current handoff. |
+| 2026-07-13 | VS2-T6 | apps/api projects, packages/shared, eslint.config.mjs, docs | Added shared minute-rounding rule and authorized source-video metadata API with safe not-found behavior; added regression tests and typed-lint support for shared tests. |
 
 ---
 
@@ -57,6 +58,7 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-13 | VS2-T4 | Focused Vitest, `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm build`, targeted Prettier check, `git diff --check` | PASS — 47 tests, lint, strict types, and production builds pass; targeted formatting and whitespace checks pass. |
 | 2026-07-13 | VS2-T4 | `pnpm audit --prod` | KNOWN BASELINE — reports two moderate transitive vulnerabilities in existing Better Auth/Next development dependencies; no high or critical finding and no task-scoped upgrade applied. |
 | 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | `pnpm exec prettier --check docs/progress-tracker.md docs/agent-execution-log.md docs/agent-operational-logs.md docs/agent-handoff-history.md` + `git diff --check` | PASS — docs formatting and whitespace checks passed after archive split. |
+| 2026-07-13 | VS2-T6 | Focused Vitest + `pnpm typecheck` + `pnpm lint` + `pnpm test` + `pnpm build` + `git diff --check` | PASS — 66 tests, strict types, lint, and all production builds pass. |
 
 Useful commands may include:
 
@@ -91,6 +93,7 @@ ffmpeg ...
 | 2026-07-10 | 13:40 | Pin TypeScript 6.0.3 instead of the newer TypeScript 7 release. | Current typescript-eslint 8 supports TypeScript versions below 6.1; 6.0.3 is the newest compatible release. | VS0 tooling | package manifests, lockfile |
 | 2026-07-13 | 10:07 | Store VS2-T4 uploads privately without an `uploaded_videos` row. | Keeps the task scoped to bounded storage while retaining a private manifest for VS2-T5 probing and VS2-T7 persistence. | VS2 | apps/api storage/projects, docs/api-contracts.md |
 | 2026-07-13 | 15:19 | Split historical progress tracker logs into focused archive docs. | The tracker had grown into a mixed live-status and historical archive; moving completed logs keeps current slice state readable without losing handoff evidence. | Docs | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md |
+| 2026-07-13 | 16:56 | Derive required credits from persisted video duration rather than storing a duplicate. | VS3 must recalculate credits inside its payment transaction; one canonical duration-derived rule prevents preview and charge drift. | VS2, VS3 | packages/shared, apps/api projects, docs/api-contracts.md |
 
 Record decisions such as:
 

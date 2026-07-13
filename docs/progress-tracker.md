@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T6 | 71% | — |
+| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T7 | 86% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -124,16 +124,16 @@ FAILED
 
 ```text
 Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Task: VS2-T7 — Display validated video metadata and required credits estimate
 Current Status: NOT_STARTED
 Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
-Last Completed Task: DOCS-TRACKER-SPLIT-20260713 — Split historical tracker logs into archive docs
-Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
+Last Completed Task: VS2-T6 — Calculate required credits from validated duration
+Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 14:55
+Last Updated Time: 16:56
 Last Updated By: Codex
 ```
 
@@ -267,7 +267,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-T5 | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | COMPLETED | 2026-07-13 | 10:28 | 2026-07-13 | 10:54 | Metadata persistence, focused tests, typecheck, build, and ffprobe availability verified. |
 | VS2-DEBUG-1 | Apply the pending uploaded_videos database migration | Database + API verification | COMPLETED | 2026-07-13 | 14:31 | 2026-07-13 | 14:37 | Migration applied; API readiness, 35 focused tests, and API typecheck pass. |
 | VS2-DOCS-1 | Reconcile completed VS2 tasks with their execution logs | Documentation | COMPLETED | 2026-07-13 | 14:46 | 2026-07-13 | 14:46 | VS2 task table, slice summary, and handoff reflect the completed upload and diagnostic work. |
-| VS2-T6 | Calculate required credits from validated duration | API + Tests | NOT_STARTED | — | — | — | — | — |
+| VS2-T6 | Calculate required credits from validated duration | API + Tests | COMPLETED | 2026-07-13 | 16:47 | 2026-07-13 | 16:56 | Shared round-up rule, authorized source-video metadata endpoint, API contract, 66 tests, typecheck, lint, and production build pass. |
 | VS2-T7 | Display validated video metadata and required credits estimate | Web + API | NOT_STARTED | — | — | — | — | — |
 
 ## Slice Acceptance Criteria
@@ -843,16 +843,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T6 — Calculate required credits from validated duration
+Current Task: VS2-T7 — Display validated video metadata and required credits estimate
 Current Status: NOT_STARTED
-Last Completed Task: DOCS-TRACKER-SPLIT-20260713 — Split historical tracker logs into archive docs
-Next Recommended Task: VS2-T6 — Calculate and persist/display required credits from uploaded_videos.duration_seconds.
+Last Completed Task: VS2-T6 — Calculate required credits from validated duration
+Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
 Uncommitted Changes: None after the task commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
-Known Failing Tests: None for this docs-only cleanup.
+Known Failing Tests: None. `pnpm test` passes 66 tests.
 Known Blockers: None.
-Important Context: Historical content after the old Agent Execution Log section now lives in docs/agent-execution-log.md, docs/agent-operational-logs.md, and docs/agent-handoff-history.md. progress-tracker.md now keeps live slice status, task tables, templates, archive links, and the current handoff only.
-Required Commands Before Continuing: Resume VS2-T6. Run pnpm infra:up if live API/database verification is needed; run pnpm ci:check before merging the next implementation task.
+Important Context: `GET /projects/:projectId/video` returns owned, non-deleted source metadata and `requiredCredits`, derived from persisted duration with `Math.ceil(durationSeconds / 60)`. It never returns storage paths. VS2-T7 must display this result; VS3 must recalculate credits inside its payment transaction.
+Required Commands Before Continuing: Run pnpm infra:up only for live API verification. Implement VS2-T7 without changing credit persistence; run pnpm ci:check before merging.
 Last Updated Date: 2026-07-13
-Last Updated Time: 15:19
+Last Updated Time: 16:56
 Last Updated By: Codex
 ```

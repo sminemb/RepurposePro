@@ -47,6 +47,30 @@ function validProbe(): VideoProbeService {
   } as unknown as VideoProbeService;
 }
 
+function createVideoDatabase(
+  video:
+    | {
+        readonly durationSeconds: string;
+        readonly expiresAt: Date;
+        readonly fileSizeBytes: number;
+        readonly fps: string | null;
+        readonly hasAudio: boolean;
+        readonly height: number;
+        readonly id: string;
+        readonly originalFileName: string;
+        readonly width: number;
+      }
+    | undefined,
+): DatabaseService {
+  const limit = vi.fn().mockResolvedValue(video ? [video] : []);
+  const where = vi.fn().mockReturnValue({ limit });
+  const innerJoin = vi.fn().mockReturnValue({ where });
+  const from = vi.fn().mockReturnValue({ innerJoin });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return { database: { db: { select } } } as unknown as DatabaseService;
+}
+
 describe("ProjectsService.storeSourceUpload", () => {
   it("conceals missing and cross-user projects while removing the staged file", async () => {
     const discardStagedUpload = vi.fn().mockResolvedValue(undefined);
@@ -262,5 +286,52 @@ describe("ProjectsService.storeSourceUpload", () => {
 
     expect(error).toMatchObject({ code: "UPLOAD_STORAGE_FAILED", statusCode: 500 });
     expect(discardStagedUpload).toHaveBeenCalledWith(upload.stagedPath);
+  });
+});
+
+describe("ProjectsService.getSourceVideo", () => {
+  it("returns persisted metadata and rounds the trusted duration up to credits", async () => {
+    const service = new ProjectsService(
+      createVideoDatabase({
+        durationSeconds: "60.001",
+        expiresAt: new Date("2026-07-20T02:00:00.000Z"),
+        fileSizeBytes: 1024,
+        fps: "30",
+        hasAudio: true,
+        height: 1080,
+        id: "video-1",
+        originalFileName: "episode.mp4",
+        width: 1920,
+      }),
+      {} as LocalStorageService,
+      validProbe(),
+    );
+
+    await expect(service.getSourceVideo("user-1", "project-1")).resolves.toEqual({
+      durationSeconds: 60.001,
+      expiresAt: "2026-07-20T02:00:00.000Z",
+      fileName: "episode.mp4",
+      fileSizeBytes: 1024,
+      fps: 30,
+      hasAudio: true,
+      height: 1080,
+      id: "video-1",
+      requiredCredits: 2,
+      width: 1920,
+    });
+  });
+
+  it("returns a safe not-found error when no owned source video is available", async () => {
+    const service = new ProjectsService(
+      createVideoDatabase(undefined),
+      {} as LocalStorageService,
+      validProbe(),
+    );
+
+    await expect(service.getSourceVideo("other-user", "project-1")).rejects.toMatchObject({
+      code: "PROJECT_NOT_FOUND",
+      message: "Project or source video not found.",
+      statusCode: 404,
+    });
   });
 });

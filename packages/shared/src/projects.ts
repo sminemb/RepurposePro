@@ -28,6 +28,19 @@ export interface CreateProjectInput {
   readonly outputType: ProjectOutputType;
 }
 
+export interface SourceVideoMetadata {
+  readonly durationSeconds: number;
+  readonly expiresAt: string;
+  readonly fileName: string;
+  readonly fileSizeBytes: number;
+  readonly fps: number | null;
+  readonly hasAudio: boolean;
+  readonly height: number;
+  readonly id: string;
+  readonly requiredCredits: number;
+  readonly width: number;
+}
+
 export interface ProjectSummary {
   readonly clipCount: number;
   readonly createdAt: string;
@@ -45,4 +58,8 @@ export interface ProjectListMeta {
 export interface ApiListSuccess<TData> {
   readonly data: readonly TData[];
   readonly meta: ProjectListMeta;
+}
+
+export function calculateRequiredCredits(durationSeconds: number): number {
+  return Math.ceil(durationSeconds / 60);
 }

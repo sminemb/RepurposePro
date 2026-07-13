@@ -584,9 +584,20 @@ PROJECT_UPLOAD_NOT_ALLOWED
     "height": 1080,
     "fps": 30,
     "hasAudio": true,
-    "expiresAt": "2026-07-17T14:30:00.000Z"
+    "expiresAt": "2026-07-17T14:30:00.000Z",
+    "requiredCredits": 11
   }
 }
+```
+
+`requiredCredits` is derived from validated persisted `durationSeconds`: one credit per
+started minute, rounded up. It is an estimate only; VS3 recalculates it inside the paid
+processing transaction.
+
+### Errors
+
+```text
+PROJECT_NOT_FOUND
 ```
 
 ---
