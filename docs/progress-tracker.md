@@ -126,14 +126,14 @@ FAILED
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
 Current Status: NOT_STARTED
-Last Diagnostic Task: Landing background consistency fix — aligned final CTA with landing charcoal background.
+Last Diagnostic Task: Landing alternating-background correction — final CTA uses soft surface after charcoal pricing section.
 Current Branch: main
 
-Last Completed Task: Landing background consistency fix
+Last Completed Task: Landing alternating-background correction
 Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 19:34
+Last Updated Time: 19:38
 Last Updated By: Codex
 ```
 
@@ -965,6 +965,36 @@ Known Limitations:
 
 ---
 
+### MAINT-2 — Restore landing section alternation
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 19:36
+End Date: 2026-07-13
+End Time: 19:38
+
+User Outcome:
+- Final CTA and footer now use soft slate surface after charcoal pricing section.
+
+Files Changed:
+- apps/web/features/marketing/components/landing-pricing-cta.tsx
+- docs/progress-tracker.md
+
+Commands Run:
+- pnpm --filter @repurposepro/web run typecheck
+- pnpm lint
+- pnpm exec prettier --check apps/web/features/marketing/components/landing-pricing-cta.tsx docs/progress-tracker.md
+- git diff --check
+
+Verification:
+- PASS: Final CTA uses `bg-rp-surface/45`, matching alternate landing surface treatment.
+- PASS: Typecheck, lint, Prettier, and whitespace checks pass.
+
+Known Limitations:
+- Chrome DevTools MCP is not configured, so screenshot verification was unavailable.
+
+---
+
 ## 9. Archived Agent Logs
 
 Detailed historical logs moved out of this tracker so the live slice status stays readable.
@@ -981,14 +1011,14 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
 Current Status: NOT_STARTED
-Last Completed Task: Landing background consistency fix
+Last Completed Task: Landing alternating-background correction
 Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
-Uncommitted Changes: None. Maintenance fix committed as `fix(marketing): unify landing CTA background`.
+Uncommitted Changes: None. Alternating-background correction committed as `fix(marketing): restore landing section alternation`.
 Known Failing Tests: None. `pnpm test` passes 73 tests.
 Known Blockers: None.
 Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction.
-Required Commands Before Continuing: Commit maintenance fix, then start VS3-T1 by reading billing/database docs and marking it IN_PROGRESS. Run pnpm infra:up only for live API verification. `pnpm ci:check` currently fails only on pre-existing formatting drift outside a focused task.
+Required Commands Before Continuing: Start VS3-T1 by reading billing/database docs and marking it IN_PROGRESS. Run pnpm infra:up only for live API verification. `pnpm ci:check` currently fails only on pre-existing formatting drift outside a focused task.
 Last Updated Date: 2026-07-13
-Last Updated Time: 19:34
+Last Updated Time: 19:38
 Last Updated By: Codex
 ```

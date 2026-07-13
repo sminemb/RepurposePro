@@ -62,7 +62,7 @@ export function PricingSection({ isAuthenticated }: SessionAwareProps) {
 
 export function FinalCta({ isAuthenticated }: SessionAwareProps) {
   return (
-    <section className="relative isolate overflow-hidden border-t border-white/8 bg-rp-bg">
+    <section className="relative isolate overflow-hidden border-t border-white/8 bg-rp-surface/45">
       <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-1/2 bg-[radial-gradient(circle_at_right,var(--rp-primary-ambient-strong),transparent_65%)]" />
       <div className="mx-auto max-w-7xl px-5 pb-20 pt-24 sm:px-8 sm:pt-32 lg:px-10">
         <div className="max-w-4xl">
