@@ -177,7 +177,7 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
           {state !== "uploaded" ? (
             <div className="mt-5 flex justify-end">
               <button
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-bg-deep transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-primary-foreground transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isUploading}
                 type="button"
                 onClick={startUpload}

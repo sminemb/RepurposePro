@@ -184,7 +184,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </div>
       ) : null}
       <Button
-        className="h-11 bg-rp-primary text-rp-bg-deep hover:bg-rp-primary-hover"
+        className="h-11 bg-rp-primary text-rp-primary-foreground hover:bg-rp-primary-hover"
         disabled={isPending}
         type="submit"
       >

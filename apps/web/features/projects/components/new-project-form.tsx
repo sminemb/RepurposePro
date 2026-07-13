@@ -85,7 +85,7 @@ export function NewProjectForm() {
                     aria-hidden="true"
                     className={cn(
                       "grid size-6 place-items-center rounded-full border",
-                      selected ? "border-rp-primary bg-rp-primary text-rp-bg-deep" : "border-rp-border-strong",
+                      selected ? "border-rp-primary bg-rp-primary text-rp-primary-foreground" : "border-rp-border-strong",
                     )}
                   >
                     {selected ? <Check className="size-4" /> : null}
@@ -112,7 +112,7 @@ export function NewProjectForm() {
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-rp-text-muted">You will upload your source video in the next step.</p>
         <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-bg-deep transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-primary-foreground transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isPending}
           type="submit"
         >

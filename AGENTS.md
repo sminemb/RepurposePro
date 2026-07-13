@@ -530,7 +530,7 @@ creator-focused
 cinematic
 clean
 trustworthy
-violet signal accent
+ember signal accent
 ```
 
 Primary brand palette:
@@ -538,7 +538,7 @@ Primary brand palette:
 ```text
 Charcoal  #0B0D12
 Slate     #1A1D25
-Violet    #7B61FF
+Ember    #C4522A
 Mist      #B9BDCF
 White     #F5F6F8
 Black     #050608
@@ -1018,7 +1018,7 @@ Default direction:
 
 ```text
 white text
-violet highlighted keywords
+ember highlighted keywords
 dark outline
 strong legibility
 ```

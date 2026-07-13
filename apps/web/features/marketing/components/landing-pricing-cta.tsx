@@ -48,7 +48,7 @@ export function PricingSection({ isAuthenticated }: SessionAwareProps) {
             One credit equals one video minute. Partial minutes round up.
           </p>
           <Link
-            className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-bg-deep hover:bg-rp-primary-hover"
+            className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-primary-foreground hover:bg-rp-primary-hover"
             href={isAuthenticated ? "/dashboard" : "/signup"}
           >
             {isAuthenticated ? "Open dashboard" : "Create workspace"}
@@ -73,7 +73,7 @@ export function FinalCta({ isAuthenticated }: SessionAwareProps) {
             Create your workspace and start shaping the moments worth sharing.
           </p>
           <Link
-            className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-bg-deep hover:bg-rp-primary-hover"
+            className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-primary-foreground hover:bg-rp-primary-hover"
             href={isAuthenticated ? "/dashboard" : "/signup"}
           >
             {isAuthenticated ? "Open dashboard" : "Create workspace"}

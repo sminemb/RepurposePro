@@ -354,12 +354,12 @@ With Tailwind v4, expose those semantic variables to utilities through `@theme i
   --foreground: #F5F6F8;
   --card: #151821;
   --card-foreground: #F5F6F8;
-  --primary: #7B61FF;
-  --primary-foreground: #F5F6F8;
+  --primary: #C4522A;
+  --primary-foreground: #FFFFFF;
   --muted: #1A1D25;
   --muted-foreground: #B9BDCF;
   --border: #2A3040;
-  --ring: #7B61FF;
+  --ring: #C4522A;
 }
 
 @theme inline {
@@ -448,7 +448,7 @@ Use `@theme` when a token should create utility classes:
 
 ```css
 @theme {
-  --color-rp-violet-500: #7B61FF;
+  --color-rp-primary: #C4522A;
   --font-sans: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
   --radius-rp-lg: 1rem;
   --shadow-rp-card: 0 16px 48px rgb(0 0 0 / 0.32);
@@ -458,9 +458,9 @@ Use `@theme` when a token should create utility classes:
 This generates utilities such as:
 
 ```text
-bg-rp-violet-500
-text-rp-violet-500
-border-rp-violet-500
+bg-rp-primary
+text-rp-primary
+border-rp-primary
 font-sans
 rounded-rp-lg
 shadow-rp-card
@@ -470,7 +470,7 @@ When a Tailwind theme variable references another CSS custom property, use `@the
 
 ```css
 :root {
-  --rp-primary: #7B61FF;
+  --rp-primary: #C4522A;
   --rp-bg: #0B0D12;
 }
 

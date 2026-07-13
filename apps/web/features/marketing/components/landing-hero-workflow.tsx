@@ -9,7 +9,7 @@ interface SessionAwareProps {
 export function LandingHero({ isAuthenticated }: SessionAwareProps) {
   return (
     <section className="relative isolate min-h-dvh overflow-hidden pt-18">
-      <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_70%_12%,rgb(123_97_255_/_0.13),transparent_31rem)]" />
+      <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_70%_12%,var(--rp-primary-ambient-subtle),transparent_31rem)]" />
       <div className="mx-auto grid min-h-[calc(100dvh-4.5rem)] max-w-7xl items-end gap-10 px-5 pb-12 pt-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-10 lg:pb-16">
         <div className="relative z-10 max-w-2xl lg:pb-8">
           <p className="mb-5 text-sm font-medium text-rp-primary">AI-assisted video repurposing</p>
@@ -21,7 +21,7 @@ export function LandingHero({ isAuthenticated }: SessionAwareProps) {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
-              className="inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-bg-deep shadow-rp-glow transition-colors hover:bg-rp-primary-hover"
+              className="inline-flex min-h-12 items-center gap-2 rounded-rp-md bg-rp-primary px-5 font-semibold text-rp-primary-foreground shadow-rp-glow transition-colors hover:bg-rp-primary-hover"
               href={isAuthenticated ? "/dashboard" : "/signup"}
             >
               {isAuthenticated ? "Open dashboard" : "Create workspace"}

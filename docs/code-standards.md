@@ -454,7 +454,7 @@ Recommended global CSS shape:
 @import "tailwindcss";
 
 :root {
-  --rp-primary: #7B61FF;
+  --rp-primary: #C4522A;
   --rp-bg: #0B0D12;
 }
 

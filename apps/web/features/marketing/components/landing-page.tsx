@@ -13,7 +13,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
   return (
     <main className="overflow-hidden bg-rp-bg text-rp-text">
       <a
-        className="sr-only z-50 rounded-rp-sm bg-rp-primary px-4 py-2 text-rp-bg-deep focus:fixed focus:left-4 focus:top-4 focus:not-sr-only"
+        className="sr-only z-50 rounded-rp-sm bg-rp-primary px-4 py-2 text-rp-primary-foreground focus:fixed focus:left-4 focus:top-4 focus:not-sr-only"
         href="#main-content"
       >
         Skip to content
@@ -45,7 +45,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               </Link>
             ) : null}
             <Link
-              className="inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-4 text-sm font-semibold text-rp-bg-deep transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary"
+              className="inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-4 text-sm font-semibold text-rp-primary-foreground transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary"
               href={isAuthenticated ? "/dashboard" : "/signup"}
             >
               {isAuthenticated ? "Open dashboard" : "Create workspace"}

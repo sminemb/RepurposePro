@@ -18,7 +18,7 @@ export function ProjectList({ projects }: ProjectListProps) {
       <EmptyState
         action={
           <Link
-            className="inline-flex min-h-11 items-center gap-2 rounded-rp-md bg-rp-primary px-4 text-sm font-semibold text-rp-bg-deep hover:bg-rp-primary-hover"
+            className="inline-flex min-h-11 items-center gap-2 rounded-rp-md bg-rp-primary px-4 text-sm font-semibold text-rp-primary-foreground hover:bg-rp-primary-hover"
             href="/projects/new"
           >
             <Plus aria-hidden="true" className="size-4" /> Create your first project

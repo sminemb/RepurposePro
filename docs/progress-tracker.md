@@ -129,11 +129,11 @@ Current Status: NOT_STARTED
 Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
-Last Completed Task: VS2-T6 — Calculate required credits from validated duration
+Last Completed Task: VS2-UI-R4 — Apply Ember copper visual system
 Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 16:56
+Last Updated Time: 18:13
 Last Updated By: Codex
 ```
 
@@ -269,6 +269,41 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-DOCS-1 | Reconcile completed VS2 tasks with their execution logs | Documentation | COMPLETED | 2026-07-13 | 14:46 | 2026-07-13 | 14:46 | VS2 task table, slice summary, and handoff reflect the completed upload and diagnostic work. |
 | VS2-T6 | Calculate required credits from validated duration | API + Tests | COMPLETED | 2026-07-13 | 16:47 | 2026-07-13 | 16:56 | Shared round-up rule, authorized source-video metadata endpoint, API contract, 66 tests, typecheck, lint, and production build pass. |
 | VS2-T7 | Display validated video metadata and required credits estimate | Web + API | NOT_STARTED | — | — | — | — | — |
+| VS2-UI-R4 | Apply Ember copper visual system | Web + Design + Docs | COMPLETED | 2026-07-13 | 17:34 | 2026-07-13 | 18:13 | Ember tokens, copper studio image, docs, static checks, and browser checks pass. |
+
+### VS2-UI-R4 — Apply Ember Copper Visual System
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 17:34
+End Date: 2026-07-13
+End Time: 18:13
+
+Files Changed:
+
+- Global design tokens, primary-action foregrounds, and landing ambient treatment.
+- Podcast studio marketing image, active design documentation, and this tracker.
+
+Commands Run:
+
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm build`
+- `pnpm ci:check`
+- Active-source color scan and primary contrast check.
+
+Verification:
+
+- PASS: Ember `#C4522A` is centralized in shared tokens; white primary foreground contrast is 4.58:1.
+- PASS: No stale violet or purple references remain in active app source or current design docs.
+- PASS: Landing and login render with Ember at desktop and 390px mobile widths; mobile has no horizontal overflow.
+- PASS: Dashboard, project creation, and upload routes redirect unauthenticated users to the Ember login screen.
+- PASS: `pnpm lint`, `pnpm typecheck`, 66 tests, and production build pass.
+
+Known Limitations:
+
+- `pnpm ci:check` still stops at pre-existing formatting drift outside this task, including `apps/web/next-env.d.ts`; no task changes were made to those files.
 
 ## Slice Acceptance Criteria
 
@@ -845,14 +880,14 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 Current Slice: VS2 — User can create a project and upload a validated video
 Current Task: VS2-T7 — Display validated video metadata and required credits estimate
 Current Status: NOT_STARTED
-Last Completed Task: VS2-T6 — Calculate required credits from validated duration
+Last Completed Task: VS2-UI-R4 — Apply Ember copper visual system
 Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
-Uncommitted Changes: None after the task commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
+Uncommitted Changes: None after the Ember copper task commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
 Known Failing Tests: None. `pnpm test` passes 66 tests.
 Known Blockers: None.
-Important Context: `GET /projects/:projectId/video` returns owned, non-deleted source metadata and `requiredCredits`, derived from persisted duration with `Math.ceil(durationSeconds / 60)`. It never returns storage paths. VS2-T7 must display this result; VS3 must recalculate credits inside its payment transaction.
-Required Commands Before Continuing: Run pnpm infra:up only for live API verification. Implement VS2-T7 without changing credit persistence; run pnpm ci:check before merging.
+Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `GET /projects/:projectId/video` returns owned, non-deleted source metadata and `requiredCredits`, derived from persisted duration with `Math.ceil(durationSeconds / 60)`. It never returns storage paths. VS2-T7 must display this result; VS3 must recalculate credits inside its payment transaction.
+Required Commands Before Continuing: Run pnpm infra:up only for live API verification. Implement VS2-T7 without changing credit persistence; run lint, typecheck, tests, and build before merging. `pnpm ci:check` currently fails only on pre-existing formatting drift outside that task.
 Last Updated Date: 2026-07-13
-Last Updated Time: 16:56
+Last Updated Time: 18:13
 Last Updated By: Codex
 ```

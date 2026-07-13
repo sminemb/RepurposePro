@@ -31,7 +31,7 @@ Core visual metaphor:
 one long video source -> multiple focused outputs
 ```
 
-The UI should use dark surfaces, violet signal accents, subtle borders, soft glows, and clear hierarchy.
+The UI should use dark surfaces, ember signal accents, subtle borders, soft glows, and clear hierarchy.
 
 ---
 
@@ -74,9 +74,9 @@ The goal is consistency across:
 | `slate` | `#1A1D25` | Primary surfaces |
 | `graphite` | `#11141B` | Secondary surfaces |
 | `panel` | `#151821` | Cards and panels |
-| `violet` | `#7B61FF` | Primary brand accent |
-| `violet-soft` | `#9B8CFF` | Hover states and soft highlights |
-| `violet-deep` | `#5B3DDF` | Pressed/active states |
+| `ember` | `#C4522A` | Primary brand accent |
+| `ember-soft` | `#DF7652` | Hover states and soft highlights |
+| `ember-deep` | `#8E3115` | Pressed/active states |
 | `mist` | `#B9BDCF` | Muted text |
 | `white` | `#F5F6F8` | Primary text |
 | `black` | `#050608` | Deep overlays and video background |
@@ -106,23 +106,23 @@ Use this scale for dark UI surfaces and typography.
 
 ---
 
-## 3.3 Violet Scale
+## 3.3 Ember Scale
 
-Use violet for primary actions, active states, AI indicators, progress, and brand moments.
+Use ember for primary actions, active states, AI indicators, progress, and brand moments.
 
 | Token | Hex | Usage |
 |---|---:|---|
-| `violet-50` | `#F0EDFF` | Rare light backgrounds |
-| `violet-100` | `#DDD6FF` | Light text on dark accents |
-| `violet-200` | `#C4B8FF` | Soft highlight |
-| `violet-300` | `#A996FF` | Hover glow |
-| `violet-400` | `#927CFF` | Active accents |
-| `violet-500` | `#7B61FF` | Primary brand |
-| `violet-600` | `#684CEB` | Button hover |
-| `violet-700` | `#5539D1` | Button active |
-| `violet-800` | `#40299F` | Deep accent |
-| `violet-900` | `#2D1E73` | Dark accent background |
-| `violet-950` | `#1B1247` | Subtle tinted surface |
+| `ember-50` | `#FFF3ED` | Rare light backgrounds |
+| `ember-100` | `#FDE1D3` | Light text on dark accents |
+| `ember-200` | `#F8C3AB` | Soft highlight |
+| `ember-300` | `#EE9D7E` | Hover glow |
+| `ember-400` | `#DF7652` | Active accents |
+| `ember-500` | `#C4522A` | Primary brand |
+| `ember-600` | `#AA3E1D` | Button hover |
+| `ember-700` | `#8E3115` | Button active |
+| `ember-800` | `#702811` | Deep accent |
+| `ember-900` | `#4A1A0B` | Dark accent background |
+| `ember-950` | `#2B0F06` | Subtle tinted surface |
 
 ---
 
@@ -147,12 +147,12 @@ Use violet for primary actions, active states, AI indicators, progress, and bran
 |---|---:|---|
 | `video-canvas` | `#050608` | Video preview background |
 | `timeline-track` | `#242A38` | Timeline base |
-| `timeline-progress` | `#7B61FF` | Current playback range |
-| `timeline-selection` | `#9B8CFF` | Selected clip range |
+| `timeline-progress` | `#C4522A` | Current playback range |
+| `timeline-selection` | `#DF7652` | Selected clip range |
 | `waveform-muted` | `#3A4052` | Audio waveform inactive |
-| `waveform-active` | `#7B61FF` | Audio waveform active |
+| `waveform-active` | `#C4522A` | Audio waveform active |
 | `crop-frame` | `#B9BDCF` | Crop preview outline |
-| `safe-zone` | `#7B61FF33` | Caption safe zone overlay |
+| `safe-zone` | `#C4522A33` | Caption safe zone overlay |
 
 ---
 
@@ -220,10 +220,13 @@ Use regular CSS custom properties for values that may be referenced by Tailwind,
   --rp-text-muted: #B9BDCF;
   --rp-text-disabled: #6F768A;
 
-  --rp-primary: #7B61FF;
-  --rp-primary-hover: #684CEB;
-  --rp-primary-active: #5539D1;
-  --rp-primary-soft: #1B1247;
+  --rp-primary: #C4522A;
+  --rp-primary-hover: #AA3E1D;
+  --rp-primary-active: #8E3115;
+  --rp-primary-soft: #2B0F06;
+  --rp-primary-foreground: #FFFFFF;
+  --rp-primary-ambient: rgb(196 82 42 / 0.14);
+  --rp-primary-ambient-subtle: rgb(196 82 42 / 0.13);
 
   --rp-success: #42D392;
   --rp-success-soft: #123A2A;
@@ -236,12 +239,12 @@ Use regular CSS custom properties for values that may be referenced by Tailwind,
 
   --rp-video-canvas: #050608;
   --rp-timeline-track: #242A38;
-  --rp-timeline-progress: #7B61FF;
-  --rp-timeline-selection: #9B8CFF;
+  --rp-timeline-progress: #C4522A;
+  --rp-timeline-selection: #DF7652;
   --rp-waveform-muted: #3A4052;
-  --rp-waveform-active: #7B61FF;
+  --rp-waveform-active: #C4522A;
   --rp-crop-frame: #B9BDCF;
-  --rp-safe-zone: #7B61FF33;
+  --rp-safe-zone: #C4522A33;
 
   --rp-radius-xs: 0.25rem;
   --rp-radius-sm: 0.5rem;
@@ -253,8 +256,8 @@ Use regular CSS custom properties for values that may be referenced by Tailwind,
   --rp-shadow-card: 0 16px 48px rgb(0 0 0 / 0.32);
   --rp-shadow-panel: 0 24px 80px rgb(0 0 0 / 0.40);
   --rp-shadow-modal: 0 32px 120px rgb(0 0 0 / 0.56);
-  --rp-shadow-glow: 0 0 32px rgb(123 97 255 / 0.28);
-  --rp-shadow-glow-strong: 0 0 56px rgb(123 97 255 / 0.42);
+  --rp-shadow-glow: 0 0 32px rgb(196 82 42 / 0.28);
+  --rp-shadow-glow-strong: 0 0 56px rgb(196 82 42 / 0.42);
 
   --rp-transition-fast: 120ms;
   --rp-transition-base: 180ms;
@@ -288,6 +291,7 @@ Use `@theme inline` because the Tailwind theme variables below reference regular
   --color-rp-primary-hover: var(--rp-primary-hover);
   --color-rp-primary-active: var(--rp-primary-active);
   --color-rp-primary-soft: var(--rp-primary-soft);
+  --color-rp-primary-foreground: var(--rp-primary-foreground);
 
   --color-rp-success: var(--rp-success);
   --color-rp-success-soft: var(--rp-success-soft);
@@ -396,8 +400,8 @@ Recommended dark semantic variables:
   --popover: #151821;
   --popover-foreground: #F5F6F8;
 
-  --primary: #7B61FF;
-  --primary-foreground: #F5F6F8;
+  --primary: #C4522A;
+  --primary-foreground: #FFFFFF;
 
   --secondary: #1A1D25;
   --secondary-foreground: #E7E9F0;
@@ -405,7 +409,7 @@ Recommended dark semantic variables:
   --muted: #1A1D25;
   --muted-foreground: #B9BDCF;
 
-  --accent: #1B1247;
+  --accent: #2B0F06;
   --accent-foreground: #F5F6F8;
 
   --destructive: #FF5C7A;
@@ -413,7 +417,7 @@ Recommended dark semantic variables:
 
   --border: #2A3040;
   --input: #2A3040;
-  --ring: #7B61FF;
+  --ring: #C4522A;
 
   --radius: 0.75rem;
 }
@@ -558,7 +562,7 @@ If Satoshi is unavailable, use Inter.
 | Metadata | `neutral-400` |
 | Disabled text | `neutral-500` |
 | Primary action text | `neutral-50` |
-| Accent text | `violet-300` |
+| Accent text | `ember-300` |
 
 ---
 
@@ -649,7 +653,7 @@ Recommended default:
 | `border-subtle` | `1px solid #242A38` | Default cards |
 | `border-base` | `1px solid #2A3040` | Inputs, panels |
 | `border-strong` | `1px solid #42495B` | Active/selected elements |
-| `border-accent` | `1px solid #7B61FF` | Active selected clips |
+| `border-accent` | `1px solid #C4522A` | Active selected clips |
 | `border-danger` | `1px solid #FF5C7A` | Error fields |
 
 Use subtle borders instead of heavy shadows for most UI separation.
@@ -663,12 +667,12 @@ Use subtle borders instead of heavy shadows for most UI separation.
 | `shadow-card` | `0 16px 48px rgba(0,0,0,.32)` | Elevated cards |
 | `shadow-panel` | `0 24px 80px rgba(0,0,0,.40)` | Large panels |
 | `shadow-modal` | `0 32px 120px rgba(0,0,0,.56)` | Dialogs |
-| `glow-violet` | `0 0 32px rgba(123,97,255,.28)` | Primary CTA glow |
-| `glow-violet-strong` | `0 0 56px rgba(123,97,255,.42)` | Hero/brand moments |
+| `glow-ember` | `0 0 32px rgba(196,82,42,.28)` | Primary CTA glow |
+| `glow-ember-strong` | `0 0 56px rgba(196,82,42,.42)` | Hero/brand moments |
 | `glow-success` | `0 0 28px rgba(66,211,146,.24)` | Completion states |
 | `glow-danger` | `0 0 28px rgba(255,92,122,.24)` | Failure states |
 
-Use glow sparingly. Violet glow should feel premium, not gamer-heavy.
+Use glow sparingly. Ember glow should feel premium, not gamer-heavy.
 
 ---
 
@@ -728,13 +732,13 @@ Avoid:
 
 | Property | Token |
 |---|---|
-| Background | `violet-500` |
-| Hover | `violet-600` |
-| Active | `violet-700` |
+| Background | `ember-500` |
+| Hover | `ember-600` |
+| Active | `ember-700` |
 | Text | `neutral-50` |
 | Border | transparent |
 | Radius | `radius-md` |
-| Shadow | optional `glow-violet` |
+| Shadow | optional `glow-ember` |
 
 ### Secondary Button
 
@@ -787,7 +791,7 @@ For dense dashboard cards, use `space-4` padding.
 | Background | `neutral-900` |
 | Border | `neutral-700` |
 | Border hover | `neutral-600` |
-| Border focus | `violet-500` |
+| Border focus | `ember-500` |
 | Text | `neutral-50` |
 | Placeholder | `neutral-400` |
 | Radius | `radius-sm` |
@@ -800,7 +804,7 @@ For dense dashboard cards, use `space-4` padding.
 | Badge | Background | Text | Border |
 |---|---|---|---|
 | Default | `neutral-800` | `neutral-300` | `neutral-700` |
-| AI | `violet-950` | `violet-200` | `violet-700` |
+| AI | `ember-950` | `ember-200` | `ember-700` |
 | Success | `success-soft` | `success` | `success` |
 | Warning | `warning-soft` | `warning` | `warning` |
 | Danger | `danger-soft` | `danger` | `danger` |
@@ -817,11 +821,11 @@ Use consistent status styling across dashboard cards, job screens, and project r
 | `uploaded` | `info` | `info-soft` | Uploaded |
 | `waiting_for_payment` | `warning` | `warning-soft` | Waiting for payment |
 | `queued` | `neutral-300` | `neutral-800` | Queued |
-| `transcribing` | `violet-300` | `violet-950` | Transcribing |
-| `analyzing` | `violet-300` | `violet-950` | Analyzing |
+| `transcribing` | `ember-300` | `ember-950` | Transcribing |
+| `analyzing` | `ember-300` | `ember-950` | Analyzing |
 | `preview_ready` | `success` | `success-soft` | Preview ready |
 | `waiting_for_user_edits` | `info` | `info-soft` | Waiting for edits |
-| `rendering` | `violet-300` | `violet-950` | Rendering |
+| `rendering` | `ember-300` | `ember-950` | Rendering |
 | `completed` | `success` | `success-soft` | Completed |
 | `failed` | `danger` | `danger-soft` | Failed |
 | `refunded` | `info` | `info-soft` | Refunded |
@@ -836,7 +840,7 @@ Use consistent status styling across dashboard cards, job screens, and project r
 | Property | Token |
 |---|---|
 | Track | `neutral-800` |
-| Fill | `violet-500` |
+| Fill | `ember-500` |
 | Success fill | `success` |
 | Failed fill | `danger` |
 | Height | 6px |
@@ -849,7 +853,7 @@ Use consistent status styling across dashboard cards, job screens, and project r
 | State | Style |
 |---|---|
 | Pending | muted ring, `neutral-600` |
-| Active | violet ring, soft glow |
+| Active | ember ring, soft glow |
 | Completed | success fill |
 | Failed | danger fill |
 | Refunded | info ring |
@@ -863,7 +867,7 @@ Use a subtle animated signal line or waveform.
 Tokens:
 
 ```css
---rp-ai-line: #7B61FF;
+--rp-ai-line: #C4522A;
 --rp-ai-line-muted: #3A4052;
 --rp-ai-glow: rgba(123, 97, 255, 0.32);
 ```
@@ -895,7 +899,7 @@ Do not overuse animated patterns outside processing and brand moments.
 | Radius | `radius-2xl` |
 | Shadow | `shadow-panel` |
 | Aspect ratio | `9 / 16` |
-| Safe zone outline | `violet-500` at 20% opacity |
+| Safe zone outline | `ember-500` at 20% opacity |
 
 ---
 
@@ -905,7 +909,7 @@ Do not overuse animated patterns outside processing and brand moments.
 |---|---|---|---|
 | Default | `neutral-850` | `neutral-700` | `neutral-200` |
 | Hover | `neutral-800` | `neutral-600` | `neutral-50` |
-| Selected | `violet-950` | `violet-500` | `neutral-50` |
+| Selected | `ember-950` | `ember-500` | `neutral-50` |
 | Deleted | `neutral-900` | `neutral-800` | `neutral-500` |
 | Rendered | `success-soft` | `success` | `success` |
 
@@ -916,10 +920,10 @@ Do not overuse animated patterns outside processing and brand moments.
 | Property | Token |
 |---|---|
 | Track | `timeline-track` |
-| Selected range | `violet-500` |
+| Selected range | `ember-500` |
 | Buffered range | `neutral-700` |
 | Playhead | `neutral-50` |
-| Trim handles | `violet-300` |
+| Trim handles | `ember-300` |
 | Waveform inactive | `waveform-muted` |
 | Waveform active | `waveform-active` |
 
@@ -943,7 +947,7 @@ The style should feel energetic but still premium.
 | Font weight | 800 |
 | Text transform | uppercase |
 | Fill color | `#F5F6F8` |
-| Highlight color | `#7B61FF` |
+| Highlight color | `#C4522A` |
 | Stroke color | `#050608` |
 | Stroke width | 4px browser equivalent / ASS outline |
 | Shadow | `0 4px 18px rgba(0,0,0,.55)` |
@@ -969,7 +973,7 @@ export const CaptionDefaults = {
     y: 0.72,
   },
   fillColor: "#F5F6F8",
-  highlightColor: "#7B61FF",
+  highlightColor: "#C4522A",
   strokeColor: "#050608",
   strokeWidth: 4,
   shadow: "0 4px 18px rgba(0,0,0,.55)",
@@ -995,7 +999,7 @@ Use safe zones to prevent captions from overlapping social platform UI.
 
 ## 18.4 Caption Highlight Rules
 
-Keyword highlights should use violet.
+Keyword highlights should use ember.
 
 Recommended:
 
@@ -1013,8 +1017,8 @@ Recommended:
 | State | Background | Border | Icon |
 |---|---|---|---|
 | Default | `neutral-900` | dashed `neutral-700` | `neutral-400` |
-| Hover | `neutral-850` | dashed `violet-500` | `violet-300` |
-| Drag active | `violet-950` | dashed `violet-500` | `violet-300` |
+| Hover | `neutral-850` | dashed `ember-500` | `ember-300` |
+| Drag active | `ember-950` | dashed `ember-500` | `ember-300` |
 | Error | `danger-soft` | dashed `danger` | `danger` |
 | Uploaded | `success-soft` | `success` | `success` |
 
@@ -1025,7 +1029,7 @@ Recommended:
 | Property | Token |
 |---|---|
 | Track | `neutral-800` |
-| Fill | `violet-500` |
+| Fill | `ember-500` |
 | Completed | `success` |
 | Failed | `danger` |
 | Text | `neutral-300` |
@@ -1039,7 +1043,7 @@ Recommended:
 | Property | Token |
 |---|---|
 | Background | `neutral-850` |
-| Accent | `violet-500` |
+| Accent | `ember-500` |
 | Border | `neutral-700` |
 | Number text | `neutral-50` |
 | Helper text | `neutral-300` |
@@ -1052,8 +1056,8 @@ Recommended:
 |---|---|---|---|
 | Default | `neutral-850` | `neutral-700` | secondary |
 | Hover | `neutral-800` | `neutral-600` | primary |
-| Recommended | `violet-950` | `violet-500` | primary |
-| Selected | `violet-950` | `violet-400` | primary + glow |
+| Recommended | `ember-950` | `ember-500` | primary |
+| Selected | `ember-950` | `ember-400` | primary + glow |
 
 ---
 
@@ -1066,7 +1070,7 @@ Recommended:
 | Background | `neutral-850` |
 | Hover background | `neutral-800` |
 | Border | `neutral-700` |
-| Active border | `violet-500` |
+| Active border | `ember-500` |
 | Radius | `radius-lg` |
 | Padding | `space-5` |
 
@@ -1076,8 +1080,8 @@ Recommended:
 
 | Property | Token |
 |---|---|
-| Icon background | `violet-950` |
-| Icon color | `violet-300` |
+| Icon background | `ember-950` |
+| Icon color | `ember-300` |
 | Heading | `neutral-50` |
 | Body | `neutral-300` |
 | CTA | primary button |
@@ -1190,7 +1194,7 @@ MVP editor can be optimized for `lg` and above.
 
 | Property | Value |
 |---|---|
-| Color | `violet-500` |
+| Color | `ember-500` |
 | Width | 2px |
 | Offset | 2px |
 | Shadow | `0 0 0 4px rgba(123,97,255,.18)` |
@@ -1247,9 +1251,9 @@ export const uiTokens = {
     slate: "#1A1D25",
     graphite: "#11141B",
     panel: "#151821",
-    violet: "#7B61FF",
-    violetSoft: "#9B8CFF",
-    violetDeep: "#5B3DDF",
+    ember: "#C4522A",
+    emberSoft: "#DF7652",
+    emberDeep: "#8E3115",
     mist: "#B9BDCF",
     white: "#F5F6F8",
     black: "#050608",
@@ -1286,7 +1290,7 @@ export const captionTokens = {
   fontWeight: 800,
   textTransform: "uppercase",
   fillColor: "#F5F6F8",
-  highlightColor: "#7B61FF",
+  highlightColor: "#C4522A",
   strokeColor: "#050608",
   shadow: "0 4px 18px rgba(0,0,0,.55)",
   position: {
@@ -1308,7 +1312,7 @@ export const captionTokens = {
 ## 28.1 Primary CTA
 
 ```tsx
-<Button className="bg-rp-primary text-rp-text shadow-rp-glow hover:bg-rp-primary-hover">
+<Button className="bg-rp-primary text-rp-primary-foreground shadow-rp-glow hover:bg-rp-primary-hover">
   New Project
 </Button>
 ```
@@ -1354,7 +1358,7 @@ export const captionTokens = {
 ## 29.1 Do
 
 - Use dark surfaces with subtle contrast.
-- Use violet for important action and AI states.
+- Use ember for important action and AI states.
 - Use clear text hierarchy.
 - Use consistent cards and panels.
 - Preview captions with CSS before rendering.
