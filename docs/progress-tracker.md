@@ -106,7 +106,7 @@ FAILED
 |---|---|---|---|---|---|---|---|---:|---|
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
-| VS2 | User can create a project and upload a validated video | IN_PROGRESS | 2026-07-12 | 17:06 | — | — | VS2-T7 | 86% | — |
+| VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
 | VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -123,17 +123,17 @@ FAILED
 ## 5. Current Agent State
 
 ```text
-Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T7 — Display validated video metadata and required credits estimate
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
 Current Status: NOT_STARTED
 Last Diagnostic Task: VS2-DEBUG-1 — Resolved the API upload 500 by applying the pending database migration.
 Current Branch: main
 
-Last Completed Task: VS2-UI-R5 — Remove missed legacy landing CTA gradient
-Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
+Last Completed Task: VS2-T7 — Display validated video metadata and required credits estimate
+Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
 
 Last Updated Date: 2026-07-13
-Last Updated Time: 18:31
+Last Updated Time: 19:01
 Last Updated By: Codex
 ```
 
@@ -245,12 +245,12 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Field | Value |
 |---|---|
 | Slice ID | VS2 |
-| Status | IN_PROGRESS |
+| Status | COMPLETED |
 | Start Date | 2026-07-12 |
 | Start Time | 17:06 |
-| End Date | — |
-| End Time | — |
-| Progress | 71% |
+| End Date | 2026-07-13 |
+| End Time | 19:01 |
+| Progress | 100% |
 | Dependency | VS1 |
 
 ## Tasks
@@ -268,7 +268,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | VS2-DEBUG-1 | Apply the pending uploaded_videos database migration | Database + API verification | COMPLETED | 2026-07-13 | 14:31 | 2026-07-13 | 14:37 | Migration applied; API readiness, 35 focused tests, and API typecheck pass. |
 | VS2-DOCS-1 | Reconcile completed VS2 tasks with their execution logs | Documentation | COMPLETED | 2026-07-13 | 14:46 | 2026-07-13 | 14:46 | VS2 task table, slice summary, and handoff reflect the completed upload and diagnostic work. |
 | VS2-T6 | Calculate required credits from validated duration | API + Tests | COMPLETED | 2026-07-13 | 16:47 | 2026-07-13 | 16:56 | Shared round-up rule, authorized source-video metadata endpoint, API contract, 66 tests, typecheck, lint, and production build pass. |
-| VS2-T7 | Display validated video metadata and required credits estimate | Web + API | NOT_STARTED | — | — | — | — | — |
+| VS2-T7 | Display validated video metadata and required credits estimate | Web + API | COMPLETED | 2026-07-13 | 18:39 | 2026-07-13 | 19:01 | Client/API contract tests, 73-test suite, typecheck, lint, production build, and authenticated desktop/mobile browser upload checks pass. |
 | VS2-UI-R4 | Apply Ember copper visual system | Web + Design + Docs | COMPLETED | 2026-07-13 | 17:34 | 2026-07-13 | 18:13 | Ember tokens, copper studio image, docs, static checks, and browser checks pass. |
 | VS2-UI-R5 | Remove missed legacy landing CTA gradient | Web + Design + Docs | COMPLETED | 2026-07-13 | 18:25 | 2026-07-13 | 18:31 | FinalCta now uses a named Ember ambient token; static and browser checks pass. |
 
@@ -338,14 +338,51 @@ Known Limitations:
 
 - `pnpm ci:check` remains blocked by the pre-existing formatting drift recorded above; it was not rerun for this focused repair.
 
+### VS2-T7 — Display Validated Video Metadata and Required Credits Estimate
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 18:39
+End Date: 2026-07-13
+End Time: 19:01
+
+Files Changed:
+
+- `apps/web/features/upload/client/upload-video.ts` and its contract tests.
+- `apps/web/features/upload/components/upload-dropzone.tsx`.
+- `apps/web/features/upload/components/video-metadata-card.tsx`, `video-metadata.ts`, and formatting tests.
+- `docs/progress-tracker.md`.
+
+Commands Run:
+
+- Focused Vitest red/green runs for the metadata client and formatting helpers.
+- `pnpm test`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm --filter @repurposepro/web run build`
+- `git diff --check` and scoped diff review.
+
+Verification:
+
+- PASS: `GET /projects/:projectId/video` uses the encoded project path, session credentials, and the existing success envelope.
+- PASS: An upload remains successful if metadata loading fails; deterministic retry coverage confirms the second call fetches only metadata.
+- PASS: The card displays filename, duration, file size, resolution, optional FPS, validation state, and server-provided rounded credits.
+- PASS: A live authenticated upload returned 201, its owned metadata request returned 200, and the card rendered correctly at desktop and 390px mobile widths with no console errors.
+- PASS: 73 tests, typecheck, lint, and production build pass. The build retains the existing non-blocking Next.js config-tracing warning.
+
+Known Limitations:
+
+- Metadata is fetched after the successful upload only; showing it after a page refresh remains outside this task's stated scope.
+- The forced browser retry exercise could not reach metadata because the local API connection dropped during upload; deterministic client coverage verifies retry behavior.
+
 ## Slice Acceptance Criteria
 
-- [ ] User creates project.
-- [ ] User uploads a local video.
-- [ ] App rejects files over 500 MB.
-- [ ] App rejects videos over 30 minutes.
-- [ ] App rejects corrupt videos or missing audio.
-- [ ] App shows duration and required credits.
+- [x] User creates project.
+- [x] User uploads a local video.
+- [x] App rejects files over 500 MB.
+- [x] App rejects videos over 30 minutes.
+- [x] App rejects corrupt videos or missing audio.
+- [x] App shows duration and required credits.
 
 ---
 
@@ -910,17 +947,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ## 10. Current Handoff State
 
 ```text
-Current Slice: VS2 — User can create a project and upload a validated video
-Current Task: VS2-T7 — Display validated video metadata and required credits estimate
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
 Current Status: NOT_STARTED
-Last Completed Task: VS2-UI-R5 — Remove missed legacy landing CTA gradient
-Next Recommended Task: VS2-T7 — Display validated video metadata and required credits estimate.
-Uncommitted Changes: None after the VS2-UI-R5 repair commit. Pre-existing apps/web/next-env.d.ts remains unrelated and intentionally untouched.
-Known Failing Tests: None. `pnpm test` passes 66 tests.
+Last Completed Task: VS2-T7 — Display validated video metadata and required credits estimate
+Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
+Uncommitted Changes: None after the VS2-T7 commit. No unrelated working-tree changes.
+Known Failing Tests: None. `pnpm test` passes 73 tests.
 Known Blockers: None.
-Important Context: Ember copper is centralized in `apps/web/app/globals.css`; `FinalCta` uses `--rp-primary-ambient-strong`, never a raw accent RGB literal. Use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `GET /projects/:projectId/video` returns owned, non-deleted source metadata and `requiredCredits`, derived from persisted duration with `Math.ceil(durationSeconds / 60)`. It never returns storage paths. VS2-T7 must display this result; VS3 must recalculate credits inside its payment transaction.
-Required Commands Before Continuing: Run pnpm infra:up only for live API verification. Implement VS2-T7 without changing credit persistence; run lint, typecheck, tests, and build before merging. `pnpm ci:check` currently fails only on pre-existing formatting drift outside that task.
+Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction.
+Required Commands Before Continuing: Start VS3-T1 by reading the billing/database docs and marking it IN_PROGRESS. Run pnpm infra:up only for live API verification. `pnpm ci:check` currently fails only on pre-existing formatting drift outside a focused task.
 Last Updated Date: 2026-07-13
-Last Updated Time: 18:31
+Last Updated Time: 19:01
 Last Updated By: Codex
 ```

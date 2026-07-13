@@ -1,3 +1,5 @@
+import type { ApiSuccess, SourceVideoMetadata } from "@repurposepro/shared";
+
 export interface UploadProgress {
   readonly loadedBytes: number;
   readonly percent: number | null;
@@ -11,6 +13,11 @@ interface UploadVideoInput {
   readonly projectId: string;
 }
 
+interface SourceVideoMetadataInput {
+  readonly apiUrl: string;
+  readonly projectId: string;
+}
+
 interface ApiErrorResponse {
   readonly error?: {
     readonly message?: string;
@@ -19,6 +26,10 @@ interface ApiErrorResponse {
 
 export function createUploadEndpoint(apiUrl: string, projectId: string): string {
   return `${apiUrl.replace(/\/$/, "")}/projects/${encodeURIComponent(projectId)}/upload`;
+}
+
+export function createSourceVideoMetadataEndpoint(apiUrl: string, projectId: string): string {
+  return `${apiUrl.replace(/\/$/, "")}/projects/${encodeURIComponent(projectId)}/video`;
 }
 
 export function toUploadProgress(loadedBytes: number, totalBytes: number): UploadProgress {
@@ -33,7 +44,7 @@ export function toUploadProgress(loadedBytes: number, totalBytes: number): Uploa
   };
 }
 
-function responseErrorMessage(responseText: string): string {
+function responseErrorMessage(responseText: string, fallback: string): string {
   try {
     const response = JSON.parse(responseText) as ApiErrorResponse;
     if (response.error?.message) {
@@ -43,7 +54,29 @@ function responseErrorMessage(responseText: string): string {
     // Preserve the safe fallback below for non-JSON responses.
   }
 
-  return "We could not upload this video. Please try again.";
+  return fallback;
+}
+
+export async function getSourceVideoMetadata({
+  apiUrl,
+  projectId,
+}: SourceVideoMetadataInput): Promise<SourceVideoMetadata> {
+  const response = await fetch(createSourceVideoMetadataEndpoint(apiUrl, projectId), {
+    credentials: "include",
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      responseErrorMessage(
+        await response.text(),
+        "We could not load your validated video details. Try again.",
+      ),
+    );
+  }
+
+  const body = (await response.json()) as ApiSuccess<SourceVideoMetadata>;
+  return body.data;
 }
 
 export function uploadVideo({
@@ -71,7 +104,14 @@ export function uploadVideo({
         return;
       }
 
-      reject(new Error(responseErrorMessage(request.responseText)));
+      reject(
+        new Error(
+          responseErrorMessage(
+            request.responseText,
+            "We could not upload this video. Please try again.",
+          ),
+        ),
+      );
     });
 
     const formData = new FormData();

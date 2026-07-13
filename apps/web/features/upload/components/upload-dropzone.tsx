@@ -1,11 +1,18 @@
 "use client";
 
-import { FileVideo, LoaderCircle, UploadCloud } from "lucide-react";
+import type { SourceVideoMetadata } from "@repurposepro/shared";
+import { FileVideo, LoaderCircle, RotateCcw, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { toUploadProgress, type UploadProgress, uploadVideo } from "../client/upload-video";
+import { VideoMetadataCard } from "./video-metadata-card";
+import {
+  getSourceVideoMetadata,
+  toUploadProgress,
+  type UploadProgress,
+  uploadVideo,
+} from "../client/upload-video";
 
 interface UploadDropzoneProps {
   readonly apiUrl: string;
@@ -27,6 +34,9 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [metadata, setMetadata] = useState<SourceVideoMetadata | null>(null);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [metadataLoading, setMetadataLoading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress>(() => toUploadProgress(0, 0));
   const [state, setState] = useState<UploadState>("idle");
 
@@ -37,8 +47,28 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
 
     setError(null);
     setFile(nextFile);
+    setMetadata(null);
+    setMetadataError(null);
+    setMetadataLoading(false);
     setProgress(toUploadProgress(0, nextFile.size));
     setState("idle");
+  }
+
+  async function loadMetadata(): Promise<void> {
+    setMetadataError(null);
+    setMetadataLoading(true);
+
+    try {
+      setMetadata(await getSourceVideoMetadata({ apiUrl, projectId }));
+    } catch (metadataLoadError) {
+      setMetadataError(
+        metadataLoadError instanceof Error
+          ? metadataLoadError.message
+          : "We could not load your validated video details. Try again.",
+      );
+    } finally {
+      setMetadataLoading(false);
+    }
   }
 
   async function startUpload(): Promise<void> {
@@ -54,6 +84,7 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
       await uploadVideo({ apiUrl, file, onProgress: setProgress, projectId });
       setProgress(toUploadProgress(file.size, file.size));
       setState("uploaded");
+      await loadMetadata();
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -159,10 +190,37 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
             </div>
           ) : null}
 
-          {state === "uploaded" ? (
-            <p className="mt-5 text-sm leading-6 text-rp-success">
-              Your upload is complete. Validated video details will appear here in the next step.
-            </p>
+          {state === "uploaded" && metadata ? (
+            <div className="mt-5">
+              <VideoMetadataCard metadata={metadata} />
+            </div>
+          ) : null}
+
+          {state === "uploaded" && !metadata ? (
+            <div
+              aria-live="polite"
+              className="mt-5 rounded-rp-md border border-rp-border bg-rp-card/55 px-4 py-3"
+            >
+              <p className="text-sm leading-6 text-rp-success">Your upload is complete.</p>
+              {metadataLoading ? (
+                <p className="mt-1 text-sm text-rp-text-muted">Loading validated video details.</p>
+              ) : null}
+              {metadataError ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm leading-6 text-rp-text" role="alert">
+                    {metadataError}
+                  </p>
+                  <button
+                    className="inline-flex min-h-11 items-center gap-2 rounded-rp-sm border border-rp-border-strong bg-rp-surface px-3 text-sm font-semibold text-rp-text transition-colors hover:border-rp-primary/60 hover:bg-rp-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={metadataLoading}
+                    type="button"
+                    onClick={() => void loadMetadata()}
+                  >
+                    <RotateCcw aria-hidden="true" className="size-4" /> Retry details
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           {error ? (
