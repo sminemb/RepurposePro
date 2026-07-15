@@ -1065,13 +1065,14 @@ procedures added in later VS3 tasks must run with narrowly scoped owner authorit
 validate trusted Stripe/webhook input.
 
 Ledger protection triggers use `ENABLE ALWAYS`, so a privileged replication-mode session cannot
-bypass them accidentally. Provision a new local volume through Compose. For an existing volume:
+bypass them accidentally. Runtime processes load only `.env`; Compose and database administration
+load only `.env.database`. Provision a new local volume through Compose. For an existing volume:
 
 ```text
-1. Set DATABASE_BOOTSTRAP_URL to the existing elevated owner and run pnpm db:migrate:bootstrap.
-2. Set DATABASE_MIGRATION_URL and DATABASE_URL to the fixed owner/runtime roles.
+1. Set DATABASE_BOOTSTRAP_URL in .env.database to the existing elevated owner and run pnpm db:migrate:bootstrap.
+2. Set DATABASE_MIGRATION_URL and DATABASE_RUNTIME_URL in .env.database to the fixed owner/runtime roles.
 3. Run pnpm db:provision-roles to remove stale memberships and transfer database, schema, and Drizzle tracking ownership.
-4. Run pnpm db:migrate as repurposepro_owner. Use DATABASE_URL only for runtime.
+4. Run pnpm db:migrate as repurposepro_owner. Set only repurposepro_runtime DATABASE_URL in runtime .env.
 ```
 
 Avoid schema drift between environments.

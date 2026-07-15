@@ -1,4 +1,4 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["drizzle.config.ts", "drizzle.bootstrap.config.ts"]
+  "include": ["drizzle.config.ts", "drizzle.bootstrap.config.ts", "vitest.integration.config.mts"]
 }

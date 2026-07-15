@@ -19,6 +19,7 @@ Provide:
 
 ```text
 .env.example
+.env.database.example
 ```
 
 with safe placeholders only.
@@ -30,10 +31,12 @@ with safe placeholders only.
 Recommended files:
 
 ```text
-.env.example
-.env.local
-.env.test
+.env                  runtime processes only
+.env.database         Compose, migrations, role provisioning, and PostgreSQL integration tests
 ```
+
+Create them from their committed `.example` counterparts. API, worker, auth, and web processes
+must never load `.env.database`.
 
 Do not commit:
 
@@ -276,10 +279,10 @@ Yes
 Example format:
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/repurposepro
+DATABASE_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
 ```
 
-Do not commit real credentials.
+Startup validation rejects bootstrap and migration-owner roles. Do not commit real credentials.
 
 ---
 
@@ -309,6 +312,8 @@ Migration tooling requires this URL and rejects every other role. It never falls
 For a fresh Compose volume, `POSTGRES_USER` is the bootstrap-only `repurposepro` superuser;
 the initialization script creates the non-superuser `repurposepro_owner` used by this URL.
 
+Store this variable only in `.env.database` or an equivalent deployment-admin secret scope.
+
 ---
 
 ## `DATABASE_BOOTSTRAP_URL`
@@ -324,9 +329,21 @@ Required:
 Existing-volume upgrade only
 ```
 
-Never use this credential in API or worker runtime. Remove it after role provisioning.
+Never use this credential in API or worker runtime. In non-local environments, remove it from the
+admin secret scope after role provisioning unless a dedicated integration-test environment needs it.
 Use it with `pnpm db:migrate:bootstrap` only to migrate an existing pre-role-split volume before
 the owner URL can be used.
+
+---
+
+## `DATABASE_RUNTIME_URL`
+
+Purpose:
+
+Runtime-role connection string consumed only by `pnpm db:provision-roles` while setting the
+`repurposepro_runtime` password and privileges.
+
+Store it in `.env.database`. Runtime applications use `DATABASE_URL` from `.env` instead.
 
 ---
 
@@ -1385,8 +1402,10 @@ TEST_DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5
 TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
 ```
 
-The bootstrap role needs `CREATEDB` and may only be used by the test setup. The integration suite
-is skipped when any required test URL is absent.
+The bootstrap role needs `CREATEDB` and may only be used by the test setup. Store all three URLs in
+`.env.database` or CI's database-test secret scope. `pnpm test:db-integration` fails before running
+when any URL is absent, and `pnpm ci:check` includes that required command. The ordinary unit-test
+command may still skip this file when the database-test environment is intentionally unavailable.
 
 ---
 
@@ -1480,7 +1499,9 @@ Never prefix a secret with NEXT_PUBLIC_.
 
 ---
 
-# 20. Recommended `.env.example`
+# 20. Recommended environment templates
+
+Runtime `.env.example` content must not contain bootstrap or migration credentials:
 
 ```env
 # Runtime
@@ -1490,16 +1511,8 @@ APP_URL=http://localhost:3000
 API_URL=http://localhost:4000/api/v1
 API_PORT=4000
 
-# Database
-POSTGRES_USER=repurposepro
-POSTGRES_PASSWORD=password
-POSTGRES_DB=repurposepro
-POSTGRES_OWNER_PASSWORD=password
-POSTGRES_RUNTIME_PASSWORD=password
+# Database runtime
 DATABASE_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
-DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
-# Existing-volume upgrade only; remove after pnpm db:provision-roles.
-DATABASE_BOOTSTRAP_URL=
 DATABASE_POOL_MAX=10
 DATABASE_SSL=false
 
@@ -1576,13 +1589,28 @@ CLEANUP_SCHEDULE_CRON=0 * * * *
 CLEANUP_BATCH_SIZE=100
 
 # Tests
-TEST_DATABASE_BOOTSTRAP_URL=postgresql://bootstrap:password@localhost:5432/repurposepro
-TEST_DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
-TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
 TEST_REDIS_URL=redis://localhost:6380
 MOCK_GEMINI=true
 MOCK_WHISPER=true
 MOCK_FFMPEG_RENDER=true
+```
+
+Administrative `.env.database.example` content is isolated from runtime loaders:
+
+```env
+POSTGRES_USER=repurposepro
+POSTGRES_PASSWORD=password
+POSTGRES_DB=repurposepro
+POSTGRES_OWNER_PASSWORD=password
+POSTGRES_RUNTIME_PASSWORD=password
+
+DATABASE_BOOTSTRAP_URL=postgresql://repurposepro:password@localhost:5432/repurposepro
+DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
+DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
+
+TEST_DATABASE_BOOTSTRAP_URL=postgresql://repurposepro:password@localhost:5432/repurposepro
+TEST_DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
+TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
 ```
 
 ---

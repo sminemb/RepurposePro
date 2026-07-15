@@ -16,6 +16,7 @@ installations are not required.
 
 ```powershell
 Copy-Item .env.example .env
+Copy-Item .env.database.example .env.database
 pnpm install --frozen-lockfile
 pnpm infra:up
 pnpm db:migrate
@@ -26,6 +27,7 @@ Equivalent POSIX environment setup:
 
 ```bash
 cp .env.example .env
+cp .env.database.example .env.database
 ```
 
 The combined development command starts all three TypeScript applications:
@@ -40,28 +42,32 @@ Redis connections cannot be established.
 
 ## Common commands
 
-| Command             | Purpose                                                            |
-| ------------------- | ------------------------------------------------------------------ |
-| `pnpm dev`          | Build shared packages and start web, API, and worker in watch mode |
-| `pnpm dev:web`      | Start only the web app                                             |
-| `pnpm dev:api`      | Start only the API                                                 |
-| `pnpm dev:worker`   | Start only the worker                                              |
-| `pnpm infra:up`     | Start PostgreSQL and Redis and wait for health checks              |
-| `pnpm infra:status` | Show local infrastructure status                                   |
-| `pnpm infra:check`  | Query PostgreSQL and ping Redis from Node.js                       |
-| `pnpm infra:down`   | Stop containers while preserving named data volumes                |
-| `pnpm db:generate`  | Generate a Drizzle migration from the current schema               |
-| `pnpm db:migrate`   | Apply pending Drizzle migrations                                   |
-| `pnpm lint`         | Run the root ESLint flat configuration                             |
-| `pnpm typecheck`    | Typecheck shared packages and all applications                     |
-| `pnpm test`         | Run Vitest unit tests                                              |
-| `pnpm build`        | Build all workspace projects in dependency order                   |
-| `pnpm ci:check`     | Run formatting, lint, typecheck, tests, and builds                 |
+| Command                    | Purpose                                                                 |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `pnpm dev`                 | Build shared packages and start web, API, and worker in watch mode      |
+| `pnpm dev:web`             | Start only the web app                                                  |
+| `pnpm dev:api`             | Start only the API                                                      |
+| `pnpm dev:worker`          | Start only the worker                                                   |
+| `pnpm infra:up`            | Start PostgreSQL and Redis and wait for health checks                   |
+| `pnpm infra:status`        | Show local infrastructure status                                        |
+| `pnpm infra:check`         | Query PostgreSQL and ping Redis from Node.js                            |
+| `pnpm infra:down`          | Stop containers while preserving named data volumes                     |
+| `pnpm db:generate`         | Generate a Drizzle migration from the current schema                    |
+| `pnpm db:migrate`          | Apply pending Drizzle migrations                                        |
+| `pnpm lint`                | Run the root ESLint flat configuration                                  |
+| `pnpm typecheck`           | Typecheck shared packages and all applications                          |
+| `pnpm test`                | Run Vitest unit tests                                                   |
+| `pnpm test:db-integration` | Run required billing integrity tests on disposable PostgreSQL databases |
+| `pnpm build`               | Build all workspace projects in dependency order                        |
+| `pnpm ci:check`            | Run formatting, lint, typecheck, tests, and builds                      |
 
 ## Environment configuration
 
-VS0 activates only runtime, database, Redis, and logging variables. Copy `.env.example` to `.env`
-and change values locally when necessary. Real secrets and all `.env` variants are ignored by Git.
+Runtime processes load only `.env`, created from `.env.example`. Compose, migration, role
+provisioning, and disposable PostgreSQL integration tests use `.env.database`, created from
+`.env.database.example`. Never copy administrative database credentials into `.env`.
+
+Real secrets and both local environment files are ignored by Git.
 
 The public web configuration contains only `APP_URL`, `APP_ENV`, `NODE_ENV`, and
 `NEXT_PUBLIC_API_URL`. Database and Redis connection values are loaded only by server processes.

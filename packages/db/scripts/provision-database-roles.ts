@@ -4,9 +4,10 @@ import { resolve } from "node:path";
 import { config as loadDotEnv } from "dotenv";
 import { Client } from "pg";
 
-const environmentFile = [resolve(process.cwd(), ".env"), resolve(process.cwd(), "../../.env")].find(
-  (candidate) => existsSync(candidate),
-);
+const environmentFile = [
+  resolve(process.cwd(), ".env.database"),
+  resolve(process.cwd(), "../../.env.database"),
+].find((candidate) => existsSync(candidate));
 
 if (environmentFile) {
   loadDotEnv({ path: environmentFile, override: false, quiet: true });
@@ -54,7 +55,7 @@ async function provisionDatabaseRoles(): Promise<void> {
   const bootstrapUrl = requiredEnvironment("DATABASE_BOOTSTRAP_URL");
   const bootstrapRole = connectionRole(bootstrapUrl);
   const migrationRole = connectionRole(requiredEnvironment("DATABASE_MIGRATION_URL"));
-  const runtimeRole = connectionRole(requiredEnvironment("DATABASE_URL"));
+  const runtimeRole = connectionRole(requiredEnvironment("DATABASE_RUNTIME_URL"));
 
   if (
     bootstrapRole.name === "repurposepro_owner" ||
@@ -66,7 +67,7 @@ async function provisionDatabaseRoles(): Promise<void> {
     throw new Error("DATABASE_MIGRATION_URL must use repurposepro_owner.");
   }
   if (runtimeRole.name !== "repurposepro_runtime") {
-    throw new Error("DATABASE_URL must use repurposepro_runtime.");
+    throw new Error("DATABASE_RUNTIME_URL must use repurposepro_runtime.");
   }
 
   const bootstrap = new Client({ connectionString: bootstrapUrl });

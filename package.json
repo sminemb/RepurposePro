@@ -10,7 +10,7 @@
   "scripts": {
     "build": "pnpm -r --if-present run build",
     "build:packages": "pnpm --filter @repurposepro/shared --filter @repurposepro/config --filter @repurposepro/db -r run build",
-    "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db-integration && pnpm build",
     "db:generate": "pnpm --filter @repurposepro/db run db:generate",
     "db:migrate": "pnpm --filter @repurposepro/db run db:migrate",
     "db:migrate:bootstrap": "pnpm --filter @repurposepro/db run db:migrate:bootstrap",
@@ -22,14 +22,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:check": "pnpm run build:packages && tsx scripts/check-infrastructure.ts",
-    "infra:down": "docker compose down",
-    "infra:status": "docker compose ps",
-    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose --env-file .env.database down",
+    "infra:status": "docker compose --env-file .env.database ps",
+    "infra:up": "docker compose --env-file .env.database up -d --wait",
     "lint": "eslint .",
     "prelint": "pnpm run build:packages",
     "pretest": "pnpm run build:packages",
     "start": "pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run start",
     "test": "vitest run",
+    "test:db-integration": "vitest run --config packages/db/vitest.integration.config.mts",
     "typecheck": "pnpm run build:packages && pnpm --filter @repurposepro/db exec tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @repurposepro/db exec tsc -p tsconfig.config.json --noEmit && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"
   },
   "devDependencies": {

@@ -130,7 +130,7 @@ Current Status: IN_PROGRESS
 Last Diagnostic Task: Landing alternating-background correction — final CTA uses soft surface after charcoal pricing section.
 Current Branch: main
 
-Last Completed Task: VS3-T1.1 — Harden billing integrity after adversarial review
+Last Completed Task: VS3-T1.2 — Close runtime credential and mandatory PostgreSQL test gaps
 Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
 
 Last Updated Date: 2026-07-15
@@ -414,7 +414,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 |---|---|---|---|---|---|---|---|---|
 | VS3-T1 | Create credit ledger and Stripe payment schemas | DB | COMPLETED | 2026-07-15 | 10:52 | 2026-07-15 | 11:56 | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass. |
 | VS3-T1.1 | Harden payment, job-charge, runtime-role, and integration-test integrity | DB + Infra + Tests | COMPLETED | 2026-07-15 | 12:31 | 2026-07-15 | 13:28 | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass. |
-| VS3-T1.2 | Close runtime credential and mandatory PostgreSQL test gaps | Config + DB + Infra + Tests | IN_PROGRESS | 2026-07-15 | 15:04 | — | — | Runtime-role regression tests and environment split in progress. |
+| VS3-T1.2 | Close runtime credential and mandatory PostgreSQL test gaps | Config + DB + Infra + Tests | COMPLETED | 2026-07-15 | 15:04 | 2026-07-15 | 15:22 | Runtime roles fail closed; admin secrets are isolated; 3 required live PostgreSQL tests pass. |
 | VS3-T2 | Build credit balance and credit-pack UI | Web | NOT_STARTED | — | — | — | — | — |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
@@ -490,6 +490,42 @@ Known Limitations:
 - Runtime is intentionally read-only for ledger and Stripe source records. VS3-T4/T5 must introduce narrowly scoped owner-authorized database procedures/transactions before granting credits or deducting/refunding them.
 - `pnpm format:check` reports the same eight unrelated pre-existing formatting files listed for VS3-T1. The Next.js NFT tracing warning remains non-blocking.
 - `0008`–`0010` are additive because prior VS3 migrations were already applied locally; existing volumes must run `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles` before later migrations use the owner credential.
+
+### VS3-T1.2 — Runtime Credential and PostgreSQL Test Closure
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 15:04
+End Date: 2026-07-15
+End Time: 15:22
+
+Files Changed:
+
+- Runtime-role validation and regression tests in `packages/config/src/index.ts` and `index.spec.ts`.
+- Split runtime/database environment templates, Drizzle configuration, role provisioning, Compose commands, and database integration Vitest configuration.
+- `README.md`, database/environment references, root CI scripts, and this tracker.
+
+Commands Run:
+
+- Focused RED/green config tests; config/script typechecks; targeted ESLint and Prettier checks.
+- `pnpm db:provision-roles`; `pnpm db:migrate`; `pnpm infra:status`.
+- `pnpm test:db-integration` with credentials and without `.env.database`.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm format:check`; `git diff --check`.
+
+Verification:
+
+- PASS: API, worker, and authentication configuration rejects bootstrap and migration-owner `DATABASE_URL` values; only `repurposepro_runtime` is accepted.
+- PASS: Runtime `.env` has no PostgreSQL bootstrap, owner, migration, or provisioning keys; database administration loads `.env.database` instead.
+- PASS: Role provisioning, owner-role migrations, and Docker Compose status work through the isolated database environment file.
+- PASS: The required database test command runs 3 live PostgreSQL migration/integrity tests and exits 1 with all missing variable names when credentials are absent.
+- PASS: `pnpm ci:check` includes the required PostgreSQL command; ordinary tests cannot be mistaken for that gate.
+- PASS: `pnpm lint`, `pnpm typecheck`, `pnpm test` (88 passed; 3 integration tests intentionally deferred to the required command), and `pnpm build` pass.
+
+Known Limitations:
+
+- `pnpm format:check` still reports only the same eight unrelated pre-existing files; none are part of VS3-T1.2.
+- The existing non-blocking Next.js NFT tracing warning remains during the production build.
+- No Stripe API, queue, UI, or HTTP contract changed.
 
 ## Slice Acceptance Criteria
 
@@ -1024,14 +1060,14 @@ Last Maintenance Task: MAINT-4 — Archive completed maintenance records
 Current Status: IN_PROGRESS
 Last Completed Task: VS3-T1.1 — Harden billing integrity after adversarial review
 Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
-Uncommitted Changes: None. VS3-T1.1 changes are committed with this tracker update.
-Known Failing Tests: None. `pnpm test` passes 84 tests; 3 PostgreSQL integration tests skip when test URLs are absent.
+Uncommitted Changes: None. VS3-T1.2 changes are committed with this tracker update.
+Known Failing Tests: None. `pnpm test` passes 88 tests; `pnpm test:db-integration` separately requires and passes 3 live PostgreSQL tests.
 Known Blockers: None. `pnpm format:check` reports eight unrelated pre-existing formatting files.
 Important Maintenance Context: MAINT-1 through MAINT-4 records now live in `docs/agent-maintenance-log.md`; `progress-tracker.md` retains only the live handoff and archive link.
 Important Maintenance Context: `parseSourceVideoUpload` restores only `%22` and `%27` multipart filename escapes, leaving generated internal storage paths unchanged.
-Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction. `credit_ledger` is immutable, uses `SUM(amount)` as authority, rejects cross-owner/project links and duplicate payment grants, and its processing entries must reconcile exactly to the immutable job charge. Compose fixes bootstrap-only `repurposepro`, non-superuser migration owner `repurposepro_owner`, and restricted runtime `repurposepro_runtime`; no role names are configurable. Existing volumes require `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles`, which also removes runtime membership in bootstrap/owner roles. VS3-T4/T5 must atomically claim the stored webhook event and use narrowly scoped owner-authorized write procedures before payment/ledger writes.
-Required Commands Before Continuing: Keep `DATABASE_URL` on `repurposepro_runtime` and `DATABASE_MIGRATION_URL` on `repurposepro_owner`; only use `DATABASE_BOOTSTRAP_URL` with the explicit bootstrap-upgrade command. Keep `pnpm ci:check` limitation scoped to the eight pre-existing formatting files.
+Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction. `credit_ledger` is immutable, uses `SUM(amount)` as authority, rejects cross-owner/project links and duplicate payment grants, and its processing entries must reconcile exactly to the immutable job charge. Runtime processes load only `.env` and reject every database role except `repurposepro_runtime`; Compose, migrations, provisioning, and live PostgreSQL tests load only `.env.database`. Existing volumes require `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles`. VS3-T4/T5 must atomically claim the stored webhook event and use narrowly scoped owner-authorized write procedures before payment/ledger writes.
+Required Commands Before Continuing: Keep runtime `DATABASE_URL` in `.env`; keep `DATABASE_BOOTSTRAP_URL`, `DATABASE_MIGRATION_URL`, `DATABASE_RUNTIME_URL`, and `TEST_DATABASE_*` only in `.env.database` or equivalent isolated CI secret scopes. Run `pnpm test:db-integration` for billing migration changes. Keep `pnpm ci:check` limitation scoped to the eight pre-existing formatting files.
 Last Updated Date: 2026-07-15
-Last Updated Time: 13:28
+Last Updated Time: 15:22
 Last Updated By: Codex
 ```
