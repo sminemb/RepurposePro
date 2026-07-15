@@ -187,3 +187,105 @@ Last Updated By: Codex
 ```
 
 ---
+
+---
+
+### VS2-T7 Handoff Update — 2026-07-13 19:01 Asia/Manila
+
+This update supersedes earlier VS2 handoff snapshots.
+
+~~~text
+Current Slice: VS2 — User can create a project and upload a validated video
+Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Current Status: COMPLETED
+Last Completed Task: VS2-T7 — Display validated video metadata and required credits estimate
+Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Uncommitted Changes: None.
+Known Failing Tests: None for VS2-T7; 73 tests, typecheck, lint, and production build pass.
+Known Blockers: None.
+Important Context: Upload metadata and server-derived rounded credit estimates are visible after upload; refresh persistence remains outside VS2-T7 scope.
+Required Commands Before Continuing: pnpm infra:up; pnpm ci:check; run the VS3 database migration/test workflow before billing work.
+Last Updated Date: 2026-07-13
+Last Updated Time: 19:01
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T1 Handoff Update — 2026-07-15 11:56 Asia/Manila
+
+~~~text
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T1.1 — Harden payment, job-charge, runtime-role, and integration-test integrity
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Next Recommended Task: VS3-T1.1 — Harden billing integrity before Stripe or queue writes.
+Uncommitted Changes: None.
+Known Failing Tests: None; 81 tests, lint, typecheck, and build pass.
+Known Blockers: None.
+Important Context: Billing schema includes immutable ledger and payment foundations, duplicate-grant protection, ownership constraints, and processing-job charge fields.
+Required Commands Before Continuing: pnpm infra:up; run owner-role migrations and live PostgreSQL integrity checks before granting runtime write access.
+Last Updated Date: 2026-07-15
+Last Updated Time: 11:56
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T1.1 Handoff Update — 2026-07-15 13:28 Asia/Manila
+
+~~~text
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T1.2 — Close runtime credential and mandatory PostgreSQL test gaps
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T1.1 — Harden payment, job-charge, runtime-role, and integration-test integrity
+Next Recommended Task: VS3-T1.2 — Close runtime credential and mandatory PostgreSQL test gaps.
+Uncommitted Changes: None.
+Known Failing Tests: None; 84 tests pass and three optional integration tests are skipped without test URLs.
+Known Blockers: Runtime remains intentionally read-only for ledger and Stripe source records until owner-authorized procedures/transactions exist.
+Important Context: Billing integrity migrations are additive because earlier migrations were already applied locally; existing volumes need bootstrap migration and role provisioning before later owner-credential migrations.
+Required Commands Before Continuing: pnpm db:migrate:bootstrap; pnpm db:provision-roles; pnpm test:db-integration.
+Last Updated Date: 2026-07-15
+Last Updated Time: 13:28
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T1.2 Handoff Update — 2026-07-15 15:22 Asia/Manila
+
+~~~text
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T2 — Build credit balance and credit-pack UI
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T1.2 — Close runtime credential and mandatory PostgreSQL test gaps
+Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
+Uncommitted Changes: None.
+Known Failing Tests: None; 88 tests pass and the required live PostgreSQL integration gate is wired.
+Known Blockers: None for VS3-T2. Runtime and migration credentials are isolated; later billing write paths must use owner-authorized procedures/transactions.
+Important Context: API, worker, and auth runtime configuration accepts only repurposepro_runtime; administrative database values stay in .env.database or equivalent isolated CI secrets.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; run pnpm test:db-integration for billing schema changes; run pnpm ci:check.
+Last Updated Date: 2026-07-15
+Last Updated Time: 15:22
+Last Updated By: Codex
+~~~
+
+---
+
+### MAINT-5 Handoff Update — 2026-07-16 07:31 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T2 - Build credit balance and credit-pack UI
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T1.2 - Close runtime credential and mandatory PostgreSQL test gaps
+Next Recommended Task: VS3-T2 - Build credit balance and credit-pack UI.
+Uncommitted Changes: None after documentation commit.
+Known Failing Tests: None for MAINT-5; documentation checks pass.
+Known Blockers: None.
+Important Context: Progress tracker now has one live handoff; completed narratives and operational evidence live in dedicated archives. Stale Current Agent State content was removed.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; run pnpm test:db-integration for billing schema changes; run pnpm ci:check.
+Last Updated Date: 2026-07-16
+Last Updated Time: 07:31
+Last Updated By: Codex
+~~~

@@ -18,6 +18,10 @@ ui-rules.md
 ui-registry.md
 build-plan.md
 progress-tracker.md
+agent-execution-log.md
+agent-operational-logs.md
+agent-handoff-history.md
+agent-maintenance-log.md
 api-contracts.md
 database-schema.md
 env-reference.md
@@ -296,6 +300,32 @@ After completing the task, record:
 
 Do not mark a task complete without updating the tracker.
 
+### Agent Log Maintenance
+
+Keep these records append-only and update them regularly:
+
+- `progress-tracker.md` — live slice status, current task, task tables, and current handoff only.
+- `agent-execution-log.md` — one detailed completion narrative for every meaningful completed task.
+- `agent-operational-logs.md` — concise files-changed, commands/verification, blocker, decision, and failure entries.
+- `agent-handoff-history.md` — handoff snapshot at task completion, task change, blocker, or session end.
+- `agent-maintenance-log.md` — completed documentation, cleanup, repair, reconciliation, and other maintenance tasks.
+
+Update cadence:
+
+1. At task start, update the live tracker with the task, status, start date, and start time.
+2. During work, append operational evidence when a meaningful milestone, decision, blocker, or failure occurs. Long-running work must receive at least one checkpoint per work session.
+3. At completion, append the execution record, operational evidence, and handoff snapshot; append a maintenance record when the task is maintenance or documentation work.
+4. Before stopping, make the tracker handoff match the newest handoff-history entry and record any intentionally uncommitted files.
+
+Do not delete or rewrite historical log entries. Correct prior information with a dated follow-up entry.
+
+### Live State Hygiene
+
+- Keep one authoritative live state record: `progress-tracker.md` section `10. Current Handoff State`.
+- Remove stale or duplicate `Current Agent State` snapshots from `progress-tracker.md`; do not maintain a second live-state block.
+- When task, maintenance, diagnostic, branch, or timestamp fields change, replace the old live values rather than appending another current-state snapshot.
+- Move completed detail to the archive logs and keep the live tracker limited to current status, task tables, archive links, and one current handoff.
+
 ---
 
 ## 8. Required Task Workflow
@@ -376,9 +406,20 @@ Record:
 - Limitations
 - Next task
 
+Also update the applicable records:
+
+- Append the completed task narrative to `agent-execution-log.md`.
+- Append files, commands, verification, blockers, decisions, and failures to `agent-operational-logs.md`.
+- Append the current handoff snapshot to `agent-handoff-history.md`.
+- Append a record to `agent-maintenance-log.md` for maintenance or documentation tasks.
+
 ### Step 7 — Handoff
 
-Update the handoff section before stopping.
+Update the handoff section in `progress-tracker.md` and append the same state to `agent-handoff-history.md` before stopping.
+
+### Step 8 — Commit
+
+After verification and log updates pass, commit finished task changes with a clear message. Document any intentionally uncommitted changes in both handoff records.
 
 ---
 
@@ -1372,6 +1413,14 @@ Before ending work, update the handoff section in:
 ```text
 progress-tracker.md
 ```
+
+Append the same snapshot to:
+
+```text
+docs/agent-handoff-history.md
+```
+
+Do not create or retain a separate stale `Current Agent State` block in `progress-tracker.md`; the current handoff is the sole live state.
 
 Include:
 

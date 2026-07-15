@@ -25,6 +25,13 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-13 | VS2-T4 | apps/api projects/storage, packages/config, API docs, tests, lint config | Added private local source storage, protected bounded multipart upload handling, startup configuration, contract/error coverage, and task handoff. |
 | 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md | Moved historical tracker content into focused archive docs and kept the tracker focused on live slice status plus current handoff. |
 | 2026-07-13 | VS2-T6 | apps/api projects, packages/shared, eslint.config.mjs, docs | Added shared minute-rounding rule and authorized source-video metadata API with safe not-found behavior; added regression tests and typed-lint support for shared tests. |
+| 2026-07-13 | VS2-UI-R4 | Global design tokens, landing media, active design docs, docs/progress-tracker.md | Applied the Ember copper visual system, primary-action foregrounds, and landing ambient treatment. |
+| 2026-07-13 | VS2-UI-R5 | apps/web/app/globals.css, landing pricing CTA, docs/ui-tokens.md, docs/progress-tracker.md | Removed the remaining legacy landing CTA gradient and routed the glow through the named Ember ambient token. |
+| 2026-07-13 | VS2-T7 | apps/web upload client/components, docs/progress-tracker.md | Displayed validated source metadata and server-derived rounded credit estimates after upload. |
+| 2026-07-15 | VS3-T1 | packages/db schema/migrations/tests, docs/database-schema.md, docs/progress-tracker.md | Added credit ledger, Stripe payment, webhook, customer, and processing-job foundation schema with integrity constraints. |
+| 2026-07-15 | VS3-T1.1 | packages/db migrations/tests, role provisioning, Compose/configuration, database/environment docs, lint/typecheck wiring, docs/progress-tracker.md | Hardened billing integrity, ownership boundaries, runtime role permissions, and migration/test execution. |
+| 2026-07-15 | VS3-T1.2 | packages/config, database/runtime environment templates, Drizzle/Compose/test scripts, README.md, database/environment docs, docs/progress-tracker.md | Closed runtime credential separation and mandatory live PostgreSQL test wiring. |
+| 2026-07-16 | MAINT-5 | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives | Removed stale duplicate live state, archived referenced completed task narratives, and documented recurring log-maintenance rules. |
 
 ---
 
@@ -60,6 +67,15 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | `pnpm exec prettier --check docs/progress-tracker.md docs/agent-execution-log.md docs/agent-operational-logs.md docs/agent-handoff-history.md` + `git diff --check` | PASS — docs formatting and whitespace checks passed after archive split. |
 | 2026-07-13 | VS2-T6 | Focused Vitest + `pnpm typecheck` + `pnpm lint` + `pnpm test` + `pnpm build` + `git diff --check` | PASS — 66 tests, strict types, lint, and all production builds pass. |
 
+| 2026-07-13 | VS2-UI-R4 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` / `pnpm ci:check` / source scan / contrast check | PASS — Ember token centralization, contrast, responsive rendering, redirects, 66 tests, and production build verified; pre-existing formatting drift remains. |
+| 2026-07-13 | VS2-UI-R5 | source scan / `pnpm lint` / `pnpm typecheck` / browser checks | PASS — no legacy accent literals remain; CTA has no 390px overflow or console errors. |
+| 2026-07-13 | VS2-T7 | Focused Vitest / `pnpm test` / `pnpm typecheck` / `pnpm lint` / web build / `git diff --check` | PASS — 73 tests, metadata/credit display, authenticated desktop/mobile upload checks, and production build verified. |
+| 2026-07-15 | VS3-T1 | Focused Vitest / `pnpm db:generate` / `pnpm infra:up` / repeated `pnpm db:migrate` / Docker PostgreSQL negative-case checks / lint / typecheck / test / build | PASS — schema rows, constraints, ownership, triggers, idempotency, 81 tests, lint, typecheck, and build verified. |
+| 2026-07-15 | VS3-T1.1 | Live PostgreSQL RED/green integration tests / role provisioning / owner migrations / `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` / `pnpm format:check` / `git diff --check` | PASS — immutable financial fields, runtime boundary, repeatable owner migrations, and 13 live integration assertions verified; eight unrelated formatting findings remain. |
+| 2026-07-15 | VS3-T1.2 | Focused config tests / config-script typechecks / targeted ESLint and Prettier / role provisioning / migrations / `pnpm infra:status` / `pnpm test:db-integration` / lint / typecheck / test / build / format check / diff check | PASS — runtime accepts only `repurposepro_runtime`; isolated admin credentials and required PostgreSQL test gate verified; 88 tests pass. |
+
+| 2026-07-16 | MAINT-5 | Documentation audit / archive reconciliation / Prettier checks on changed Markdown / git diff --check | PASS — stale Current Agent State content removed; one current handoff remains; archive and recurring-log rules synchronized. |
+
 Useful commands may include:
 
 ```text
@@ -94,6 +110,9 @@ ffmpeg ...
 | 2026-07-13 | 10:07 | Store VS2-T4 uploads privately without an `uploaded_videos` row. | Keeps the task scoped to bounded storage while retaining a private manifest for VS2-T5 probing and VS2-T7 persistence. | VS2 | apps/api storage/projects, docs/api-contracts.md |
 | 2026-07-13 | 15:19 | Split historical progress tracker logs into focused archive docs. | The tracker had grown into a mixed live-status and historical archive; moving completed logs keeps current slice state readable without losing handoff evidence. | Docs | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md |
 | 2026-07-13 | 16:56 | Derive required credits from persisted video duration rather than storing a duplicate. | VS3 must recalculate credits inside its payment transaction; one canonical duration-derived rule prevents preview and charge drift. | VS2, VS3 | packages/shared, apps/api projects, docs/api-contracts.md |
+
+| 2026-07-15 | 13:28 | Keep processing charges reconciled to immutable `processing_jobs.credits_charged`; runtime cannot write raw ledger or Stripe source records. | Prevents financial state bypass and leaves VS3-T4/T5 to add narrowly scoped owner-authorized write procedures. | VS3 | packages/db, role boundary migrations, database/environment docs |
+| 2026-07-15 | 15:22 | Restrict API, worker, and auth runtime credentials to `repurposepro_runtime`; isolate bootstrap, migration, provisioning, and live-test credentials. | Ensures application processes cannot escalate into administrative database operations and makes the PostgreSQL integration gate explicit. | VS3 | packages/config, Compose, environment templates, CI/test scripts |
 
 Record decisions such as:
 

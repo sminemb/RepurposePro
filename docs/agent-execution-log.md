@@ -580,6 +580,261 @@ Last Updated Date: 2026-07-13
 Last Updated Time: 14:55
 Last Updated By: Codex
 ```
+---
+
+### MAINT-5 — Archive completed task records and define recurring agent-log updates
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 07:15
+End Date: 2026-07-16
+End Time: 07:31
+
+User Outcome:
+- Completed task narratives were moved out of the live tracker, operational evidence was indexed, and stale live state was removed.
+
+Files Changed:
+- AGENTS.md
+- docs/progress-tracker.md
+- docs/agent-execution-log.md
+- docs/agent-operational-logs.md
+- docs/agent-handoff-history.md
+- docs/agent-maintenance-log.md
+
+Commands Run:
+- Documentation audit and archive reconciliation.
+- pnpm exec prettier --check on all changed Markdown files.
+- git diff --check.
+
+Verification:
+- PASS: One current handoff remains in the tracker; completed task narratives and operational records are archived.
+- PASS: AGENTS.md now requires regular execution, operational, handoff, and maintenance log updates plus stale-state cleanup.
+
+Known Limitations:
+- Documentation-only task; runtime tests were not required.
+
+Notes:
+- Detailed maintenance evidence is retained in agent-maintenance-log.md.
+
+---
+
+### VS2-UI-R4 — Apply Ember Copper Visual System
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 17:34
+End Date: 2026-07-13
+End Time: 18:13
+
+Files Changed:
+
+- Global design tokens, primary-action foregrounds, and landing ambient treatment.
+- Podcast studio marketing image, active design documentation, and the progress tracker.
+
+Commands Run:
+
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm build`
+- `pnpm ci:check`
+- Active-source color scan and primary contrast check.
+
+Verification:
+
+- PASS: Ember `#C4522A` is centralized in shared tokens; white primary foreground contrast is 4.58:1.
+- PASS: No stale legacy-accent references remain in active app source or current design docs.
+- PASS: Landing and login render with Ember at desktop and 390px mobile widths; mobile has no horizontal overflow.
+- PASS: Dashboard, project creation, and upload routes redirect unauthenticated users to the Ember login screen.
+- PASS: `pnpm lint`, `pnpm typecheck`, 66 tests, and production build pass.
+
+Known Limitations:
+
+- `pnpm ci:check` still stops at pre-existing formatting drift outside this task, including `apps/web/next-env.d.ts`; no task changes were made to those files.
+
+---
+
+### VS2-UI-R5 — Remove Missed Legacy Landing CTA Gradient
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 18:25
+End Date: 2026-07-13
+End Time: 18:31
+
+Files Changed:
+
+- `apps/web/app/globals.css`
+- `apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- `docs/ui-tokens.md`
+- `docs/progress-tracker.md`
+
+Commands Run:
+
+- Active-source color scan.
+- `pnpm lint`
+- `pnpm typecheck`
+- Browser checks at desktop and 390px mobile widths.
+
+Verification:
+
+- PASS: `FinalCta` resolves its radial glow to `rgba(196, 82, 42, 0.15)` through `--rp-primary-ambient-strong`.
+- PASS: No legacy accent literals remain in active app source or current design documentation.
+- PASS: `FinalCta` has no horizontal overflow at a 390px mobile viewport and no console errors.
+
+Known Limitations:
+
+- `pnpm ci:check` remains blocked by the pre-existing formatting drift recorded above; it was not rerun for this focused repair.
+
+---
+
+### VS2-T7 — Display Validated Video Metadata and Required Credits Estimate
+
+Status: COMPLETED
+Start Date: 2026-07-13
+Start Time: 18:39
+End Date: 2026-07-13
+End Time: 19:01
+
+Files Changed:
+
+- `apps/web/features/upload/client/upload-video.ts` and its contract tests.
+- `apps/web/features/upload/components/upload-dropzone.tsx`.
+- `apps/web/features/upload/components/video-metadata-card.tsx`, `video-metadata.ts`, and formatting tests.
+- `docs/progress-tracker.md`.
+
+Commands Run:
+
+- Focused Vitest red/green runs for the metadata client and formatting helpers.
+- `pnpm test`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm --filter @repurposepro/web run build`
+- `git diff --check` and scoped diff review.
+
+Verification:
+
+- PASS: `GET /projects/:projectId/video` uses the encoded project path, session credentials, and the existing success envelope.
+- PASS: An upload remains successful if metadata loading fails; deterministic retry coverage confirms the second call fetches only metadata.
+- PASS: The card displays filename, duration, file size, resolution, optional FPS, validation state, and server-provided rounded credits.
+- PASS: A live authenticated upload returned 201, its owned metadata request returned 200, and the card rendered correctly at desktop and 390px mobile widths with no console errors.
+- PASS: 73 tests, typecheck, lint, and production build pass. The build retains the existing non-blocking Next.js config-tracing warning.
+
+Known Limitations:
+
+- Metadata is fetched after the successful upload only; showing it after a page refresh remains outside this task's stated scope.
+- The forced browser retry exercise could not reach metadata because the local API connection dropped during upload; deterministic client coverage verifies retry behavior.
+
+---
+
+### VS3-T1 — Billing and Job Foundation Schema
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 10:52
+End Date: 2026-07-15
+End Time: 11:56
+
+Files Changed:
+
+- `packages/db/src/schema/index.ts` and `packages/db/src/schema/billing-schema.spec.ts`.
+- `packages/db/drizzle/0005_add_vs3_billing_schema.sql`, follow-on hardening migrations `0006_harden_vs3_billing_integrity.sql` and `0007_prevent_duplicate_purchase_grants.sql`, plus Drizzle snapshots and journal.
+- `docs/database-schema.md` and the progress tracker.
+
+Commands Run:
+
+- Red/green focused Vitest schema specs; `pnpm --filter @repurposepro/db run db:generate`.
+- `pnpm infra:up`; `pnpm db:migrate` after each additive migration and idempotent reruns.
+- Rollback-only PostgreSQL fixture/negative-case script via Docker `psql`, including trigger and catalog checks.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `git diff --check`.
+
+Verification:
+
+- PASS: Valid purchase, deduction, refund, customer, payment, webhook-event, and job rows persist.
+- PASS: PostgreSQL rejects zero/wrong-sign amounts, missing references, cross-user and cross-project links, pointer misuse, ledger update/delete/truncate, duplicate refund/deduction/idempotency/event/session/intent, pending or mismatched purchase payments, and duplicate paid-payment grants.
+- PASS: Catalog verifies five protection triggers, ownership constraints, and the per-payment purchase unique index.
+- PASS: 17 test files / 81 tests, lint, typecheck, and build pass. The existing Next.js NFT tracing warning remains non-blocking.
+
+Known Limitations:
+
+- No Stripe API, queue, UI, or HTTP contract changed; those belong to later VS3 tasks.
+- `pnpm format:check` still reports eight pre-existing unrelated formatting files; all VS3-T1 files are formatted.
+- `0006` and `0007` are intentional additive hardening migrations: `0005` had already been applied during local verification, so PostgreSQL would not replay edits to it.
+
+---
+
+### VS3-T1.1 — Billing Integrity Hardening
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 12:31
+End Date: 2026-07-15
+End Time: 13:28
+
+Files Changed:
+
+- `packages/db/drizzle/0008_harden_billing_integrity.sql`, `0009_transfer_drizzle_tracking_ownership.sql`, and `0010_harden_runtime_role_boundary.sql`, plus generated snapshots/journal.
+- `packages/db/src/schema/billing-integrity.integration.spec.ts`, `billing-schema.spec.ts`, role-provisioning script/configuration, and Drizzle config.
+- `compose.yaml`, `.env.example`, PostgreSQL initialization script, database/environment docs, ESLint/typecheck wiring, and the progress tracker.
+
+Commands Run:
+
+- Live RED/green PostgreSQL integration tests with separate bootstrap, owner, and runtime URLs.
+- `pnpm infra:up`; `pnpm db:provision-roles`; the Compose role initializer; `pnpm db:migrate` twice as `repurposepro_owner`; and `pnpm db:migrate:bootstrap`.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm format:check`; `git diff --check`.
+
+Verification:
+
+- PASS: Payment/customer/webhook identifiers and payment financial terms are immutable; legal status transitions remain possible.
+- PASS: Deduction equals immutable `processing_jobs.credits_charged`; refund exactly reverses an eligible failed/refunded job deduction.
+- PASS: Runtime cannot set replication mode, disable triggers, truncate/mutate/mint ledger data, or insert Stripe source records. Ledger triggers remain active under a bootstrap replication-mode session.
+- PASS: Runtime cannot create temporary tables to shadow ownership checks, cannot assume the owner role, and has no owner-role membership.
+- PASS: Fresh disposable databases apply all migrations twice under the non-superuser migration owner; 13 live integration assertions pass.
+- PASS: `pnpm lint`, `pnpm typecheck`, `pnpm test` (84 passed; 3 optional integration tests skipped without test URLs), and `pnpm build` pass.
+
+Known Limitations:
+
+- Runtime is intentionally read-only for ledger and Stripe source records. VS3-T4/T5 must introduce narrowly scoped owner-authorized database procedures/transactions before granting credits or deducting/refunding them.
+- `pnpm format:check` reports the same eight unrelated pre-existing formatting files listed for VS3-T1. The Next.js NFT tracing warning remains non-blocking.
+- `0008`–`0010` are additive because prior VS3 migrations were already applied locally; existing volumes must run `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles` before later migrations use the owner credential.
+
+---
+
+### VS3-T1.2 — Runtime Credential and PostgreSQL Test Closure
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 15:04
+End Date: 2026-07-15
+End Time: 15:22
+
+Files Changed:
+
+- Runtime-role validation and regression tests in `packages/config/src/index.ts` and `index.spec.ts`.
+- Split runtime/database environment templates, Drizzle configuration, role provisioning, Compose commands, and database integration Vitest configuration.
+- `README.md`, database/environment references, root CI scripts, and the progress tracker.
+
+Commands Run:
+
+- Focused RED/green config tests; config/script typechecks; targeted ESLint and Prettier checks.
+- `pnpm db:provision-roles`; `pnpm db:migrate`; `pnpm infra:status`.
+- `pnpm test:db-integration` with credentials and without `.env.database`.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm format:check`; `git diff --check`.
+
+Verification:
+
+- PASS: API, worker, and authentication configuration rejects bootstrap and migration-owner `DATABASE_URL` values; only `repurposepro_runtime` is accepted.
+- PASS: Runtime `.env` has no PostgreSQL bootstrap, owner, migration, or provisioning keys; database administration loads `.env.database` instead.
+- PASS: Role provisioning, owner-role migrations, and Docker Compose status work through the isolated database environment file.
+- PASS: The required database test command runs 3 live PostgreSQL migration/integrity tests and exits 1 with all missing variable names when credentials are absent.
+- PASS: `pnpm ci:check` includes the required PostgreSQL command; ordinary tests cannot be mistaken for that gate.
+- PASS: `pnpm lint`, `pnpm typecheck`, `pnpm test` (88 passed; 3 integration tests intentionally deferred to the required command), and `pnpm build` pass.
+
+Known Limitations:
+
+- `pnpm format:check` still reports only the same eight unrelated pre-existing files; none are part of VS3-T1.2.
+- The existing non-blocking Next.js NFT tracing warning remains during the production build.
+- No Stripe API, queue, UI, or HTTP contract changed.
 
 ---
 

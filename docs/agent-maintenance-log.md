@@ -137,3 +137,47 @@ Verification:
 
 Next Recommended Task:
 - VS3-T1 — Create credit ledger and Stripe payment schemas.
+
+---
+
+### MAINT-5 — Archive completed task records and define recurring agent-log updates
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 07:15
+End Date: 2026-07-16
+End Time: 07:31
+
+User Outcome:
+- Completed task narratives from the live tracker are stored in the execution archive, operational evidence is indexed, and future agents have explicit recurring log-update rules.
+
+Layers Touched:
+- Documentation
+- Agent workflow
+
+Files Changed:
+- AGENTS.md
+- docs/progress-tracker.md
+- docs/agent-execution-log.md
+- docs/agent-operational-logs.md
+- docs/agent-handoff-history.md
+- docs/agent-maintenance-log.md
+
+Commands Run:
+- Read the required agent, project, tracker, and archive documentation.
+- Audited tracker ranges and archive headings.
+- Applied documentation patches for archive placement, live-state cleanup, and recurring log maintenance.
+- pnpm exec prettier --check AGENTS.md docs/progress-tracker.md docs/agent-execution-log.md docs/agent-operational-logs.md docs/agent-handoff-history.md docs/agent-maintenance-log.md
+- git diff --check
+
+Verification:
+- PASS: Completed VS2 and VS3 task narratives are archived; progress-tracker.md retains live slice/task tables, archive links, and one current handoff.
+- PASS: Stale Current Agent State contents were removed; AGENTS.md now requires one authoritative Current Handoff State and stale-state cleanup.
+- PASS: Operational, handoff, and maintenance records are synchronized.
+- PASS: Documentation formatting and whitespace checks pass.
+
+Known Limitations:
+- No runtime tests were needed for this documentation-only task.
+
+Next Recommended Task:
+- VS3-T2 — Build credit balance and credit-pack UI.
