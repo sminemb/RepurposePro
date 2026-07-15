@@ -59,6 +59,26 @@ export default tseslint.config(
     },
   },
   {
+    files: ["packages/db/scripts/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./packages/db/tsconfig.scripts.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ["packages/db/*.config.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./packages/db/tsconfig.config.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
     files: ["apps/web/**/*.{ts,tsx}"],
     plugins: {
       "@next/next": nextPlugin,

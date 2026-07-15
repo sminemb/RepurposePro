@@ -13,6 +13,8 @@
     "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:generate": "pnpm --filter @repurposepro/db run db:generate",
     "db:migrate": "pnpm --filter @repurposepro/db run db:migrate",
+    "db:migrate:bootstrap": "pnpm --filter @repurposepro/db run db:migrate:bootstrap",
+    "db:provision-roles": "pnpm --filter @repurposepro/db exec tsx scripts/provision-database-roles.ts",
     "dev": "pnpm run build:packages && pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run dev",
     "dev:api": "pnpm run build:packages && pnpm --filter @repurposepro/api run dev",
     "dev:web": "pnpm run build:packages && pnpm --filter @repurposepro/web run dev",
@@ -28,7 +30,7 @@
     "pretest": "pnpm run build:packages",
     "start": "pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run start",
     "test": "vitest run",
-    "typecheck": "pnpm run build:packages && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"
+    "typecheck": "pnpm run build:packages && pnpm --filter @repurposepro/db exec tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @repurposepro/db exec tsc -p tsconfig.config.json --noEmit && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

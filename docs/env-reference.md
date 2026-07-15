@@ -265,7 +265,6 @@ Used by:
 ```text
 api
 worker
-migration tooling
 ```
 
 Secret:
@@ -281,6 +280,53 @@ DATABASE_URL=postgresql://user:password@localhost:5432/repurposepro
 ```
 
 Do not commit real credentials.
+
+---
+
+## `DATABASE_MIGRATION_URL`
+
+Purpose:
+
+Dedicated `repurposepro_owner` connection string for Drizzle migrations.
+
+Required:
+
+```text
+Yes after VS3-T1.1 role hardening
+```
+
+Used by:
+
+```text
+migration tooling only
+```
+
+Never use this credential in API or worker runtime.
+
+Migration tooling requires this URL and rejects every other role. It never falls back to
+`DATABASE_URL`.
+
+For a fresh Compose volume, `POSTGRES_USER` is the bootstrap-only `repurposepro` superuser;
+the initialization script creates the non-superuser `repurposepro_owner` used by this URL.
+
+---
+
+## `DATABASE_BOOTSTRAP_URL`
+
+Purpose:
+
+Temporary elevated connection string used only by `pnpm db:provision-roles` when upgrading an
+existing PostgreSQL volume to separated owner/runtime roles.
+
+Required:
+
+```text
+Existing-volume upgrade only
+```
+
+Never use this credential in API or worker runtime. Remove it after role provisioning.
+Use it with `pnpm db:migrate:bootstrap` only to migrate an existing pre-role-split volume before
+the owner URL can be used.
 
 ---
 
@@ -1328,6 +1374,22 @@ Never run destructive tests against production database.
 
 ---
 
+## Billing integration test URLs
+
+`billing-integrity.integration.spec.ts` creates and drops a uniquely named disposable database.
+Run it only with these three non-production credentials:
+
+```env
+TEST_DATABASE_BOOTSTRAP_URL=postgresql://bootstrap:password@localhost:5432/repurposepro
+TEST_DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
+TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
+```
+
+The bootstrap role needs `CREATEDB` and may only be used by the test setup. The integration suite
+is skipped when any required test URL is absent.
+
+---
+
 ## `TEST_REDIS_URL`
 
 Purpose:
@@ -1429,7 +1491,15 @@ API_URL=http://localhost:4000/api/v1
 API_PORT=4000
 
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/repurposepro
+POSTGRES_USER=repurposepro
+POSTGRES_PASSWORD=password
+POSTGRES_DB=repurposepro
+POSTGRES_OWNER_PASSWORD=password
+POSTGRES_RUNTIME_PASSWORD=password
+DATABASE_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
+DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
+# Existing-volume upgrade only; remove after pnpm db:provision-roles.
+DATABASE_BOOTSTRAP_URL=
 DATABASE_POOL_MAX=10
 DATABASE_SSL=false
 
@@ -1506,7 +1576,9 @@ CLEANUP_SCHEDULE_CRON=0 * * * *
 CLEANUP_BATCH_SIZE=100
 
 # Tests
-TEST_DATABASE_URL=postgresql://user:password@localhost:5432/repurposepro_test
+TEST_DATABASE_BOOTSTRAP_URL=postgresql://bootstrap:password@localhost:5432/repurposepro
+TEST_DATABASE_MIGRATION_URL=postgresql://repurposepro_owner:password@localhost:5432/repurposepro
+TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
 TEST_REDIS_URL=redis://localhost:6380
 MOCK_GEMINI=true
 MOCK_WHISPER=true

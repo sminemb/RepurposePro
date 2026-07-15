@@ -12,14 +12,14 @@ if (environmentFile) {
   loadDotEnv({ path: environmentFile, override: false, quiet: true });
 }
 
-const databaseUrl = process.env.DATABASE_MIGRATION_URL;
+const databaseUrl = process.env.DATABASE_BOOTSTRAP_URL;
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_MIGRATION_URL is required to run Drizzle commands.");
+  throw new Error("DATABASE_BOOTSTRAP_URL is required for an existing-volume bootstrap upgrade.");
 }
 
-if (new URL(databaseUrl).username !== "repurposepro_owner") {
-  throw new Error("DATABASE_MIGRATION_URL must use the repurposepro_owner migration role.");
+if (["repurposepro_owner", "repurposepro_runtime"].includes(new URL(databaseUrl).username)) {
+  throw new Error("DATABASE_BOOTSTRAP_URL must use a role separate from owner and runtime.");
 }
 
 export default defineConfig({

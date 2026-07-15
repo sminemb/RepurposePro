@@ -130,11 +130,11 @@ Current Status: IN_PROGRESS
 Last Diagnostic Task: Landing alternating-background correction — final CTA uses soft surface after charcoal pricing section.
 Current Branch: main
 
-Last Completed Task: VS3-T1 — Billing and job foundation schema
+Last Completed Task: VS3-T1.1 — Harden billing integrity after adversarial review
 Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
 
 Last Updated Date: 2026-07-15
-Last Updated Time: 11:56
+Last Updated Time: 13:28
 Last Updated By: Codex
 ```
 
@@ -413,6 +413,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Task ID | Vertical Task | Layers Touched | Status | Start Date | Start Time | End Date | End Time | Verification |
 |---|---|---|---|---|---|---|---|---|
 | VS3-T1 | Create credit ledger and Stripe payment schemas | DB | COMPLETED | 2026-07-15 | 10:52 | 2026-07-15 | 11:56 | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass. |
+| VS3-T1.1 | Harden payment, job-charge, runtime-role, and integration-test integrity | DB + Infra + Tests | COMPLETED | 2026-07-15 | 12:31 | 2026-07-15 | 13:28 | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass. |
 | VS3-T2 | Build credit balance and credit-pack UI | Web | NOT_STARTED | — | — | — | — | — |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
@@ -453,6 +454,41 @@ Known Limitations:
 - No Stripe API, queue, UI, or HTTP contract changed; those belong to later VS3 tasks.
 - `pnpm format:check` still reports eight pre-existing unrelated formatting files; all VS3-T1 files are formatted.
 - `0006` and `0007` are intentional additive hardening migrations: `0005` had already been applied during local verification, so PostgreSQL would not replay edits to it.
+
+### VS3-T1.1 — Billing Integrity Hardening
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 12:31
+End Date: 2026-07-15
+End Time: 13:28
+
+Files Changed:
+
+- `packages/db/drizzle/0008_harden_billing_integrity.sql`, `0009_transfer_drizzle_tracking_ownership.sql`, and `0010_harden_runtime_role_boundary.sql`, plus generated snapshots/journal.
+- `packages/db/src/schema/billing-integrity.integration.spec.ts`, `billing-schema.spec.ts`, role-provisioning script/configuration, and Drizzle config.
+- `compose.yaml`, `.env.example`, PostgreSQL initialization script, database/environment docs, ESLint/typecheck wiring, and this tracker.
+
+Commands Run:
+
+- Live RED/green PostgreSQL integration tests with separate bootstrap, owner, and runtime URLs.
+- `pnpm infra:up`; `pnpm db:provision-roles`; the Compose role initializer; `pnpm db:migrate` twice as `repurposepro_owner`; and `pnpm db:migrate:bootstrap`.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm format:check`; `git diff --check`.
+
+Verification:
+
+- PASS: Payment/customer/webhook identifiers and payment financial terms are immutable; legal status transitions remain possible.
+- PASS: Deduction equals immutable `processing_jobs.credits_charged`; refund exactly reverses an eligible failed/refunded job deduction.
+- PASS: Runtime cannot set replication mode, disable triggers, truncate/mutate/mint ledger data, or insert Stripe source records. Ledger triggers remain active under a bootstrap replication-mode session.
+- PASS: Runtime cannot create temporary tables to shadow ownership checks, cannot assume the owner role, and has no owner-role membership.
+- PASS: Fresh disposable databases apply all migrations twice under the non-superuser migration owner; 13 live integration assertions pass.
+- PASS: `pnpm lint`, `pnpm typecheck`, `pnpm test` (84 passed; 3 optional integration tests skipped without test URLs), and `pnpm build` pass.
+
+Known Limitations:
+
+- Runtime is intentionally read-only for ledger and Stripe source records. VS3-T4/T5 must introduce narrowly scoped owner-authorized database procedures/transactions before granting credits or deducting/refunding them.
+- `pnpm format:check` reports the same eight unrelated pre-existing formatting files listed for VS3-T1. The Next.js NFT tracing warning remains non-blocking.
+- `0008`–`0010` are additive because prior VS3 migrations were already applied locally; existing volumes must run `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles` before later migrations use the owner credential.
 
 ## Slice Acceptance Criteria
 
@@ -985,16 +1021,16 @@ Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T2 — Build credit balance and credit-pack UI
 Last Maintenance Task: MAINT-4 — Archive completed maintenance records
 Current Status: IN_PROGRESS
-Last Completed Task: VS3-T1 — Billing and job foundation schema
+Last Completed Task: VS3-T1.1 — Harden billing integrity after adversarial review
 Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
-Uncommitted Changes: None; VS3-T1 is committed with its schema, migrations, tests, and documentation.
-Known Failing Tests: None. `pnpm test` passes 81 tests.
+Uncommitted Changes: None. VS3-T1.1 changes are committed with this tracker update.
+Known Failing Tests: None. `pnpm test` passes 84 tests; 3 PostgreSQL integration tests skip when test URLs are absent.
 Known Blockers: None. `pnpm format:check` reports eight unrelated pre-existing formatting files.
 Important Maintenance Context: MAINT-1 through MAINT-4 records now live in `docs/agent-maintenance-log.md`; `progress-tracker.md` retains only the live handoff and archive link.
 Important Maintenance Context: `parseSourceVideoUpload` restores only `%22` and `%27` multipart filename escapes, leaving generated internal storage paths unchanged.
-Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction. `credit_ledger` is immutable, uses `SUM(amount)` as authority, and rejects cross-owner/project links and duplicate payment grants. VS3-T4 must atomically claim the stored webhook event before payment and ledger writes.
-Required Commands Before Continuing: Read VS3-T1 schema/migrations, then use the frontend skills for VS3-T2. Keep `pnpm ci:check` limitation scoped to the eight pre-existing formatting files.
+Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction. `credit_ledger` is immutable, uses `SUM(amount)` as authority, rejects cross-owner/project links and duplicate payment grants, and its processing entries must reconcile exactly to the immutable job charge. Compose fixes bootstrap-only `repurposepro`, non-superuser migration owner `repurposepro_owner`, and restricted runtime `repurposepro_runtime`; no role names are configurable. Existing volumes require `pnpm db:migrate:bootstrap` then `pnpm db:provision-roles`, which also removes runtime membership in bootstrap/owner roles. VS3-T4/T5 must atomically claim the stored webhook event and use narrowly scoped owner-authorized write procedures before payment/ledger writes.
+Required Commands Before Continuing: Keep `DATABASE_URL` on `repurposepro_runtime` and `DATABASE_MIGRATION_URL` on `repurposepro_owner`; only use `DATABASE_BOOTSTRAP_URL` with the explicit bootstrap-upgrade command. Keep `pnpm ci:check` limitation scoped to the eight pre-existing formatting files.
 Last Updated Date: 2026-07-15
-Last Updated Time: 11:56
+Last Updated Time: 13:28
 Last Updated By: Codex
 ```

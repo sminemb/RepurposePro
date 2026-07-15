@@ -36,6 +36,18 @@ describe("VS3 billing schema", () => {
     resolve(process.cwd(), "packages/db/drizzle/0007_prevent_duplicate_purchase_grants.sql"),
     "utf8",
   );
+  const integrityMigration = readFileSync(
+    resolve(process.cwd(), "packages/db/drizzle/0008_harden_billing_integrity.sql"),
+    "utf8",
+  );
+  const migrationTrackingOwnershipMigration = readFileSync(
+    resolve(process.cwd(), "packages/db/drizzle/0009_transfer_drizzle_tracking_ownership.sql"),
+    "utf8",
+  );
+  const runtimeRoleBoundaryMigration = readFileSync(
+    resolve(process.cwd(), "packages/db/drizzle/0010_harden_runtime_role_boundary.sql"),
+    "utf8",
+  );
 
   it("exports documented processing, ledger, payment, and webhook enums", () => {
     expect(processingJobTypeEnum.enumValues).toEqual([
@@ -179,6 +191,36 @@ describe("VS3 billing schema", () => {
     expect(duplicatePurchaseMigration).toContain(
       'CREATE UNIQUE INDEX "credit_ledger_purchase_per_payment_unique"',
     );
+  });
+
+  it("locks financial records and keeps runtime credentials restricted", () => {
+    expect(integrityMigration).toContain("CREATE TRIGGER processing_jobs_charge_immutable");
+    expect(integrityMigration).toContain(
+      "CREATE TRIGGER credit_ledger_processing_charge_validation",
+    );
+    expect(integrityMigration).toContain("CREATE TRIGGER stripe_payments_immutable");
+    expect(integrityMigration).toContain("CREATE TRIGGER stripe_customers_immutable");
+    expect(integrityMigration).toContain("CREATE TRIGGER stripe_webhook_events_immutable");
+    expect(integrityMigration).toContain(
+      "ALTER TABLE credit_ledger ENABLE ALWAYS TRIGGER credit_ledger_immutable",
+    );
+    expect(integrityMigration).toContain("REVOKE ALL ON TABLE credit_ledger FROM PUBLIC");
+    expect(integrityMigration).toContain("GRANT SELECT ON TABLE credit_ledger");
+  });
+
+  it("transfers Drizzle migration tracking to the non-superuser migration owner", () => {
+    expect(migrationTrackingOwnershipMigration).toContain("ALTER SCHEMA drizzle OWNER TO");
+    expect(migrationTrackingOwnershipMigration).toContain(
+      "ALTER TABLE drizzle.__drizzle_migrations OWNER TO",
+    );
+  });
+
+  it("prevents runtime TEMP shadowing of the current-job ownership trigger", () => {
+    expect(runtimeRoleBoundaryMigration).toContain("FROM public.processing_jobs");
+    expect(runtimeRoleBoundaryMigration).toContain(
+      "SET search_path TO pg_catalog, public, pg_temp",
+    );
+    expect(runtimeRoleBoundaryMigration).toContain("REVOKE CREATE, TEMPORARY ON DATABASE");
   });
 
   it("creates composite foreign-key targets before dependent ledger constraints", () => {

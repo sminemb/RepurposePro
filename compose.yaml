@@ -4,13 +4,22 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
+      # PostgreSQL's initial user is a superuser. It is bootstrap-only and must
+      # never be configured as the application or migration connection.
       POSTGRES_USER: ${POSTGRES_USER:-repurposepro}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-repurposepro_local}
       POSTGRES_DB: ${POSTGRES_DB:-repurposepro}
+      # These names are deliberately fixed because SQL migrations, grants, and
+      # application URLs depend on the canonical owner/runtime roles.
+      POSTGRES_OWNER_USER: repurposepro_owner
+      POSTGRES_OWNER_PASSWORD: ${POSTGRES_OWNER_PASSWORD:-repurposepro_owner_local}
+      POSTGRES_RUNTIME_USER: repurposepro_runtime
+      POSTGRES_RUNTIME_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:-repurposepro_runtime_local}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
         [

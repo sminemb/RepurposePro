@@ -288,6 +288,7 @@ Critical rule:
 ```text
 Credit deduction happens before queueing and never inside the worker.
 The (id, project_id, user_id) ownership tuple is immutable after job creation.
+credits_charged is immutable and every deduction must equal its negative value.
 Projects may point only to a job for the same project; deleting that job clears current_job_id.
 ```
 
@@ -583,10 +584,13 @@ purchase/refund amounts > 0
 processing deduction amounts < 0
 purchase requires stripe_payment_id
 processing deduction/refund require project_id and processing_job_id
+processing deductions equal -processing_jobs.credits_charged
+refunds exactly reverse an eligible failed-job deduction
 one processing deduction and one refund per processing job
 processing-job, project, and user links must be the same ownership tuple
 each purchase must reference a paid Stripe payment for the same user and exact credit amount
 one purchase ledger row is allowed per Stripe payment
+runtime role has read-only access; privileged billing flows write ledger rows
 ```
 
 Recommended indexes:
@@ -654,6 +658,7 @@ Critical rule:
 ```text
 Do not grant credits directly from untrusted client values.
 The purchase-ledger trigger accepts only a paid payment whose credits_granted equals the ledger amount.
+Payment identity and financial terms are immutable. Only documented status transitions are allowed.
 ```
 
 Unique Stripe event, checkout session, and payment intent identifiers prevent duplicate payment records.
@@ -698,6 +703,7 @@ unique(stripe_event_id)
 ```
 
 The webhook handler must claim this record atomically before it creates a payment or purchase ledger row.
+Webhook identity is immutable; status changes follow a constrained transition path.
 
 ---
 
@@ -1036,6 +1042,37 @@ Coding agents must:
 - Add constraints and indexes explicitly.
 - Test forward migration locally.
 - Document destructive migrations.
+
+## Database roles
+
+Use separate credentials:
+
+```text
+repurposepro         Compose/bootstrap superuser; role provisioning only
+repurposepro_owner   migration owner; never used by API or worker runtime
+repurposepro_runtime restricted API and worker role
+```
+
+The PostgreSQL Docker image requires its initial `POSTGRES_USER` to be a superuser. Compose
+therefore creates `repurposepro` only as a bootstrap role, then its initialization script creates
+the fixed non-superuser `repurposepro_owner` and `repurposepro_runtime` roles and transfers
+database and `public` schema ownership to `repurposepro_owner`. Do not use the bootstrap role
+for migrations after initialization.
+
+The runtime role has no superuser, DDL, replication, or row-security-bypass capability.
+It cannot mutate or truncate the ledger, or insert financial source records directly. Billing
+procedures added in later VS3 tasks must run with narrowly scoped owner authority after they
+validate trusted Stripe/webhook input.
+
+Ledger protection triggers use `ENABLE ALWAYS`, so a privileged replication-mode session cannot
+bypass them accidentally. Provision a new local volume through Compose. For an existing volume:
+
+```text
+1. Set DATABASE_BOOTSTRAP_URL to the existing elevated owner and run pnpm db:migrate:bootstrap.
+2. Set DATABASE_MIGRATION_URL and DATABASE_URL to the fixed owner/runtime roles.
+3. Run pnpm db:provision-roles to remove stale memberships and transfer database, schema, and Drizzle tracking ownership.
+4. Run pnpm db:migrate as repurposepro_owner. Use DATABASE_URL only for runtime.
+```
 
 Avoid schema drift between environments.
 
