@@ -123,7 +123,7 @@ Represents one user project.
 | `name` | varchar(120) | Required |
 | `output_type` | enum | `clips` or `summary` |
 | `status` | enum | Required |
-| `current_job_id` | uuid nullable | FK processing_jobs |
+| `current_job_id` | uuid nullable | FK processing_jobs; job must belong to this project |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 | `deleted_at` | timestamptz nullable | Optional soft delete |
@@ -259,6 +259,22 @@ refunded
 cancelled
 ```
 
+Job steps:
+
+```text
+queued
+preparing
+extracting_audio
+transcribing
+analyzing
+generating_preview
+preview_ready
+rendering
+saving_output
+completed
+failed
+```
+
 Recommended indexes:
 
 ```text
@@ -271,6 +287,8 @@ Critical rule:
 
 ```text
 Credit deduction happens before queueing and never inside the worker.
+The (id, project_id, user_id) ownership tuple is immutable after job creation.
+Projects may point only to a job for the same project; deleting that job clears current_job_id.
 ```
 
 ---
@@ -522,7 +540,8 @@ For summary output, enforce one summary output row per render job by application
 
 Immutable source of truth for credit movement.
 
-Never update or delete ledger rows.
+Never update, delete, or truncate ledger rows. The database rejects all three operations with
+immutability triggers.
 
 | Column | Type | Rules |
 |---|---|---|
@@ -560,6 +579,14 @@ Critical constraints:
 ```text
 amount != 0
 unique(idempotency_key)
+purchase/refund amounts > 0
+processing deduction amounts < 0
+purchase requires stripe_payment_id
+processing deduction/refund require project_id and processing_job_id
+one processing deduction and one refund per processing job
+processing-job, project, and user links must be the same ownership tuple
+each purchase must reference a paid Stripe payment for the same user and exact credit amount
+one purchase ledger row is allowed per Stripe payment
 ```
 
 Recommended indexes:
@@ -626,7 +653,10 @@ Critical rule:
 
 ```text
 Do not grant credits directly from untrusted client values.
+The purchase-ledger trigger accepts only a paid payment whose credits_granted equals the ledger amount.
 ```
+
+Unique Stripe event, checkout session, and payment intent identifiers prevent duplicate payment records.
 
 The server maps trusted pack code to:
 
@@ -666,6 +696,8 @@ Critical constraint:
 ```text
 unique(stripe_event_id)
 ```
+
+The webhook handler must claim this record atomically before it creates a payment or purchase ledger row.
 
 ---
 

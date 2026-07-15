@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | NOT_STARTED | — | — | — | — | — | 0% | — |
+| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T2 | 14% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -124,17 +124,17 @@ FAILED
 
 ```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
-Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Current Task: VS3-T2 — Build credit balance and credit-pack UI
 Last Maintenance Task: MAINT-4 — Archive completed maintenance records
-Current Status: NOT_STARTED
+Current Status: IN_PROGRESS
 Last Diagnostic Task: Landing alternating-background correction — final CTA uses soft surface after charcoal pricing section.
 Current Branch: main
 
-Last Completed Task: MAINT-4 — Archive completed maintenance records
-Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
+Last Completed Task: VS3-T1 — Billing and job foundation schema
+Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
 
 Last Updated Date: 2026-07-15
-Last Updated Time: 10:28
+Last Updated Time: 11:56
 Last Updated By: Codex
 ```
 
@@ -400,25 +400,59 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Field | Value |
 |---|---|
 | Slice ID | VS3 |
-| Status | NOT_STARTED |
-| Start Date | — |
-| Start Time | — |
+| Status | IN_PROGRESS |
+| Start Date | 2026-07-15 |
+| Start Time | 10:52 |
 | End Date | — |
 | End Time | — |
-| Progress | 0% |
+| Progress | 14% |
 | Dependency | VS2 |
 
 ## Tasks
 
 | Task ID | Vertical Task | Layers Touched | Status | Start Date | Start Time | End Date | End Time | Verification |
 |---|---|---|---|---|---|---|---|---|
-| VS3-T1 | Create credit ledger and Stripe payment schemas | DB | NOT_STARTED | — | — | — | — | — |
+| VS3-T1 | Create credit ledger and Stripe payment schemas | DB | COMPLETED | 2026-07-15 | 10:52 | 2026-07-15 | 11:56 | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass. |
 | VS3-T2 | Build credit balance and credit-pack UI | Web | NOT_STARTED | — | — | — | — | — |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | NOT_STARTED | — | — | — | — | — |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
+
+### VS3-T1 — Billing and Job Foundation Schema
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 10:52
+End Date: 2026-07-15
+End Time: 11:56
+
+Files Changed:
+
+- `packages/db/src/schema/index.ts` and `packages/db/src/schema/billing-schema.spec.ts`.
+- `packages/db/drizzle/0005_add_vs3_billing_schema.sql`, follow-on hardening migrations `0006_harden_vs3_billing_integrity.sql` and `0007_prevent_duplicate_purchase_grants.sql`, plus Drizzle snapshots and journal.
+- `docs/database-schema.md` and this tracker.
+
+Commands Run:
+
+- Red/green focused Vitest schema specs; `pnpm --filter @repurposepro/db run db:generate`.
+- `pnpm infra:up`; `pnpm db:migrate` after each additive migration and idempotent reruns.
+- Rollback-only PostgreSQL fixture/negative-case script via Docker `psql`, including trigger and catalog checks.
+- `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `git diff --check`.
+
+Verification:
+
+- PASS: Valid purchase, deduction, refund, customer, payment, webhook-event, and job rows persist.
+- PASS: PostgreSQL rejects zero/wrong-sign amounts, missing references, cross-user and cross-project links, pointer misuse, ledger update/delete/truncate, duplicate refund/deduction/idempotency/event/session/intent, pending or mismatched purchase payments, and duplicate paid-payment grants.
+- PASS: Catalog verifies five protection triggers, ownership constraints, and the per-payment purchase unique index.
+- PASS: 17 test files / 81 tests, lint, typecheck, and build pass. The existing Next.js NFT tracing warning remains non-blocking.
+
+Known Limitations:
+
+- No Stripe API, queue, UI, or HTTP contract changed; those belong to later VS3 tasks.
+- `pnpm format:check` still reports eight pre-existing unrelated formatting files; all VS3-T1 files are formatted.
+- `0006` and `0007` are intentional additive hardening migrations: `0005` had already been applied during local verification, so PostgreSQL would not replay edits to it.
 
 ## Slice Acceptance Criteria
 
@@ -948,19 +982,19 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
-Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Current Task: VS3-T2 — Build credit balance and credit-pack UI
 Last Maintenance Task: MAINT-4 — Archive completed maintenance records
-Current Status: NOT_STARTED
-Last Completed Task: MAINT-4 — Archive completed maintenance records
-Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
-Uncommitted Changes: None after this task is committed.
-Known Failing Tests: None. `pnpm test` passes 74 tests.
-Known Blockers: None.
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T1 — Billing and job foundation schema
+Next Recommended Task: VS3-T2 — Build credit balance and credit-pack UI.
+Uncommitted Changes: None; VS3-T1 is committed with its schema, migrations, tests, and documentation.
+Known Failing Tests: None. `pnpm test` passes 81 tests.
+Known Blockers: None. `pnpm format:check` reports eight unrelated pre-existing formatting files.
 Important Maintenance Context: MAINT-1 through MAINT-4 records now live in `docs/agent-maintenance-log.md`; `progress-tracker.md` retains only the live handoff and archive link.
 Important Maintenance Context: `parseSourceVideoUpload` restores only `%22` and `%27` multipart filename escapes, leaving generated internal storage paths unchanged.
-Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction.
-Required Commands Before Continuing: Start VS3-T1 by reading billing/database docs and marking it IN_PROGRESS. Run pnpm infra:up only for live API verification. `pnpm ci:check` currently fails only on pre-existing formatting drift outside a focused task.
+Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction. `credit_ledger` is immutable, uses `SUM(amount)` as authority, and rejects cross-owner/project links and duplicate payment grants. VS3-T4 must atomically claim the stored webhook event before payment and ledger writes.
+Required Commands Before Continuing: Read VS3-T1 schema/migrations, then use the frontend skills for VS3-T2. Keep `pnpm ci:check` limitation scoped to the eight pre-existing formatting files.
 Last Updated Date: 2026-07-15
-Last Updated Time: 10:28
+Last Updated Time: 11:56
 Last Updated By: Codex
 ```

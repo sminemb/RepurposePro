@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "credit_ledger_purchase_per_payment_unique" ON "credit_ledger" USING btree ("stripe_payment_id") WHERE "credit_ledger"."type" = 'purchase';
