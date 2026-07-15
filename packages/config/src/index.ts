@@ -7,6 +7,24 @@ import { z } from "zod";
 const nodeEnvironmentSchema = z.enum(["development", "test", "production"]);
 const appEnvironmentSchema = z.enum(["local", "development", "staging", "production", "test"]);
 const logLevelSchema = z.enum(["debug", "info", "warn", "error"]);
+const runtimeDatabaseUrlSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (value) => {
+      try {
+        const url = new URL(value);
+        const role = decodeURIComponent(url.username);
+
+        return (
+          ["postgres:", "postgresql:"].includes(url.protocol) && role === "repurposepro_runtime"
+        );
+      } catch {
+        return false;
+      }
+    },
+    { message: "Must use the repurposepro_runtime PostgreSQL role." },
+  );
 
 const booleanFromEnvironment = z.preprocess((value: unknown) => {
   if (typeof value === "boolean") {
@@ -34,7 +52,7 @@ const webEnvironmentSchema = z.object({
 const serverEnvironmentSchema = z.object({
   NODE_ENV: nodeEnvironmentSchema,
   APP_ENV: appEnvironmentSchema,
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: runtimeDatabaseUrlSchema,
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
   DATABASE_SSL: booleanFromEnvironment,
   REDIS_URL: z.string().min(1),
@@ -61,7 +79,7 @@ const authEnvironmentSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
   DATABASE_SSL: booleanFromEnvironment,
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: runtimeDatabaseUrlSchema,
   NODE_ENV: nodeEnvironmentSchema,
 });
 

@@ -414,6 +414,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 |---|---|---|---|---|---|---|---|---|
 | VS3-T1 | Create credit ledger and Stripe payment schemas | DB | COMPLETED | 2026-07-15 | 10:52 | 2026-07-15 | 11:56 | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass. |
 | VS3-T1.1 | Harden payment, job-charge, runtime-role, and integration-test integrity | DB + Infra + Tests | COMPLETED | 2026-07-15 | 12:31 | 2026-07-15 | 13:28 | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass. |
+| VS3-T1.2 | Close runtime credential and mandatory PostgreSQL test gaps | Config + DB + Infra + Tests | IN_PROGRESS | 2026-07-15 | 15:04 | — | — | Runtime-role regression tests and environment split in progress. |
 | VS3-T2 | Build credit balance and credit-pack UI | Web | NOT_STARTED | — | — | — | — | — |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |

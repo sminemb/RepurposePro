@@ -13,7 +13,7 @@ import {
 const validServerEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: "development",
   APP_ENV: "local",
-  DATABASE_URL: "postgresql://user:secret-password@localhost:5432/repurposepro",
+  DATABASE_URL: "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
   DATABASE_POOL_MAX: "12",
   DATABASE_SSL: "false",
   REDIS_URL: "redis://localhost:6379",
@@ -34,6 +34,41 @@ describe("configuration loaders", () => {
     expect(config.databasePoolMax).toBe(12);
     expect(config.databaseSsl).toBe(false);
     expect(config.logPretty).toBe(true);
+  });
+
+  it.each([
+    ["bootstrap", "repurposepro"],
+    ["migration owner", "repurposepro_owner"],
+  ])("rejects the %s database role for worker startup", (_label, role) => {
+    expect(() =>
+      loadWorkerConfig({
+        ...validServerEnvironment,
+        DATABASE_URL: `postgresql://${role}:secret-password@localhost:5432/repurposepro`,
+      }),
+    ).toThrow(ConfigValidationError);
+  });
+
+  it("rejects the migration owner database role for API startup", () => {
+    expect(() =>
+      loadApiConfig({
+        ...validServerEnvironment,
+        APP_URL: "http://localhost:3000",
+        API_PORT: "4000",
+        DATABASE_URL: "postgresql://repurposepro_owner:secret-password@localhost:5432/repurposepro",
+      }),
+    ).toThrow(ConfigValidationError);
+  });
+
+  it("rejects the migration owner database role for authentication startup", () => {
+    expect(() =>
+      loadAuthConfig({
+        ...validServerEnvironment,
+        APP_URL: "http://localhost:3000",
+        BETTER_AUTH_SECRET: "auth-secret-for-tests-only",
+        BETTER_AUTH_URL: "http://localhost:3000",
+        DATABASE_URL: "postgresql://repurposepro_owner:secret-password@localhost:5432/repurposepro",
+      }),
+    ).toThrow(ConfigValidationError);
   });
 
   it("reports invalid keys without including secret values", () => {
