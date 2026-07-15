@@ -98,12 +98,17 @@ export function parseProjectId(input: unknown): string {
   return result.data;
 }
 
+function decodeMultipartFilenameEscapes(fileName: string): string {
+  return fileName.replace(/%22|%27/gi, (escape) => (escape.toLowerCase() === "%22" ? '"' : "'"));
+}
+
 export function parseSourceVideoUpload(file: SourceVideoFile | undefined): SourceVideoUploadInput {
   if (!file) {
     throw new ProjectContractValidationError("Choose a video file to upload.");
   }
 
-  const extension = extname(file.originalname).toLowerCase() as keyof typeof sourceVideoFormats;
+  const originalFileName = decodeMultipartFilenameEscapes(file.originalname);
+  const extension = extname(originalFileName).toLowerCase() as keyof typeof sourceVideoFormats;
   const expectedMimeType = sourceVideoFormats[extension];
 
   if (!expectedMimeType || file.mimetype !== expectedMimeType || file.size <= 0 || !file.path) {
@@ -113,7 +118,7 @@ export function parseSourceVideoUpload(file: SourceVideoFile | undefined): Sourc
   return {
     fileSizeBytes: file.size,
     mimeType: expectedMimeType,
-    originalFileName: file.originalname,
+    originalFileName,
     stagedPath: file.path,
   };
 }

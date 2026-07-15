@@ -125,15 +125,16 @@ FAILED
 ```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Last Maintenance Task: MAINT-3 — Preserve quoted video filenames after upload
 Current Status: NOT_STARTED
 Last Diagnostic Task: Landing alternating-background correction — final CTA uses soft surface after charcoal pricing section.
 Current Branch: main
 
-Last Completed Task: Landing alternating-background correction
+Last Completed Task: MAINT-3 — Preserve quoted video filenames after upload
 Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
 
-Last Updated Date: 2026-07-13
-Last Updated Time: 19:38
+Last Updated Date: 2026-07-15
+Last Updated Time: 09:17
 Last Updated By: Codex
 ```
 
@@ -995,6 +996,47 @@ Known Limitations:
 
 ---
 
+### MAINT-3 — Preserve quoted video filenames after upload
+
+Status: COMPLETED
+Start Date: 2026-07-15
+Start Time: 09:10
+End Date: 2026-07-15
+End Time: 09:17
+
+User Outcome:
+- Video titles containing `"` or `'` display with their original characters after upload.
+
+Layers Touched:
+- API
+- Tests
+
+Files Changed:
+- apps/api/src/modules/projects/projects.contracts.ts
+- apps/api/src/modules/projects/projects.contracts.spec.ts
+- docs/progress-tracker.md
+
+Commands Run:
+- Chrome DevTools isolated-page `FormData` serialization inspection
+- pnpm exec vitest run apps/api/src/modules/projects/projects.contracts.spec.ts (red, then green)
+- pnpm --filter @repurposepro/api run typecheck
+- pnpm test
+- pnpm lint
+- pnpm exec prettier --write apps/api/src/modules/projects/projects.contracts.spec.ts
+
+Verification:
+- PASS: Chrome emits quoted filename characters as `%22` in multipart `filename`.
+- PASS: API restores `%22` and `%27` before persisting and returning `originalFileName`.
+- PASS: API typecheck, all 74 tests, and lint pass.
+
+Known Limitations:
+- The decoder intentionally restores only quote escapes, avoiding unrelated percent-encoded filename changes.
+
+Next Recommended Task:
+- VS3-T1 — Create credit ledger and Stripe payment schemas.
+
+---
+
 ## 9. Archived Agent Logs
 
 Detailed historical logs moved out of this tracker so the live slice status stays readable.
@@ -1010,15 +1052,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
+Last Maintenance Task: MAINT-3 — Preserve quoted video filenames after upload
 Current Status: NOT_STARTED
-Last Completed Task: Landing alternating-background correction
+Last Completed Task: MAINT-3 — Preserve quoted video filenames after upload
 Next Recommended Task: VS3-T1 — Create credit ledger and Stripe payment schemas.
-Uncommitted Changes: None. Alternating-background correction committed as `fix(marketing): restore landing section alternation`.
-Known Failing Tests: None. `pnpm test` passes 73 tests.
+Uncommitted Changes: None after this task is committed.
+Known Failing Tests: None. `pnpm test` passes 74 tests.
 Known Blockers: None.
+Important Maintenance Context: `parseSourceVideoUpload` restores only `%22` and `%27` multipart filename escapes, leaving generated internal storage paths unchanged.
 Important Context: Ember copper is centralized in `apps/web/app/globals.css`; use semantic `rp-primary` utilities and `text-rp-primary-foreground` for solid primary surfaces. `UploadDropzone` retains successful upload state if its authenticated metadata fetch fails, and `VideoMetadataCard` displays the owned source response without persisting or calculating credits client-side. `GET /projects/:projectId/video` returns owned, non-deleted metadata and `requiredCredits`, derived by `Math.ceil(durationSeconds / 60)` without storage paths. VS3 must recalculate credits inside its payment transaction.
 Required Commands Before Continuing: Start VS3-T1 by reading billing/database docs and marking it IN_PROGRESS. Run pnpm infra:up only for live API verification. `pnpm ci:check` currently fails only on pre-existing formatting drift outside a focused task.
-Last Updated Date: 2026-07-13
-Last Updated Time: 19:38
+Last Updated Date: 2026-07-15
+Last Updated Time: 09:17
 Last Updated By: Codex
 ```

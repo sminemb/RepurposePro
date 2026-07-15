@@ -87,6 +87,21 @@ describe("project contract validation", () => {
     ).toMatchObject({ mimeType: "video/x-matroska" });
   });
 
+  it("restores quotes encoded in multipart video filenames", () => {
+    expect(
+      parseSourceVideoUpload({
+        ...sourceVideo,
+        originalname: "creator's %22highlight%22.mp4",
+      }),
+    ).toMatchObject({ originalFileName: 'creator\'s "highlight".mp4' });
+    expect(
+      parseSourceVideoUpload({
+        ...sourceVideo,
+        originalname: "creator%27s-highlight.mp4",
+      }),
+    ).toMatchObject({ originalFileName: "creator's-highlight.mp4" });
+  });
+
   it("rejects a missing file and mismatched MIME type or extension", () => {
     expect(() => parseSourceVideoUpload(undefined)).toThrow("Choose a video file to upload.");
     expect(() => parseSourceVideoUpload({ ...sourceVideo, originalname: "episode.exe" })).toThrow(
