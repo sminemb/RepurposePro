@@ -329,3 +329,23 @@ Last Updated Date: 2026-07-16
 Last Updated Time: 20:26
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-6 Handoff Update - 2026-07-16 20:53 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-6 - Repair repository-wide pnpm ci:check gate
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: None after the MAINT-6 commit.
+Known Failing Tests: None. pnpm ci:check passes with 124 unit tests and 6 required PostgreSQL integration tests.
+Known Blockers: None for VS3-T3.
+Important Context: The CI repair reformatted six files and enforces LF for generated Next types; no behavior changed. Existing Next.js NFT tracing warning remains non-blocking during production web build. Checkout is still disabled and inert.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 tests before checkout; run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 20:53
+Last Updated By: Codex
+~~~

@@ -150,4 +150,11 @@ Record decisions such as:
 | 2026-07-16 | 20:03 | VS3 | VS3-T2-R1 | Initial missing-row regression table returned 503 instead of exposing the fake-zero defect. | `it.each([[], [{}]])` expanded the arrays as argument lists, so the mock threw before production validation. | Wrapped each row set in an object and reran RED; the tests then correctly observed HTTP 200 with a false zero. | Use named cases when table values are themselves arrays. |
 | 2026-07-16 | 20:06 | VS3 | VS3-T2-R1 | First production-query integration placement broke the database package build. | A database-package test imported API source outside its package boundary, creating declaration input/output collisions. | Moved the test to the API billing directory and included it from the PostgreSQL integration config. | Keep cross-layer integration tests with the consuming application, not inside a lower-level package build root. |
 
+### MAINT-6 - CI Gate Repair
+
+- Files changed: six Prettier-reported source/generated files, `.gitattributes`, and task records.
+- Root cause: repository baseline had six files outside Prettier formatting rules; generated Next types also needed committed LF checkout behavior. No logic or generated-schema values were incorrect.
+- Verification: initial `pnpm ci:check` reproduced exactly six formatting findings; after formatting, full `pnpm ci:check` passed (124 unit tests, 6 PostgreSQL integration tests, lint, typecheck, and builds).
+- Decision: keep repair mechanical and scoped to Prettier output; enforce LF only for the generated Next type file whose correction otherwise has no Git diff.
+
 ---

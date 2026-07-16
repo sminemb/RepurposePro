@@ -181,3 +181,49 @@ Known Limitations:
 
 Next Recommended Task:
 - VS3-T2 — Build credit balance and credit-pack UI.
+
+---
+
+### MAINT-6 - Restore Repository-Wide CI Check
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 20:36
+End Date: 2026-07-16
+End Time: 20:53
+
+User Outcome:
+
+- Developers can run `pnpm ci:check` successfully from the repository root.
+
+Files Changed:
+
+- `apps/web/app/projects/new/page.tsx`
+- `apps/web/features/projects/actions/create-project-server-action.spec.ts`
+- `apps/web/features/projects/components/new-project-form.tsx`
+- `apps/web/features/projects/components/project-list.tsx`
+- `apps/web/next-env.d.ts`
+- `packages/db/drizzle/meta/0003_snapshot.json`
+- `.gitattributes`
+- Agent task records
+
+Commands Run:
+
+- `pnpm ci:check` before and after repair
+- `pnpm exec prettier --write` for the six reported files
+- `git check-attr eol -- apps/web/next-env.d.ts`
+- `git diff --check`
+
+Verification:
+
+- PASS: Complete CI gate passes after the mechanical formatting repair.
+- PASS: 124 unit tests, 6 PostgreSQL integration tests, lint, typecheck, and all builds pass.
+- PASS: Git enforces LF for the generated Next type file, preserving Prettier conformance on Windows checkouts.
+
+Known Limitations:
+
+- Existing Next.js NFT tracing warning is non-blocking and outside this formatting repair.
+
+Next Recommended Task:
+
+- VS3-T3 - Create Stripe Checkout session and redirect flow.

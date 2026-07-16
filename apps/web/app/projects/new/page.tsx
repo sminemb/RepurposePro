@@ -17,9 +17,16 @@ export default async function NewProjectPage() {
     <div className="flex min-h-dvh bg-rp-bg">
       <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
       <div className="min-w-0 flex-1 lg:pl-66">
-        <AppTopbar title="New project" userEmail={session.user.email} userName={session.user.name} />
+        <AppTopbar
+          title="New project"
+          userEmail={session.user.email}
+          userName={session.user.name}
+        />
         <main className="mx-auto max-w-4xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
-          <Link className="inline-flex min-h-11 items-center gap-2 text-sm text-rp-text-muted hover:text-rp-text" href="/dashboard">
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-rp-text-muted hover:text-rp-text"
+            href="/dashboard"
+          >
             <ArrowLeft aria-hidden="true" className="size-4" /> Back to workspace
           </Link>
           <div className="mt-7 rounded-rp-lg border border-rp-border bg-rp-surface/55 p-5 sm:p-7">

@@ -964,3 +964,56 @@ Known Limitations:
 
 - `pnpm ci:check` still stops at the same six pre-existing formatting files outside this repair; all repair files pass targeted Prettier checks.
 - The existing non-blocking Next.js NFT tracing warning remains during production build.
+
+---
+
+### MAINT-6 - Restore Repository-Wide CI Check
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 20:36
+End Date: 2026-07-16
+End Time: 20:53
+
+User Outcome:
+
+- `pnpm ci:check` completes successfully from the repository root.
+
+Layers Touched:
+
+- Tooling
+- Formatting
+- Verification
+
+Files Changed:
+
+- `apps/web/app/projects/new/page.tsx`
+- `apps/web/features/projects/actions/create-project-server-action.spec.ts`
+- `apps/web/features/projects/components/new-project-form.tsx`
+- `apps/web/features/projects/components/project-list.tsx`
+- `apps/web/next-env.d.ts`
+- `packages/db/drizzle/meta/0003_snapshot.json`
+- `.gitattributes`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- `pnpm ci:check` (failed before repair)
+- `pnpm exec prettier --write` on the six reported files
+- `git check-attr eol -- apps/web/next-env.d.ts`
+- `git diff --check`
+- `pnpm ci:check` (passed after repair)
+
+Verification:
+
+- PASS: Prettier finds no style violations.
+- PASS: Git enforces LF for the generated Next type file, preserving Prettier conformance on Windows checkouts.
+- PASS: lint, typecheck, 124 unit tests, 6 PostgreSQL integration tests, and all workspace production builds pass.
+
+Known Limitations:
+
+- Existing non-blocking Next.js NFT tracing warning remains during the web production build.

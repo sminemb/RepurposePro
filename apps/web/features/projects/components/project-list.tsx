@@ -38,7 +38,10 @@ export function ProjectList({ projects }: ProjectListProps) {
         const outputLabel = project.outputType === "clips" ? "Short clips" : "Summary video";
 
         return (
-          <article className="flex min-h-56 flex-col rounded-rp-lg border border-rp-border bg-rp-surface/75 p-5" key={project.id}>
+          <article
+            className="flex min-h-56 flex-col rounded-rp-lg border border-rp-border bg-rp-surface/75 p-5"
+            key={project.id}
+          >
             <div className="flex items-start justify-between gap-4">
               <span className="grid size-11 place-items-center rounded-rp-md border border-rp-primary/25 bg-rp-primary-soft text-rp-primary">
                 <Icon aria-hidden="true" className="size-5" />

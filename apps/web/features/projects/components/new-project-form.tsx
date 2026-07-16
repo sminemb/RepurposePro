@@ -25,9 +25,8 @@ const outputTypes = [
 const initialCreateProjectFormState: { readonly error: string | null } = { error: null };
 
 export function NewProjectForm() {
-  const [selectedOutputType, setSelectedOutputType] = useState<(typeof outputTypes)[number]["value"]>(
-    "clips",
-  );
+  const [selectedOutputType, setSelectedOutputType] =
+    useState<(typeof outputTypes)[number]["value"]>("clips");
   const [state, formAction, isPending] = useActionState(
     createProjectAction,
     initialCreateProjectFormState,
@@ -49,12 +48,18 @@ export function NewProjectForm() {
           placeholder="e.g. Creator burnout conversation"
           required
         />
-        <p className="text-xs leading-5 text-rp-text-muted">Use a clear name you will recognize later.</p>
+        <p className="text-xs leading-5 text-rp-text-muted">
+          Use a clear name you will recognize later.
+        </p>
       </div>
 
       <fieldset className="grid gap-3">
-        <legend className="text-sm font-medium text-rp-text">What should this project create?</legend>
-        <p className="text-xs leading-5 text-rp-text-muted">You can select one output type for this project.</p>
+        <legend className="text-sm font-medium text-rp-text">
+          What should this project create?
+        </legend>
+        <p className="text-xs leading-5 text-rp-text-muted">
+          You can select one output type for this project.
+        </p>
         <div className="mt-1 grid gap-3 sm:grid-cols-2">
           {outputTypes.map(({ description, icon: Icon, label, value }) => {
             const selected = selectedOutputType === value;
@@ -85,7 +90,9 @@ export function NewProjectForm() {
                     aria-hidden="true"
                     className={cn(
                       "grid size-6 place-items-center rounded-full border",
-                      selected ? "border-rp-primary bg-rp-primary text-rp-primary-foreground" : "border-rp-border-strong",
+                      selected
+                        ? "border-rp-primary bg-rp-primary text-rp-primary-foreground"
+                        : "border-rp-border-strong",
                     )}
                   >
                     {selected ? <Check className="size-4" /> : null}
@@ -110,13 +117,20 @@ export function NewProjectForm() {
       ) : null}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs leading-5 text-rp-text-muted">You will upload your source video in the next step.</p>
+        <p className="text-xs leading-5 text-rp-text-muted">
+          You will upload your source video in the next step.
+        </p>
         <button
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-primary-foreground transition-colors hover:bg-rp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isPending}
           type="submit"
         >
-          {isPending ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /> : null}
+          {isPending ? (
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-4 animate-spin motion-reduce:animate-none"
+            />
+          ) : null}
           {isPending ? "Creating project" : "Create project"}
         </button>
       </div>
