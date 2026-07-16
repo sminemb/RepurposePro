@@ -264,3 +264,58 @@ Known Limitations:
 Next Recommended Task:
 
 - VS3-T3 - Create Stripe Checkout session and redirect flow.
+
+---
+
+### MAINT-8 - Remove Landing-Page Ambient Glows
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 21:20
+End Date: 2026-07-16
+End Time: 21:31
+
+User Outcome:
+
+- Landing hero and final CTA no longer display ambient ember spots.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-hero-workflow.tsx`
+- `apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- Agent task records
+
+Verification:
+
+- PASS: Chrome screenshots confirm both ambient spots are removed.
+- PASS: Chrome console has no warnings or errors.
+- PASS: Changed-file Prettier, web typecheck, lint, 124 unit tests, and Git whitespace validation pass.
+
+---
+
+### MAINT-9 - Alternate Landing Navigation Surface
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 21:33
+End Date: 2026-07-16
+End Time: 21:36
+
+User Outcome:
+
+- Navigation now uses an elevated slate surface, distinct from the charcoal hero.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-page.tsx`
+- Agent task records
+
+Verification:
+
+- PASS: Chrome screenshot confirms the surface alternation.
+- PASS: Chrome console has no warnings or errors.
+- PASS: Changed-file Prettier, lint, web typecheck, and Git whitespace validation pass.
+
+Next Recommended Task:
+
+- VS3-T3 - Create Stripe Checkout session and redirect flow.

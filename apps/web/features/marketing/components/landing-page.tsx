@@ -18,7 +18,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
       >
         Skip to content
       </a>
-      <header className="absolute inset-x-0 top-0 z-40 border-b border-white/8 bg-rp-bg/80 backdrop-blur-xl">
+      <header className="absolute inset-x-0 top-0 z-40 border-b border-white/8 bg-rp-surface/95 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
           <BrandMark href="/" />
           <nav

@@ -212,6 +212,26 @@ Last Updated By: Codex
 
 ---
 
+### MAINT-8 Handoff Update - 2026-07-16 21:31 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-8 - Remove landing-page ambient glow
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: MAINT-8 landing-page source and task records are pending commit.
+Known Failing Tests: None. Changed-file Prettier, web typecheck, lint, 124 unit tests, and Git whitespace checks pass.
+Known Blockers: None.
+Important Context: Removed only the LandingHero and FinalCta radial-gradient overlays. Chrome confirms no ambient spots in either section and no console warnings/errors. CTA glow, image framing, and layout remain intact.
+Required Commands Before Continuing: Commit MAINT-8; then keep runtime DATABASE_URL in .env, add Arcjet and standard 429 coverage before checkout, and run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 21:31
+Last Updated By: Codex
+~~~
+
+---
+
 ### VS3-T2 Handoff Update — 2026-07-16 19:32 Asia/Manila
 
 ~~~text
@@ -387,5 +407,25 @@ Important Context: The documentation commit contains the mandatory Prettier work
 Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 tests before checkout; run pnpm ci:check before handoff.
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:08
+Last Updated By: Codex
+~~~
+
+---
+
+### MAINT-9 Handoff Update - 2026-07-16 21:36 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-9 - Alternate landing navigation surface from hero
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: MAINT-8 and MAINT-9 landing-page source and task records are pending commit.
+Known Failing Tests: None. Changed-file Prettier, web typecheck, lint, 124 unit tests, and Git whitespace checks pass.
+Known Blockers: None.
+Important Context: MAINT-8 removed hero and final-CTA ambient radial gradients. MAINT-9 changes the navigation background to the existing elevated slate surface, making it visibly distinct from the charcoal hero. Chrome screenshots confirm both changes with a clean console.
+Required Commands Before Continuing: Commit MAINT-8 and MAINT-9; then keep runtime DATABASE_URL in .env, add Arcjet and standard 429 coverage before checkout, and run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 21:36
 Last Updated By: Codex
 ~~~

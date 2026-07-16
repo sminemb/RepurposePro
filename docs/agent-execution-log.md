@@ -1056,3 +1056,88 @@ Verification:
 Known Limitations:
 
 - No application logic or tests changed; full product test suite was not rerun for this documentation-only task.
+
+---
+
+### MAINT-8 - Remove Landing-Page Ambient Glows
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 21:20
+End Date: 2026-07-16
+End Time: 21:31
+
+User Outcome:
+
+- Landing hero and final CTA no longer show distracting ambient ember spots.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-hero-workflow.tsx`
+- `apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- `pnpm exec prettier --check apps/web/features/marketing/components/landing-hero-workflow.tsx docs/progress-tracker.md`
+- `pnpm --filter @repurposepro/web run typecheck`
+- `pnpm lint`
+- `pnpm test`
+- Chrome screenshot and console checks at `http://localhost:3000/`
+- `git diff --check`
+
+Verification:
+
+- PASS: Both landing-page radial-gradient overlays are absent from source.
+- PASS: Chrome screenshots show no ambient spots in the hero or final CTA.
+- PASS: Chrome console contains no warnings or errors.
+- PASS: Changed-file Prettier, web typecheck, lint, 124 unit tests, and Git whitespace validation pass.
+
+Known Limitations:
+
+- Existing CTA glow remains intentionally unchanged.
+
+---
+
+### MAINT-9 - Alternate Landing Navigation Surface
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 21:33
+End Date: 2026-07-16
+End Time: 21:36
+
+User Outcome:
+
+- Navigation uses an elevated slate surface, visibly alternating from the charcoal hero.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-page.tsx`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- Chrome screenshot and console check at `http://localhost:3000/`
+- `pnpm exec prettier --check` on changed source and task records
+- `pnpm lint`
+- `pnpm --filter @repurposepro/web run typecheck`
+- `git diff --check`
+
+Verification:
+
+- PASS: Chrome screenshot shows an elevated slate navigation distinct from the charcoal hero.
+- PASS: Chrome console contains no warnings or errors.
+- PASS: Changed-file Prettier, lint, web typecheck, and Git whitespace validation pass.
+
+Known Limitations:
+
+- No interactive behavior changed.

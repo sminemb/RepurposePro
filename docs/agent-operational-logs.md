@@ -85,6 +85,11 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-16 | VS3-T2-R1 | `pnpm ci:check` / targeted Prettier | KNOWN BASELINE FAILURE — full CI stops only at the same six pre-existing formatting files; all repair files pass targeted Prettier. |
 | 2026-07-16 | MAINT-7 | `pnpm exec prettier --write AGENTS.md docs/progress-tracker.md` / `pnpm exec prettier --check AGENTS.md docs/progress-tracker.md` / `git diff --check` | PASS — changed Markdown follows repository formatting and whitespace validation passes. |
 
+| 2026-07-16 | MAINT-8 | Removed hero and final-CTA radial-gradient overlays; Chrome screenshot and console checks | PASS - no ambient spots remain; Chrome console has no warnings or errors. |
+| 2026-07-16 | MAINT-8 | changed-file Prettier / web typecheck / `pnpm lint` / `pnpm test` / `git diff --check` | PASS - formatting, types, lint, 124 unit tests, and whitespace checks pass. |
+| 2026-07-16 | MAINT-9 | Navigation elevated-surface update; Chrome screenshot and console check | PASS - navigation slate surface visibly alternates from charcoal hero; console clean. |
+| 2026-07-16 | MAINT-9 | changed-file Prettier / `pnpm lint` / web typecheck / `git diff --check` | PASS - formatting, lint, types, and whitespace checks pass. |
+
 Useful commands may include:
 
 ```text
@@ -97,6 +102,14 @@ pnpm drizzle-kit migrate
 ffprobe ...
 ffmpeg ...
 ```
+
+---
+
+### MAINT-8 - Landing Ambient Glow Removal
+
+- Files changed: `landing-hero-workflow.tsx`, `landing-pricing-cta.tsx`, and MAINT-8 records.
+- Decision: remove only decorative hero and final-CTA radial-gradient overlays; preserve ember CTA glow, imagery, and layout.
+- Verification: Chrome screenshots confirm both ambient spots are removed; console has no warnings/errors; Prettier, typecheck, lint, 124 unit tests, and whitespace checks pass.
 
 ---
 
@@ -158,5 +171,13 @@ Record decisions such as:
 - Root cause: repository baseline had six files outside Prettier formatting rules; generated Next types also needed committed LF checkout behavior. No logic or generated-schema values were incorrect.
 - Verification: initial `pnpm ci:check` reproduced exactly six formatting findings; after formatting, full `pnpm ci:check` passed (124 unit tests, 6 PostgreSQL integration tests, lint, typecheck, and builds).
 - Decision: keep repair mechanical and scoped to Prettier output; enforce LF only for the generated Next type file whose correction otherwise has no Git diff.
+
+---
+
+### MAINT-9 - Landing Navigation Surface Alternation
+
+- Files changed: `landing-page.tsx` and MAINT-9 task records.
+- Decision: change only the navigation background from the charcoal page token to the existing elevated slate surface token.
+- Verification: Chrome screenshot confirms contrast between navigation and hero; console is clean; Prettier, lint, typecheck, and whitespace checks pass.
 
 ---
