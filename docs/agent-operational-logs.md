@@ -77,6 +77,11 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-16 | MAINT-5 | Documentation audit / archive reconciliation / Prettier checks on changed Markdown / git diff --check | PASS — stale Current Agent State content removed; one current handoff remains; archive and recurring-log rules synchronized. |
 | 2026-07-16 | VS3-T2 | Red/green billing tests / HTTP module test / `pnpm test` / `pnpm lint` / `pnpm typecheck` / `pnpm test:db-integration` / `pnpm build` | PASS — 123 unit tests, 4 live PostgreSQL tests, lint, types, and production build pass. |
 | 2026-07-16 | VS3-T2 | `pnpm format:check` / `pnpm ci:check` | KNOWN BASELINE FAILURE — six unrelated pre-existing files fail Prettier; no VS3-T2 file is listed. |
+| 2026-07-16 | VS3-T2-R1 | Focused fail-closed RED/GREEN billing tests | PASS — missing aggregate rows and missing `balance` reproduced a false zero before the fix; 24 focused tests pass after separating query and validation errors. |
+| 2026-07-16 | VS3-T2-R1 | Live guard/controller/service/Drizzle/PostgreSQL integration | PASS — session user A returns 29 despite a user-B query parameter; user B returns 999; empty user returns 0 under the restricted runtime role. |
+| 2026-07-16 | VS3-T2-R1 | Authenticated optimized Next.js + headless Chrome desktop/mobile verification | PASS — Billing active states, responsive grids, no overflow, inert checkout controls, persistent unavailable text, and dashboard `/billing` navigation verified without HMR. |
+| 2026-07-16 | VS3-T2-R1 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm test:db-integration` / `pnpm build` | PASS — lint, strict types, 124 unit tests, 6 live PostgreSQL tests, and production builds pass. |
+| 2026-07-16 | VS3-T2-R1 | `pnpm ci:check` / targeted Prettier | KNOWN BASELINE FAILURE — full CI stops only at the same six pre-existing formatting files; all repair files pass targeted Prettier. |
 
 Useful commands may include:
 
@@ -99,6 +104,7 @@ ffmpeg ...
 |---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — |
 | 2026-07-16 | 19:18 | VS3 | VS3-T2 | Authenticated browser verification cannot complete. | Local Next.js HMR WebSocket resets prevented signup/login from issuing an auth request; `/billing` redirect to `/login` succeeded. | Restore stable local HMR/auth interaction and recheck Billing desktop/mobile authenticated states. | OPEN |
+| 2026-07-16 | 20:26 | VS3 | VS3-T2-R1 | Follow-up to the 19:18 authenticated-browser blocker. | Built and ran an optimized Next.js server outside HMR, created a disposable authenticated session, and verified Billing/dashboard through headless Chrome at desktop/mobile widths. | No further action for T2; six disposable review accounts and temporary browser profiles were removed. | RESOLVED |
 
 ---
 
@@ -141,5 +147,7 @@ Record decisions such as:
 | 2026-07-12 | 17:55 | VS2 | VS2-R1 | API exited before binding its port when the protected projects controller was loaded. | `AuthModule` exported `AuthGuard` without its `AuthService` dependency. | Exported `AuthService` and added a module-compilation regression test. | The test now proves all dependencies for the reusable guard resolve in `ProjectsModule`. |
 | 2026-07-16 | 19:18 | VS3 | VS3-T2 | `pnpm ci:check` stopped at formatting verification. | Six pre-existing non-VS3-T2 files do not match Prettier; task files passed targeted formatting checks. | Recorded the baseline and ran lint, typecheck, unit, database-integration, and build checks separately. | Restore repository-wide formatting baseline before treating `ci:check` as a task gate. |
 | 2026-07-16 | 19:30 | VS3 | VS3-T2 | Direct React component tests could not start. | The existing Vitest/Vite configuration cannot parse imported project TSX because JSX is preserved. | Removed the incompatible test files; retained pure navigation tests and verified components with the production build. | Add React/TSX transform support before adding DOM/component tests. |
+| 2026-07-16 | 20:03 | VS3 | VS3-T2-R1 | Initial missing-row regression table returned 503 instead of exposing the fake-zero defect. | `it.each([[], [{}]])` expanded the arrays as argument lists, so the mock threw before production validation. | Wrapped each row set in an object and reran RED; the tests then correctly observed HTTP 200 with a false zero. | Use named cases when table values are themselves arrays. |
+| 2026-07-16 | 20:06 | VS3 | VS3-T2-R1 | First production-query integration placement broke the database package build. | A database-package test imported API source outside its package boundary, creating declaration input/output collisions. | Moved the test to the API billing directory and included it from the PostgreSQL integration config. | Keep cross-layer integration tests with the consuming application, not inside a lower-level package build root. |
 
 ---

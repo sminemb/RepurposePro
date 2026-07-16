@@ -13,9 +13,10 @@ import { BillingModule } from "./billing.module";
 describe("GET /api/v1/billing/credits", () => {
   let app: INestApplication;
   let select: ReturnType<typeof vi.fn>;
+  let where: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    const where = vi.fn().mockResolvedValue([{ balance: "89" }]);
+    where = vi.fn().mockResolvedValue([{ balance: "89" }]);
     const from = vi.fn().mockReturnValue({ where });
     select = vi.fn().mockReturnValue({ from });
     const getSession = vi.fn().mockImplementation(async ({ headers }: { headers: Headers }) => {
@@ -92,6 +93,27 @@ describe("GET /api/v1/billing/credits", () => {
       },
     });
   });
+
+  it.each([{ rows: [] }, { rows: [{}] }])(
+    "uses a safe 500 envelope when the aggregate row is missing or malformed",
+    async ({ rows }) => {
+      where.mockResolvedValue(rows);
+
+      const response = await request("/api/v1/billing/credits", {
+        headers: { cookie: "session=user-a" },
+      });
+
+      expect(response.status).toBe(500);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "BILLING_BALANCE_INVALID",
+          details: null,
+          message: "We could not verify your credit balance. Try again.",
+          requestId: "req_unknown",
+        },
+      });
+    },
+  );
 
   function request(path: string, init?: RequestInit): Promise<Response> {
     const server = app.getHttpServer() as Server;

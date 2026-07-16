@@ -18,6 +18,14 @@ function createDatabase(balance: unknown, failure?: Error): DatabaseService {
   return { database: { db: { select } } } as unknown as DatabaseService;
 }
 
+function createDatabaseRows(rows: readonly unknown[]): DatabaseService {
+  const where = vi.fn().mockResolvedValue(rows);
+  const from = vi.fn().mockReturnValue({ where });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return { database: { db: { select } } } as unknown as DatabaseService;
+}
+
 describe("parseLedgerBalance", () => {
   it.each([
     [null, 0],
@@ -30,7 +38,7 @@ describe("parseLedgerBalance", () => {
     expect(parseLedgerBalance(raw)).toBe(expected);
   });
 
-  it.each(["40.1", "40 credits", "01", "", "9007199254740992", "-9007199254740992", 40])(
+  it.each([undefined, "40.1", "40 credits", "01", "", "9007199254740992", "-9007199254740992", 40])(
     "rejects malformed or unsafe aggregate %j",
     (raw) => {
       expect(() => parseLedgerBalance(raw)).toThrow(BillingBalanceInvalidError);
@@ -56,6 +64,17 @@ describe("BillingService.getCreditBalance", () => {
       BillingBalanceInvalidError,
     );
   });
+
+  it.each([{ rows: [] }, { rows: [{}] }])(
+    "fails closed when the aggregate row is missing or malformed",
+    async ({ rows }) => {
+      const service = new BillingService(createDatabaseRows(rows));
+
+      await expect(service.getCreditBalance("user-1")).rejects.toBeInstanceOf(
+        BillingBalanceInvalidError,
+      );
+    },
+  );
 
   it("converts database failures to a safe availability error", async () => {
     const service = new BillingService(createDatabase(null, new Error("database unavailable")));

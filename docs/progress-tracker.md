@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T2 | 14% | — |
+| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T3 | 14% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -295,6 +295,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T1.1 | Harden payment, job-charge, runtime-role, and integration-test integrity | DB + Infra + Tests | COMPLETED | 2026-07-15 | 12:31 | 2026-07-15 | 13:28 | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass. |
 | VS3-T1.2 | Close runtime credential and mandatory PostgreSQL test gaps | Config + DB + Infra + Tests | COMPLETED | 2026-07-15 | 15:04 | 2026-07-15 | 15:22 | Runtime roles fail closed; admin secrets are isolated; 3 required live PostgreSQL tests pass. |
 | VS3-T2 | Build credit balance API and credit-pack UI | API + Web + Shared + Tests | COMPLETED | 2026-07-16 | 18:14 | 2026-07-16 | 19:32 | 123 unit tests and 4 live PostgreSQL integration tests pass; lint, typecheck, and build pass. |
+| VS3-T2-R1 | Fail closed on malformed balance rows and close tenant/UI verification gaps | API + DB + Web Verification + Tests | COMPLETED | 2026-07-16 | 20:00 | 2026-07-16 | 20:26 | Missing/malformed aggregate rows return `BILLING_BALANCE_INVALID`; 124 unit tests, 6 live PostgreSQL tests, authenticated production Chrome, lint, typecheck, and build pass. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
@@ -835,14 +836,14 @@ Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Last Maintenance Task: MAINT-5 - Archive completed task records and define recurring agent-log updates
 Current Status: NOT_STARTED
-Last Completed Task: VS3-T2 - Build credit balance API and credit-pack UI
+Last Completed Task: VS3-T2-R1 - Fail closed on malformed balance rows and close tenant/UI verification gaps
 Next Recommended Task: VS3-T3 - Create Stripe Checkout session and redirect flow with Arcjet protection and a standard 429 response.
-Uncommitted Changes: None after final task commit.
-Known Failing Tests: None. `pnpm test` passes 123 tests and `pnpm test:db-integration` passes 4 live PostgreSQL tests.
-Known Blockers: Authenticated browser verification is blocked by local Next.js HMR WebSocket resets; `/billing` unauthenticated redirect was verified.
-Important Context: `GET /api/v1/billing/credits` derives its owner only from the session, returns private no-store data, and safely rejects malformed or unsafe ledger aggregates. Shared public packs contain no Stripe price IDs. VS3-T4.1 now owns ledger history after a webhook-granted purchase.
-Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; start local infrastructure; run pnpm test:db-integration; run pnpm ci:check (currently blocked only by six unrelated formatter baseline files).
+Uncommitted Changes: None after the final VS3-T2-R1 commit.
+Known Failing Tests: None. `pnpm test` passes 124 tests and `pnpm test:db-integration` passes 6 live PostgreSQL tests. `pnpm ci:check` remains blocked only by the six documented pre-existing Prettier files.
+Known Blockers: None for VS3-T3. The repository-wide formatting baseline remains separate cleanup work.
+Important Context: Billing balance now distinguishes query failures from invalid aggregate results, rejects missing/undefined rows with `BILLING_BALANCE_INVALID`, and is exercised through the real guard/controller/service/Drizzle/PostgreSQL path. Authenticated production Chrome verified desktop/mobile Billing and dashboard states. Checkout remains inert until VS3-T3.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 coverage before enabling Checkout; run pnpm test:db-integration and the full project gates.
 Last Updated Date: 2026-07-16
-Last Updated Time: 19:32
+Last Updated Time: 20:26
 Last Updated By: Codex
 ```

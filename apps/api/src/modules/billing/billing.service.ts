@@ -47,20 +47,24 @@ export class BillingService {
   public constructor(private readonly databaseService: DatabaseService) {}
 
   public async getCreditBalance(userId: string): Promise<CreditBalance> {
-    let rawBalance: unknown;
+    let rows: { balance: string | null }[];
 
     try {
-      const [row] = await this.databaseService.database.db
-        .select({ balance: sql<string>`COALESCE(SUM(${creditLedger.amount}), 0)::text` })
+      rows = await this.databaseService.database.db
+        .select({ balance: sql<string | null>`COALESCE(SUM(${creditLedger.amount}), 0)::text` })
         .from(creditLedger)
         .where(eq(creditLedger.userId, userId));
-      rawBalance = row?.balance ?? null;
     } catch {
       throw new BillingCreditsUnavailableError();
     }
 
+    const [row] = rows;
+    if (rows.length !== 1 || row?.balance === undefined) {
+      throw new BillingBalanceInvalidError();
+    }
+
     return {
-      balance: parseLedgerBalance(rawBalance),
+      balance: parseLedgerBalance(row.balance),
       conversion: "1 credit = 1 video minute",
       unit: "credits",
     };

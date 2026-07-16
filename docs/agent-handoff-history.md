@@ -309,3 +309,23 @@ Last Updated Date: 2026-07-16
 Last Updated Time: 07:31
 Last Updated By: Codex
 ~~~
+
+---
+
+### VS3-T2-R1 Handoff Update — 2026-07-16 20:26 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T2-R1 - Fail closed on malformed balance rows and close tenant/UI verification gaps
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: None after the final VS3-T2-R1 commit.
+Known Failing Tests: None. 124 unit tests and 6 required live PostgreSQL integration tests pass. Full ci:check remains blocked only by six documented pre-existing Prettier files.
+Known Blockers: None for VS3-T3.
+Important Context: Missing/undefined aggregate rows now return BILLING_BALANCE_INVALID; database exceptions remain BILLING_CREDITS_UNAVAILABLE. The real session guard/controller/service/Drizzle/PostgreSQL path proves tenant isolation. Authenticated production Chrome verified Billing desktop/mobile and dashboard navigation. Checkout is still disabled and inert.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 tests before checkout; run pnpm test:db-integration plus lint, typecheck, test, and build.
+Last Updated Date: 2026-07-16
+Last Updated Time: 20:26
+Last Updated By: Codex
+~~~

@@ -28,7 +28,10 @@ export default defineConfig({
   test: {
     environment: "node",
     hookTimeout: 30_000,
-    include: ["packages/db/src/schema/billing-integrity.integration.spec.ts"],
+    include: [
+      "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",
+      "packages/db/src/schema/billing-integrity.integration.spec.ts",
+    ],
     passWithNoTests: false,
   },
 });

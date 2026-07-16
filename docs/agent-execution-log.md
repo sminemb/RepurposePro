@@ -580,6 +580,7 @@ Last Updated Date: 2026-07-13
 Last Updated Time: 14:55
 Last Updated By: Codex
 ```
+
 ---
 
 ### MAINT-5 — Archive completed task records and define recurring agent-log updates
@@ -916,3 +917,50 @@ Last Updated Date: 2026-07-13
 Last Updated Time: 15:19
 Last Updated By: Codex
 ```
+
+---
+
+### VS3-T2-R1 — Adversarial Billing Repair
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 20:00
+End Date: 2026-07-16
+End Time: 20:26
+
+User Outcome:
+
+- Invalid or structurally missing ledger aggregates now fail closed with `BILLING_BALANCE_INVALID` instead of being shown as a valid zero.
+- Tenant isolation is verified through the production Nest guard/controller/service/Drizzle query against live PostgreSQL.
+- Authenticated Billing and dashboard behavior is verified in an optimized production Next.js runtime at desktop and mobile widths.
+
+Files Changed:
+
+- `apps/api/src/modules/billing/billing.service.ts`
+- `apps/api/src/modules/billing/billing.service.spec.ts`
+- `apps/api/src/modules/billing/billing.http.spec.ts`
+- `apps/api/src/modules/billing/billing.postgres.integration.spec.ts`
+- `packages/db/vitest.integration.config.mts`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Corrections:
+
+- Separated database-query exceptions from aggregate-result validation.
+- Required exactly one aggregate row with a defined `balance`; literal `null` remains the documented empty-ledger zero case.
+- Added safe HTTP 500 envelope regressions for absent/malformed aggregate rows.
+- Added live PostgreSQL coverage proving query-string identity is ignored and user A, user B, and empty-ledger balances remain isolated.
+
+Verification:
+
+- PASS: focused RED reproduced the fake-zero defect; focused GREEN passes 24 tests.
+- PASS: `pnpm lint`, `pnpm typecheck`, `pnpm test` (124 passed), `pnpm test:db-integration` (6 passed), and `pnpm build`.
+- PASS: authenticated production-mode Chrome at 1440x900 and 390x844 verified active Billing navigation, three-column/single-column pack grids, no horizontal overflow, three native-disabled inert checkout controls, persistent checkout-unavailable text, and dashboard `Buy credits` linking only to `/billing`.
+- PASS: disposable browser-review accounts and temporary Chrome profiles were removed.
+
+Known Limitations:
+
+- `pnpm ci:check` still stops at the same six pre-existing formatting files outside this repair; all repair files pass targeted Prettier checks.
+- The existing non-blocking Next.js NFT tracing warning remains during production build.
