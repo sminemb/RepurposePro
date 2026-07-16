@@ -294,9 +294,10 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T1 | Create credit ledger and Stripe payment schemas | DB | COMPLETED | 2026-07-15 | 10:52 | 2026-07-15 | 11:56 | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass. |
 | VS3-T1.1 | Harden payment, job-charge, runtime-role, and integration-test integrity | DB + Infra + Tests | COMPLETED | 2026-07-15 | 12:31 | 2026-07-15 | 13:28 | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass. |
 | VS3-T1.2 | Close runtime credential and mandatory PostgreSQL test gaps | Config + DB + Infra + Tests | COMPLETED | 2026-07-15 | 15:04 | 2026-07-15 | 15:22 | Runtime roles fail closed; admin secrets are isolated; 3 required live PostgreSQL tests pass. |
-| VS3-T2 | Build credit balance and credit-pack UI | Web | NOT_STARTED | — | — | — | — | — |
+| VS3-T2 | Build credit balance API and credit-pack UI | API + Web + Shared + Tests | COMPLETED | 2026-07-16 | 18:14 | 2026-07-16 | 19:32 | 123 unit tests and 4 live PostgreSQL integration tests pass; lint, typecheck, and build pass. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
+| VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | NOT_STARTED | — | — | — | — | — |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
@@ -831,18 +832,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T2 - Build credit balance and credit-pack UI
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Last Maintenance Task: MAINT-5 - Archive completed task records and define recurring agent-log updates
-Current Status: IN_PROGRESS
-Last Completed Task: VS3-T1.2 - Close runtime credential and mandatory PostgreSQL test gaps
-Next Recommended Task: VS3-T2 - Build credit balance and credit-pack UI.
-Uncommitted Changes: None after documentation commit.
-Known Failing Tests: None for MAINT-5; documentation checks pass.
-Known Blockers: None.
-Important Maintenance Context: Completed task narratives now live in agent-execution-log.md; operational evidence, handoff snapshots, and maintenance records live in their dedicated archives.
-Important Context: VS3 billing integrity requires immutable ledger reconciliation, isolated runtime credentials, and owner-authorized write procedures for later payment/charge paths.
-Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; run pnpm test:db-integration for billing schema changes; run pnpm ci:check.
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T2 - Build credit balance API and credit-pack UI
+Next Recommended Task: VS3-T3 - Create Stripe Checkout session and redirect flow with Arcjet protection and a standard 429 response.
+Uncommitted Changes: None after final task commit.
+Known Failing Tests: None. `pnpm test` passes 123 tests and `pnpm test:db-integration` passes 4 live PostgreSQL tests.
+Known Blockers: Authenticated browser verification is blocked by local Next.js HMR WebSocket resets; `/billing` unauthenticated redirect was verified.
+Important Context: `GET /api/v1/billing/credits` derives its owner only from the session, returns private no-store data, and safely rejects malformed or unsafe ledger aggregates. Shared public packs contain no Stripe price IDs. VS3-T4.1 now owns ledger history after a webhook-granted purchase.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; start local infrastructure; run pnpm test:db-integration; run pnpm ci:check (currently blocked only by six unrelated formatter baseline files).
 Last Updated Date: 2026-07-16
-Last Updated Time: 07:31
+Last Updated Time: 19:32
 Last Updated By: Codex
 ```

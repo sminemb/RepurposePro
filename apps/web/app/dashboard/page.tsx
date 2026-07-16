@@ -6,7 +6,10 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { AppTopbar } from "@/components/app/app-topbar";
 import { PageHeader } from "@/components/app/page-header";
+import { CreditBalanceError } from "@/features/billing/components/credit-balance-error";
+import { DashboardCreditSummary } from "@/features/projects/components/dashboard-credit-summary";
 import { ProjectList } from "@/features/projects/components/project-list";
+import { getCreditBalance } from "@/features/billing/server/billing-api";
 import { listProjects } from "@/features/projects/server/projects-api";
 import { auth } from "@/lib/auth";
 
@@ -15,7 +18,8 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   const firstName = session.user.name.split(" ")[0] || session.user.name;
-  const projectResult = await listProjects();
+  const [balanceResult, projectResult] = await Promise.all([getCreditBalance(), listProjects()]);
+  if (balanceResult.kind === "unauthenticated") redirect("/login");
 
   return (
     <div className="flex min-h-dvh bg-rp-bg">
@@ -36,9 +40,20 @@ export default async function DashboardPage() {
             title="Your workspace"
           />
 
+          <div className="mt-8 max-w-md">
+            {balanceResult.kind === "success" ? (
+              <DashboardCreditSummary balance={balanceResult.balance} />
+            ) : (
+              <CreditBalanceError message={balanceResult.message} />
+            )}
+          </div>
+
           <div className="mt-8">
             {projectResult.error ? (
-              <section className="rounded-rp-lg border border-rp-danger/35 bg-rp-danger-soft/35 p-5 text-sm leading-6 text-rp-text" role="alert">
+              <section
+                className="rounded-rp-lg border border-rp-danger/35 bg-rp-danger-soft/35 p-5 text-sm leading-6 text-rp-text"
+                role="alert"
+              >
                 {projectResult.error}
               </section>
             ) : (

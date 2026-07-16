@@ -8,6 +8,11 @@ describe("isNavigationItemActive", () => {
     expect(isNavigationItemActive("/dashboard/settings", "/dashboard")).toBe(false);
   });
 
+  it("matches Billing only on the billing route", () => {
+    expect(isNavigationItemActive("/billing", "/billing")).toBe(true);
+    expect(isNavigationItemActive("/billing/history", "/billing")).toBe(false);
+  });
+
   it("matches the Projects section on its root route", () => {
     expect(isNavigationItemActive("/projects", "/projects", true)).toBe(true);
   });

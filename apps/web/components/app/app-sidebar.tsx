@@ -39,7 +39,13 @@ const navigation: readonly NavigationItem[] = [
     locked: false,
     matchDescendants: true,
   },
-  { label: "Billing", icon: CreditCard, locked: true },
+  {
+    label: "Billing",
+    icon: CreditCard,
+    href: "/billing",
+    activePath: "/billing",
+    locked: false,
+  },
   { label: "Settings", icon: Settings, locked: true },
 ];
 

@@ -1,8 +1,14 @@
 import "server-only";
 
-import { loadWebConfig } from "@repurposepro/config";
-import type { ApiError, ApiListSuccess, ApiSuccess, CreateProjectInput, ProjectSummary } from "@repurposepro/shared";
-import { headers } from "next/headers";
+import type {
+  ApiError,
+  ApiListSuccess,
+  ApiSuccess,
+  CreateProjectInput,
+  ProjectSummary,
+} from "@repurposepro/shared";
+
+import { requestApi } from "@/lib/server-api";
 
 interface ProjectsResult {
   readonly error: string | null;
@@ -12,22 +18,6 @@ interface ProjectsResult {
 interface CreateProjectResult {
   readonly error: string | null;
   readonly projectId: string | null;
-}
-
-async function requestApi(path: string, init?: RequestInit): Promise<Response> {
-  const requestHeaders = await headers();
-  const cookie = requestHeaders.get("cookie");
-  const apiHeaders = new Headers(init?.headers);
-
-  if (cookie) {
-    apiHeaders.set("cookie", cookie);
-  }
-
-  return fetch(`${loadWebConfig().apiUrl}${path}`, {
-    ...init,
-    cache: "no-store",
-    headers: apiHeaders,
-  });
 }
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
@@ -44,13 +34,19 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
     });
 
     if (!response.ok) {
-      return { error: await errorMessage(response, "We could not create this project. Try again."), projectId: null };
+      return {
+        error: await errorMessage(response, "We could not create this project. Try again."),
+        projectId: null,
+      };
     }
 
     const body = (await response.json()) as ApiSuccess<ProjectSummary>;
     return { error: null, projectId: body.data.id };
   } catch {
-    return { error: "RepurposePro is unreachable. Check your connection and try again.", projectId: null };
+    return {
+      error: "RepurposePro is unreachable. Check your connection and try again.",
+      projectId: null,
+    };
   }
 }
 
@@ -60,7 +56,10 @@ export async function listProjects(): Promise<ProjectsResult> {
 
     if (!response.ok) {
       return {
-        error: await errorMessage(response, "We could not load your projects. Refresh the page to try again."),
+        error: await errorMessage(
+          response,
+          "We could not load your projects. Refresh the page to try again.",
+        ),
         projects: [],
       };
     }

@@ -379,4 +379,49 @@ describeIntegration("billing integrity migrations", () => {
       ownerClient.release();
     }
   });
+
+  it("returns a user-scoped credit aggregate to the restricted runtime role", async () => {
+    await migrationPool.query(
+      "INSERT INTO users (id, name, email) VALUES ($1, $2, $3), ($4, $5, $6)",
+      [
+        "billing-balance-user-a",
+        "Billing Balance User A",
+        "billing-balance-a@example.test",
+        "billing-balance-user-b",
+        "Billing Balance User B",
+        "billing-balance-b@example.test",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO credit_ledger (id, user_id, type, amount, description, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5, $6), ($7, $2, $3, $8, $9, $10), ($11, $12, $3, $13, $14, $15)`,
+      [
+        "00000000-0000-0000-0000-000000000201",
+        "billing-balance-user-a",
+        "manual_adjustment",
+        40,
+        "Balance credit",
+        "billing-balance-credit",
+        "00000000-0000-0000-0000-000000000202",
+        -11,
+        "Balance debit",
+        "billing-balance-debit",
+        "00000000-0000-0000-0000-000000000203",
+        "billing-balance-user-b",
+        999,
+        "Other user balance",
+        "billing-balance-other-user",
+      ],
+    );
+
+    const result = await runtimePool.query<{ balance: string }>(
+      `SELECT COALESCE(SUM(amount), 0)::text AS balance
+       FROM credit_ledger
+       WHERE user_id = $1`,
+      ["billing-balance-user-a"],
+    );
+
+    expect(result.rows).toEqual([{ balance: "29" }]);
+    expect(typeof result.rows[0]?.balance).toBe("string");
+  });
 });

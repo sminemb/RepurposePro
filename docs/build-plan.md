@@ -301,13 +301,15 @@ Web -> API -> Stripe -> Webhook -> Database transaction -> Credit ledger -> Bull
 
 - Add credit-ledger schema.
 - Add Stripe customer/payment schemas.
-- Build credit balance UI.
-- Build credit-pack cards.
+- Add a session-scoped credit-balance API and UI.
+- Build public credit-pack cards from one catalog with no Stripe price IDs.
 - Build credit-cost summary.
 - Create Stripe Checkout session.
+- Protect Checkout with Arcjet and return standard `429` envelope before shipping it.
 - Verify Stripe webhook signatures.
 - Make webhook processing idempotent.
 - Grant credits only after confirmed payment.
+- Expose transaction history only after first webhook-granted purchase exists.
 - Deduct credits before processing.
 - Create processing job inside safe transaction boundaries.
 - Enqueue analysis job in BullMQ.

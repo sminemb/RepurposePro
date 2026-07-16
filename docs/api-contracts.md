@@ -1058,6 +1058,14 @@ Deletes one rendered output.
 
 ## GET `/billing/credits`
 
+Authenticated endpoint. It accepts no identity input; server derives ledger owner from session.
+
+### Response Headers
+
+```text
+Cache-Control: private, no-store
+```
+
 ### Response — 200
 
 ```json
@@ -1069,6 +1077,16 @@ Deletes one rendered output.
   }
 }
 ```
+
+### Errors
+
+| Status | Code | Message |
+|---:|---|---|
+| 401 | `UNAUTHORIZED` | You need to sign in to access this resource. |
+| 500 | `BILLING_BALANCE_INVALID` | We could not verify your credit balance. Try again. |
+| 503 | `BILLING_CREDITS_UNAVAILABLE` | Your credit balance is temporarily unavailable. Try again. |
+
+All errors use standard safe envelope with `details: null` and request ID.
 
 ---
 

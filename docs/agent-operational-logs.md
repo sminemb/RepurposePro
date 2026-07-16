@@ -75,6 +75,8 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-15 | VS3-T1.2 | Focused config tests / config-script typechecks / targeted ESLint and Prettier / role provisioning / migrations / `pnpm infra:status` / `pnpm test:db-integration` / lint / typecheck / test / build / format check / diff check | PASS — runtime accepts only `repurposepro_runtime`; isolated admin credentials and required PostgreSQL test gate verified; 88 tests pass. |
 
 | 2026-07-16 | MAINT-5 | Documentation audit / archive reconciliation / Prettier checks on changed Markdown / git diff --check | PASS — stale Current Agent State content removed; one current handoff remains; archive and recurring-log rules synchronized. |
+| 2026-07-16 | VS3-T2 | Red/green billing tests / HTTP module test / `pnpm test` / `pnpm lint` / `pnpm typecheck` / `pnpm test:db-integration` / `pnpm build` | PASS — 123 unit tests, 4 live PostgreSQL tests, lint, types, and production build pass. |
+| 2026-07-16 | VS3-T2 | `pnpm format:check` / `pnpm ci:check` | KNOWN BASELINE FAILURE — six unrelated pre-existing files fail Prettier; no VS3-T2 file is listed. |
 
 Useful commands may include:
 
@@ -96,6 +98,7 @@ ffmpeg ...
 | Date | Time | Slice | Task ID | Blocker | What Was Tried | Needed to Continue | Status |
 |---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — |
+| 2026-07-16 | 19:18 | VS3 | VS3-T2 | Authenticated browser verification cannot complete. | Local Next.js HMR WebSocket resets prevented signup/login from issuing an auth request; `/billing` redirect to `/login` succeeded. | Restore stable local HMR/auth interaction and recheck Billing desktop/mobile authenticated states. | OPEN |
 
 ---
 
@@ -113,6 +116,7 @@ ffmpeg ...
 
 | 2026-07-15 | 13:28 | Keep processing charges reconciled to immutable `processing_jobs.credits_charged`; runtime cannot write raw ledger or Stripe source records. | Prevents financial state bypass and leaves VS3-T4/T5 to add narrowly scoped owner-authorized write procedures. | VS3 | packages/db, role boundary migrations, database/environment docs |
 | 2026-07-15 | 15:22 | Restrict API, worker, and auth runtime credentials to `repurposepro_runtime`; isolate bootstrap, migration, provisioning, and live-test credentials. | Ensures application processes cannot escalate into administrative database operations and makes the PostgreSQL integration gate explicit. | VS3 | packages/config, Compose, environment templates, CI/test scripts |
+| 2026-07-16 | 19:18 | Balance API returns only a session-scoped immutable-ledger sum; public packs exclude Stripe IDs. | Preserves financial accuracy, tenant isolation, and client/server trust boundaries before Checkout exists. | VS3 | apps/api billing, packages/shared billing, apps/web billing, docs/api-contracts.md |
 
 Record decisions such as:
 
@@ -135,5 +139,7 @@ Record decisions such as:
 | 2026-07-10 | 13:42 | VS0 | VS0-T7 | Initial compiler/lint passes found TypeScript 6 deprecations and unregistered lint-only files. | Legacy module resolution, inherited declaration maps, and ESLint project-service scope needed current configuration. | Moved to Node16 resolution, corrected app overrides, and registered lint-only files. | Full frozen-lockfile `pnpm ci:check` now covers these configurations. |
 
 | 2026-07-12 | 17:55 | VS2 | VS2-R1 | API exited before binding its port when the protected projects controller was loaded. | `AuthModule` exported `AuthGuard` without its `AuthService` dependency. | Exported `AuthService` and added a module-compilation regression test. | The test now proves all dependencies for the reusable guard resolve in `ProjectsModule`. |
+| 2026-07-16 | 19:18 | VS3 | VS3-T2 | `pnpm ci:check` stopped at formatting verification. | Six pre-existing non-VS3-T2 files do not match Prettier; task files passed targeted formatting checks. | Recorded the baseline and ran lint, typecheck, unit, database-integration, and build checks separately. | Restore repository-wide formatting baseline before treating `ci:check` as a task gate. |
+| 2026-07-16 | 19:30 | VS3 | VS3-T2 | Direct React component tests could not start. | The existing Vitest/Vite configuration cannot parse imported project TSX because JSX is preserved. | Removed the incompatible test files; retained pure navigation tests and verified components with the production build. | Add React/TSX transform support before adding DOM/component tests. |
 
 ---

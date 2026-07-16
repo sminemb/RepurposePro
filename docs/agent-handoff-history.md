@@ -212,6 +212,26 @@ Last Updated By: Codex
 
 ---
 
+### VS3-T2 Handoff Update — 2026-07-16 19:32 Asia/Manila
+
+~~~text
+Current Slice: VS3 — User can buy credits and start a paid processing job
+Current Task: VS3-T3 — Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T2 — Build credit balance API and credit-pack UI
+Next Recommended Task: VS3-T3 — Create Stripe Checkout session and redirect flow with Arcjet protection and a standard 429 response.
+Uncommitted Changes: None after final task commit.
+Known Failing Tests: None. `pnpm test` passes 123 tests and `pnpm test:db-integration` passes 4 live PostgreSQL tests.
+Known Blockers: Authenticated browser verification is blocked by local Next.js HMR WebSocket resets; `/billing` unauthenticated redirect was verified.
+Important Context: `GET /api/v1/billing/credits` derives its owner only from the session, returns private no-store data, and safely rejects malformed or unsafe ledger aggregates. Shared public packs contain no Stripe price IDs. VS3-T4.1 now owns ledger history after a webhook-granted purchase.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; start local infrastructure; run pnpm test:db-integration; run pnpm ci:check (currently blocked only by six unrelated formatter baseline files).
+Last Updated Date: 2026-07-16
+Last Updated Time: 19:32
+Last Updated By: Codex
+~~~
+
+---
+
 ### VS3-T1 Handoff Update — 2026-07-15 11:56 Asia/Manila
 
 ~~~text

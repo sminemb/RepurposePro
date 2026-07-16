@@ -860,6 +860,43 @@ Last Updated By: Codex
 
 ---
 
+### VS3-T2 — Credit Balance API and Credit-Pack UI
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 18:14
+End Date: 2026-07-16
+End Time: 19:32
+
+User Outcome:
+
+- Authenticated users can read their authoritative ledger balance at `GET /api/v1/billing/credits` and see it in billing/dashboard UI.
+- Users can view canonical Starter, Creator, and Pro pack details without exposing Stripe price IDs or enabling checkout before VS3-T3.
+
+Files Changed:
+
+- Shared public billing types/catalog; Nest billing module, guarded balance endpoint, safe aggregate parsing, and HTTP/unit tests.
+- Billing route, balance/pack/dashboard components, server API client, navigation, and landing pricing catalog reuse.
+- PostgreSQL integration coverage, API/build-plan contracts, task tracker, and agent handoff records.
+
+Commands Run:
+
+- Focused red/green Vitest runs; `pnpm test`; `pnpm lint`; `pnpm typecheck`; `pnpm test:db-integration`; `pnpm build`; `pnpm format:check`; `pnpm ci:check`; browser/dev-server checks; `git diff --check`.
+
+Verification:
+
+- PASS: 123 unit tests and four live PostgreSQL integrity tests, including runtime-role user-scoped `SUM(amount)::text` behavior.
+- PASS: lint, strict typecheck, production build, safe unauthenticated `401`, `private, no-store` balance response, and safe `500`/`503` envelopes.
+- PASS: unauthenticated browser navigation to `/billing` redirects to `/login`.
+
+Known Limitations:
+
+- Authenticated browser UI validation could not complete because local Next.js HMR WebSocket resets prevented form submission from issuing an auth request.
+- `pnpm format:check` and `pnpm ci:check` fail only on six unrelated pre-existing formatting files; all VS3-T2 files pass targeted Prettier checks.
+- Existing non-blocking Next.js NFT tracing warning remains during production build.
+
+---
+
 ### DOCS-TRACKER-SPLIT-20260713 Completion Update — 2026-07-13 15:19 Asia/Manila
 
 ```text

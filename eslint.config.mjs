@@ -49,7 +49,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/api/src/modules/storage/*.spec.ts"],
+    files: ["apps/api/src/modules/billing/*.spec.ts", "apps/api/src/modules/storage/*.spec.ts"],
     languageOptions: {
       parserOptions: {
         project: ["./apps/api/tsconfig.eslint.json"],

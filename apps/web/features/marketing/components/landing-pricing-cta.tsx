@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { CREDIT_PACKS } from "@repurposepro/shared";
 
 import { BrandMark } from "@/components/app/brand-mark";
 
@@ -7,11 +8,14 @@ interface SessionAwareProps {
   readonly isAuthenticated: boolean;
 }
 
-const packs = [
-  { name: "Starter", price: "$10", credits: "40 credits", featured: false },
-  { name: "Creator", price: "$25", credits: "100 credits", featured: true },
-  { name: "Pro", price: "$50", credits: "200 credits", featured: false },
-] as const;
+function formatPrice(priceCents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    style: "currency",
+  }).format(priceCents / 100);
+}
 
 export function PricingSection({ isAuthenticated }: SessionAwareProps) {
   return (
@@ -24,21 +28,23 @@ export function PricingSection({ isAuthenticated }: SessionAwareProps) {
           <p className="mt-4 text-xl font-semibold text-rp-primary">$0.25 per video minute</p>
         </div>
         <div className="mx-auto mt-14 grid max-w-5xl items-center gap-4 md:grid-cols-[0.9fr_1.1fr_0.9fr]">
-          {packs.map((pack) => (
+          {CREDIT_PACKS.map((pack) => (
             <article
               className={
-                pack.featured
+                pack.isRecommended
                   ? "rounded-rp-lg border border-rp-primary bg-rp-primary-soft/45 p-8 shadow-rp-glow md:py-12"
                   : "rounded-rp-lg border border-white/10 bg-rp-surface p-8"
               }
               key={pack.name}
             >
-              <h3 className={pack.featured ? "font-semibold text-rp-text" : "font-semibold"}>
+              <h3 className={pack.isRecommended ? "font-semibold text-rp-text" : "font-semibold"}>
                 {pack.name}
               </h3>
-              <p className="mt-5 text-5xl font-semibold tracking-[-0.05em]">{pack.price}</p>
+              <p className="mt-5 text-5xl font-semibold tracking-[-0.05em]">
+                {formatPrice(pack.priceCents)}
+              </p>
               <p className="mt-5 border-t border-white/10 pt-5 text-rp-text-muted">
-                {pack.credits}
+                {pack.credits} credits
               </p>
             </article>
           ))}
