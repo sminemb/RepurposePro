@@ -297,6 +297,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T2 | Build credit balance API and credit-pack UI | API + Web + Shared + Tests | COMPLETED | 2026-07-16 | 18:14 | 2026-07-16 | 19:32 | 123 unit tests and 4 live PostgreSQL integration tests pass; lint, typecheck, and build pass. |
 | VS3-T2-R1 | Fail closed on malformed balance rows and close tenant/UI verification gaps | API + DB + Web Verification + Tests | COMPLETED | 2026-07-16 | 20:00 | 2026-07-16 | 20:26 | Missing/malformed aggregate rows return `BILLING_BALANCE_INVALID`; 124 unit tests, 6 live PostgreSQL tests, authenticated production Chrome, lint, typecheck, and build pass. |
 | MAINT-6 | Repair repository-wide `pnpm ci:check` gate | Tooling + Formatting + Verification | COMPLETED | 2026-07-16 | 20:36 | 2026-07-16 | 20:53 | Reformatted the reported files, enforced LF for generated Next types, and passed the complete CI gate. |
+| MAINT-7 | Add mandatory Prettier adherence rule to AGENTS.md | Documentation + Tooling | COMPLETED | 2026-07-16 | 21:02 | 2026-07-16 | 21:04 | Added mandatory Prettier workflow and verified changed Markdown. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe | NOT_STARTED | — | — | — | — | — |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
@@ -835,16 +836,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
-Last Maintenance Task: MAINT-6 - Repair repository-wide `pnpm ci:check` gate
+Last Maintenance Task: MAINT-7 - Add mandatory Prettier adherence rule to AGENTS.md
 Current Status: NOT_STARTED
-Last Completed Task: MAINT-6 - Repair repository-wide `pnpm ci:check` gate
+Last Completed Task: MAINT-7 - Add mandatory Prettier adherence rule to AGENTS.md
 Next Recommended Task: VS3-T3 - Create Stripe Checkout session and redirect flow with Arcjet protection and a standard 429 response.
-Uncommitted Changes: None after the MAINT-6 commit.
+Uncommitted Changes: None after the MAINT-7 commit.
 Known Failing Tests: None. `pnpm ci:check` passes with 124 unit tests and 6 PostgreSQL integration tests.
 Known Blockers: None known.
-Important Context: MAINT-6 restored Prettier conformance for six reported files and commits LF enforcement for generated Next types; no behavior changed. Production build keeps its pre-existing non-blocking Next.js NFT tracing warning. Checkout remains inert until VS3-T3.
+Important Context: MAINT-7 adds mandatory Prettier adherence, changed-file formatting checks, repository-wide formatting guidance, and `git diff --check` to agent workflow. No product behavior changed. Checkout remains inert until VS3-T3.
 Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 coverage before enabling Checkout; run `pnpm ci:check` before handoff.
 Last Updated Date: 2026-07-16
-Last Updated Time: 20:53
+Last Updated Time: 21:08
 Last Updated By: Codex
 ```

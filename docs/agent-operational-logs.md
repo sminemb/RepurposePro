@@ -32,6 +32,7 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-15 | VS3-T1.1 | packages/db migrations/tests, role provisioning, Compose/configuration, database/environment docs, lint/typecheck wiring, docs/progress-tracker.md | Hardened billing integrity, ownership boundaries, runtime role permissions, and migration/test execution. |
 | 2026-07-15 | VS3-T1.2 | packages/config, database/runtime environment templates, Drizzle/Compose/test scripts, README.md, database/environment docs, docs/progress-tracker.md | Closed runtime credential separation and mandatory live PostgreSQL test wiring. |
 | 2026-07-16 | MAINT-5 | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives | Removed stale duplicate live state, archived referenced completed task narratives, and documented recurring log-maintenance rules. |
+| 2026-07-16 | MAINT-7 | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives | Added mandatory Prettier adherence, changed-file format checks, repository-wide format guidance, and whitespace verification to agent workflow. |
 
 ---
 
@@ -82,6 +83,7 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-16 | VS3-T2-R1 | Authenticated optimized Next.js + headless Chrome desktop/mobile verification | PASS — Billing active states, responsive grids, no overflow, inert checkout controls, persistent unavailable text, and dashboard `/billing` navigation verified without HMR. |
 | 2026-07-16 | VS3-T2-R1 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm test:db-integration` / `pnpm build` | PASS — lint, strict types, 124 unit tests, 6 live PostgreSQL tests, and production builds pass. |
 | 2026-07-16 | VS3-T2-R1 | `pnpm ci:check` / targeted Prettier | KNOWN BASELINE FAILURE — full CI stops only at the same six pre-existing formatting files; all repair files pass targeted Prettier. |
+| 2026-07-16 | MAINT-7 | `pnpm exec prettier --write AGENTS.md docs/progress-tracker.md` / `pnpm exec prettier --check AGENTS.md docs/progress-tracker.md` / `git diff --check` | PASS — changed Markdown follows repository formatting and whitespace validation passes. |
 
 Useful commands may include:
 

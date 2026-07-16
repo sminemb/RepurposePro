@@ -46,6 +46,19 @@ The goal is to ensure that any coding agent can:
 
 ---
 
+## 1.2 Prettier Rules
+
+Prettier rules are mandatory for every repository change.
+
+- Always follow the committed Prettier configuration in `prettier.config.mjs` for source files, tests, configuration, and Markdown documentation.
+- Before completing a task, run `pnpm exec prettier --check` against every changed supported file.
+- If formatting fails, run `pnpm exec prettier --write` against the affected files, review the resulting diff, and rerun the check.
+- Do not add formatter disables, ignore entries, or local style overrides without documenting and approving the exception.
+- Run `pnpm format:check` or `pnpm ci:check` when the task requires repository-wide verification.
+- Run `git diff --check` before handoff to catch whitespace errors that Prettier does not report.
+
+---
+
 ## 2. Product Summary
 
 RepurposePro is an AI-powered web app for podcasters and YouTubers.

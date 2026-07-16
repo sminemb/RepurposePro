@@ -349,3 +349,43 @@ Last Updated Date: 2026-07-16
 Last Updated Time: 20:53
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-7 Handoff Update — 2026-07-16 21:04 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-7 - Add mandatory Prettier adherence rule to AGENTS.md
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: AGENTS.md and task records pending the MAINT-7 commit.
+Known Failing Tests: None for MAINT-7; changed Markdown Prettier check and git whitespace check pass.
+Known Blockers: None.
+Important Context: AGENTS.md now requires Prettier for every repository change, changed-file `prettier --check`, repository-wide format verification when applicable, and `git diff --check`. No product behavior changed.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 tests before checkout; run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 21:04
+Last Updated By: Codex
+~~~
+
+---
+
+### MAINT-7 Commit Handoff Update — 2026-07-16 21:08 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-7 - Add mandatory Prettier adherence rule to AGENTS.md
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: None after the MAINT-7 commit.
+Known Failing Tests: None for MAINT-7; changed Markdown Prettier check and git whitespace check pass.
+Known Blockers: None.
+Important Context: The documentation commit contains the mandatory Prettier workflow and task records. No product behavior changed.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcjet and standard 429 tests before checkout; run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 21:08
+Last Updated By: Codex
+~~~

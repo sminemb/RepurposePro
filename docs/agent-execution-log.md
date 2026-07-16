@@ -1017,3 +1017,42 @@ Verification:
 Known Limitations:
 
 - Existing non-blocking Next.js NFT tracing warning remains during the web production build.
+
+---
+
+### MAINT-7 — Require Prettier Adherence in AGENTS.md
+
+Status: COMPLETED
+Start Date: 2026-07-16
+Start Time: 21:02
+End Date: 2026-07-16
+End Time: 21:04
+
+User Outcome:
+
+- Coding agents now have an explicit mandatory Prettier workflow for every repository change.
+
+Files Changed:
+
+- `AGENTS.md`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- Read `AGENTS.md`, `docs/progress-tracker.md`, `docs/project-overview.md`, `build-plan.md`, and the caveman skill instructions.
+- `pnpm exec prettier --write AGENTS.md docs/progress-tracker.md`
+- `pnpm exec prettier --check AGENTS.md docs/progress-tracker.md`
+- `git diff --check`
+
+Verification:
+
+- PASS: Changed Markdown files match repository Prettier configuration.
+- PASS: Git whitespace check is clean.
+
+Known Limitations:
+
+- No application logic or tests changed; full product test suite was not rerun for this documentation-only task.

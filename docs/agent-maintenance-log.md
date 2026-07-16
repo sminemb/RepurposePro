@@ -227,3 +227,40 @@ Known Limitations:
 Next Recommended Task:
 
 - VS3-T3 - Create Stripe Checkout session and redirect flow.
+
+---
+
+### MAINT-7 — Add Mandatory Prettier Rule
+
+Start Date: 2026-07-16
+Start Time: 21:02
+End Date: 2026-07-16
+End Time: 21:04
+
+User Outcome:
+
+- Agents must follow the committed Prettier configuration on every repository change.
+
+Files Changed:
+
+- `AGENTS.md`
+- Agent task records
+
+Commands Run:
+
+- `pnpm exec prettier --write AGENTS.md docs/progress-tracker.md`
+- `pnpm exec prettier --check AGENTS.md docs/progress-tracker.md`
+- `git diff --check`
+
+Verification:
+
+- PASS: Changed Markdown files use project Prettier style.
+- PASS: Whitespace check passes.
+
+Known Limitations:
+
+- Documentation-only task; application tests were not rerun.
+
+Next Recommended Task:
+
+- VS3-T3 - Create Stripe Checkout session and redirect flow.
