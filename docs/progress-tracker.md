@@ -842,12 +842,12 @@ Last Maintenance Task: MAINT-9 - Alternate landing navigation surface from hero
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-9 - Alternate landing navigation surface from hero
 Next Recommended Task: VS3-T3 - Create Stripe Checkout session and redirect flow with Arcjet protection and a standard 429 response.
-Uncommitted Changes: MAINT-8 and MAINT-9 landing-page source and task records are pending commit.
+Uncommitted Changes: None after the MAINT-8 and MAINT-9 commit (`549e5a4`).
 Known Failing Tests: None. 124 unit tests pass; `pnpm lint`, web typecheck, changed-file Prettier, and `git diff --check` pass.
 Known Blockers: None known.
 Important Context: MAINT-8 removes only the hero and final-CTA radial-gradient overlays. MAINT-9 separates navigation from the hero with the existing elevated slate surface token. Chrome verifies both changes with a clean console. Checkout remains inert until VS3-T3.
-Required Commands Before Continuing: Commit MAINT-8 and MAINT-9; then keep runtime DATABASE_URL in .env, add Arcjet and standard 429 coverage before enabling Checkout, and run `pnpm ci:check` before VS3-T3 handoff.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env, add Arcjet and standard 429 coverage before enabling Checkout, and run `pnpm ci:check` before VS3-T3 handoff.
 Last Updated Date: 2026-07-16
-Last Updated Time: 21:36
+Last Updated Time: 21:40
 Last Updated By: Codex
 ```

@@ -89,6 +89,7 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 | 2026-07-16 | MAINT-8 | changed-file Prettier / web typecheck / `pnpm lint` / `pnpm test` / `git diff --check` | PASS - formatting, types, lint, 124 unit tests, and whitespace checks pass. |
 | 2026-07-16 | MAINT-9 | Navigation elevated-surface update; Chrome screenshot and console check | PASS - navigation slate surface visibly alternates from charcoal hero; console clean. |
 | 2026-07-16 | MAINT-9 | changed-file Prettier / `pnpm lint` / web typecheck / `git diff --check` | PASS - formatting, lint, types, and whitespace checks pass. |
+| 2026-07-16 | MAINT-8 / MAINT-9 | `git commit -m "fix: separate landing navigation and remove glows"` | PASS - committed as `549e5a4`. |
 
 Useful commands may include:
 

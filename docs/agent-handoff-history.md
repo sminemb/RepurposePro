@@ -429,3 +429,23 @@ Last Updated Date: 2026-07-16
 Last Updated Time: 21:36
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-9 Commit Handoff Update - 2026-07-16 21:40 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-9 - Alternate landing navigation surface from hero
+Next Recommended Task: VS3-T3 - Add Arcjet and the standard 429 response before enabling trusted server-side pack checkout.
+Uncommitted Changes: None after the MAINT-8 and MAINT-9 commit (549e5a4).
+Known Failing Tests: None. Changed-file Prettier, web typecheck, lint, 124 unit tests, and Git whitespace checks pass.
+Known Blockers: None.
+Important Context: Commit 549e5a4 removes hero/final-CTA ambient radial gradients and changes navigation to the elevated slate surface. Chrome confirms both visual changes and a clean console.
+Required Commands Before Continuing: Keep runtime DATABASE_URL in .env, add Arcjet and standard 429 coverage before checkout, and run pnpm ci:check before handoff.
+Last Updated Date: 2026-07-16
+Last Updated Time: 21:40
+Last Updated By: Codex
+~~~
