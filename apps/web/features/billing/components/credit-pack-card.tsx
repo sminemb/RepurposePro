@@ -1,8 +1,14 @@
+"use client";
+
 import type { CreditPack } from "@repurposepro/shared";
+import { LoaderCircle } from "lucide-react";
+import { useActionState, useEffect } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { startCheckout } from "../actions/start-checkout";
 import { formatCreditPrice } from "./billing-format";
+import { isStripeCheckoutUrl } from "../checkout-url";
 
 interface CreditPackCardProps {
   readonly pack: CreditPack;
@@ -10,6 +16,16 @@ interface CreditPackCardProps {
 
 export function CreditPackCard({ pack }: CreditPackCardProps) {
   const checkoutDescriptionId = `checkout-status-${pack.code}`;
+  const [checkoutState, checkoutAction, isPending] = useActionState(startCheckout, {
+    checkoutUrl: null,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (isStripeCheckoutUrl(checkoutState.checkoutUrl)) {
+      window.location.assign(checkoutState.checkoutUrl);
+    }
+  }, [checkoutState.checkoutUrl]);
 
   return (
     <article
@@ -36,17 +52,32 @@ export function CreditPackCard({ pack }: CreditPackCardProps) {
         {pack.credits} video minutes
       </p>
       <div className="mt-auto pt-7">
-        <button
-          aria-describedby={checkoutDescriptionId}
-          className="min-h-11 w-full rounded-rp-md border border-rp-border bg-rp-bg/70 px-4 text-sm font-semibold text-rp-text-disabled"
-          disabled
-          type="button"
-        >
-          Checkout unavailable
-        </button>
+        <form action={checkoutAction}>
+          <input name="pack" type="hidden" value={pack.code} />
+          <button
+            aria-describedby={checkoutDescriptionId}
+            className="min-h-11 w-full rounded-rp-md bg-rp-primary px-4 text-sm font-semibold text-rp-primary-foreground transition-colors hover:bg-rp-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={isPending}
+            type="submit"
+          >
+            {isPending ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+                Opening secure checkout
+              </span>
+            ) : (
+              "Buy credits"
+            )}
+          </button>
+        </form>
         <p className="mt-3 text-xs leading-5 text-rp-text-muted" id={checkoutDescriptionId}>
-          Secure Stripe checkout will be available here soon.
+          {checkoutState.error ?? "Secure payment is handled by Stripe."}
         </p>
+        {checkoutState.error ? (
+          <p aria-live="assertive" className="mt-2 text-xs leading-5 text-rp-danger" role="alert">
+            {checkoutState.error}
+          </p>
+        ) : null}
       </div>
     </article>
   );

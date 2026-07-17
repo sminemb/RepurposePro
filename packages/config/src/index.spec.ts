@@ -25,6 +25,14 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   FILE_RETENTION_DAYS: "7",
   MAX_UPLOAD_BYTES: "524288000",
   MAX_VIDEO_DURATION_SECONDS: "1800",
+  ARCJET_KEY: "ajkey_checkout_tests",
+  ARCJET_MODE: "DRY_RUN",
+  STRIPE_SECRET_KEY: "sk_test_checkouttests",
+  STRIPE_STARTER_PRICE_ID: "price_startertests",
+  STRIPE_CREATOR_PRICE_ID: "price_creatortests",
+  STRIPE_PRO_PRICE_ID: "price_protests",
+  STRIPE_SUCCESS_URL: "http://localhost:3000/billing?checkout=success",
+  STRIPE_CANCEL_URL: "http://localhost:3000/billing?checkout=cancelled",
 };
 
 describe("configuration loaders", () => {
@@ -112,6 +120,53 @@ describe("configuration loaders", () => {
     expect(config.storageDriver).toBe("local");
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
     expect(config.appUrl).toBe("http://localhost:3000");
+    expect(config.arcjet.mode).toBe("DRY_RUN");
+    expect(config.stripe.priceIds).toEqual({
+      creator: "price_creatortests",
+      pro: "price_protests",
+      starter: "price_startertests",
+    });
+  });
+
+  it.each([
+    "ARCJET_KEY",
+    "ARCJET_MODE",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_STARTER_PRICE_ID",
+    "STRIPE_CREATOR_PRICE_ID",
+    "STRIPE_PRO_PRICE_ID",
+    "STRIPE_SUCCESS_URL",
+    "STRIPE_CANCEL_URL",
+  ])("rejects API startup when checkout configuration is missing: %s", (key) => {
+    const environment = {
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      API_PORT: "4000",
+    };
+    delete environment[key as keyof typeof environment];
+
+    expect(() => loadApiConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("rejects placeholder checkout secrets without including their values", () => {
+    const environment = {
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      API_PORT: "4000",
+      ARCJET_KEY: "replace-me",
+      STRIPE_SECRET_KEY: "sk_test_replace_me",
+    };
+
+    expect(() => loadApiConfig(environment)).toThrow(ConfigValidationError);
+
+    try {
+      loadApiConfig(environment);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "";
+      expect(message).toContain("ARCJET_KEY");
+      expect(message).toContain("STRIPE_SECRET_KEY");
+      expect(message).not.toContain("sk_test_replace_me");
+    }
   });
 
   it("loads Better Auth settings without exposing them in web configuration", () => {

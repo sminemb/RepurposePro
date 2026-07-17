@@ -4,6 +4,48 @@ Historical task execution archive moved from docs/progress-tracker.md to keep th
 
 ## Completed Task Logs
 
+### VS3-T3 - Stripe Checkout Entry
+
+Status: COMPLETED
+Start Date: 2026-07-17
+Start Time: 10:31
+End Date: 2026-07-17
+End Time: 11:38
+
+User Outcome:
+
+- An authenticated user can select one public credit pack and enter a trusted Stripe Checkout session.
+- The Checkout entry point is rate-limited, database-free, and leaves credit grants exclusively to VS3-T4's verified webhook.
+
+Files Changed:
+
+- API billing Checkout controller, contracts, service, Stripe gateway, Arcjet guard, module wiring, and focused tests.
+- API configuration, config tests, API test setup, dependencies, and lockfile.
+- Billing CTA, Checkout Server Action/API boundary, URL validation, return notice, and focused web tests.
+- Billing API/environment contracts and current task records.
+
+Commands Run:
+
+- Focused Checkout/config/web tests and affected project-module tests.
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm ci:check`
+- Changed-file and repository-wide Prettier checks.
+- `git diff --check`
+
+Verification:
+
+- PASS: 80 focused Checkout/config/web assertions pass before the final suite.
+- PASS: `pnpm ci:check` passes with 169 unit tests (6 intentionally skipped), 6 PostgreSQL integration tests, lint, strict typecheck, Prettier, and API/web/worker production builds.
+- PASS: Tests prove session-derived identity, trusted Price mapping, strict body validation, safe Stripe URL validation, standard 422/429/503 responses, no Checkout DB dependency, server-action errors, and returned-URL-only redirect behavior.
+
+Known Limitations:
+
+- Real Stripe and Arcjet credentials are intentionally absent; live Checkout confirmation is deferred to local test credentials and VS3-T4 webhook work.
+- Browser runtime verification could not start because the Windows sandbox denied a detached local dev-server process. The reviewed production build and focused web boundary tests pass.
+
+---
+
 ### VS0 — Bootable Monorepo Foundation
 
 Status: COMPLETED

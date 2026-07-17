@@ -596,7 +596,7 @@ Server-side Stripe API key.
 Required:
 
 ```text
-Yes for billing
+Yes for Checkout entry
 ```
 
 Used by:
@@ -662,7 +662,7 @@ Trusted Stripe Price ID for Starter pack.
 Required:
 
 ```text
-Yes if Starter pack enabled
+Yes for Checkout entry
 ```
 
 Example:
@@ -679,6 +679,12 @@ Purpose:
 
 Trusted Stripe Price ID for Creator pack.
 
+Required:
+
+```text
+Yes for Checkout entry
+```
+
 Example:
 
 ```env
@@ -692,6 +698,12 @@ STRIPE_CREATOR_PRICE_ID=price_...
 Purpose:
 
 Trusted Stripe Price ID for Pro pack.
+
+Required:
+
+```text
+Yes for Checkout entry
+```
 
 Example:
 
@@ -707,7 +719,7 @@ Purpose:
 
 Checkout success redirect.
 
-Recommended:
+Required:
 
 ```env
 STRIPE_SUCCESS_URL=http://localhost:3000/billing?checkout=success
@@ -721,7 +733,7 @@ Purpose:
 
 Checkout cancel redirect.
 
-Recommended:
+Required:
 
 ```env
 STRIPE_CANCEL_URL=http://localhost:3000/billing?checkout=cancelled
@@ -1149,7 +1161,11 @@ Purpose:
 
 Authenticate Arcjet.
 
-Required when abuse protection is enabled.
+Required:
+
+```text
+Yes for Checkout entry
+```
 
 Secret:
 
@@ -1171,6 +1187,12 @@ Purpose:
 
 Control local/testing behavior.
 
+Required:
+
+```text
+Yes for Checkout entry
+```
+
 Example allowed values:
 
 ```text
@@ -1185,6 +1207,9 @@ ARCJET_MODE=DRY_RUN
 ```
 
 Use explicit production behavior.
+
+Checkout creation uses an Arcjet fixed window keyed by authenticated user ID: three attempts
+per minute. Use `DRY_RUN` only for local development and tests; production must use `LIVE`.
 
 ---
 

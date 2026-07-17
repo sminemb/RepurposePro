@@ -1124,7 +1124,10 @@ type?
 
 ## POST `/billing/checkout`
 
-Creates Stripe Checkout session for one approved pack.
+Creates one Stripe payment-mode Checkout session for an approved credit pack.
+
+Authentication is required. The API derives the customer email and user correlation ID from
+the server-side session; the request must not contain identity, price, or credit fields.
 
 ### Request
 
@@ -1154,7 +1157,21 @@ pro
 
 Do not accept arbitrary price or credit amount from the client.
 
-The server maps pack ID to trusted Stripe price ID and credit amount.
+The server maps pack ID to a trusted Stripe Price ID. It limits Checkout creation to three
+attempts per authenticated user per minute.
+
+The Checkout-entry request is intentionally database-free. It must not create a payment,
+customer, or credit-ledger record, and it must not grant credits. Only the signature-verified
+webhook flow may persist payment state or grant credits.
+
+### Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| 401 | `UNAUTHORIZED` | No authenticated session is available. |
+| 422 | `BILLING_PACK_INVALID` | The request body is not exactly one approved pack. |
+| 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three Checkout attempts in one minute. |
+| 503 | `BILLING_CHECKOUT_UNAVAILABLE` | Stripe, Arcjet, or Checkout configuration is unavailable; no internal detail is exposed. |
 
 ---
 

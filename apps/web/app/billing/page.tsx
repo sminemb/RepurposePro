@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { CreditBalanceCard } from "@/features/billing/components/credit-balance-card";
 import { CreditBalanceError } from "@/features/billing/components/credit-balance-error";
 import { CreditPackCard } from "@/features/billing/components/credit-pack-card";
+import { CheckoutReturnNotice } from "@/features/billing/components/checkout-return-notice";
 import { getCreditBalance } from "@/features/billing/server/billing-api";
 import { auth } from "@/lib/auth";
 
@@ -28,6 +29,7 @@ export default async function BillingPage() {
             description="Keep enough credits ready for the videos you want to process next."
             title="Billing"
           />
+          <CheckoutReturnNotice />
 
           <section className="mt-9" aria-label="Credit balance">
             {balanceResult.kind === "success" ? (

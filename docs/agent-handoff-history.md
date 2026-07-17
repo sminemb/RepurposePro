@@ -4,6 +4,26 @@ Historical handoff snapshots moved from docs/progress-tracker.md. Current handof
 
 ## Superseded Handoff State
 
+---
+
+### VS3-T3 Handoff Update - 2026-07-17 11:38 Asia/Manila
+
+```text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Next Recommended Task: VS3-T4 - Verify Stripe webhook signature, persist Stripe state idempotently, and grant immutable ledger credits only after a confirmed event.
+Uncommitted Changes: None expected after the VS3-T3 commit; all source, tests, configuration, documentation, and task records for this slice are included.
+Known Failing Tests: None. pnpm ci:check passes with 169 unit tests (6 intentionally skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds.
+Known Blockers: No implementation blocker. Live Checkout acceptance remains deferred until valid local Stripe test key, three Price IDs, and Arcjet key are configured.
+Important Context: VS3-T3 creates a payment-mode Stripe Checkout session only. Identity/email/Price ID/correlation metadata are server-derived, Arcjet limits Checkout to three attempts per authenticated user per minute, and no database payment/customer/ledger write or credit grant occurs before T4's signature-verified webhook. The billing CTA has pending/error feedback and redirects only to a validated Stripe Checkout URL. The configured success return says webhook processing is pending.
+Required Commands Before Continuing: Add valid STRIPE_WEBHOOK_SECRET, Stripe test credentials/Price IDs, and Arcjet key to local .env; implement T4 webhook verification/idempotency/ledger-grant tests; run pnpm ci:check and a live Stripe test before T4 handoff.
+Last Updated Date: 2026-07-17
+Last Updated Time: 11:38
+Last Updated By: Codex
+```
+
 The coding agent must update this before ending a session.
 
 ```text

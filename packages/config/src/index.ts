@@ -7,6 +7,7 @@ import { z } from "zod";
 const nodeEnvironmentSchema = z.enum(["development", "test", "production"]);
 const appEnvironmentSchema = z.enum(["local", "development", "staging", "production", "test"]);
 const logLevelSchema = z.enum(["debug", "info", "warn", "error"]);
+const arcjetModeSchema = z.enum(["DRY_RUN", "LIVE"]);
 const runtimeDatabaseUrlSchema = z
   .string()
   .min(1)
@@ -42,6 +43,26 @@ const booleanFromEnvironment = z.preprocess((value: unknown) => {
   return value;
 }, z.boolean());
 
+const requiredCheckoutValue = (key: string) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .refine((value) => !["replace-me", "sk_test_replace_me", "price_replace_me"].includes(value), {
+      message: `${key} must not use a placeholder value.`,
+    });
+
+const stripeSecretKeySchema = requiredCheckoutValue("STRIPE_SECRET_KEY").regex(
+  /^sk_(?:test|live)_[A-Za-z0-9]+$/,
+  "Must be a Stripe secret key.",
+);
+const stripePriceIdSchema = (key: string) =>
+  requiredCheckoutValue(key).regex(/^price_[A-Za-z0-9]+$/, "Must be a Stripe Price ID.");
+const arcjetKeySchema = requiredCheckoutValue("ARCJET_KEY").regex(
+  /^ajkey_[A-Za-z0-9_]+$/,
+  "Must be an Arcjet key.",
+);
+
 const webEnvironmentSchema = z.object({
   NODE_ENV: nodeEnvironmentSchema,
   APP_ENV: appEnvironmentSchema,
@@ -61,6 +82,8 @@ const serverEnvironmentSchema = z.object({
 });
 
 const apiEnvironmentSchema = serverEnvironmentSchema.extend({
+  ARCJET_KEY: arcjetKeySchema,
+  ARCJET_MODE: arcjetModeSchema,
   APP_URL: z.string().url(),
   API_PORT: z.coerce.number().int().min(1).max(65_535),
   FFPROBE_PATH: z.string().trim().min(1),
@@ -69,6 +92,12 @@ const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   MAX_VIDEO_DURATION_SECONDS: z.coerce.number().int().positive(),
   STORAGE_DRIVER: z.literal("local"),
   STORAGE_ROOT: z.string().trim().min(1),
+  STRIPE_CANCEL_URL: z.string().url(),
+  STRIPE_CREATOR_PRICE_ID: stripePriceIdSchema("STRIPE_CREATOR_PRICE_ID"),
+  STRIPE_PRO_PRICE_ID: stripePriceIdSchema("STRIPE_PRO_PRICE_ID"),
+  STRIPE_SECRET_KEY: stripeSecretKeySchema,
+  STRIPE_STARTER_PRICE_ID: stripePriceIdSchema("STRIPE_STARTER_PRICE_ID"),
+  STRIPE_SUCCESS_URL: z.string().url(),
 });
 
 const authEnvironmentSchema = z.object({
@@ -102,6 +131,10 @@ export interface ServerConfig {
 }
 
 export interface ApiConfig extends ServerConfig {
+  readonly arcjet: {
+    readonly key: string;
+    readonly mode: z.infer<typeof arcjetModeSchema>;
+  };
   readonly apiPort: number;
   readonly appUrl: string;
   readonly ffprobePath: string;
@@ -110,6 +143,16 @@ export interface ApiConfig extends ServerConfig {
   readonly maxVideoDurationSeconds: number;
   readonly storageDriver: "local";
   readonly storageRoot: string;
+  readonly stripe: {
+    readonly cancelUrl: string;
+    readonly priceIds: {
+      readonly creator: string;
+      readonly pro: string;
+      readonly starter: string;
+    };
+    readonly secretKey: string;
+    readonly successUrl: string;
+  };
 }
 
 export interface AuthConfig {
@@ -201,6 +244,10 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
   const parsed = parseEnvironment(apiEnvironmentSchema, "API", environment);
 
   return {
+    arcjet: {
+      key: parsed.ARCJET_KEY,
+      mode: parsed.ARCJET_MODE,
+    },
     apiPort: parsed.API_PORT,
     appEnv: parsed.APP_ENV,
     appUrl: parsed.APP_URL,
@@ -217,6 +264,16 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     redisUrl: parsed.REDIS_URL,
     storageDriver: parsed.STORAGE_DRIVER,
     storageRoot: resolveStorageRoot(parsed.STORAGE_ROOT),
+    stripe: {
+      cancelUrl: parsed.STRIPE_CANCEL_URL,
+      priceIds: {
+        creator: parsed.STRIPE_CREATOR_PRICE_ID,
+        pro: parsed.STRIPE_PRO_PRICE_ID,
+        starter: parsed.STRIPE_STARTER_PRICE_ID,
+      },
+      secretKey: parsed.STRIPE_SECRET_KEY,
+      successUrl: parsed.STRIPE_SUCCESS_URL,
+    },
   };
 }
 

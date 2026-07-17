@@ -182,3 +182,14 @@ Record decisions such as:
 - Verification: Chrome screenshot confirms contrast between navigation and hero; console is clean; Prettier, lint, typecheck, and whitespace checks pass.
 
 ---
+
+### VS3-T3 Operational Update - 2026-07-17 11:38 Asia/Manila
+
+- Files changed: Checkout API/controller/service/gateway/rate-limit modules and tests; API configuration/test setup; Billing web action, CTA, safe Checkout URL validation, return notice, tests; Stripe/Arcjet dependencies; API/environment contracts; tracker and archive records.
+- Decision: create only a payment-mode Stripe Checkout session in VS3-T3. Keep all database payment, customer, credit-ledger, and credit-grant writes for VS3-T4 after webhook signature verification.
+- Decision: map the three public pack codes to trusted server configuration and rate-limit the authenticated user ID to three attempts per minute with Arcjet fixed-window protection.
+- Verification: `pnpm ci:check` PASS - 169 unit tests (6 intentionally skipped), 6 PostgreSQL integration tests, Prettier, lint, strict typecheck, and production builds all pass.
+- Failure resolved: `@arcjet/node` is ESM-only while the Nest API emits CommonJS; the integration dynamically imports Arcjet at its concrete client boundary. Typecheck and full CI pass.
+- Dependency decision: pin `@arcjet/node` to `1.5.0` because its `>=20` Node engine preserves the repository's Node 22.18 support; later Arcjet releases require Node 22.21 or newer.
+- Failure resolved: existing project tests load API configuration and needed safe syntactically valid Checkout environment values after configuration became fail-closed; updated their test-local environment only.
+- Browser note: the Windows sandbox denied detached local dev-server startup, so no live browser session was available. Focused web boundary tests and the production build verify the UI code; live Stripe/Arcjet credentials remain required for acceptance.
