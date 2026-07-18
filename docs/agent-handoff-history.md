@@ -230,8 +230,6 @@ Last Updated Time: 19:01
 Last Updated By: Codex
 ~~~
 
----
-
 ### MAINT-11 Handoff Update - 2026-07-18 12:08 Asia/Manila
 
 ~~~text
@@ -527,5 +525,25 @@ Important Context: The footer now uses the existing bg-rp-bg token while the fin
 Required Commands Before Continuing: Add valid STRIPE_WEBHOOK_SECRET, Stripe test credentials/Price IDs, and Arcjet key to local .env; implement T4 webhook signature verification/idempotency and ledger-grant tests; run pnpm ci:check and a live Stripe test before T4 handoff.
 Last Updated Date: 2026-07-18
 Last Updated Time: 11:31
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T4 Implementation Handoff Update - 2026-07-18 16:44 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Next Recommended Task: Add the five Stripe test-mode values to local .env, forward Stripe CLI events to the API, complete one Checkout, and confirm one purchase ledger row; then begin VS3-T4.1.
+Uncommitted Changes: Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged. The VS3-T4 webhook implementation and records are included in this implementation-checkpoint commit.
+Known Failing Tests: None. Focused unit/config tests, API typecheck, targeted ESLint, changed-file Prettier, and live PostgreSQL integration tests pass. Full root lint/typecheck exceed the 60-second command limit after package builds without outputting a finding.
+Known Blockers: Local .env exists but has no non-placeholder STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, or test Price IDs. Do not start a live Checkout test until those values are set.
+Important Context: Stripe CLI 1.43.8 is installed and authenticated to the RepurposePro sandbox. The remote Stripe planner selected Stripe-hosted, one-time Checkout fulfilled only by a signed webhook. `POST /api/v1/billing/webhook` now consumes Nest's exact raw body, validates Stripe's signature, permits only paid matching credit-pack sessions, and calls an owner-authorized atomic database routine. The routine inserts the webhook record, paid payment, and immutable ledger row together; duplicate events and session replays cannot add credits.
+Required Commands Before Continuing: Set the five Stripe values in .env without committing them. Start the API, run `stripe listen --forward-to http://localhost:4000/api/v1/billing/webhook`, copy its whsec_ value into STRIPE_WEBHOOK_SECRET, finish one test Checkout, inspect the resulting credit balance/ledger, then run `pnpm ci:check` if time permits.
+Last Updated Date: 2026-07-18
+Last Updated Time: 16:44
 Last Updated By: Codex
 ~~~

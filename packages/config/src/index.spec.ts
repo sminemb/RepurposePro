@@ -28,6 +28,7 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   ARCJET_KEY: "ajkey_checkout_tests",
   ARCJET_MODE: "DRY_RUN",
   STRIPE_SECRET_KEY: "sk_test_checkouttests",
+  STRIPE_WEBHOOK_SECRET: "whsec_checkouttests",
   STRIPE_STARTER_PRICE_ID: "price_startertests",
   STRIPE_CREATOR_PRICE_ID: "price_creatortests",
   STRIPE_PRO_PRICE_ID: "price_protests",
@@ -126,12 +127,14 @@ describe("configuration loaders", () => {
       pro: "price_protests",
       starter: "price_startertests",
     });
+    expect(config.stripe.webhookSecret).toBe("whsec_checkouttests");
   });
 
   it.each([
     "ARCJET_KEY",
     "ARCJET_MODE",
     "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
     "STRIPE_STARTER_PRICE_ID",
     "STRIPE_CREATOR_PRICE_ID",
     "STRIPE_PRO_PRICE_ID",

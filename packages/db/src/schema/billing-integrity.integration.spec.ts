@@ -380,6 +380,94 @@ describeIntegration("billing integrity migrations", () => {
     }
   });
 
+  it("allows the restricted runtime role to grant one verified Stripe purchase idempotently", async () => {
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      "billing-webhook-user",
+      "Billing Webhook User",
+      "billing-webhook@example.test",
+    ]);
+
+    const grantPurchase = (eventId: string) =>
+      runtimePool.query<{ outcome: string }>(
+        `SELECT public.grant_stripe_credit_purchase(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9
+        ) AS outcome`,
+        [
+          eventId,
+          "checkout.session.completed",
+          "billing-webhook-user",
+          "cs_billing_webhook",
+          "pi_billing_webhook",
+          "creator",
+          2500,
+          "usd",
+          100,
+        ],
+      );
+
+    await expect(grantPurchase("evt_billing_webhook")).resolves.toMatchObject({
+      rows: [{ outcome: "granted" }],
+    });
+    await expect(grantPurchase("evt_billing_webhook")).resolves.toMatchObject({
+      rows: [{ outcome: "duplicate_event" }],
+    });
+    await expect(grantPurchase("evt_billing_webhook_replay")).resolves.toMatchObject({
+      rows: [{ outcome: "already_granted" }],
+    });
+
+    const records = await migrationPool.query<{
+      creditsGranted: number;
+      eventId: string;
+      ledgerCount: string;
+      paymentCount: string;
+      status: string;
+    }>(`
+      SELECT
+        payments.credits_granted AS "creditsGranted",
+        payments.stripe_event_id AS "eventId",
+        events.status,
+        (SELECT COUNT(*)::text FROM stripe_payments WHERE stripe_checkout_session_id = 'cs_billing_webhook') AS "paymentCount",
+        (SELECT COUNT(*)::text FROM credit_ledger WHERE idempotency_key = 'stripe-purchase:evt_billing_webhook') AS "ledgerCount"
+      FROM stripe_payments AS payments
+      JOIN stripe_webhook_events AS events ON events.stripe_event_id = payments.stripe_event_id
+      WHERE payments.stripe_checkout_session_id = 'cs_billing_webhook'
+    `);
+
+    expect(records.rows).toEqual([
+      {
+        creditsGranted: 100,
+        eventId: "evt_billing_webhook",
+        ledgerCount: "1",
+        paymentCount: "1",
+        status: "processed",
+      },
+    ]);
+
+    await expect(
+      runtimePool.query(
+        `SELECT public.grant_stripe_credit_purchase(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9
+        )`,
+        [
+          "evt_billing_webhook_invalid",
+          "checkout.session.completed",
+          "billing-webhook-user",
+          "cs_billing_webhook_invalid",
+          "pi_billing_webhook_invalid",
+          "creator",
+          2500,
+          "usd",
+          999,
+        ],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      migrationPool.query("SELECT 1 FROM stripe_webhook_events WHERE stripe_event_id = $1", [
+        "evt_billing_webhook_invalid",
+      ]),
+    ).resolves.toMatchObject({ rowCount: 0 });
+  });
+
   it("returns a user-scoped credit aggregate to the restricted runtime role", async () => {
     await migrationPool.query(
       "INSERT INTO users (id, name, email) VALUES ($1, $2, $3), ($4, $5, $6)",

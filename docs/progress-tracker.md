@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T3 | 14% | — |
+| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T4 | 30% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -284,7 +284,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Start Time | 10:52 |
 | End Date | — |
 | End Time | — |
-| Progress | 20% |
+| Progress | 30% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -303,7 +303,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | MAINT-10 | Alternate landing footer surface from final CTA | Web + Visual Verification | COMPLETED | 2026-07-18 | 11:21 | 2026-07-18 | 11:28 | Footer now uses charcoal while the final CTA remains elevated; desktop and 390px Chrome checks, Prettier, web typecheck, and focused ESLint pass. |
 | MAINT-11 | Tighten landing hero vertical spacing | Web + Visual Verification | COMPLETED | 2026-07-18 | 11:56 | 2026-07-18 | 12:08 | Replaced full-viewport height constraints with content-led spacing; 1440px desktop exposes 272px of the workflow section while mobile media remains fully visible. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31 | 2026-07-17 | 11:38 | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked. |
-| VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
+| VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | IN_PROGRESS | 2026-07-18 | 16:14 | — | — | Raw-body signature verification, trusted pack validation, idempotent database grant routines, focused tests, API typecheck, and live PostgreSQL integration pass; live Stripe test-mode acceptance awaits local test credentials and Price IDs. |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | NOT_STARTED | — | — | — | — | — |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
@@ -839,17 +839,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
+Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
 Last Maintenance Task: MAINT-11 - Tighten landing hero vertical spacing
-Current Status: NOT_STARTED
-Last Completed Task: MAINT-11 - Tighten landing hero vertical spacing
-Next Recommended Task: VS3-T4 - Verify Stripe webhook signature, persist Stripe state idempotently, and grant immutable ledger credits only after a confirmed event.
-Uncommitted Changes: Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. MAINT-11 source and task records are committed.
-Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, browser layout checks, and Git whitespace validation pass.
-Known Blockers: No implementation blocker. Live Checkout acceptance remains deferred until valid local Stripe test key, three Price IDs, and Arcjet key are configured.
-Important Context: MAINT-11 removes `min-h-dvh` and `min-h-[calc(100dvh-4.5rem)]` from the landing hero, retaining the existing content, media, tokens, and responsive behavior. At 1440x900, the hero is 628px tall and exposes 272px of the workflow section; at 390x844, the 798px hero keeps every hero image visible. Chrome console is clean after reload. MAINT-10 retains the footer/CTA surface alternation. VS3-T3 creates a payment-mode Stripe Checkout session only; no payment, customer, ledger, or credit grant occurs before VS3-T4's signature-verified webhook.
-Required Commands Before Continuing: Add valid `STRIPE_WEBHOOK_SECRET`, Stripe test credentials/Price IDs, and Arcjet key to local `.env`; implement T4 webhook signature verification/idempotency and ledger grant tests; run `pnpm ci:check` and a live Stripe test before T4 handoff.
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Next Recommended Task: Populate the five Stripe test-mode values in local `.env`, run the API plus `stripe listen --forward-to http://localhost:4000/api/v1/billing/webhook`, then complete one checkout and confirm a single immutable purchase ledger row. After acceptance, continue with VS3-T4.1.
+Uncommitted Changes: Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. The VS3-T4 webhook implementation and task records are included in this implementation-checkpoint commit.
+Known Failing Tests: None. Focused webhook/config tests, API typecheck, targeted ESLint, PostgreSQL integration tests, and changed-file Prettier pass. Full root typecheck/lint exceed the 60-second command limit after package builds; no failure output was emitted.
+Known Blockers: The local `.env` exists but does not yet contain non-placeholder values for `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, or the three approved Stripe Price IDs. Live Stripe acceptance cannot start until they are configured.
+Important Context: VS3-T4 enables Nest raw-body capture and verifies `Stripe-Signature` before processing. Only signed, completed, paid Checkout sessions with the trusted pack code, USD amount, and `client_reference_id` user correlation call the new owner-authorized grant routine. That routine atomically records the event/payment/ledger entry, serializes checkout-session replays, rejects invalid pack terms, and grants the runtime role execute-only access. Stripe CLI 1.43.8 is installed and authenticated to the RepurposePro sandbox; the remote Stripe MCP planner selected one-time Stripe-hosted Checkout with webhook-driven fulfillment.
+Required Commands Before Continuing: Add the test secret key, webhook signing secret, and Starter/Creator/Pro test Price IDs to local `.env` without committing them; start the API; run `stripe listen --forward-to http://localhost:4000/api/v1/billing/webhook`; configure the returned `whsec_...` value; complete a test Checkout; then run `pnpm ci:check` if time permits and record the live result.
 Last Updated Date: 2026-07-18
-Last Updated Time: 12:08
+Last Updated Time: 16:44
 Last Updated By: Codex
 ```

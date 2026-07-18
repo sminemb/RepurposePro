@@ -78,6 +78,13 @@
       "when": 1784092724159,
       "tag": "0010_harden_runtime_role_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784363098365,
+      "tag": "0011_add_stripe_webhook_credit_grant",
+      "breakpoints": true
     }
   ]
 }

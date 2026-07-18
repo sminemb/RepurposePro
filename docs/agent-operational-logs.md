@@ -212,3 +212,13 @@ Record decisions such as:
 - Decision: remove only full-viewport hero height constraints, then use existing spacing tokens for a content-led layout. Preserve copy, media, CTAs, color tokens, and responsive breakpoint behavior.
 - Verification: Chrome reports 628px hero height and 272px visible workflow content at 1440x900; 390x844 keeps all hero images visible; console is clean after reload.
 - Verification: changed-file Prettier, focused ESLint, web typecheck, and `git diff --check` pass.
+
+---
+
+### VS3-T4 Implementation Checkpoint - 2026-07-18 16:44 Asia/Manila
+
+- Files changed: API raw-body bootstrap; billing webhook controller, Stripe verification gateway, service, and database repository; API config validation; owner-authorized database migration; unit and PostgreSQL integration coverage; task records.
+- Decision: fulfill only `checkout.session.completed` events that are signature-verified, complete, paid, and match one trusted credit pack's code, USD total, and server-created `client_reference_id`. All other valid signed events are persisted as ignored with no grant.
+- Decision: use two `SECURITY DEFINER` owner routines with a fixed search path. The runtime role can execute only the narrow ignored-event or atomic purchase-grant operation; it cannot write the Stripe or ledger tables directly.
+- Verification: focused webhook/config tests (31), API typecheck, targeted ESLint, changed-file Prettier, and PostgreSQL integration tests (7) pass. The integration suite proves a runtime grant is atomic, duplicate event delivery is a no-op, a second event for the same Checkout session cannot mint credits, and altered credit terms roll back without an event record.
+- Limitation: local `.env` currently has no non-placeholder Stripe secret, webhook signing secret, or test Price IDs, so a live Checkout/CLI-forwarded webhook has not run. Full root lint and typecheck exceeded the 60-second command limit after package builds; focused checks passed.

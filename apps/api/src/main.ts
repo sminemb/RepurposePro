@@ -8,7 +8,7 @@ import { AppModule } from "./app.module";
 
 async function bootstrap(): Promise<void> {
   const config = loadApiConfig();
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api/v1");

@@ -48,9 +48,15 @@ const requiredCheckoutValue = (key: string) =>
     .string()
     .trim()
     .min(1)
-    .refine((value) => !["replace-me", "sk_test_replace_me", "price_replace_me"].includes(value), {
-      message: `${key} must not use a placeholder value.`,
-    });
+    .refine(
+      (value) =>
+        !["replace-me", "sk_test_replace_me", "price_replace_me", "whsec_replace_me"].includes(
+          value,
+        ),
+      {
+        message: `${key} must not use a placeholder value.`,
+      },
+    );
 
 const stripeSecretKeySchema = requiredCheckoutValue("STRIPE_SECRET_KEY").regex(
   /^sk_(?:test|live)_[A-Za-z0-9]+$/,
@@ -58,6 +64,10 @@ const stripeSecretKeySchema = requiredCheckoutValue("STRIPE_SECRET_KEY").regex(
 );
 const stripePriceIdSchema = (key: string) =>
   requiredCheckoutValue(key).regex(/^price_[A-Za-z0-9]+$/, "Must be a Stripe Price ID.");
+const stripeWebhookSecretSchema = requiredCheckoutValue("STRIPE_WEBHOOK_SECRET").regex(
+  /^whsec_[A-Za-z0-9]+$/,
+  "Must be a Stripe webhook signing secret.",
+);
 const arcjetKeySchema = requiredCheckoutValue("ARCJET_KEY").regex(
   /^ajkey_[A-Za-z0-9_]+$/,
   "Must be an Arcjet key.",
@@ -98,6 +108,7 @@ const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   STRIPE_SECRET_KEY: stripeSecretKeySchema,
   STRIPE_STARTER_PRICE_ID: stripePriceIdSchema("STRIPE_STARTER_PRICE_ID"),
   STRIPE_SUCCESS_URL: z.string().url(),
+  STRIPE_WEBHOOK_SECRET: stripeWebhookSecretSchema,
 });
 
 const authEnvironmentSchema = z.object({
@@ -152,6 +163,7 @@ export interface ApiConfig extends ServerConfig {
     };
     readonly secretKey: string;
     readonly successUrl: string;
+    readonly webhookSecret: string;
   };
 }
 
@@ -273,6 +285,7 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
       },
       secretKey: parsed.STRIPE_SECRET_KEY,
       successUrl: parsed.STRIPE_SUCCESS_URL,
+      webhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
     },
   };
 }
