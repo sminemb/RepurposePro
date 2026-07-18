@@ -86,7 +86,7 @@ export function FinalCta({ isAuthenticated }: SessionAwareProps) {
           </Link>
         </div>
       </div>
-      <footer className="border-t border-white/8">
+      <footer className="border-t border-white/8 bg-rp-bg">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-8 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
             <BrandMark href="/" />

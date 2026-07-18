@@ -1183,3 +1183,46 @@ Verification:
 Known Limitations:
 
 - No interactive behavior changed.
+
+---
+
+### MAINT-10 - Alternate Landing Footer Surface
+
+Status: COMPLETED
+Start Date: 2026-07-18
+Start Time: 11:21
+End Date: 2026-07-18
+End Time: 11:28
+
+User Outcome:
+
+- Landing footer now alternates to the charcoal page surface instead of inheriting the final CTA background.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- RepurposePro UI, frontend, browser-testing, Git, and caveman skill workflows; current-slice and landing UI documentation review.
+- `pnpm run format:check`
+- `pnpm --filter @repurposepro/web run typecheck`
+- `pnpm lint` (timed out after 120 seconds while root ESLint was running)
+- `./node_modules/.bin/eslint.cmd apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- Chrome desktop and 390px screenshots, computed-style inspection, and console review at `http://localhost:3000/`
+
+Verification:
+
+- PASS: Footer computes to `rgb(11, 13, 18)` (`bg-rp-bg`), distinct from its final CTA parent's elevated surface.
+- PASS: Desktop and 390px screenshots show clean footer/CTA alternation with no responsive overflow.
+- PASS: Repository Prettier, web typecheck, focused ESLint, and Git whitespace validation pass.
+
+Known Limitations:
+
+- Root `pnpm lint` exceeded the 120-second execution limit after package builds completed and before ESLint emitted a finding; the changed file passes focused ESLint.
+- Chrome reports the existing Next.js LCP image warning for `/images/podcast-studio.png`; this task does not alter image loading.

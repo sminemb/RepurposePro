@@ -469,3 +469,23 @@ Last Updated Date: 2026-07-16
 Last Updated Time: 21:40
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-10 Handoff Update - 2026-07-18 11:28 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-10 - Alternate landing footer surface from final CTA
+Next Recommended Task: VS3-T4 - Verify Stripe webhook signature, persist Stripe state idempotently, and grant immutable ledger credits only after a confirmed event.
+Uncommitted Changes: MAINT-10 landing-footer source and task records await commit. Existing apps/web/next-env.d.ts changes predate this task and remain untouched.
+Known Failing Tests: None. Repository Prettier, web typecheck, and focused footer ESLint pass. Root pnpm lint exceeded the 120-second execution limit while root ESLint was running.
+Known Blockers: No implementation blocker.
+Important Context: The footer now uses the existing bg-rp-bg token while the final CTA retains bg-rp-surface/45, restoring landing-section alternation. Desktop and 390px Chrome screenshots and computed styles verify the separation. Chrome has an unrelated existing LCP image warning for /images/podcast-studio.png.
+Required Commands Before Continuing: Commit MAINT-10. Then add valid STRIPE_WEBHOOK_SECRET, Stripe test credentials/Price IDs, and Arcjet key to local .env; implement T4 webhook signature verification/idempotency and ledger-grant tests; run pnpm ci:check and a live Stripe test before T4 handoff.
+Last Updated Date: 2026-07-18
+Last Updated Time: 11:28
+Last Updated By: Codex
+~~~

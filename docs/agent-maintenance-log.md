@@ -319,3 +319,36 @@ Verification:
 Next Recommended Task:
 
 - VS3-T3 - Create Stripe Checkout session and redirect flow.
+
+---
+
+### MAINT-10 - Alternate Landing Footer Surface
+
+Status: COMPLETED
+Start Date: 2026-07-18
+Start Time: 11:21
+End Date: 2026-07-18
+End Time: 11:28
+
+User Outcome:
+
+- Footer alternates to the charcoal page surface while the final CTA remains elevated.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-pricing-cta.tsx`
+- Agent task records
+
+Verification:
+
+- PASS: Desktop and 390px Chrome screenshots and computed style inspection confirm separated footer/CTA surfaces.
+- PASS: Repository Prettier, web typecheck, focused ESLint, and Git whitespace checks pass.
+
+Known Limitations:
+
+- Root `pnpm lint` exceeded the 120-second execution limit while ESLint was running. The changed source passes focused ESLint.
+- Existing Next.js LCP warning for `/images/podcast-studio.png` remains outside this task.
+
+Next Recommended Task:
+
+- VS3-T4 - Verify Stripe webhook signature and idempotently grant credits.
