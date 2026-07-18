@@ -189,6 +189,7 @@ Record decisions such as:
 - Decision: apply the existing `bg-rp-bg` token only to the footer so it alternates from the final CTA's `bg-rp-surface/45` surface.
 - Verification: desktop and 390px Chrome screenshots plus computed styles confirm charcoal footer and elevated CTA contrast; Prettier, web typecheck, focused ESLint, and Git whitespace checks pass.
 - Limitation: root `pnpm lint` exceeded the 120-second command limit after package builds while ESLint was running; focused changed-file lint passes. Chrome's existing LCP image warning remains out of scope.
+- Commit: `98339d0` (`fix(marketing): alternate landing footer surface`) contains the completed source update and initial task records.
 
 ---
 

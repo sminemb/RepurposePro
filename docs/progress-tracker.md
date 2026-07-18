@@ -843,12 +843,12 @@ Last Maintenance Task: MAINT-10 - Alternate landing footer surface from final CT
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-10 - Alternate landing footer surface from final CTA
 Next Recommended Task: VS3-T4 - Verify Stripe webhook signature, persist Stripe state idempotently, and grant immutable ledger credits only after a confirmed event.
-Uncommitted Changes: MAINT-10 landing-footer source and task records await commit. Existing `apps/web/next-env.d.ts` changes predate this task and remain untouched.
+Uncommitted Changes: Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. MAINT-10 source and task records are committed as `98339d0`.
 Known Failing Tests: None. Repository Prettier, web typecheck, and focused landing-footer ESLint pass. The full `pnpm lint` wrapper exceeded the 120-second command limit after package builds completed and before ESLint produced findings.
 Known Blockers: No implementation blocker. Live Checkout acceptance remains deferred until valid local Stripe test key, three Price IDs, and Arcjet key are configured.
 Important Context: MAINT-10 adds the existing `bg-rp-bg` token to the landing footer, alternating its charcoal surface from the final CTA's `bg-rp-surface/45` background. Chrome checks at desktop and 390px confirm distinct computed backgrounds and responsive layout. Chrome still reports an unrelated pre-existing LCP image warning for `/images/podcast-studio.png`; it was not changed in this narrowly scoped task. VS3-T3 creates a payment-mode Stripe Checkout session only. API identity, email, Price ID, and user/pack correlation metadata are server-derived; the client sends only a pack code. Arcjet enforces three attempts per authenticated user per minute. No database payment/customer/ledger write or credit grant occurs before VS3-T4's signature-verified webhook. The web CTA disables while pending, shows safe errors, redirects only to a returned `https://checkout.stripe.com` URL, and labels the success redirect as webhook-pending.
 Required Commands Before Continuing: Add valid `STRIPE_WEBHOOK_SECRET`, Stripe test credentials/Price IDs, and Arcjet key to local `.env`; implement T4 webhook signature verification/idempotency and ledger grant tests; run `pnpm ci:check` and a live Stripe test before T4 handoff.
 Last Updated Date: 2026-07-18
-Last Updated Time: 11:28
+Last Updated Time: 11:31
 Last Updated By: Codex
 ```
