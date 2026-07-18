@@ -203,3 +203,12 @@ Record decisions such as:
 - Dependency decision: pin `@arcjet/node` to `1.5.0` because its `>=20` Node engine preserves the repository's Node 22.18 support; later Arcjet releases require Node 22.21 or newer.
 - Failure resolved: existing project tests load API configuration and needed safe syntactically valid Checkout environment values after configuration became fail-closed; updated their test-local environment only.
 - Browser note: the Windows sandbox denied detached local dev-server startup, so no live browser session was available. Focused web boundary tests and the production build verify the UI code; live Stripe/Arcjet credentials remain required for acceptance.
+
+---
+
+### MAINT-11 Operational Update - 2026-07-18 12:08 Asia/Manila
+
+- Files changed: `landing-hero-workflow.tsx` and MAINT-11 task records.
+- Decision: remove only full-viewport hero height constraints, then use existing spacing tokens for a content-led layout. Preserve copy, media, CTAs, color tokens, and responsive breakpoint behavior.
+- Verification: Chrome reports 628px hero height and 272px visible workflow content at 1440x900; 390x844 keeps all hero images visible; console is clean after reload.
+- Verification: changed-file Prettier, focused ESLint, web typecheck, and `git diff --check` pass.

@@ -301,6 +301,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | MAINT-8 | Remove landing-page ambient glow | Web + Visual Verification | COMPLETED | 2026-07-16 | 21:20 | 2026-07-16 | 21:31 | Removed hero and final-CTA radial gradients; Chrome confirms both sections have no ambient spots and console is clean. |
 | MAINT-9 | Alternate landing navigation surface from hero | Web + Visual Verification | COMPLETED | 2026-07-16 | 21:33 | 2026-07-16 | 21:36 | Navigation uses the elevated slate surface while the hero keeps the charcoal background; Chrome screenshot and console check pass. |
 | MAINT-10 | Alternate landing footer surface from final CTA | Web + Visual Verification | COMPLETED | 2026-07-18 | 11:21 | 2026-07-18 | 11:28 | Footer now uses charcoal while the final CTA remains elevated; desktop and 390px Chrome checks, Prettier, web typecheck, and focused ESLint pass. |
+| MAINT-11 | Tighten landing hero vertical spacing | Web + Visual Verification | COMPLETED | 2026-07-18 | 11:56 | 2026-07-18 | 12:08 | Replaced full-viewport height constraints with content-led spacing; 1440px desktop exposes 272px of the workflow section while mobile media remains fully visible. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31 | 2026-07-17 | 11:38 | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked. |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | NOT_STARTED | — | — | — | — | — |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
@@ -839,16 +840,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
-Last Maintenance Task: MAINT-10 - Alternate landing footer surface from final CTA
+Last Maintenance Task: MAINT-11 - Tighten landing hero vertical spacing
 Current Status: NOT_STARTED
-Last Completed Task: MAINT-10 - Alternate landing footer surface from final CTA
+Last Completed Task: MAINT-11 - Tighten landing hero vertical spacing
 Next Recommended Task: VS3-T4 - Verify Stripe webhook signature, persist Stripe state idempotently, and grant immutable ledger credits only after a confirmed event.
-Uncommitted Changes: Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. MAINT-10 source and task records are committed as `98339d0`.
-Known Failing Tests: None. Repository Prettier, web typecheck, and focused landing-footer ESLint pass. The full `pnpm lint` wrapper exceeded the 120-second command limit after package builds completed and before ESLint produced findings.
+Uncommitted Changes: Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. MAINT-11 source and task records are committed.
+Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, browser layout checks, and Git whitespace validation pass.
 Known Blockers: No implementation blocker. Live Checkout acceptance remains deferred until valid local Stripe test key, three Price IDs, and Arcjet key are configured.
-Important Context: MAINT-10 adds the existing `bg-rp-bg` token to the landing footer, alternating its charcoal surface from the final CTA's `bg-rp-surface/45` background. Chrome checks at desktop and 390px confirm distinct computed backgrounds and responsive layout. Chrome still reports an unrelated pre-existing LCP image warning for `/images/podcast-studio.png`; it was not changed in this narrowly scoped task. VS3-T3 creates a payment-mode Stripe Checkout session only. API identity, email, Price ID, and user/pack correlation metadata are server-derived; the client sends only a pack code. Arcjet enforces three attempts per authenticated user per minute. No database payment/customer/ledger write or credit grant occurs before VS3-T4's signature-verified webhook. The web CTA disables while pending, shows safe errors, redirects only to a returned `https://checkout.stripe.com` URL, and labels the success redirect as webhook-pending.
+Important Context: MAINT-11 removes `min-h-dvh` and `min-h-[calc(100dvh-4.5rem)]` from the landing hero, retaining the existing content, media, tokens, and responsive behavior. At 1440x900, the hero is 628px tall and exposes 272px of the workflow section; at 390x844, the 798px hero keeps every hero image visible. Chrome console is clean after reload. MAINT-10 retains the footer/CTA surface alternation. VS3-T3 creates a payment-mode Stripe Checkout session only; no payment, customer, ledger, or credit grant occurs before VS3-T4's signature-verified webhook.
 Required Commands Before Continuing: Add valid `STRIPE_WEBHOOK_SECRET`, Stripe test credentials/Price IDs, and Arcjet key to local `.env`; implement T4 webhook signature verification/idempotency and ledger grant tests; run `pnpm ci:check` and a live Stripe test before T4 handoff.
 Last Updated Date: 2026-07-18
-Last Updated Time: 11:31
+Last Updated Time: 12:08
 Last Updated By: Codex
 ```

@@ -1226,3 +1226,44 @@ Known Limitations:
 
 - Root `pnpm lint` exceeded the 120-second execution limit after package builds completed and before ESLint emitted a finding; the changed file passes focused ESLint.
 - Chrome reports the existing Next.js LCP image warning for `/images/podcast-studio.png`; this task does not alter image loading.
+
+---
+
+### MAINT-11 - Tighten Landing Hero Vertical Spacing
+
+Status: COMPLETED
+Start Date: 2026-07-18
+Start Time: 11:56
+End Date: 2026-07-18
+End Time: 12:08
+
+User Outcome:
+
+- Landing hero no longer consumes an entire viewport; the workflow begins within desktop first view while mobile hero media remains visible.
+
+Files Changed:
+
+- `apps/web/features/marketing/components/landing-hero-workflow.tsx`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+- `docs/agent-maintenance-log.md`
+
+Commands Run:
+
+- Chrome layout and console checks at `http://localhost:3000/` for 1440x900 and 390x844 viewports
+- `node_modules/.bin/prettier.cmd --check` on changed source and tracker
+- `node_modules/.bin/eslint.cmd apps/web/features/marketing/components/landing-hero-workflow.tsx`
+- `pnpm --filter @repurposepro/web run typecheck`
+- `git diff --check`
+
+Verification:
+
+- PASS: Desktop hero is 628px tall at 1440x900 and exposes 272px of the workflow section.
+- PASS: Mobile hero is 798px tall at 390x844; all hero images remain fully visible.
+- PASS: Chrome console is clean after reload; changed-file Prettier, focused ESLint, web typecheck, and Git whitespace validation pass.
+
+Known Limitations:
+
+- No behavioral logic changed, so no automated unit test was added.

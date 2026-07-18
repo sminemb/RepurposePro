@@ -8,9 +8,9 @@ interface SessionAwareProps {
 
 export function LandingHero({ isAuthenticated }: SessionAwareProps) {
   return (
-    <section className="relative isolate min-h-dvh overflow-hidden pt-18">
-      <div className="mx-auto grid min-h-[calc(100dvh-4.5rem)] max-w-7xl items-end gap-10 px-5 pb-12 pt-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-10 lg:pb-16">
-        <div className="relative z-10 max-w-2xl lg:pb-8">
+    <section className="relative isolate overflow-hidden pt-18">
+      <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:px-10 lg:pb-20 lg:pt-16">
+        <div className="relative z-10 max-w-2xl">
           <p className="mb-5 text-sm font-medium text-rp-primary">AI-assisted video repurposing</p>
           <h1 className="text-5xl font-semibold leading-[0.98] tracking-[-0.065em] text-rp-text sm:text-6xl lg:text-6xl xl:text-7xl">
             Turn long videos into <span className="text-rp-primary">high-performing clips.</span>

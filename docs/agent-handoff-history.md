@@ -232,6 +232,26 @@ Last Updated By: Codex
 
 ---
 
+### MAINT-11 Handoff Update - 2026-07-18 12:08 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-11 - Tighten landing hero vertical spacing
+Next Recommended Task: Verify Stripe webhook signatures and idempotently grant immutable ledger credits in VS3-T4.
+Uncommitted Changes: Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged. MAINT-11 source and task records are committed.
+Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, browser layout checks, and Git whitespace validation pass.
+Known Blockers: No implementation blocker. VS3-T4 live acceptance still needs valid Stripe test credentials, Price IDs, Stripe webhook secret, and Arcjet key.
+Important Context: Hero layout is content-led: full-viewport min-height classes are removed. At 1440x900 it is 628px tall with 272px of workflow content visible; at 390x844 all hero media remains visible. Chrome console is clean after reload.
+Required Commands Before Continuing: Add valid Stripe and Arcjet local environment values, implement VS3-T4 webhook idempotency tests, and run pnpm ci:check plus a live Stripe test before T4 handoff.
+Last Updated Date: 2026-07-18
+Last Updated Time: 12:08
+Last Updated By: Codex
+~~~
+
+---
+
 ### MAINT-8 Handoff Update - 2026-07-16 21:31 Asia/Manila
 
 ~~~text

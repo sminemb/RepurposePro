@@ -352,3 +352,16 @@ Known Limitations:
 Next Recommended Task:
 
 - VS3-T4 - Verify Stripe webhook signature and idempotently grant credits.
+
+---
+
+### MAINT-11 - Tighten Landing Hero Vertical Spacing
+
+Date: 2026-07-18
+Time: 12:08 Asia/Manila
+Status: COMPLETED
+
+- Scope: landing hero layout only.
+- Change: removed full-viewport height constraints and applied existing content-led vertical spacing.
+- Verification: Chrome desktop and mobile layout checks, clean console, changed-file Prettier, focused ESLint, web typecheck, and Git whitespace validation pass.
+- Next: resume VS3-T4 webhook idempotency work.
