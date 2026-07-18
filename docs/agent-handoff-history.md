@@ -547,3 +547,23 @@ Last Updated Date: 2026-07-18
 Last Updated Time: 16:44
 Last Updated By: Codex
 ~~~
+
+---
+
+### VS3-T4 Stripe Price Provisioning Handoff Update - 2026-07-18 17:37 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Next Recommended Task: Copy the three newly created test Price IDs into .env, add the test secret and CLI listener signing secrets, complete one Checkout, verify the single purchase ledger row, then begin VS3-T4.1.
+Uncommitted Changes: Stripe price-provisioning task records await commit. Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged.
+Known Failing Tests: None. The provisioned prices are active, one-time, USD sandbox objects with their required $10/$25/$50 amounts. Automated webhook/config, typecheck, lint, Prettier, and PostgreSQL checks remain green from the implementation checkpoint.
+Known Blockers: The three Price IDs are created but not stored in local .env. STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are also unset; no live Checkout should start until all five values are configured.
+Important Context: The RepurposePro sandbox now has Starter (40 credits/$10), Creator (100 credits/$25), and Pro (200 credits/$50) one-time price objects. Each product/price includes matching pack_code metadata. The source-controlled application retains the trusted pack mapping and never reads price or credit input from the browser.
+Required Commands Before Continuing: Paste the three returned price_ IDs and sk_test_ key into .env. Run `stripe listen --forward-to http://localhost:4000/api/v1/billing/webhook`, set its returned whsec_ value in .env, start the API, complete a test Checkout, and record the resulting credit balance and immutable ledger row.
+Last Updated Date: 2026-07-18
+Last Updated Time: 17:37
+Last Updated By: Codex
+~~~

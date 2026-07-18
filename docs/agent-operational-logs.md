@@ -222,3 +222,11 @@ Record decisions such as:
 - Decision: use two `SECURITY DEFINER` owner routines with a fixed search path. The runtime role can execute only the narrow ignored-event or atomic purchase-grant operation; it cannot write the Stripe or ledger tables directly.
 - Verification: focused webhook/config tests (31), API typecheck, targeted ESLint, changed-file Prettier, and PostgreSQL integration tests (7) pass. The integration suite proves a runtime grant is atomic, duplicate event delivery is a no-op, a second event for the same Checkout session cannot mint credits, and altered credit terms roll back without an event record.
 - Limitation: local `.env` currently has no non-placeholder Stripe secret, webhook signing secret, or test Price IDs, so a live Checkout/CLI-forwarded webhook has not run. Full root lint and typecheck exceeded the 60-second command limit after package builds; focused checks passed.
+
+---
+
+### VS3-T4 Stripe Price Provisioning - 2026-07-18 17:37 Asia/Manila
+
+- Created in the RepurposePro sandbox: three active one-time USD prices, each on its own product: Starter ($10.00, 40 credits), Creator ($25.00, 100 credits), and Pro ($50.00, 200 credits).
+- Metadata: each price and product carries the matching `pack_code` (`starter`, `creator`, or `pro`) for dashboard auditability. The application continues to use its server-side trusted pack mapping rather than accepting this metadata from a client.
+- Next: copy the three returned IDs only into local `.env`, then add the test secret key and CLI listener signing secret before running the live Checkout/webhook acceptance test. No secret or environment value was written to the repository.
