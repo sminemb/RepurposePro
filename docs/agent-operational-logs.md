@@ -230,3 +230,22 @@ Record decisions such as:
 - Created in the RepurposePro sandbox: three active one-time USD prices, each on its own product: Starter ($10.00, 40 credits), Creator ($25.00, 100 credits), and Pro ($50.00, 200 credits).
 - Metadata: each price and product carries the matching `pack_code` (`starter`, `creator`, or `pro`) for dashboard auditability. The application continues to use its server-side trusted pack mapping rather than accepting this metadata from a client.
 - Next: copy the three returned IDs only into local `.env`, then add the test secret key and CLI listener signing secret before running the live Checkout/webhook acceptance test. No secret or environment value was written to the repository.
+
+---
+
+### VS3-T4 Live Acceptance Checkpoint - 2026-07-18 18:02 Asia/Manila
+
+- Environment: local ignored Stripe values are configured; Stripe CLI 1.43.8 listener forwards to the existing RepurposePro API on port 4000.
+- Verification: a signed Stripe test-mode `customer.created` event reached `POST /api/v1/billing/webhook` and received HTTP 200. This proves raw-body capture, Stripe signature verification, and CLI forwarding work together before financial fulfillment.
+- Decision: reuse the already-running `apps/api/dist/main` process after confirming it is the RepurposePro API. Do not stop a pre-existing workspace process solely to reload it.
+- Blocker: the in-app Billing route redirects to login and no test account session is available. Live credit-purchase acceptance awaits user-provided test credentials or approval to create a dedicated local test account.
+
+---
+
+### VS3-T4 Completion - 2026-07-18 18:21 Asia/Manila
+
+- Outcome: authenticated Billing Checkout completed a Starter test purchase and showed the balance rising from 0 to 40 credits.
+- Verification: signed `checkout.session.completed` delivery and an exact Stripe event replay each returned HTTP 200. Live database reads confirm one paid payment, one processed webhook event, one immutable 40-credit purchase ledger row, and balance 40.
+- Security: an unsigned local webhook request returned HTTP 400. No Stripe secret, personal data, or payment data was written to repository records.
+- Verification: `pnpm ci:check` PASS — format, lint, strict typecheck, 174 unit tests, 7 PostgreSQL integration tests, and production builds. The pre-existing Next NFT tracing warning did not fail the build.
+- Cleanup: stopped the temporary Stripe CLI listener after acceptance. The pre-existing RepurposePro API process remains untouched.

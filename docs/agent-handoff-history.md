@@ -230,6 +230,46 @@ Last Updated Time: 19:01
 Last Updated By: Codex
 ~~~
 
+---
+
+### VS3-T4 Completion Handoff - 2026-07-18 18:21 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
+Next Recommended Task: Build VS3-T4.1 from the first real webhook-granted purchase: user-scoped immutable ledger API and transaction-history UI, with no fake empty purchase state.
+Uncommitted Changes: None expected after committing this handoff. Local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes format, lint, strict typecheck, 174 unit tests, 7 PostgreSQL integration tests, and production builds.
+Known Blockers: None.
+Important Context: Starter test Checkout raised Billing balance from 0 to 40. The completed webhook and exact replay both returned HTTP 200. Database evidence remains exactly one paid payment, one processed event, and one immutable 40-credit purchase ledger row. Temporary Stripe listener stopped after verification; pre-existing API process remains untouched.
+Required Commands Before Continuing: Run pnpm ci:check after new code. Start Stripe CLI only when another live-payment acceptance is needed.
+Last Updated Date: 2026-07-18
+Last Updated Time: 18:21
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T4 Live Acceptance Checkpoint - 2026-07-18 18:02 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T3 - Create Stripe Checkout session and redirect flow
+Next Recommended Task: Sign into Billing with a dedicated test account, complete one Starter test Checkout, replay its exact Stripe event, verify one payment and ledger grant, then begin VS3-T4.1.
+Uncommitted Changes: Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged. Local .env changes are ignored and must not be committed.
+Known Failing Tests: None. A signed non-financial Stripe test event reached the existing RepurposePro API and returned HTTP 200.
+Known Blockers: Billing requires an authenticated test user. No credentials or usable in-app Browser session are available.
+Important Context: Stripe CLI listener is active and forwarding to the API on port 4000. Existing API process was verified as apps/api/dist/main. A signed customer.created test event proves listener forwarding, raw body capture, and signature validation are live; it was recorded as an ignored event without granting credits.
+Required Commands Before Continuing: Use the active listener and API. Authenticate in Billing, buy the Starter test pack, resend its exact event with stripe events resend <eventId>, inspect balance/payment/ledger state, then run pnpm ci:check.
+Last Updated Date: 2026-07-18
+Last Updated Time: 18:02
+Last Updated By: Codex
+~~~
+
 ### MAINT-11 Handoff Update - 2026-07-18 12:08 Asia/Manila
 
 ~~~text

@@ -1267,3 +1267,46 @@ Verification:
 Known Limitations:
 
 - No behavioral logic changed, so no automated unit test was added.
+
+---
+
+### VS3-T4 - Verify Stripe Webhook Signature and Idempotently Grant Credits
+
+Status: COMPLETED
+Start Date: 2026-07-18
+Start Time: 16:14
+End Date: 2026-07-18
+End Time: 18:21
+
+User Outcome:
+
+- An authenticated user completed a Starter Stripe test-mode Checkout and returned to Billing with 40 credits available.
+
+Files Changed:
+
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- Stripe CLI listener forwarding to `http://localhost:4000/api/v1/billing/webhook`
+- Stripe test-mode Starter Checkout through Billing UI
+- `stripe events resend <completed-event-id>`
+- Local unsigned webhook HTTP check
+- Parameterized read-only PostgreSQL verification query
+- `pnpm ci:check`
+- Changed-document Prettier and Git whitespace checks
+
+Verification:
+
+- PASS: valid signed `checkout.session.completed` webhook returns HTTP 200 and grants 40 credits once.
+- PASS: replaying the identical event returns HTTP 200 without another payment, processed-event, purchase-ledger, or balance increase.
+- PASS: live database holds one paid Starter payment, one processed webhook event, one immutable 40-credit purchase ledger row, and user balance 40.
+- PASS: unsigned live webhook returns HTTP 400 with no financial mutation.
+- PASS: `pnpm ci:check` passes format, lint, strict typecheck, 174 unit tests, 7 PostgreSQL integration tests, and production builds.
+
+Known Limitations:
+
+- Next.js production build emits its existing non-fatal NFT tracing warning from `apps/web/next.config.ts`; CI still passes.
