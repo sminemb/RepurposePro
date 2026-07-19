@@ -271,3 +271,11 @@ Record decisions such as:
 - Verification: direct unit coverage, live database/API integration, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db-integration`, changed-file Prettier, and `pnpm ci:check` all pass. CI reports 208 unit tests (13 skipped) and 13 PostgreSQL integration tests.
 - Failure resolved: test UUIDs must satisfy the strict RFC UUID parser; corrected API fixtures. Added the processing test pattern to the API ESLint test project and removed a no-unsafe matcher value.
 - Limitation: initial job state is database-queued only; VS3-T6 owns BullMQ enqueue/recovery. Existing Next NFT tracing warning remains non-fatal.
+
+---
+
+### MAINT-12 Documentation Reconciliation - 2026-07-19 11:58 Asia/Manila
+
+- Files changed: progress tracker, maintenance log, operational log, and handoff history.
+- Change: reconciled VS3-T5 completion, acceptance criteria, and the authoritative live handoff; retained a dated correction next to the stale initial table row rather than rewriting the historical start record.
+- Verification: changed-document Prettier check and `git diff --check` pass.

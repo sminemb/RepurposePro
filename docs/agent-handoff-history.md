@@ -638,12 +638,32 @@ Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Current Status: NOT_STARTED
 Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
 Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add safe recovery behavior without changing financial state.
-Uncommitted Changes: VS3-T5 source, tests, contracts, migrations, and task records are included in the completed-task commit. Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged. Local .env remains ignored and must never be committed.
+Uncommitted Changes: No intended uncommitted changes remain after the MAINT-12 documentation commit; local .env remains ignored and must never be committed.
 Known Failing Tests: None. pnpm ci:check passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
 Known Blockers: None.
 Important Context: POST /api/v1/projects/:projectId/analyze requires exactly { "confirmed": true }, derives ownership from the server session, and rate-limits three starts per user/minute. public.start_paid_video_analysis(text, uuid) is a fixed-search-path SECURITY DEFINER routine owned by repurposepro_owner; it locks per-user credit activity, creates one queued job/deduction/project update atomically, conceals foreign projects, and returns a stored queued/active job on retries. BullMQ enqueue is intentionally deferred to VS3-T6.
 Required Commands Before Continuing: Run pnpm ci:check after VS3-T6 changes. Add BullMQ enqueue only after the durable queued job exists; pass IDs only and do not deduct/refund credits in queue producers or workers.
 Last Updated Date: 2026-07-19
 Last Updated Time: 11:44
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T5 Documentation Reconciliation Snapshot - 2026-07-19 11:58 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T6 - Enqueue analysis job in BullMQ
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add safe recovery behavior without changing financial state.
+Uncommitted Changes: Documentation reconciliation is in progress. No application source changes are uncommitted; local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
+Known Blockers: None.
+Important Context: The VS3-T5 completion records now supersede the stale in-progress task-table entry. The canonical live handoff remains VS3-T6, while BullMQ enqueue stays intentionally deferred.
+Required Commands Before Continuing: Commit this documentation reconciliation. Then run pnpm ci:check after VS3-T6 changes.
+Last Updated Date: 2026-07-19
+Last Updated Time: 11:58
 Last Updated By: Codex
 ~~~

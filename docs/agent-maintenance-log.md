@@ -365,3 +365,16 @@ Status: COMPLETED
 - Change: removed full-viewport height constraints and applied existing content-led vertical spacing.
 - Verification: Chrome desktop and mobile layout checks, clean console, changed-file Prettier, focused ESLint, web typecheck, and Git whitespace validation pass.
 - Next: resume VS3-T4 webhook idempotency work.
+
+---
+
+### MAINT-12 - Reconcile VS3-T5 Completion Records
+
+Date: 2026-07-19
+Time: 11:58 Asia/Manila
+Status: COMPLETED
+
+- Scope: VS3 progress tracker, live handoff state, and handoff archive only.
+- Change: recorded the completed VS3-T5 outcome, acceptance criteria, VS3-T6 next task, latest verification, and a dated correction adjacent to the stale initial task-table row.
+- Verification: changed-document Prettier check and `git diff --check` pass.
+- Next: VS3-T6 - enqueue the durable queued analysis job in BullMQ without changing financial state.
