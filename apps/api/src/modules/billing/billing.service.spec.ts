@@ -4,9 +4,11 @@ import type { DatabaseService } from "../infrastructure/database.service";
 import {
   BillingBalanceInvalidError,
   BillingCreditsUnavailableError,
+  BillingLedgerUnavailableError,
   BillingService,
   parseLedgerBalance,
 } from "./billing.service";
+import { decodeLedgerCursor } from "./billing.contracts";
 
 function createDatabase(balance: unknown, failure?: Error): DatabaseService {
   const where = failure
@@ -20,6 +22,16 @@ function createDatabase(balance: unknown, failure?: Error): DatabaseService {
 
 function createDatabaseRows(rows: readonly unknown[]): DatabaseService {
   const where = vi.fn().mockResolvedValue(rows);
+  const from = vi.fn().mockReturnValue({ where });
+  const select = vi.fn().mockReturnValue({ from });
+
+  return { database: { db: { select } } } as unknown as DatabaseService;
+}
+
+function createLedgerDatabase(rows: readonly unknown[], failure?: Error): DatabaseService {
+  const limit = failure ? vi.fn().mockRejectedValue(failure) : vi.fn().mockResolvedValue(rows);
+  const orderBy = vi.fn().mockReturnValue({ limit });
+  const where = vi.fn().mockReturnValue({ orderBy });
   const from = vi.fn().mockReturnValue({ where });
   const select = vi.fn().mockReturnValue({ from });
 
@@ -81,6 +93,73 @@ describe("BillingService.getCreditBalance", () => {
 
     await expect(service.getCreditBalance("user-1")).rejects.toBeInstanceOf(
       BillingCreditsUnavailableError,
+    );
+  });
+});
+
+describe("BillingService.getCreditLedger", () => {
+  it("returns a newest-first owned page with an opaque continuation cursor", async () => {
+    const service = new BillingService(
+      createLedgerDatabase([
+        {
+          amount: 40,
+          createdAt: new Date("2026-07-19T00:10:00.000Z"),
+          description: "Purchased Starter credits",
+          id: "00000000-0000-0000-0000-000000000003",
+          projectId: null,
+          type: "purchase",
+        },
+        {
+          amount: -11,
+          createdAt: new Date("2026-07-18T00:10:00.000Z"),
+          description: "Processed Creator Podcast",
+          id: "00000000-0000-0000-0000-000000000002",
+          projectId: "00000000-0000-0000-0000-000000000001",
+          type: "processing_deduction",
+        },
+        {
+          amount: 11,
+          createdAt: new Date("2026-07-17T00:10:00.000Z"),
+          description: "Refunded failed processing",
+          id: "00000000-0000-0000-0000-000000000001",
+          projectId: "00000000-0000-0000-0000-000000000001",
+          type: "refund",
+        },
+      ]),
+    );
+
+    const result = await service.getCreditLedger("user-1", { limit: 2 });
+
+    expect(result.data).toEqual([
+      {
+        amount: 40,
+        createdAt: "2026-07-19T00:10:00.000Z",
+        description: "Purchased Starter credits",
+        id: "00000000-0000-0000-0000-000000000003",
+        projectId: null,
+        type: "purchase",
+      },
+      {
+        amount: -11,
+        createdAt: "2026-07-18T00:10:00.000Z",
+        description: "Processed Creator Podcast",
+        id: "00000000-0000-0000-0000-000000000002",
+        projectId: "00000000-0000-0000-0000-000000000001",
+        type: "processing_deduction",
+      },
+    ]);
+    expect(result.meta.nextCursor).not.toBeNull();
+    expect(decodeLedgerCursor(result.meta.nextCursor ?? "")).toEqual({
+      createdAt: "2026-07-18T00:10:00.000Z",
+      id: "00000000-0000-0000-0000-000000000002",
+    });
+  });
+
+  it("converts ledger read failures into a safe availability error", async () => {
+    const service = new BillingService(createLedgerDatabase([], new Error("database unavailable")));
+
+    await expect(service.getCreditLedger("user-1", { limit: 20 })).rejects.toBeInstanceOf(
+      BillingLedgerUnavailableError,
     );
   });
 });

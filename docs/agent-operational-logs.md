@@ -249,3 +249,13 @@ Record decisions such as:
 - Security: an unsigned local webhook request returned HTTP 400. No Stripe secret, personal data, or payment data was written to repository records.
 - Verification: `pnpm ci:check` PASS — format, lint, strict typecheck, 174 unit tests, 7 PostgreSQL integration tests, and production builds. The pre-existing Next NFT tracing warning did not fail the build.
 - Cleanup: stopped the temporary Stripe CLI listener after acceptance. The pre-existing RepurposePro API process remains untouched.
+
+---
+
+### VS3-T4.1 Operational Update - 2026-07-19 08:49 Asia/Manila
+
+- Files changed: shared billing contracts; Billing API query parser, controller, service, unit/integration coverage; web ledger API/action/format/table/page; API contract; task records.
+- Decision: use an opaque base64url cursor over `(createdAt, id)` with descending timestamp/ID ordering and one extra database row for stable, non-repeating page boundaries. Keep the existing immutable ledger and schema unchanged.
+- Security: derive ledger ownership exclusively from the authenticated request; return only safe entry fields; mark responses `Cache-Control: private, no-store`; reject malformed query data with a safe 400 and database read failures with a safe 503.
+- Verification: unit tests (194 passed, 8 skipped), PostgreSQL integration (8 passed), strict typecheck, production builds, changed-file Prettier, and changed-file ESLint pass. Desktop table and 390px mobile card-list browser checks display the real Starter purchase with a clean console.
+- Limitation: `pnpm ci:check` reached formatting and package builds, then its repository-wide ESLint stage exceeded the 2-minute command limit. Retried `pnpm lint` with a 5-minute limit; it emitted no further diagnostic before timing out. Focused changed-file ESLint passes.

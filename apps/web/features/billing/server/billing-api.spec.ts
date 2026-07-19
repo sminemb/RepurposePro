@@ -5,7 +5,7 @@ const { requestApiMock } = vi.hoisted(() => ({ requestApiMock: vi.fn() }));
 vi.mock("@/lib/server-api", () => ({ requestApi: requestApiMock }));
 vi.mock("server-only", () => ({}));
 
-import { createCheckoutSession, getCreditBalance } from "./billing-api";
+import { createCheckoutSession, getCreditBalance, getCreditLedger } from "./billing-api";
 
 describe("getCreditBalance", () => {
   beforeEach(() => {
@@ -75,5 +75,47 @@ describe("createCheckoutSession", () => {
       kind: "unavailable",
       message: "Checkout is temporarily unavailable. Try again.",
     });
+  });
+});
+
+describe("getCreditLedger", () => {
+  beforeEach(() => {
+    requestApiMock.mockReset();
+  });
+
+  it("returns the documented immutable ledger page without inventing records", async () => {
+    requestApiMock.mockResolvedValue(
+      Response.json({
+        data: [
+          {
+            amount: 40,
+            createdAt: "2026-07-19T00:10:00.000Z",
+            description: "Purchased Starter credits",
+            id: "00000000-0000-0000-0000-000000000001",
+            projectId: null,
+            type: "purchase",
+          },
+        ],
+        meta: { nextCursor: "eyJjcmVhdGVkQXQiOiIyMDI2LTA3LTE5VDAwOjEwOjAwLjAwMFoifQ" },
+      }),
+    );
+
+    await expect(getCreditLedger()).resolves.toMatchObject({
+      kind: "success",
+      page: {
+        data: [expect.objectContaining({ amount: 40, type: "purchase" })],
+      },
+    });
+    expect(requestApiMock).toHaveBeenCalledWith("/billing/ledger");
+  });
+
+  it("passes opaque cursors unchanged and treats malformed responses as unavailable", async () => {
+    requestApiMock.mockResolvedValue(Response.json({ data: [], meta: { nextCursor: 42 } }));
+
+    await expect(getCreditLedger({ cursor: "opaque-cursor" })).resolves.toEqual({
+      kind: "unavailable",
+      message: "We could not load your credit history. Refresh the page to try again.",
+    });
+    expect(requestApiMock).toHaveBeenCalledWith("/billing/ledger?cursor=opaque-cursor");
   });
 });

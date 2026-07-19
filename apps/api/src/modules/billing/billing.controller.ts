@@ -1,9 +1,11 @@
-import type { ApiSuccess, CreditBalance } from "@repurposepro/shared";
+import type { ApiSuccess, CreditBalance, CreditLedgerPage } from "@repurposepro/shared";
 import {
+  BadRequestException,
   Controller,
   Get,
   Header,
   InternalServerErrorException,
+  Query,
   Req,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -14,8 +16,14 @@ import { AuthGuard, type AuthenticatedRequest } from "../auth/auth.guard";
 import {
   BillingBalanceInvalidError,
   BillingCreditsUnavailableError,
+  BillingLedgerUnavailableError,
   BillingService,
 } from "./billing.service";
+import {
+  BillingLedgerContractValidationError,
+  parseLedgerListInput,
+  type LedgerListInput,
+} from "./billing.contracts";
 
 @Controller("billing")
 @UseGuards(AuthGuard)
@@ -45,6 +53,51 @@ export class BillingController {
             code: "BILLING_BALANCE_INVALID",
             details: null,
             message: "We could not verify your credit balance. Try again.",
+            requestId: request.id ?? "req_unknown",
+          },
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  @Get("ledger")
+  @Header("Cache-Control", "private, no-store")
+  public async ledger(
+    @Query() query: unknown,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<CreditLedgerPage> {
+    const input = this.parseLedgerQuery(query, request);
+
+    try {
+      return await this.billingService.getCreditLedger(this.userId(request), input);
+    } catch (error) {
+      if (error instanceof BillingLedgerUnavailableError) {
+        throw new ServiceUnavailableException({
+          error: {
+            code: "BILLING_LEDGER_UNAVAILABLE",
+            details: null,
+            message: "Your credit history is temporarily unavailable. Try again.",
+            requestId: request.id ?? "req_unknown",
+          },
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  private parseLedgerQuery(query: unknown, request: AuthenticatedRequest): LedgerListInput {
+    try {
+      return parseLedgerListInput(query);
+    } catch (error) {
+      if (error instanceof BillingLedgerContractValidationError) {
+        throw new BadRequestException({
+          error: {
+            code: "BILLING_LEDGER_QUERY_INVALID",
+            details: null,
+            message: error.message,
             requestId: request.id ?? "req_unknown",
           },
         });

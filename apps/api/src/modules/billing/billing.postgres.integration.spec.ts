@@ -63,9 +63,10 @@ describeIntegration("billing credits production query", () => {
       ],
     );
     await migrationClient.pool.query(
-      `INSERT INTO credit_ledger (id, user_id, type, amount, description, idempotency_key)
-       VALUES ($1, $2, $3, $4, $5, $6), ($7, $2, $3, $8, $9, $10),
-              ($11, $12, $3, $13, $14, $15)`,
+      `INSERT INTO credit_ledger
+         (id, user_id, type, amount, description, idempotency_key, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7), ($8, $2, $3, $9, $10, $11, $12),
+              ($13, $14, $3, $15, $16, $17, $18)`,
       [
         "00000000-0000-0000-0000-000000000301",
         "billing-api-user-a",
@@ -73,15 +74,18 @@ describeIntegration("billing credits production query", () => {
         40,
         "User A credit",
         "billing-api-user-a-credit",
+        "2026-07-18T00:10:00.000Z",
         "00000000-0000-0000-0000-000000000302",
         -11,
         "User A debit",
         "billing-api-user-a-debit",
+        "2026-07-19T00:10:00.000Z",
         "00000000-0000-0000-0000-000000000303",
         "billing-api-user-b",
         999,
         "User B credit",
         "billing-api-user-b-credit",
+        "2026-07-19T00:10:00.000Z",
       ],
     );
 
@@ -164,6 +168,55 @@ describeIntegration("billing credits production query", () => {
         conversion: "1 credit = 1 video minute",
         unit: "credits",
       },
+    });
+  });
+
+  it("returns complete owner-scoped ledger pages and applies type filters", async () => {
+    const firstPage = await request("/api/v1/billing/ledger?limit=1", {
+      headers: { cookie: "session=user-a" },
+    });
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.headers.get("cache-control")).toBe("private, no-store");
+    const firstBody = (await firstPage.json()) as {
+      data: { amount: number; id: string }[];
+      meta: { nextCursor: string | null };
+    };
+    expect(firstBody.data).toEqual([
+      expect.objectContaining({
+        amount: -11,
+        id: "00000000-0000-0000-0000-000000000302",
+      }),
+    ]);
+    expect(firstBody.meta.nextCursor).toEqual(expect.any(String));
+
+    const secondPage = await request(
+      `/api/v1/billing/ledger?limit=1&cursor=${encodeURIComponent(firstBody.meta.nextCursor ?? "")}`,
+      { headers: { cookie: "session=user-a" } },
+    );
+    const secondBody = (await secondPage.json()) as {
+      data: { amount: number; id: string }[];
+      meta: { nextCursor: string | null };
+    };
+    expect(secondBody).toEqual({
+      data: [
+        expect.objectContaining({
+          amount: 40,
+          id: "00000000-0000-0000-0000-000000000301",
+        }),
+      ],
+      meta: { nextCursor: null },
+    });
+
+    const filtered = await request("/api/v1/billing/ledger?type=manual_adjustment", {
+      headers: { cookie: "session=user-a" },
+    });
+    await expect(filtered.json()).resolves.toMatchObject({
+      data: [
+        expect.objectContaining({ id: "00000000-0000-0000-0000-000000000302" }),
+        expect.objectContaining({ id: "00000000-0000-0000-0000-000000000301" }),
+      ],
+      meta: { nextCursor: null },
     });
   });
 

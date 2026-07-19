@@ -4,6 +4,25 @@ export interface CreditBalance {
   readonly unit: "credits";
 }
 
+export type CreditLedgerType =
+  "purchase" | "processing_deduction" | "refund" | "manual_adjustment" | "expiration_adjustment";
+
+export interface CreditLedgerEntry {
+  readonly amount: number;
+  readonly createdAt: string;
+  readonly description: string;
+  readonly id: string;
+  readonly projectId: string | null;
+  readonly type: CreditLedgerType;
+}
+
+export interface CreditLedgerPage {
+  readonly data: readonly CreditLedgerEntry[];
+  readonly meta: {
+    readonly nextCursor: string | null;
+  };
+}
+
 export type CreditPackCode = "starter" | "creator" | "pro";
 
 export interface CreditPack {

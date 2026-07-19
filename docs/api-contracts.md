@@ -1092,13 +1092,20 @@ All errors use standard safe envelope with `details: null` and request ID.
 
 ## GET `/billing/ledger`
 
+Returns a read-only, newest-first page of the authenticated user's immutable credit-ledger
+entries. The server derives the owner from the authenticated session; it never accepts a user,
+account, or project owner ID from the request. Responses send `Cache-Control: private, no-store`.
+
 ### Query Parameters
 
-```text
-cursor?
-limit?
-type?
-```
+| Name | Required | Rules |
+|---|---|---|
+| `cursor` | No | Opaque continuation token encoding the last returned `(createdAt, id)` pair. Do not construct or interpret it on the client. |
+| `limit` | No | Integer from `1` through `50`; defaults to `20`. |
+| `type` | No | One of `purchase`, `processing_deduction`, `refund`, `manual_adjustment`, or `expiration_adjustment`. |
+
+Pages use descending `createdAt`, then descending `id` ordering. A non-null `nextCursor` continues
+strictly after the final returned entry, so entries are not repeated across stable page boundaries.
 
 ### Response — 200
 
@@ -1106,7 +1113,7 @@ type?
 {
   "data": [
     {
-      "id": "ledger_...",
+      "id": "3b616994-3c68-4ca2-ac9a-df1acf6d07b1",
       "type": "processing_deduction",
       "amount": -11,
       "description": "Processed Creator Burnout Podcast",
@@ -1115,10 +1122,24 @@ type?
     }
   ],
   "meta": {
-    "nextCursor": null
+    "nextCursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTA3LTEwVDE0OjM0OjAwLjAwMFoiLCJpZCI6IjNiNjE2OTk0LTNjNjgtNGNhMi1hYzlhLWRmMWFjZjZkMDdiMSJ9"
   }
 }
 ```
+
+Each entry exposes only `id`, `type`, signed `amount`, `description`, nullable `projectId`, and
+ISO-8601 `createdAt`. Stripe event IDs, Checkout/payment metadata, and any client-supplied owner
+fields are not part of this contract.
+
+### Errors
+
+| Status | Code | Message |
+|---:|---|---|
+| 400 | `BILLING_LEDGER_QUERY_INVALID` | Invalid credit ledger query. |
+| 401 | `UNAUTHORIZED` | You need to sign in to access this resource. |
+| 503 | `BILLING_LEDGER_UNAVAILABLE` | Your credit history is temporarily unavailable. Try again. |
+
+All errors use the standard safe envelope with `details: null` and a request ID.
 
 ---
 

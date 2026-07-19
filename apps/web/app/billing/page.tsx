@@ -7,17 +7,20 @@ import { AppTopbar } from "@/components/app/app-topbar";
 import { PageHeader } from "@/components/app/page-header";
 import { CreditBalanceCard } from "@/features/billing/components/credit-balance-card";
 import { CreditBalanceError } from "@/features/billing/components/credit-balance-error";
+import { CreditLedgerTable } from "@/features/billing/components/credit-ledger-table";
 import { CreditPackCard } from "@/features/billing/components/credit-pack-card";
 import { CheckoutReturnNotice } from "@/features/billing/components/checkout-return-notice";
-import { getCreditBalance } from "@/features/billing/server/billing-api";
+import { getCreditBalance, getCreditLedger } from "@/features/billing/server/billing-api";
 import { auth } from "@/lib/auth";
 
 export default async function BillingPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const balanceResult = await getCreditBalance();
-  if (balanceResult.kind === "unauthenticated") redirect("/login");
+  const [balanceResult, ledgerResult] = await Promise.all([getCreditBalance(), getCreditLedger()]);
+  if (balanceResult.kind === "unauthenticated" || ledgerResult.kind === "unauthenticated") {
+    redirect("/login");
+  }
 
   return (
     <div className="flex min-h-dvh bg-rp-bg">
@@ -55,6 +58,27 @@ export default async function BillingPage() {
               {CREDIT_PACKS.map((pack) => (
                 <CreditPackCard key={pack.code} pack={pack} />
               ))}
+            </div>
+          </section>
+
+          <section className="mt-12" aria-labelledby="credit-history-title">
+            <div className="max-w-2xl">
+              <h2
+                className="text-2xl font-semibold tracking-[-0.04em] text-rp-text"
+                id="credit-history-title"
+              >
+                Transaction history
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-rp-text-muted">
+                Every credit purchase, charge, refund, and adjustment is recorded here.
+              </p>
+            </div>
+            <div className="mt-6">
+              {ledgerResult.kind === "success" ? (
+                <CreditLedgerTable initialPage={ledgerResult.page} />
+              ) : (
+                <CreditBalanceError message={ledgerResult.message} />
+              )}
             </div>
           </section>
         </main>

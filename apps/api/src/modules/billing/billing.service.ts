@@ -1,9 +1,10 @@
 import { schema } from "@repurposepro/db";
-import type { CreditBalance } from "@repurposepro/shared";
+import type { CreditBalance, CreditLedgerEntry, CreditLedgerPage } from "@repurposepro/shared";
 import { Injectable } from "@nestjs/common";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 
 import { DatabaseService } from "../infrastructure/database.service";
+import { decodeLedgerCursor, encodeLedgerCursor, type LedgerListInput } from "./billing.contracts";
 
 const { creditLedger } = schema;
 const maximumSafeBalance = BigInt(Number.MAX_SAFE_INTEGER);
@@ -21,6 +22,13 @@ export class BillingCreditsUnavailableError extends Error {
   public constructor() {
     super("Credit ledger aggregate could not be read.");
     this.name = "BillingCreditsUnavailableError";
+  }
+}
+
+export class BillingLedgerUnavailableError extends Error {
+  public constructor() {
+    super("Credit ledger could not be read.");
+    this.name = "BillingLedgerUnavailableError";
   }
 }
 
@@ -68,5 +76,69 @@ export class BillingService {
       conversion: "1 credit = 1 video minute",
       unit: "credits",
     };
+  }
+
+  public async getCreditLedger(userId: string, input: LedgerListInput): Promise<CreditLedgerPage> {
+    const conditions = [eq(creditLedger.userId, userId)];
+
+    if (input.type) {
+      conditions.push(eq(creditLedger.type, input.type));
+    }
+
+    if (input.cursor) {
+      const cursor = decodeLedgerCursor(input.cursor);
+      const cursorCreatedAt = new Date(cursor.createdAt);
+      const cursorCondition = or(
+        lt(creditLedger.createdAt, cursorCreatedAt),
+        and(eq(creditLedger.createdAt, cursorCreatedAt), lt(creditLedger.id, cursor.id)),
+      );
+
+      if (!cursorCondition) {
+        throw new BillingLedgerUnavailableError();
+      }
+
+      conditions.push(cursorCondition);
+    }
+
+    try {
+      const rows = await this.databaseService.database.db
+        .select({
+          amount: creditLedger.amount,
+          createdAt: creditLedger.createdAt,
+          description: creditLedger.description,
+          id: creditLedger.id,
+          projectId: creditLedger.projectId,
+          type: creditLedger.type,
+        })
+        .from(creditLedger)
+        .where(and(...conditions))
+        .orderBy(desc(creditLedger.createdAt), desc(creditLedger.id))
+        .limit(input.limit + 1);
+      const hasMore = rows.length > input.limit;
+      const page = rows.slice(0, input.limit);
+      const lastEntry = page.at(-1);
+
+      return {
+        data: page.map((entry): CreditLedgerEntry => ({
+          amount: entry.amount,
+          createdAt: entry.createdAt.toISOString(),
+          description: entry.description,
+          id: entry.id,
+          projectId: entry.projectId,
+          type: entry.type,
+        })),
+        meta: {
+          nextCursor:
+            hasMore && lastEntry
+              ? encodeLedgerCursor({
+                  createdAt: lastEntry.createdAt.toISOString(),
+                  id: lastEntry.id,
+                })
+              : null,
+        },
+      };
+    } catch {
+      throw new BillingLedgerUnavailableError();
+    }
   }
 }

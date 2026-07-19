@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T4.1 | 40% | — |
+| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T5 | 50% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -304,7 +304,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | MAINT-11 | Tighten landing hero vertical spacing | Web + Visual Verification | COMPLETED | 2026-07-18 | 11:56 | 2026-07-18 | 12:08 | Replaced full-viewport height constraints with content-led spacing; 1440px desktop exposes 272px of the workflow section while mobile media remains fully visible. |
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31 | 2026-07-17 | 11:38 | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked. |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | COMPLETED | 2026-07-18 | 16:14 | 2026-07-18 | 18:21 | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes. |
-| VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | NOT_STARTED | — | — | — | — | Follows first real webhook-granted purchase; T2 must not render a fake history state. |
+| VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | COMPLETED | 2026-07-19 | 08:10 | 2026-07-19 | 08:49 | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | NOT_STARTED | — | — | — | — | — |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
@@ -839,17 +839,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
+Current Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
 Last Maintenance Task: MAINT-11 - Tighten landing hero vertical spacing
-Current Status: IN_PROGRESS
-Last Completed Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
-Next Recommended Task: Implement VS3-T4.1 after the first real webhook-granted purchase: expose the user-scoped immutable credit ledger and transaction-history UI without rendering a fake history state.
-Uncommitted Changes: None expected after committing the VS3-T4 acceptance records. Local `.env` remains ignored and must never be committed.
-Known Failing Tests: None. `pnpm ci:check` passes: 174 unit tests, 7 PostgreSQL integration tests, format, lint, strict typecheck, and production builds.
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
+Next Recommended Task: Implement VS3-T5: deduct credits and create a processing job in one database transaction using the existing immutable credit ledger.
+Uncommitted Changes: All VS3-T4.1 source and task records are included in the completed-task commit. Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. Local `.env` remains ignored and must never be committed.
+Known Failing Tests: None. `pnpm test` passes 194 tests (8 skipped); `pnpm test:db-integration` passes 8 tests; changed-file ESLint, typecheck, and production builds pass. Root `pnpm ci:check` and root `pnpm lint` reached ESLint but did not finish within their 2- and 5-minute command limits, with no diagnostic.
 Known Blockers: None.
-Important Context: Starter test Checkout raised authenticated Billing balance from 0 to 40 credits. The signed `checkout.session.completed` webhook returned HTTP 200; replaying the exact event also returned HTTP 200 without another payment, processed-event, or purchase-ledger row. Live database evidence remains one paid Starter payment, one processed webhook event, one 40-credit purchase ledger row, and balance 40. The temporary Stripe listener was stopped after verification.
-Required Commands Before Continuing: Run `pnpm ci:check` before handoff after new code. Start Stripe CLI only for a new live-payment acceptance scenario.
-Last Updated Date: 2026-07-18
-Last Updated Time: 18:21
+Important Context: `GET /billing/ledger` is session-owned and returns newest-first stable pages with opaque `(createdAt, id)` cursors, optional ledger-type filtering, private no-store caching, safe 400 validation, and safe 503 database failures. Billing now shows the live Starter purchase as a desktop table and 390px mobile card list; later processing charges/refunds appear automatically from the immutable ledger.
+Required Commands Before Continuing: Run `pnpm ci:check` before handoff after new code; it may require a longer-than-5-minute ESLint allowance. Start Stripe CLI only for a new live-payment acceptance scenario.
+Last Updated Date: 2026-07-19
+Last Updated Time: 08:49
 Last Updated By: Codex
 ```

@@ -607,3 +607,23 @@ Last Updated Date: 2026-07-18
 Last Updated Time: 17:37
 Last Updated By: Codex
 ~~~
+
+---
+
+### VS3-T4.1 Completion Handoff Snapshot - 2026-07-19 08:49 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
+Next Recommended Task: Implement VS3-T5: deduct credits and create a processing job in one database transaction using the existing immutable credit ledger.
+Uncommitted Changes: All VS3-T4.1 source and task records are included in the completed-task commit. Existing apps/web/next-env.d.ts change predates this task and remains intentionally unstaged.
+Known Failing Tests: None. pnpm test passes 194 tests (8 skipped); pnpm test:db-integration passes 8 tests; changed-file ESLint, typecheck, build, and changed-file Prettier pass. pnpm ci:check and repository-wide pnpm lint reached ESLint but did not finish within 2 and 5 minutes, respectively, without a diagnostic.
+Known Blockers: None.
+Important Context: GET /billing/ledger is session-owned and returns newest-first immutable pages with an opaque (createdAt, id) cursor, optional type filter, private no-store caching, safe 400 validation, and safe 503 database failure handling. Billing shows real ledger records as a desktop table and 390px mobile card list; processing deductions and refunds will appear automatically when later slices create those immutable rows.
+Required Commands Before Continuing: Run pnpm ci:check before handoff after new code; give repository-wide ESLint more than five minutes if it remains slow. Start Stripe CLI only for a new live-payment acceptance scenario.
+Last Updated Date: 2026-07-19
+Last Updated Time: 08:49
+Last Updated By: Codex
+~~~

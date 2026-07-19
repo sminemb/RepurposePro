@@ -1310,3 +1310,65 @@ Verification:
 Known Limitations:
 
 - Next.js production build emits its existing non-fatal NFT tracing warning from `apps/web/next.config.ts`; CI still passes.
+
+---
+
+### VS3-T4.1 - Credit Ledger History
+
+Status: COMPLETED
+Start Date: 2026-07-19
+Start Time: 08:10
+End Date: 2026-07-19
+End Time: 08:49
+
+User Outcome:
+
+- Authenticated Billing users can read their real, immutable credit history, initially 20 entries at a time, with a cursor-backed Load more control.
+
+Files Changed:
+
+- `packages/shared/src/billing.ts`
+- `apps/api/src/modules/billing/billing.contracts.ts`
+- `apps/api/src/modules/billing/billing.contracts.spec.ts`
+- `apps/api/src/modules/billing/billing.service.ts`
+- `apps/api/src/modules/billing/billing.service.spec.ts`
+- `apps/api/src/modules/billing/billing.controller.ts`
+- `apps/api/src/modules/billing/billing.controller.spec.ts`
+- `apps/api/src/modules/billing/billing.postgres.integration.spec.ts`
+- `apps/web/features/billing/server/billing-api.ts`
+- `apps/web/features/billing/server/billing-api.spec.ts`
+- `apps/web/features/billing/actions/load-credit-ledger.ts`
+- `apps/web/features/billing/actions/load-credit-ledger.spec.ts`
+- `apps/web/features/billing/components/billing-format.ts`
+- `apps/web/features/billing/components/billing-format.spec.ts`
+- `apps/web/features/billing/components/credit-ledger-table.tsx`
+- `apps/web/app/billing/page.tsx`
+- `docs/api-contracts.md`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- Changed-file Prettier check and format check
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm typecheck`
+- `pnpm build`
+- Focused ESLint over every changed TypeScript/TSX source and test file
+- Billing browser checks at desktop and 390px viewports
+- `pnpm ci:check` and `pnpm lint` attempted; both reached the repository-wide ESLint stage but did not finish inside their 2- and 5-minute command limits
+
+Verification:
+
+- PASS: `GET /billing/ledger` requires the server-side session, scopes queries to its user, validates cursor/limit/type safely, returns newest-first deterministic pages, and maps database read failures to a safe 503 envelope.
+- PASS: PostgreSQL integration proves tenant isolation, complete cursor progression without repetition, type filtering, and the real webhook-granted purchase appears exactly once.
+- PASS: Billing accepts only structurally valid ledger pages; failed or malformed follow-up responses preserve prior entries and surface an error instead of inventing history.
+- PASS: Billing renders a four-column desktop table and a 390px mobile card list with clear type labels, signed amounts, live status text, and a truthful end state. Browser console is clean.
+- PASS: `pnpm test` passes 194 tests with 8 intentionally skipped; `pnpm test:db-integration` passes 8 tests; typecheck, focused ESLint, changed-file Prettier, and production builds pass.
+
+Known Limitations:
+
+- Repository-wide ESLint did not complete within five minutes, preventing a completed `pnpm ci:check` gate despite no reported lint diagnostic. The changed-file lint pass is clean.
+- The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during production builds.
