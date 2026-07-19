@@ -284,7 +284,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Start Time | 10:52 |
 | End Date | — |
 | End Time | — |
-| Progress | 70% |
+| Progress | 85% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -306,7 +306,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | COMPLETED | 2026-07-18 | 16:14 | 2026-07-18 | 18:21 | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes. |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | COMPLETED | 2026-07-19 | 08:10 | 2026-07-19 | 08:49 | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | COMPLETED | 2026-07-19 | 11:02 | 2026-07-19 | 12:59 | Forward migration `0013` restricts retries to `analyze_video`; queued/active render-job regressions, 208 unit tests, 15 PostgreSQL integration tests, lint, typecheck, formatting, and production builds pass. |
-| VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
+| VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | COMPLETED | 2026-07-19 | 13:25 | 2026-07-19 | 13:58 | 222 unit tests; 16 live PostgreSQL/Redis integration tests; full CI, infrastructure, and whitespace checks pass. |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
 
 ## Slice Acceptance Criteria
@@ -839,17 +839,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T6 - Enqueue analysis job in BullMQ
+Current Task: VS3-T7 - Show queued processing state in UI
 Last Maintenance Task: MAINT-13 - Correct VS3-T5 tracker status after independent review
 Current Status: NOT_STARTED
-Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
-Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add safe recovery behavior without changing financial state.
-Uncommitted Changes: No intended uncommitted changes remain after the VS3-T5 fix commit; local `.env` remains ignored and must never be committed.
-Known Failing Tests: None. `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
+Last Completed Task: VS3-T6 - Enqueue analysis job in BullMQ
+Next Recommended Task: VS3-T7 - Show the persisted queued processing state in the UI without adding worker consumption.
+Uncommitted Changes: No intended uncommitted changes remain after the VS3-T6 task commit; local `.env` remains ignored and must never be committed.
+Known Failing Tests: None. `pnpm ci:check` passes formatting, lint, strict typecheck, 222 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
 Known Blockers: None.
-Important Context: `POST /api/v1/projects/:projectId/analyze` requires exactly `{ "confirmed": true }`, derives ownership from the server session, and rate-limits three starts per user/minute. Forward migration `0013` preserves the fixed-search-path `SECURITY DEFINER` routine and allows retry reuse only for the project's queued/active `analyze_video` job; non-analysis jobs produce `PROCESSING_INVALID_PROJECT_STATE` without new charges. BullMQ enqueue remains deferred to VS3-T6.
-Required Commands Before Continuing: Implement VS3-T6 against the durable queued `analyze_video` job, pass IDs only to BullMQ, and run `pnpm ci:check` before completion.
+Important Context: `POST /api/v1/projects/:projectId/analyze` now commits the paid PostgreSQL job, publishes `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`, uses the durable job UUID as BullMQ `jobId`, persists `bullmq_job_id`, and returns HTTP 202 only after both external steps succeed. Queue failures return retry-safe `QUEUE_UNAVAILABLE` without refund or another deduction. Worker consumption and automatic reconciliation remain deferred.
+Required Commands Before Continuing: Implement VS3-T7 against persisted project/job state, keep worker consumption out of scope, and run `pnpm ci:check` before completion.
 Last Updated Date: 2026-07-19
-Last Updated Time: 12:59
+Last Updated Time: 13:58
 Last Updated By: Codex
 ```

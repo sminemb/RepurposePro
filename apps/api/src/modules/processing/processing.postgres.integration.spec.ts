@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { closeDatabaseClient, createDatabaseClient, type DatabaseClient } from "@repurposepro/db";
+import type { VideoAnalysisJobPayload } from "@repurposepro/shared";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +14,7 @@ import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../infrastructure/database.service";
 import { RedisService } from "../infrastructure/redis.service";
 import { ANALYSIS_RATE_LIMIT_CLIENT } from "./analysis-rate-limit.guard";
+import { ANALYSIS_QUEUE_GATEWAY } from "./analysis-queue.gateway";
 import { ProcessingModule } from "./processing.module";
 
 const bootstrapUrl = process.env.TEST_DATABASE_BOOTSTRAP_URL;
@@ -37,6 +39,7 @@ describeIntegration("paid processing start API", () => {
   const adminClient = createClient(bootstrapUrl ?? skippedDatabaseUrl);
   const migrationClient = createClient(withDatabase(migrationUrl, database));
   const runtimeClient = createClient(withDatabase(runtimeUrl, database));
+  const enqueue = vi.fn(async (payload: VideoAnalysisJobPayload) => payload.jobId);
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -122,6 +125,8 @@ describeIntegration("paid processing start API", () => {
       .useValue({})
       .overrideProvider(ANALYSIS_RATE_LIMIT_CLIENT)
       .useValue({ protect: vi.fn().mockResolvedValue({ isDenied: () => false }) })
+      .overrideProvider(ANALYSIS_QUEUE_GATEWAY)
+      .useValue({ enqueue })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -140,43 +145,86 @@ describeIntegration("paid processing start API", () => {
     await closeDatabaseClient(adminClient);
   });
 
-  it("starts once for the session owner and returns the stored queued job on retry", async () => {
+  it("recovers the same durable job after publication fails without a second deduction", async () => {
+    enqueue.mockRejectedValueOnce(new Error("private redis failure"));
     const first = await request("/api/v1/projects/00000000-0000-4000-8000-000000000601/analyze", {
       body: JSON.stringify({ confirmed: true }),
       headers: { "content-type": "application/json", cookie: "session=processing-a" },
       method: "POST",
     });
-    const firstBody = (await first.json()) as {
-      data: { creditsCharged: number; jobId: string; projectId: string; status: string };
-    };
+    const firstBody = (await first.json()) as unknown;
+    const durableJob = await migrationClient.pool.query<{
+      bullmqJobId: string | null;
+      creditsCharged: number;
+      id: string;
+    }>(
+      `SELECT
+        id,
+        bullmq_job_id AS "bullmqJobId",
+        credits_charged AS "creditsCharged"
+       FROM processing_jobs
+       WHERE project_id = $1
+         AND type = 'analyze_video'`,
+      ["00000000-0000-4000-8000-000000000601"],
+    );
+    const [storedJob] = durableJob.rows;
+
+    expect(first.status).toBe(503);
+    expect(firstBody).toMatchObject({
+      error: {
+        code: "QUEUE_UNAVAILABLE",
+        details: null,
+        message: "Your processing job is saved, but the queue is unavailable. Retry is safe.",
+      },
+    });
+    expect(storedJob).toMatchObject({ bullmqJobId: null, creditsCharged: 11 });
+
     const retry = await request("/api/v1/projects/00000000-0000-4000-8000-000000000601/analyze", {
       body: JSON.stringify({ confirmed: true }),
       headers: { "content-type": "application/json", cookie: "session=processing-a" },
       method: "POST",
     });
 
-    expect(first.status).toBe(202);
-    if (typeof firstBody.data.jobId !== "string") {
-      throw new Error("The paid analysis start response must include a job ID.");
+    const retryBody = (await retry.json()) as {
+      data: { creditsCharged: number; jobId: string; projectId: string; status: string };
+    };
+
+    expect(retry.status).toBe(202);
+    if (!storedJob) {
+      throw new Error("The failed enqueue must leave one durable processing job.");
     }
-    expect(firstBody).toEqual({
+    expect(retryBody).toEqual({
       data: {
         creditsCharged: 11,
-        jobId: firstBody.data.jobId,
+        jobId: storedJob.id,
         projectId: "00000000-0000-4000-8000-000000000601",
         status: "queued",
       },
     });
-    await expect(retry.json()).resolves.toEqual(firstBody);
+    expect(enqueue).toHaveBeenNthCalledWith(1, {
+      jobId: storedJob.id,
+      projectId: "00000000-0000-4000-8000-000000000601",
+    });
+    expect(enqueue).toHaveBeenNthCalledWith(2, {
+      jobId: storedJob.id,
+      projectId: "00000000-0000-4000-8000-000000000601",
+    });
 
     await expect(
-      migrationClient.pool.query<{ balance: string; deductionCount: string }>(
+      migrationClient.pool.query<{
+        balance: string;
+        bullmqJobId: string | null;
+        deductionCount: string;
+      }>(
         `SELECT
           (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
-          (SELECT COUNT(*)::text FROM credit_ledger WHERE processing_job_id = $2) AS "deductionCount"`,
-        ["processing-api-user-a", firstBody.data.jobId],
+          (SELECT COUNT(*)::text FROM credit_ledger WHERE processing_job_id = $2) AS "deductionCount",
+          (SELECT bullmq_job_id FROM processing_jobs WHERE id = $2) AS "bullmqJobId"`,
+        ["processing-api-user-a", storedJob.id],
       ),
-    ).resolves.toMatchObject({ rows: [{ balance: "29", deductionCount: "1" }] });
+    ).resolves.toMatchObject({
+      rows: [{ balance: "29", bullmqJobId: storedJob.id, deductionCount: "1" }],
+    });
   });
 
   it("conceals foreign projects and rejects unconfirmed bodies before charging", async () => {

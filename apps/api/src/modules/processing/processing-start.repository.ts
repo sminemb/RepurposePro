@@ -21,6 +21,12 @@ export interface ProcessingStartRecord {
 }
 
 export interface ProcessingStartRepositoryContract {
+  markEnqueued(
+    userId: string,
+    projectId: string,
+    jobId: string,
+    bullmqJobId: string,
+  ): Promise<void>;
   start(userId: string, projectId: string): Promise<ProcessingStartRecord>;
 }
 
@@ -46,5 +52,34 @@ export class ProcessingStartRepository implements ProcessingStartRepositoryContr
     }
 
     return record;
+  }
+
+  public async markEnqueued(
+    userId: string,
+    projectId: string,
+    jobId: string,
+    bullmqJobId: string,
+  ): Promise<void> {
+    const result = await this.databaseService.database.pool.query<{ id: string }>(
+      `UPDATE processing_jobs AS processing_job
+       SET bullmq_job_id = $4,
+           updated_at = now()
+       FROM projects AS project
+       WHERE processing_job.id = $3
+         AND processing_job.project_id = project.id
+         AND project.id = $2
+         AND project.user_id = $1
+         AND processing_job.type = 'analyze_video'
+         AND (
+           processing_job.bullmq_job_id IS NULL
+           OR processing_job.bullmq_job_id = $4
+         )
+       RETURNING processing_job.id`,
+      [userId, projectId, jobId, bullmqJobId],
+    );
+
+    if (result.rows.length !== 1) {
+      throw new Error("Processing queue reference did not update one job.");
+    }
   }
 }

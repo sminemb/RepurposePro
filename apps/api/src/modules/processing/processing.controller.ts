@@ -73,7 +73,11 @@ export class ProcessingController {
 
     try {
       return {
-        data: await this.processingStartService.start(this.userId(request), parsedProjectId),
+        data: await this.processingStartService.start(
+          this.userId(request),
+          parsedProjectId,
+          request.id ?? "req_unknown",
+        ),
       };
     } catch (error) {
       if (error instanceof ProcessingStartError) {

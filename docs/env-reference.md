@@ -455,6 +455,12 @@ Required:
 No
 ```
 
+Default:
+
+```text
+repurposepro
+```
+
 Recommended:
 
 ```env

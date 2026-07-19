@@ -34,7 +34,7 @@ describe("ProcessingController", () => {
         status: "queued",
       },
     });
-    expect(start).toHaveBeenCalledWith("user_1", projectId);
+    expect(start).toHaveBeenCalledWith("user_1", projectId, "req_processing_test");
   });
 
   it("returns the confirmation error before calling processing", async () => {
@@ -70,6 +70,12 @@ describe("ProcessingController", () => {
       503,
       ServiceUnavailableException,
       "We could not start processing. Try again.",
+    ],
+    [
+      "QUEUE_UNAVAILABLE",
+      503,
+      ServiceUnavailableException,
+      "Your processing job is saved, but the queue is unavailable. Retry is safe.",
     ],
   ])("maps %s to the standard safe envelope", async (code, statusCode, exception, message) => {
     const controller = new ProcessingController({

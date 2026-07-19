@@ -18,6 +18,7 @@
     "@repurposepro/db": "workspace:*",
     "@repurposepro/shared": "workspace:*",
     "better-auth": "^1.6.23",
+    "bullmq": "5.79.3",
     "drizzle-orm": "0.45.2",
     "ioredis": "5.11.1",
     "multer": "2.2.0",

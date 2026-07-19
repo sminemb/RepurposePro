@@ -10,6 +10,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const config = loadApiConfig();
     this.client = new Redis(config.redisUrl, {
       connectTimeout: 5_000,
+      enableOfflineQueue: false,
       lazyConnect: true,
       maxRetriesPerRequest: 1,
       retryStrategy: () => null,
@@ -41,5 +42,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (response !== "PONG") {
       throw new Error("Redis did not return PONG.");
     }
+  }
+
+  public get connection(): Redis {
+    return this.client;
   }
 }

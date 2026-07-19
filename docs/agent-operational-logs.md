@@ -302,3 +302,19 @@ Record decisions such as:
 - Verification: focused RED/GREEN PostgreSQL runs pass after the fix; `pnpm test:db-integration` passes 15 tests; full `pnpm ci:check` passes formatting, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
 - Limitation: BullMQ enqueue and recovery remain deferred to VS3-T6. Existing Next.js NFT tracing warning remains non-fatal.
 - Decision: VS3-T5 is complete and VS3-T6 becomes the next task.
+
+---
+
+### VS3-T6 Operational Update - 2026-07-19 13:58 Asia/Manila
+
+- Files changed: BullMQ dependency/lock policy; shared analysis queue contract; API Redis/gateway/orchestration/repository/controller/module; unit, PostgreSQL, and real-Redis integration coverage; environment/API/architecture/library contracts; tracker and archive records.
+- Decision: publish only after the paid PostgreSQL transaction commits, use the durable processing UUID as BullMQ `jobId`, persist the returned ID, and return HTTP 202 only after both external steps succeed.
+- Decision: queue or marker failure returns `QUEUE_UNAVAILABLE` while preserving the committed charge/job. Recovery is a normal endpoint retry; no refund, second deduction, or reconciler is introduced.
+- Security: queue payload contains only job/project IDs; the marker update rechecks session-derived ownership and `analyze_video` type with bound parameters; logs exclude connection strings, request bodies, and raw dependency errors.
+- Dependency decision: pin `bullmq` to `5.79.3`. Deny the optional `msgpackr-extract` native build script because `msgpackr` has a documented JavaScript fallback; supply-chain policy passes.
+- Failure resolved: BullMQ and the app carry compatible but nominally distinct ioredis minor types. The shared-client cast is isolated inside the queue adapter, and real Redis integration verifies runtime compatibility.
+- Failure resolved: the first CI run found test-only ESLint project/mocking/`any` issues. Added infrastructure-spec project coverage and explicit typed mocks/unknown boundaries; focused lint and full CI pass.
+- Failure resolved: a forced formatter run bypassed repository ignores and created unrelated historical-doc/lockfile churn. Reversed only that mechanical pass, reapplied the intended doc edits, and regenerated the lockfile through pnpm.
+- Verification: 42 focused tests, 16 live PostgreSQL/Redis integration tests, API typecheck, infrastructure checks, full `pnpm ci:check`, and `git diff --check` pass. CI reports 222 unit tests passed with 16 intentional skips.
+- Audit limitation: `pnpm audit --prod` reports three moderate advisories on pre-existing Better Auth/Next/Arcjet paths (`esbuild`, `postcss`, `uuid`); no reported advisory is introduced through BullMQ.
+- Decision: VS3-T6 is complete and VS3-T7 becomes the next task.

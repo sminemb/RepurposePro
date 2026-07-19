@@ -114,6 +114,7 @@ describe("configuration loaders", () => {
     });
 
     expect(config.apiPort).toBe(4000);
+    expect(config.bullmqPrefix).toBe("repurposepro");
     expect(config.ffprobePath).toBe("ffprobe");
     expect(config.fileRetentionDays).toBe(7);
     expect(config.maxUploadBytes).toBe(524_288_000);
@@ -128,6 +129,17 @@ describe("configuration loaders", () => {
       starter: "price_startertests",
     });
     expect(config.stripe.webhookSecret).toBe("whsec_checkouttests");
+  });
+
+  it("loads a configured BullMQ prefix", () => {
+    const config = loadApiConfig({
+      ...validServerEnvironment,
+      APP_URL: "http://localhost:3000",
+      API_PORT: "4000",
+      BULLMQ_PREFIX: "repurposepro-test",
+    });
+
+    expect(config.bullmqPrefix).toBe("repurposepro-test");
   });
 
   it.each([

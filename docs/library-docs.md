@@ -948,9 +948,8 @@ Good:
 
 ```json
 {
-  "projectId": "project_123",
-  "userId": "user_123",
-  "uploadedVideoId": "video_123"
+  "jobId": "job_123",
+  "projectId": "project_123"
 }
 ```
 
@@ -964,6 +963,9 @@ Bad:
 ```
 
 The worker should load required data from Postgres/storage.
+
+For paid analysis, use the durable PostgreSQL processing-job UUID as BullMQ's custom `jobId`.
+Publishing the same durable job again is therefore idempotent while the queue record is retained.
 
 ---
 

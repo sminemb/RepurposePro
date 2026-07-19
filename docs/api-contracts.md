@@ -623,9 +623,9 @@ Starts paid analysis.
 - User has enough credits.
 - Required credits are known.
 
-### Atomic Operation
+### Durable Start and Enqueue
 
-The backend must:
+The backend must first complete this PostgreSQL transaction:
 
 1. Lock the owned project and the user's credit activity.
 2. Recalculate required credits from persisted duration.
@@ -637,12 +637,21 @@ The backend must:
 
 Never deduct credits in the worker.
 
-The initial VS3 endpoint only persists the queued job. BullMQ enqueue and recovery behavior are
-introduced in VS3-T6.
+After the transaction commits, the API must:
+
+1. Publish `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`.
+2. Use the durable PostgreSQL processing-job UUID as the BullMQ `jobId`.
+3. Persist the returned queue ID to that matching owned `analyze_video` row.
+4. Return HTTP 202 only after publication and queue-reference persistence succeed.
 
 When a retry finds the owned project's current `analyze_video` job is `queued` or `active`, it
-returns that stored job and its original `creditsCharged` with no second deduction. A current job
-of any other type is not reusable by this endpoint.
+republishes that same durable UUID and returns the stored job with its original `creditsCharged`.
+BullMQ's deterministic job ID prevents a second queue record, while the PostgreSQL operation
+prevents a second deduction. A current job of any other type is not reusable by this endpoint.
+
+If publication or queue-reference persistence fails after the database commit, the API returns
+`QUEUE_UNAVAILABLE`. The durable job and financial transaction remain committed; the user may
+safely retry, and the API must not refund or deduct again during this recovery path.
 
 ### Request
 
@@ -677,6 +686,7 @@ of any other type is not reusable by this endpoint.
 | 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three analysis starts in one minute. |
 | 503 | `BILLING_DEDUCTION_FAILED` | The atomic database operation returned an unexpected or unavailable result. |
 | 503 | `PROCESSING_START_UNAVAILABLE` | Arcjet or its configuration is unavailable; no internal detail is exposed. |
+| 503 | `QUEUE_UNAVAILABLE` | The durable job is saved, queue publication or reference persistence failed, and retry is safe. |
 
 ---
 

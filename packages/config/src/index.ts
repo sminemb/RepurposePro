@@ -96,6 +96,7 @@ const apiEnvironmentSchema = serverEnvironmentSchema.extend({
   ARCJET_MODE: arcjetModeSchema,
   APP_URL: z.string().url(),
   API_PORT: z.coerce.number().int().min(1).max(65_535),
+  BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   FFPROBE_PATH: z.string().trim().min(1),
   FILE_RETENTION_DAYS: z.coerce.number().int().positive(),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
@@ -148,6 +149,7 @@ export interface ApiConfig extends ServerConfig {
   };
   readonly apiPort: number;
   readonly appUrl: string;
+  readonly bullmqPrefix: string;
   readonly ffprobePath: string;
   readonly fileRetentionDays: number;
   readonly maxUploadBytes: number;
@@ -263,6 +265,7 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     apiPort: parsed.API_PORT,
     appEnv: parsed.APP_ENV,
     appUrl: parsed.APP_URL,
+    bullmqPrefix: parsed.BULLMQ_PREFIX,
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,

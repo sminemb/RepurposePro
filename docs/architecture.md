@@ -200,6 +200,21 @@ regenerate_clip_candidate
 cleanup_expired_project_files
 ```
 
+### Queue Contract
+
+Every queue job contains durable identifiers only:
+
+```json
+{
+  "jobId": "job_...",
+  "projectId": "prj_..."
+}
+```
+
+For `analyze_video`, the PostgreSQL processing-job UUID is also the BullMQ job ID. The API
+publishes only after the paid database transaction commits and stores the returned queue ID before
+returning HTTP 202. A retry republishes the same UUID without another credit deduction.
+
 ### Why Use Separate Queues?
 
 Separate queues make it easier to:
@@ -1000,45 +1015,31 @@ Billing rules:
 
 ## 8. Queue Design
 
-## 8.1 analyze_video Job Payload
+All BullMQ job types use the same IDs-only payload. Workers load authoritative project, job,
+video, clip, and summary data from PostgreSQL and storage.
 
 ```json
 {
-  "projectId": "project_id",
-  "userId": "user_id",
-  "uploadedVideoId": "uploaded_video_id",
-  "outputType": "clips",
-  "requestedClipCount": 10
+  "jobId": "job_...",
+  "projectId": "prj_..."
 }
 ```
 
-## 8.2 render_clips Job Payload
+## 8.1 `analyze_video`
 
-```json
-{
-  "projectId": "project_id",
-  "userId": "user_id",
-  "clipIds": ["clip_id_1", "clip_id_2"]
-}
-```
+Queue: `video-analysis-queue`.
 
-## 8.3 render_summary Job Payload
+## 8.2 `render_clips` and `render_summary`
 
-```json
-{
-  "projectId": "project_id",
-  "userId": "user_id",
-  "summarySegmentIds": ["segment_id_1", "segment_id_2"]
-}
-```
+Queue: `video-render-queue`.
 
-## 8.4 cleanup_expired_project_files Job Payload
+## 8.3 `regenerate_clip_candidate`
 
-```json
-{
-  "projectId": "project_id"
-}
-```
+Queue: `video-analysis-queue`.
+
+## 8.4 `cleanup_expired_project_files`
+
+Queue: `cleanup-queue`.
 
 ---
 

@@ -230,8 +230,6 @@ Last Updated Time: 19:01
 Last Updated By: Codex
 ~~~
 
----
-
 ### VS3-T4 Completion Handoff - 2026-07-18 18:21 Asia/Manila
 
 ~~~text
@@ -705,5 +703,25 @@ Important Context: Forward migration 0013 preserves the fixed-search-path SECURI
 Required Commands Before Continuing: Implement VS3-T6 against the durable queued analyze_video job, pass IDs only to BullMQ, and run pnpm ci:check before completion.
 Last Updated Date: 2026-07-19
 Last Updated Time: 12:59
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T6 Completion Handoff Snapshot - 2026-07-19 13:58 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T7 - Show queued processing state in UI
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T6 - Enqueue analysis job in BullMQ
+Next Recommended Task: VS3-T7 - Show the persisted queued processing state in the UI without adding worker consumption.
+Uncommitted Changes: No intended uncommitted changes remain after the VS3-T6 task commit; local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes formatting, lint, strict typecheck, 222 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+Known Blockers: None.
+Important Context: POST /api/v1/projects/:projectId/analyze commits the paid PostgreSQL job, publishes analyze_video to video-analysis-queue with only jobId/projectId, uses the durable job UUID as BullMQ jobId, persists bullmq_job_id, and returns HTTP 202 only after both steps succeed. Queue failures return retry-safe QUEUE_UNAVAILABLE without refund or another deduction. Worker consumption and automatic reconciliation remain deferred.
+Required Commands Before Continuing: Implement VS3-T7 against persisted project/job state, keep worker consumption out of scope, and run pnpm ci:check before completion.
+Last Updated Date: 2026-07-19
+Last Updated Time: 13:58
 Last Updated By: Codex
 ~~~

@@ -1487,3 +1487,78 @@ Known Limitations:
 Next Recommended Task:
 
 - VS3-T6 - Enqueue the persisted queued analysis job in BullMQ without changing financial state.
+
+---
+
+### VS3-T6 - Durable BullMQ Analysis Enqueue
+
+Status: COMPLETED
+Start Date: 2026-07-19
+Start Time: 13:25
+End Date: 2026-07-19
+End Time: 13:58
+
+User Outcome:
+
+- A confirmed paid-analysis request now returns HTTP 202 only after its committed PostgreSQL job is published to BullMQ and the returned queue ID is persisted.
+- If queue publication or marker persistence fails, the API returns safe `QUEUE_UNAVAILABLE`; retry republishes the same durable UUID and never charges again.
+
+Layers Touched:
+
+- API
+- Redis/BullMQ
+- PostgreSQL repository
+- Shared contracts and configuration
+- Tests and documentation
+
+Files Changed:
+
+- `.env.example`, `apps/api/package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`.
+- `apps/api/src/modules/infrastructure/redis.service.ts` and `redis.service.spec.ts`.
+- `apps/api/src/modules/processing/analysis-queue.gateway.ts`, its unit test, and its real-Redis integration test.
+- Processing start service/repository/controller/module files and their unit/PostgreSQL integration tests.
+- `packages/shared/src/processing.ts`, `packages/config/src/index.ts`, its test, and `packages/db/vitest.integration.config.mts`.
+- `eslint.config.mjs`.
+- API, architecture, environment, library, progress, execution, operational, and handoff documentation.
+
+Commands Run:
+
+- `pnpm --filter @repurposepro/api add bullmq@5.79.3 --save-exact`
+- Focused RED/GREEN Vitest runs for gateway, service, repository, controller, Redis configuration, and API configuration.
+- `pnpm --filter @repurposepro/api run typecheck`
+- `pnpm infra:status`
+- `pnpm test:db-integration`
+- `pnpm audit --prod`
+- `pnpm infra:check`
+- Changed-file Prettier checks/writes.
+- `pnpm ci:check`
+- `git diff --check`
+
+Verification:
+
+- PASS: the shared contract fixes queue name `video-analysis-queue`, job name `analyze_video`, and payload `{ jobId, projectId }` only.
+- PASS: BullMQ uses the durable PostgreSQL UUID as custom `jobId`; two real Redis publications leave one waiting job with the exact payload.
+- PASS: queue publication precedes the owned, parameterized `bullmq_job_id` update; HTTP 202 is returned only afterward.
+- PASS: the marker update accepts only a matching owned `analyze_video` row whose marker is null or identical and fails closed on row-count mismatch.
+- PASS: PostgreSQL API integration proves a failed first publication leaves one deduction and one durable job; retry succeeds with the same UUID and records `bullmq_job_id`.
+- PASS: producer offline queuing is disabled, the configured BullMQ prefix is used, returned IDs are validated, and the queue closes during application shutdown.
+- PASS: enqueue success/failure logs carry request, project, job, recovery, and failure-stage fields without Redis URLs or request bodies.
+- PASS: `pnpm infra:check` reports PostgreSQL and Redis up.
+- PASS: full CI passes formatting, lint, strict typecheck, 222 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+- PASS: `git diff --check` reports no whitespace errors.
+
+Assumptions:
+
+- Recovery remains endpoint-retry only; no startup or periodic reconciler was added.
+- `BULLMQ_PREFIX` defaults to `repurposepro`.
+- Completed and failed BullMQ jobs retain default removal behavior; retry/backoff/removal policy remains future work.
+
+Known Limitations:
+
+- Worker consumption, automatic reconciliation, processing-state UI, and stage-specific retry/backoff remain deferred to VS4/VS3-T7 as planned.
+- `pnpm audit --prod` reports three moderate advisories on pre-existing Better Auth/Next/Arcjet dependency paths (`esbuild`, `postcss`, and `uuid`); BullMQ adds no reported advisory.
+- The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during production builds.
+
+Next Recommended Task:
+
+- VS3-T7 - Show the persisted queued processing state in the UI without adding worker consumption.

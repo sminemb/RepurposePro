@@ -5,6 +5,7 @@ packages:
 allowBuilds:
   "@nestjs/core": true
   esbuild: true
+  msgpackr-extract: false
   sharp: true
 
 minimumReleaseAgeExclude:

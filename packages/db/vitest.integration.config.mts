@@ -30,9 +30,14 @@ export default defineConfig({
     hookTimeout: 30_000,
     include: [
       "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",
+      "apps/api/src/modules/processing/analysis-queue.redis.integration.spec.ts",
       "apps/api/src/modules/processing/processing.postgres.integration.spec.ts",
       "packages/db/src/schema/billing-integrity.integration.spec.ts",
     ],
+    env: {
+      RUN_REDIS_INTEGRATION: "true",
+      TEST_REDIS_URL: process.env.TEST_REDIS_URL ?? "redis://localhost:6379",
+    },
     passWithNoTests: false,
   },
 });
