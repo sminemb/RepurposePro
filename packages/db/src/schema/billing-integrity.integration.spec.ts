@@ -512,4 +512,313 @@ describeIntegration("billing integrity migrations", () => {
     expect(result.rows).toEqual([{ balance: "29" }]);
     expect(typeof result.rows[0]?.balance).toBe("string");
   });
+
+  it("atomically charges one owned uploaded project and returns its existing job on retry", async () => {
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      "analysis-user-a",
+      "Analysis User A",
+      "analysis-user-a@example.test",
+    ]);
+    await migrationPool.query(
+      `INSERT INTO projects (id, user_id, name, output_type, status)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        "00000000-0000-0000-0000-000000000401",
+        "analysis-user-a",
+        "Analysis project",
+        "clips",
+        "uploaded",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO uploaded_videos (
+        id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
+        duration_seconds, width, height, has_audio, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days')`,
+      [
+        "00000000-0000-0000-0000-000000000402",
+        "00000000-0000-0000-0000-000000000401",
+        "analysis.mp4",
+        "/private/analysis.mp4",
+        "video/mp4",
+        1024,
+        "600.001",
+        1920,
+        1080,
+        true,
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5)`,
+      ["analysis-user-a", "manual_adjustment", 40, "Analysis test credit", "analysis-test-credit"],
+    );
+
+    const start = () =>
+      runtimePool.query<{
+        creditsCharged: number | null;
+        jobId: string | null;
+        outcome: string;
+        projectId: string | null;
+        status: string | null;
+      }>(
+        `SELECT
+          outcome,
+          job_id AS "jobId",
+          project_id AS "projectId",
+          status,
+          credits_charged AS "creditsCharged"
+         FROM public.start_paid_video_analysis($1, $2)`,
+        ["analysis-user-a", "00000000-0000-0000-0000-000000000401"],
+      );
+
+    const first = await start();
+    const jobId = first.rows[0]?.jobId;
+
+    if (typeof jobId !== "string") {
+      throw new Error("The paid analysis start must return a job ID.");
+    }
+
+    expect(first.rows).toEqual([
+      {
+        creditsCharged: 11,
+        jobId,
+        outcome: "created",
+        projectId: "00000000-0000-0000-0000-000000000401",
+        status: "queued",
+      },
+    ]);
+
+    await expect(start()).resolves.toMatchObject({
+      rows: [
+        {
+          creditsCharged: 11,
+          jobId,
+          outcome: "existing",
+          projectId: "00000000-0000-0000-0000-000000000401",
+          status: "queued",
+        },
+      ],
+    });
+
+    const records = await migrationPool.query<{
+      balance: string;
+      creditsCharged: number;
+      currentJobId: string;
+      deductionCount: string;
+      projectStatus: string;
+    }>(
+      `SELECT
+        projects.current_job_id AS "currentJobId",
+        projects.status AS "projectStatus",
+        jobs.credits_charged AS "creditsCharged",
+        (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
+        (SELECT COUNT(*)::text FROM credit_ledger WHERE processing_job_id = jobs.id) AS "deductionCount"
+       FROM projects
+       JOIN processing_jobs AS jobs ON jobs.id = projects.current_job_id
+       WHERE projects.id = $2`,
+      ["analysis-user-a", "00000000-0000-0000-0000-000000000401"],
+    );
+
+    expect(records.rows).toEqual([
+      {
+        balance: "29",
+        creditsCharged: 11,
+        currentJobId: jobId,
+        deductionCount: "1",
+        projectStatus: "queued",
+      },
+    ]);
+
+    await expect(
+      runtimePool.query(
+        `INSERT INTO credit_ledger (
+          user_id, type, amount, project_id, processing_job_id, description, idempotency_key
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          "analysis-user-a",
+          "processing_deduction",
+          -11,
+          "00000000-0000-0000-0000-000000000401",
+          jobId,
+          "Direct runtime deduction",
+          "analysis-direct-runtime-deduction",
+        ],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("conceals foreign projects and leaves invalid starts without partial financial rows", async () => {
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      "analysis-user-b",
+      "Analysis User B",
+      "analysis-user-b@example.test",
+    ]);
+    await migrationPool.query(
+      `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        "analysis-user-b",
+        "manual_adjustment",
+        1,
+        "Analysis limited credit",
+        "analysis-limited-credit",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO projects (id, user_id, name, output_type, status)
+       VALUES ($1, $2, $3, $4, $5), ($6, $2, $7, $4, $8), ($9, $2, $10, $4, $5)`,
+      [
+        "00000000-0000-0000-0000-000000000403",
+        "analysis-user-b",
+        "Missing video",
+        "clips",
+        "uploaded",
+        "00000000-0000-0000-0000-000000000404",
+        "Invalid project state",
+        "draft",
+        "00000000-0000-0000-0000-000000000405",
+        "Insufficient credits",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO uploaded_videos (
+        id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
+        duration_seconds, width, height, has_audio, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days'),
+               ($11, $12, $3, $13, $5, $6, $14, $8, $9, $10, now() + interval '7 days')`,
+      [
+        "00000000-0000-0000-0000-000000000406",
+        "00000000-0000-0000-0000-000000000404",
+        "analysis.mp4",
+        "/private/invalid-state.mp4",
+        "video/mp4",
+        1024,
+        120,
+        1920,
+        1080,
+        true,
+        "00000000-0000-0000-0000-000000000407",
+        "00000000-0000-0000-0000-000000000405",
+        "/private/insufficient.mp4",
+        120,
+      ],
+    );
+
+    const start = (projectId: string) =>
+      runtimePool.query<{ outcome: string }>(
+        "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
+        ["analysis-user-b", projectId],
+      );
+
+    await expect(start("00000000-0000-0000-0000-000000000401")).resolves.toMatchObject({
+      rows: [{ outcome: "project_not_found" }],
+    });
+    await expect(start("00000000-0000-0000-0000-000000000403")).resolves.toMatchObject({
+      rows: [{ outcome: "video_required" }],
+    });
+    await expect(start("00000000-0000-0000-0000-000000000404")).resolves.toMatchObject({
+      rows: [{ outcome: "invalid_project_state" }],
+    });
+    await expect(start("00000000-0000-0000-0000-000000000405")).resolves.toMatchObject({
+      rows: [{ outcome: "insufficient_credits" }],
+    });
+
+    const sideEffects = await migrationPool.query<{
+      balance: string;
+      currentJobCount: string;
+      jobCount: string;
+      queuedProjectCount: string;
+    }>(
+      `SELECT
+        (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
+        (SELECT COUNT(*)::text FROM processing_jobs WHERE user_id = $1) AS "jobCount",
+        (SELECT COUNT(*)::text FROM projects WHERE user_id = $1 AND current_job_id IS NOT NULL) AS "currentJobCount",
+        (SELECT COUNT(*)::text FROM projects WHERE user_id = $1 AND status = 'queued') AS "queuedProjectCount"`,
+      ["analysis-user-b"],
+    );
+
+    expect(sideEffects.rows).toEqual([
+      { balance: "1", currentJobCount: "0", jobCount: "0", queuedProjectCount: "0" },
+    ]);
+  });
+
+  it("serializes concurrent projects so a user cannot overspend one balance", async () => {
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      "analysis-user-c",
+      "Analysis User C",
+      "analysis-user-c@example.test",
+    ]);
+    await migrationPool.query(
+      `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        "analysis-user-c",
+        "manual_adjustment",
+        11,
+        "Concurrent analysis credit",
+        "analysis-race-credit",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO projects (id, user_id, name, output_type, status)
+       VALUES ($1, $2, $3, $4, $5), ($6, $2, $7, $4, $5)`,
+      [
+        "00000000-0000-0000-0000-000000000408",
+        "analysis-user-c",
+        "Concurrent project one",
+        "clips",
+        "uploaded",
+        "00000000-0000-0000-0000-000000000409",
+        "Concurrent project two",
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO uploaded_videos (
+        id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
+        duration_seconds, width, height, has_audio, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days'),
+               ($11, $12, $3, $13, $5, $6, $7, $8, $9, $10, now() + interval '7 days')`,
+      [
+        "00000000-0000-0000-0000-000000000410",
+        "00000000-0000-0000-0000-000000000408",
+        "race.mp4",
+        "/private/race-one.mp4",
+        "video/mp4",
+        1024,
+        660,
+        1920,
+        1080,
+        true,
+        "00000000-0000-0000-0000-000000000411",
+        "00000000-0000-0000-0000-000000000409",
+        "/private/race-two.mp4",
+      ],
+    );
+
+    const starts = await Promise.all([
+      runtimePool.query<{ outcome: string }>(
+        "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
+        ["analysis-user-c", "00000000-0000-0000-0000-000000000408"],
+      ),
+      runtimePool.query<{ outcome: string }>(
+        "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
+        ["analysis-user-c", "00000000-0000-0000-0000-000000000409"],
+      ),
+    ]);
+
+    expect(starts.map((start) => start.rows[0]?.outcome).sort()).toEqual([
+      "created",
+      "insufficient_credits",
+    ]);
+
+    const result = await migrationPool.query<{ balance: string; jobCount: string }>(
+      `SELECT
+        (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
+        (SELECT COUNT(*)::text FROM processing_jobs WHERE user_id = $1) AS "jobCount"`,
+      ["analysis-user-c"],
+    );
+
+    expect(result.rows).toEqual([{ balance: "0", jobCount: "1" }]);
+  });
 });

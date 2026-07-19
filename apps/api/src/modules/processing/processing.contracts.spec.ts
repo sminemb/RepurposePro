@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  ProcessingContractValidationError,
-  parseStartAnalysisInput,
-} from "./processing.contracts";
+import { ProcessingContractValidationError, parseStartAnalysisInput } from "./processing.contracts";
 
 describe("processing start contract validation", () => {
   it("accepts only an explicit processing-charge confirmation", () => {

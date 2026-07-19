@@ -259,3 +259,15 @@ Record decisions such as:
 - Security: derive ledger ownership exclusively from the authenticated request; return only safe entry fields; mark responses `Cache-Control: private, no-store`; reject malformed query data with a safe 400 and database read failures with a safe 503.
 - Verification: unit tests (194 passed, 8 skipped), PostgreSQL integration (8 passed), strict typecheck, production builds, changed-file Prettier, and changed-file ESLint pass. Desktop table and 390px mobile card-list browser checks display the real Starter purchase with a clean console.
 - Limitation: `pnpm ci:check` reached formatting and package builds, then its repository-wide ESLint stage exceeded the 2-minute command limit. Retried `pnpm lint` with a 5-minute limit; it emitted no further diagnostic before timing out. Focused changed-file ESLint passes.
+
+---
+
+### VS3-T5 Operational Update - 2026-07-19 11:44 Asia/Manila
+
+- Files changed: shared processing result/input contract; processing API/controller/service/repository/rate guard and coverage; application module; owner-only PostgreSQL migration and journal; PostgreSQL integration suite/configuration; API contract; ESLint configuration; tracker and archive records.
+- Decision: a duplicate confirmed request returns the existing queued/active job and original charge under HTTP 202. It does not expose a replay field and cannot create another deduction.
+- Decision: use `SECURITY DEFINER` routine `public.start_paid_video_analysis(text, uuid)` with explicit search path, owner execution, public revocation, runtime-only execution, row locks, and a per-user advisory lock to serialize one credit balance across concurrent projects.
+- Security: request ownership comes only from the authenticated session. The runtime role cannot write `credit_ledger` directly; it can perform the narrow function call only.
+- Verification: direct unit coverage, live database/API integration, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db-integration`, changed-file Prettier, and `pnpm ci:check` all pass. CI reports 208 unit tests (13 skipped) and 13 PostgreSQL integration tests.
+- Failure resolved: test UUIDs must satisfy the strict RFC UUID parser; corrected API fixtures. Added the processing test pattern to the API ESLint test project and removed a no-unsafe matcher value.
+- Limitation: initial job state is database-queued only; VS3-T6 owns BullMQ enqueue/recovery. Existing Next NFT tracing warning remains non-fatal.

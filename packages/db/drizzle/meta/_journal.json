@@ -85,6 +85,13 @@
       "when": 1784363098365,
       "tag": "0011_add_stripe_webhook_credit_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784430412892,
+      "tag": "0012_add_paid_analysis_start",
+      "breakpoints": true
     }
   ]
 }

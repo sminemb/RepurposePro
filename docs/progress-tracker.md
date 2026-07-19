@@ -155,6 +155,15 @@ This slice is foundational and is the only intentionally infrastructure-heavy sl
 | VS0-T6 | Configure Redis and verify connectivity from API and worker | API + Worker | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Compose health check and Node PING verification passed. |
 | VS0-T7 | Add lint, typecheck, test scripts, and startup docs | Repo | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | Frozen install and full pnpm ci:check passed. |
 
+### VS3-T5 Completion Correction — 2026-07-19 11:44
+
+The preceding VS3-T5 task row is superseded by this completion correction: VS3-T5 is
+COMPLETED. It added strict confirmed-start validation, the authenticated analysis-start endpoint,
+Arcjet three-per-minute protection, and the owner-authorized atomic PostgreSQL job/deduction/project
+transaction. `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped),
+13 PostgreSQL integration tests, and production builds. The live handoff state now advances to
+VS3-T6.
+
 ## Slice Acceptance Criteria
 
 - [x] `apps/web` starts.
@@ -284,7 +293,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Start Time | 10:52 |
 | End Date | — |
 | End Time | — |
-| Progress | 40% |
+| Progress | 60% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -305,7 +314,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31 | 2026-07-17 | 11:38 | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked. |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | COMPLETED | 2026-07-18 | 16:14 | 2026-07-18 | 18:21 | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes. |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | COMPLETED | 2026-07-19 | 08:10 | 2026-07-19 | 08:49 | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
-| VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | NOT_STARTED | — | — | — | — | — |
+| VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | IN_PROGRESS | 2026-07-19 | 11:02 | — | — | Implementation started; planned endpoint, runtime-role function, rate limit, and tests are in scope. |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
 
@@ -313,9 +322,9 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 
 - [x] User can buy credits in Stripe test mode.
 - [x] Duplicate webhook cannot grant duplicate credits.
-- [ ] Credits are deducted before processing.
-- [ ] Ledger records purchase and deduction.
-- [ ] Processing job is queued.
+- [x] Credits are deducted before processing.
+- [x] Ledger records purchase and deduction.
+- [x] Processing job is queued in PostgreSQL.
 - [ ] User sees queued state.
 
 ---
@@ -839,17 +848,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Last Maintenance Task: MAINT-11 - Tighten landing hero vertical spacing
 Current Status: NOT_STARTED
-Last Completed Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
-Next Recommended Task: Implement VS3-T5: deduct credits and create a processing job in one database transaction using the existing immutable credit ledger.
-Uncommitted Changes: All VS3-T4.1 source and task records are included in the completed-task commit. Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. Local `.env` remains ignored and must never be committed.
-Known Failing Tests: None. `pnpm test` passes 194 tests (8 skipped); `pnpm test:db-integration` passes 8 tests; changed-file ESLint, typecheck, and production builds pass. Root `pnpm ci:check` and root `pnpm lint` reached ESLint but did not finish within their 2- and 5-minute command limits, with no diagnostic.
+Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add its safe recovery behavior without changing financial state.
+Uncommitted Changes: VS3-T5 source, tests, contracts, migrations, and task records are included in the completed-task commit. Existing `apps/web/next-env.d.ts` change predates this task and remains intentionally unstaged. Local `.env` remains ignored and must never be committed.
+Known Failing Tests: None. `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
 Known Blockers: None.
-Important Context: `GET /billing/ledger` is session-owned and returns newest-first stable pages with opaque `(createdAt, id)` cursors, optional ledger-type filtering, private no-store caching, safe 400 validation, and safe 503 database failures. Billing now shows the live Starter purchase as a desktop table and 390px mobile card list; later processing charges/refunds appear automatically from the immutable ledger.
-Required Commands Before Continuing: Run `pnpm ci:check` before handoff after new code; it may require a longer-than-5-minute ESLint allowance. Start Stripe CLI only for a new live-payment acceptance scenario.
+Important Context: `POST /api/v1/projects/:projectId/analyze` requires exactly `{ "confirmed": true }`, derives ownership from the server session, and rate-limits three starts per user/minute. `public.start_paid_video_analysis(text, uuid)` is a fixed-search-path `SECURITY DEFINER` routine owned by `repurposepro_owner`; it locks per-user credit activity, creates one queued job/deduction/project mutation atomically, conceals foreign projects, and returns the stored queued/active job on retries. BullMQ enqueue is intentionally deferred to VS3-T6.
+Required Commands Before Continuing: Run `pnpm ci:check` after VS3-T6 changes. Add BullMQ enqueue only after the durable queued job exists; pass IDs only and do not deduct/refund credits in queue producers or workers.
 Last Updated Date: 2026-07-19
-Last Updated Time: 08:49
+Last Updated Time: 11:44
 Last Updated By: Codex
 ```

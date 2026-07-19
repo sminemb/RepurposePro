@@ -7,6 +7,7 @@ import { BillingModule } from "./modules/billing/billing.module";
 import { HealthModule } from "./modules/health/health.module";
 import { InfrastructureModule } from "./modules/infrastructure/infrastructure.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
+import { ProcessingModule } from "./modules/processing/processing.module";
 import { createLoggingConfig } from "./logging.config";
 
 const config = loadApiConfig();
@@ -19,6 +20,7 @@ const config = loadApiConfig();
     AuthModule,
     BillingModule,
     ProjectsModule,
+    ProcessingModule,
   ],
 })
 export class AppModule {}

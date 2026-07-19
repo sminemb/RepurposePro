@@ -1372,3 +1372,50 @@ Known Limitations:
 
 - Repository-wide ESLint did not complete within five minutes, preventing a completed `pnpm ci:check` gate despite no reported lint diagnostic. The changed-file lint pass is clean.
 - The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during production builds.
+
+---
+
+### VS3-T5 - Atomic Paid Analysis Start
+
+Status: COMPLETED
+Start Date: 2026-07-19
+Start Time: 11:02
+End Date: 2026-07-19
+End Time: 11:44
+
+User Outcome:
+
+- An authenticated owner can confirm the persisted video charge and start paid analysis through `POST /api/v1/projects/:projectId/analyze`.
+- The endpoint returns the durable queued job with HTTP 202. Repeated confirmed requests return the same queued or active job and original charge without a second deduction.
+
+Files Changed:
+
+- Shared processing contracts and API validation.
+- Processing controller, session-owned service/repository, Arcjet three-per-minute guard, and unit/PostgreSQL API integration tests.
+- Owner-authorized `start_paid_video_analysis` migration, migration journal, and PostgreSQL integrity/race tests.
+- API contracts, ESLint API-spec project coverage, integration-test configuration, and task records.
+
+Commands Run:
+
+- Focused processing contract, controller, rate-limit, and repository tests.
+- `pnpm test:db-integration`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
+- Changed-file Prettier check/write/check
+- `pnpm ci:check`
+- `git diff --check`
+
+Verification:
+
+- PASS: the strict body parser accepts only `{ "confirmed": true }`; invalid confirmation receives the safe 422 envelope before any processing attempt.
+- PASS: session ownership is passed as the bound first function parameter; foreign project IDs receive `PROJECT_NOT_FOUND` without disclosing ownership.
+- PASS: Arcjet receives the authenticated user characteristic, safely maps denial to 429 and dependency failure to 503, and is configured for three starts per minute.
+- PASS: the security-definer function locks project and per-user credit activity, recalculates `ceil(duration_seconds / 60)`, creates queued job/immutable deduction/project update atomically, and returns an existing queued job on retry.
+- PASS: live PostgreSQL coverage proves missing video, invalid state, insufficient credits, cross-user access, and concurrent starts leave financial state correct; the restricted runtime role cannot insert a ledger deduction directly.
+- PASS: full CI passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
+
+Known Limitations:
+
+- VS3-T5 persists only database-queued work. BullMQ enqueue and recovery are deliberately deferred to VS3-T6.
+- The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during the production build.

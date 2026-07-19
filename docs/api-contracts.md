@@ -620,7 +620,6 @@ Starts paid analysis.
 
 - Authenticated user owns project.
 - Valid uploaded video exists.
-- Project is not already processing.
 - User has enough credits.
 - Required credits are known.
 
@@ -628,16 +627,21 @@ Starts paid analysis.
 
 The backend must:
 
-1. Lock relevant billing/project records.
+1. Lock the owned project and the user's credit activity.
 2. Recalculate required credits from persisted duration.
 3. Check balance.
-4. Deduct credits.
-5. Write immutable ledger row.
-6. Create processing job.
-7. Commit transaction.
-8. Enqueue BullMQ job.
+4. Create one database-queued processing job.
+5. Deduct credits and write an immutable ledger row.
+6. Set the project status to `queued` and its `current_job_id`.
+7. Commit all changes in one transaction.
 
 Never deduct credits in the worker.
+
+The initial VS3 endpoint only persists the queued job. BullMQ enqueue and recovery behavior are
+introduced in VS3-T6.
+
+When a retry finds the owned project's current job is `queued` or `active`, it returns that stored
+job and its original `creditsCharged` with no second deduction.
 
 ### Request
 
@@ -662,14 +666,16 @@ Never deduct credits in the worker.
 
 ### Errors
 
-```text
-PROCESSING_ALREADY_STARTED
-PROCESSING_INVALID_PROJECT_STATE
-PROCESSING_VIDEO_REQUIRED
-BILLING_INSUFFICIENT_CREDITS
-BILLING_DEDUCTION_FAILED
-QUEUE_UNAVAILABLE
-```
+| Status | Code | Meaning |
+|---|---|---|
+| 404 | `PROJECT_NOT_FOUND` | The project does not exist for the authenticated user. |
+| 409 | `PROCESSING_INVALID_PROJECT_STATE` | The project cannot begin paid processing in its current state. |
+| 409 | `PROCESSING_VIDEO_REQUIRED` | No active uploaded video with usable duration and audio exists. |
+| 409 | `BILLING_INSUFFICIENT_CREDITS` | Persisted credit balance is lower than `ceil(durationSeconds / 60)`. |
+| 422 | `PROCESSING_CONFIRMATION_REQUIRED` | The request body is not exactly `{ "confirmed": true }`. |
+| 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three analysis starts in one minute. |
+| 503 | `BILLING_DEDUCTION_FAILED` | The atomic database operation returned an unexpected or unavailable result. |
+| 503 | `PROCESSING_START_UNAVAILABLE` | Arcjet or its configuration is unavailable; no internal detail is exposed. |
 
 ---
 
