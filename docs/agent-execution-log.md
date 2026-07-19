@@ -1441,3 +1441,49 @@ Verification:
 Next Recommended Task:
 
 - Add the analysis-type predicate and PostgreSQL regression test, rerun `pnpm ci:check`, then reassess VS3-T5.
+
+---
+
+### VS3-T5 - Paid-Analysis Retry Type Fix
+
+Status: COMPLETED
+Start Date: 2026-07-19
+Start Time: 11:02
+End Date: 2026-07-19
+End Time: 12:59
+
+User Outcome:
+
+- Paid-analysis retries can return only the project's queued or active `analyze_video` job.
+- A queued or active render job now produces `PROCESSING_INVALID_PROJECT_STATE` without changing the current job, creating an analysis job, or deducting credits.
+
+Files Changed:
+
+- Forward migration `0013_restrict_paid_analysis_retry_type.sql` and migration journal.
+- Live PostgreSQL billing-integrity regression coverage for queued and active non-analysis jobs.
+- Processing API contract, progress tracker, execution record, operational record, and handoff history.
+
+Commands Run:
+
+- Focused PostgreSQL regression before the fix; both cases failed with `outcome: "existing"`.
+- Focused PostgreSQL regression after migration `0013`; both cases passed.
+- `pnpm test:db-integration`
+- Changed-file Prettier checks.
+- `pnpm ci:check`
+- `git diff --check`
+
+Verification:
+
+- PASS: queued and active `render_clips` jobs are never returned by `start_paid_video_analysis`.
+- PASS: rejected retries leave `current_job_id`, project status, credit balance, and ledger deductions unchanged and create no `analyze_video` job.
+- PASS: existing queued/active analysis retry behavior, ownership filters, transaction locks, `SECURITY DEFINER` search path, owner, and runtime-only execution remain intact.
+- PASS: full CI passes formatting, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
+
+Known Limitations:
+
+- VS3-T5 persists only database-queued work. BullMQ enqueue and recovery remain deferred to VS3-T6.
+- The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during production builds.
+
+Next Recommended Task:
+
+- VS3-T6 - Enqueue the persisted queued analysis job in BullMQ without changing financial state.

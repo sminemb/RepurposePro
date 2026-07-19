@@ -284,7 +284,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Start Time | 10:52 |
 | End Date | — |
 | End Time | — |
-| Progress | 60% |
+| Progress | 70% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -305,7 +305,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T3 | Create Stripe Checkout session and redirect flow | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31 | 2026-07-17 | 11:38 | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked. |
 | VS3-T4 | Verify Stripe webhook signature and idempotently grant credits | API + DB + Stripe + Tests | COMPLETED | 2026-07-18 | 16:14 | 2026-07-18 | 18:21 | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes. |
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | COMPLETED | 2026-07-19 | 08:10 | 2026-07-19 | 08:49 | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
-| VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | IN_PROGRESS | 2026-07-19 | 11:02 | — | — | Independent review found one required fix: retry lookup must require `type = 'analyze_video'` before returning a queued/active job. `pnpm ci:check` passes. |
+| VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | COMPLETED | 2026-07-19 | 11:02 | 2026-07-19 | 12:59 | Forward migration `0013` restricts retries to `analyze_video`; queued/active render-job regressions, 208 unit tests, 15 PostgreSQL integration tests, lint, typecheck, formatting, and production builds pass. |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | NOT_STARTED | — | — | — | — | — |
 | VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
 
@@ -839,17 +839,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T5 - Restrict paid-analysis retries to analysis jobs
+Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Last Maintenance Task: MAINT-13 - Correct VS3-T5 tracker status after independent review
-Current Status: IN_PROGRESS
-Last Completed Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
-Next Recommended Task: Complete VS3-T5 by requiring `type = 'analyze_video'` in the existing-job retry lookup and adding a PostgreSQL regression test before starting VS3-T6.
-Uncommitted Changes: Tracker and review records are in progress; no application source changes are uncommitted. Local `.env` remains ignored and must never be committed.
-Known Failing Tests: None. `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
-Known Blockers: The retry query checks only job ID, project, user, and active state. It can return a future queued/active render job from the analysis endpoint because it does not require `type = 'analyze_video'`.
-Important Context: `POST /api/v1/projects/:projectId/analyze` requires exactly `{ "confirmed": true }`, derives ownership from the server session, and rate-limits three starts per user/minute. `public.start_paid_video_analysis(text, uuid)` is a fixed-search-path `SECURITY DEFINER` routine owned by `repurposepro_owner`; it safely serializes current financial mutations. Direct runtime ledger mutation is already revoked by migration `0008` and covered by integration tests. BullMQ enqueue remains deferred to VS3-T6.
-Required Commands Before Continuing: Add the analysis-job type predicate and its PostgreSQL regression test, then run `pnpm ci:check`. Do not start VS3-T6 before VS3-T5 passes review.
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add safe recovery behavior without changing financial state.
+Uncommitted Changes: No intended uncommitted changes remain after the VS3-T5 fix commit; local `.env` remains ignored and must never be committed.
+Known Failing Tests: None. `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
+Known Blockers: None.
+Important Context: `POST /api/v1/projects/:projectId/analyze` requires exactly `{ "confirmed": true }`, derives ownership from the server session, and rate-limits three starts per user/minute. Forward migration `0013` preserves the fixed-search-path `SECURITY DEFINER` routine and allows retry reuse only for the project's queued/active `analyze_video` job; non-analysis jobs produce `PROCESSING_INVALID_PROJECT_STATE` without new charges. BullMQ enqueue remains deferred to VS3-T6.
+Required Commands Before Continuing: Implement VS3-T6 against the durable queued `analyze_video` job, pass IDs only to BullMQ, and run `pnpm ci:check` before completion.
 Last Updated Date: 2026-07-19
-Last Updated Time: 12:16
+Last Updated Time: 12:59
 Last Updated By: Codex
 ```

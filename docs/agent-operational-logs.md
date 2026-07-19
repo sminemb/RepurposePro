@@ -290,3 +290,15 @@ Record decisions such as:
 - Classified as accepted behavior: the three-per-minute Arcjet guard runs before the idempotent lookup, so excess retries receive the documented `429` rather than a replay response.
 - Verification: `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
 - Decision: VS3-T5 remains `IN_PROGRESS`; VS3-T6 must not start until the required retry-type predicate and regression test are added.
+
+---
+
+### VS3-T5 Required Fix Completion - 2026-07-19 12:59 Asia/Manila
+
+- Files changed: forward migration `0013`, migration journal, live PostgreSQL billing-integrity tests, API contract, tracker, execution log, operational log, and handoff history.
+- Failure reproduced: queued and active `render_clips` current jobs both returned `outcome: "existing"` before the fix.
+- Fix: `start_paid_video_analysis` now requires `processing_job.type = 'analyze_video'` in its existing-job lookup while preserving ownership predicates, locks, fixed search path, function owner, and runtime-only grant.
+- Financial verification: rejected non-analysis retries keep the original current job and project status, create no analysis job, retain the 40-credit balance, and add no processing deduction.
+- Verification: focused RED/GREEN PostgreSQL runs pass after the fix; `pnpm test:db-integration` passes 15 tests; full `pnpm ci:check` passes formatting, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
+- Limitation: BullMQ enqueue and recovery remain deferred to VS3-T6. Existing Next.js NFT tracing warning remains non-fatal.
+- Decision: VS3-T5 is complete and VS3-T6 becomes the next task.

@@ -92,6 +92,13 @@
       "when": 1784430412892,
       "tag": "0012_add_paid_analysis_start",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784436889383,
+      "tag": "0013_restrict_paid_analysis_retry_type",
+      "breakpoints": true
     }
   ]
 }

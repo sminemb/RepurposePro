@@ -648,6 +648,89 @@ describeIntegration("billing integrity migrations", () => {
     ).rejects.toMatchObject({ code: "42501" });
   });
 
+  it.each([
+    {
+      jobId: "00000000-0000-0000-0000-000000000412",
+      jobStatus: "queued",
+      jobStep: "queued",
+      projectId: "00000000-0000-0000-0000-000000000411",
+      projectStatus: "queued",
+      userId: "analysis-render-queued",
+    },
+    {
+      jobId: "00000000-0000-0000-0000-000000000422",
+      jobStatus: "active",
+      jobStep: "rendering",
+      projectId: "00000000-0000-0000-0000-000000000421",
+      projectStatus: "rendering",
+      userId: "analysis-render-active",
+    },
+  ])(
+    "does not reuse a $jobStatus non-analysis current job for a paid-analysis retry",
+    async ({ jobId, jobStatus, jobStep, projectId, projectStatus, userId }) => {
+      await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+        userId,
+        `Analysis render ${jobStatus}`,
+        `${userId}@example.test`,
+      ]);
+      await migrationPool.query(
+        `INSERT INTO projects (id, user_id, name, output_type, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [projectId, userId, `Analysis render ${jobStatus}`, "clips", projectStatus],
+      );
+      await migrationPool.query(
+        `INSERT INTO processing_jobs (
+          id, project_id, user_id, type, status, step, progress, credits_charged
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [jobId, projectId, userId, "render_clips", jobStatus, jobStep, 0, 0],
+      );
+      await migrationPool.query(
+        "UPDATE projects SET current_job_id = $1 WHERE id = $2 AND user_id = $3",
+        [jobId, projectId, userId],
+      );
+      await migrationPool.query(
+        `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, "manual_adjustment", 40, "Analysis render credit", `${userId}-credit`],
+      );
+
+      await expect(
+        runtimePool.query("SELECT outcome FROM public.start_paid_video_analysis($1, $2)", [
+          userId,
+          projectId,
+        ]),
+      ).resolves.toMatchObject({ rows: [{ outcome: "invalid_project_state" }] });
+
+      const records = await migrationPool.query<{
+        analysisJobCount: string;
+        balance: string;
+        currentJobId: string;
+        deductionCount: string;
+        projectStatus: string;
+      }>(
+        `SELECT
+          projects.current_job_id AS "currentJobId",
+          projects.status AS "projectStatus",
+          (SELECT COUNT(*)::text FROM processing_jobs WHERE project_id = $1 AND type = 'analyze_video') AS "analysisJobCount",
+          (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $2) AS balance,
+          (SELECT COUNT(*)::text FROM credit_ledger WHERE user_id = $2 AND type = 'processing_deduction') AS "deductionCount"
+         FROM projects
+         WHERE projects.id = $1`,
+        [projectId, userId],
+      );
+
+      expect(records.rows).toEqual([
+        {
+          analysisJobCount: "0",
+          balance: "40",
+          currentJobId: jobId,
+          deductionCount: "0",
+          projectStatus,
+        },
+      ]);
+    },
+  );
+
   it("conceals foreign projects and leaves invalid starts without partial financial rows", async () => {
     await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
       "analysis-user-b",

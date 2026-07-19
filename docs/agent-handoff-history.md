@@ -687,3 +687,23 @@ Last Updated Date: 2026-07-19
 Last Updated Time: 12:16
 Last Updated By: Codex
 ~~~
+
+---
+
+### VS3-T5 Required Fix Completion Snapshot - 2026-07-19 12:59 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T6 - Enqueue analysis job in BullMQ
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
+Next Recommended Task: VS3-T6 - Enqueue the persisted queued analysis job in BullMQ and add safe recovery behavior without changing financial state.
+Uncommitted Changes: No intended uncommitted changes remain after the VS3-T5 fix commit; local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes format, lint, strict typecheck, 208 unit tests (15 skipped), 15 PostgreSQL integration tests, and production builds.
+Known Blockers: None.
+Important Context: Forward migration 0013 preserves the fixed-search-path SECURITY DEFINER paid-analysis routine and allows retry reuse only for the project's queued/active analyze_video job. Queued or active render jobs return PROCESSING_INVALID_PROJECT_STATE without creating a job or changing credits. BullMQ enqueue remains deferred to VS3-T6.
+Required Commands Before Continuing: Implement VS3-T6 against the durable queued analyze_video job, pass IDs only to BullMQ, and run pnpm ci:check before completion.
+Last Updated Date: 2026-07-19
+Last Updated Time: 12:59
+Last Updated By: Codex
+~~~

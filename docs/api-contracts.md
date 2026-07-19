@@ -640,8 +640,9 @@ Never deduct credits in the worker.
 The initial VS3 endpoint only persists the queued job. BullMQ enqueue and recovery behavior are
 introduced in VS3-T6.
 
-When a retry finds the owned project's current job is `queued` or `active`, it returns that stored
-job and its original `creditsCharged` with no second deduction.
+When a retry finds the owned project's current `analyze_video` job is `queued` or `active`, it
+returns that stored job and its original `creditsCharged` with no second deduction. A current job
+of any other type is not reusable by this endpoint.
 
 ### Request
 
