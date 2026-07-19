@@ -378,3 +378,16 @@ Status: COMPLETED
 - Change: recorded the completed VS3-T5 outcome, acceptance criteria, VS3-T6 next task, latest verification, and a dated correction adjacent to the stale initial task-table row.
 - Verification: changed-document Prettier check and `git diff --check` pass.
 - Next: VS3-T6 - enqueue the durable queued analysis job in BullMQ without changing financial state.
+
+---
+
+### MAINT-13 - Correct VS3-T5 Tracker Status After Independent Review
+
+Date: 2026-07-19
+Time: 12:16 Asia/Manila
+Status: COMPLETED
+
+- Scope: VS3-T5 task row and live handoff state.
+- Change: removed the standalone completion-correction prose. The table row and authoritative handoff now accurately retain VS3-T5 as `IN_PROGRESS` with its required correctness fix.
+- Verification: full `pnpm ci:check` passes; the remaining review finding requires an `analyze_video` job-type predicate and PostgreSQL regression coverage.
+- Next: complete VS3-T5 before beginning VS3-T6.

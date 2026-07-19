@@ -667,3 +667,23 @@ Last Updated Date: 2026-07-19
 Last Updated Time: 11:58
 Last Updated By: Codex
 ~~~
+
+---
+
+### VS3-T5 Independent Review Snapshot - 2026-07-19 12:16 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T5 - Restrict paid-analysis retries to analysis jobs
+Current Status: IN_PROGRESS
+Last Completed Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
+Next Recommended Task: Complete VS3-T5 by requiring type = 'analyze_video' in the existing-job retry lookup and adding a PostgreSQL regression test before starting VS3-T6.
+Uncommitted Changes: Tracker and review records are in progress; no application source changes are uncommitted. Local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
+Known Blockers: The retry query checks only job ID, project, user, and active state. It can return a future queued/active render job from the analysis endpoint because it does not require type = 'analyze_video'.
+Important Context: The database routine safely serializes current financial mutations. Direct runtime ledger mutation is already revoked by migration 0008 and covered by integration tests. BullMQ enqueue remains deferred to VS3-T6.
+Required Commands Before Continuing: Add the analysis-job type predicate and its PostgreSQL regression test, then run pnpm ci:check. Do not start VS3-T6 before VS3-T5 passes review.
+Last Updated Date: 2026-07-19
+Last Updated Time: 12:16
+Last Updated By: Codex
+~~~

@@ -1419,3 +1419,25 @@ Known Limitations:
 
 - VS3-T5 persists only database-queued work. BullMQ enqueue and recovery are deliberately deferred to VS3-T6.
 - The existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains during the production build.
+
+---
+
+### VS3-T5 - Independent Review
+
+Status: REVIEW COMPLETED; IMPLEMENTATION REMAINS IN_PROGRESS
+Date: 2026-07-19
+Time: 12:16 Asia/Manila
+
+Outcome:
+
+- The implementation passes its automated checks but is not ready to mark complete.
+- The stored-job retry query needs `type = 'analyze_video'`; otherwise a future queued or active render job can be returned by the analysis-start endpoint.
+
+Verification:
+
+- PASS: `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
+- PASS: migration `0008` and the PostgreSQL integration suite already prove that the runtime role cannot mutate `credit_ledger` directly.
+
+Next Recommended Task:
+
+- Add the analysis-type predicate and PostgreSQL regression test, rerun `pnpm ci:check`, then reassess VS3-T5.

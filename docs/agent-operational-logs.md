@@ -279,3 +279,14 @@ Record decisions such as:
 - Files changed: progress tracker, maintenance log, operational log, and handoff history.
 - Change: reconciled VS3-T5 completion, acceptance criteria, and the authoritative live handoff; retained a dated correction next to the stale initial table row rather than rewriting the historical start record.
 - Verification: changed-document Prettier check and `git diff --check` pass.
+
+---
+
+### VS3-T5 Independent Review - 2026-07-19 12:16 Asia/Manila
+
+- Scope: independent correctness, security, and transaction review of the paid-analysis start implementation.
+- Required finding: the retry lookup returns any owned queued or active `current_job_id`; it must require `processing_jobs.type = 'analyze_video'` so a future render job cannot be returned by `POST /projects/:projectId/analyze`.
+- Classified as noise: the claimed direct runtime ledger-write risk is already prevented by migration `0008` table revocation and live PostgreSQL integration coverage.
+- Classified as accepted behavior: the three-per-minute Arcjet guard runs before the idempotent lookup, so excess retries receive the documented `429` rather than a replay response.
+- Verification: `pnpm ci:check` passes format, lint, strict typecheck, 208 unit tests (13 skipped), 13 PostgreSQL integration tests, and production builds.
+- Decision: VS3-T5 remains `IN_PROGRESS`; VS3-T6 must not start until the required retry-type predicate and regression test are added.
