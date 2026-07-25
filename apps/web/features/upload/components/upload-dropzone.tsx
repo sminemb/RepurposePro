@@ -1,10 +1,11 @@
 "use client";
 
-import type { SourceVideoMetadata } from "@repurposepro/shared";
+import type { CreditBalance, SourceVideoMetadata } from "@repurposepro/shared";
 import { FileVideo, LoaderCircle, RotateCcw, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { ProcessingStartPanel } from "@/features/processing/components/processing-start-panel";
 
 import { VideoMetadataCard } from "./video-metadata-card";
 import {
@@ -16,6 +17,8 @@ import {
 
 interface UploadDropzoneProps {
   readonly apiUrl: string;
+  readonly balance: CreditBalance | null;
+  readonly balanceError: string | null;
   readonly projectId: string;
 }
 
@@ -29,7 +32,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1_024 * 1_024)).toFixed(1)} MB`;
 }
 
-export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
+export function UploadDropzone({ apiUrl, balance, balanceError, projectId }: UploadDropzoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,6 +196,13 @@ export function UploadDropzone({ apiUrl, projectId }: UploadDropzoneProps) {
           {state === "uploaded" && metadata ? (
             <div className="mt-5">
               <VideoMetadataCard metadata={metadata} />
+              <ProcessingStartPanel
+                apiUrl={apiUrl}
+                balance={balance}
+                balanceError={balanceError}
+                metadata={metadata}
+                projectId={projectId}
+              />
             </div>
           ) : null}
 

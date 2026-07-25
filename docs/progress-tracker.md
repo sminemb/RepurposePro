@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | IN_PROGRESS | 2026-07-15 | 10:52 | — | — | VS3-T5 | 50% | — |
+| VS3 | User can buy credits and start a paid processing job | COMPLETED | 2026-07-15 | 10:52 | 2026-07-25 | 14:55 | None | 100% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -279,12 +279,12 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Field | Value |
 |---|---|
 | Slice ID | VS3 |
-| Status | IN_PROGRESS |
+| Status | COMPLETED |
 | Start Date | 2026-07-15 |
 | Start Time | 10:52 |
-| End Date | — |
-| End Time | — |
-| Progress | 85% |
+| End Date | 2026-07-25 |
+| End Time | 14:55 |
+| Progress | 100% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -307,7 +307,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T4.1 | Expose credit ledger history and transaction-history UI | API + Web + Tests | COMPLETED | 2026-07-19 | 08:10 | 2026-07-19 | 08:49 | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
 | VS3-T5 | Deduct credits and create processing job in one DB transaction | API + DB | COMPLETED | 2026-07-19 | 11:02 | 2026-07-19 | 12:59 | Forward migration `0013` restricts retries to `analyze_video`; queued/active render-job regressions, 208 unit tests, 15 PostgreSQL integration tests, lint, typecheck, formatting, and production builds pass. |
 | VS3-T6 | Enqueue analysis job in BullMQ | API + Redis + Queue | COMPLETED | 2026-07-19 | 13:25 | 2026-07-19 | 13:58 | 222 unit tests; 16 live PostgreSQL/Redis integration tests; full CI, infrastructure, and whitespace checks pass. |
-| VS3-T7 | Show queued processing state in UI | Web + API | NOT_STARTED | — | — | — | — | — |
+| VS3-T7 | Show queued processing state in UI | Web + API | COMPLETED | 2026-07-19 | 16:43 | 2026-07-25 | 14:55 | Persisted status API, credit confirmation/start UI, refresh-safe processing page, dashboard routing, 264 unit tests, 16 live integration tests, and production builds pass. |
 
 ## Slice Acceptance Criteria
 
@@ -316,7 +316,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 - [x] Credits are deducted before processing.
 - [x] Ledger records purchase and deduction.
 - [x] Processing job is queued in PostgreSQL.
-- [ ] User sees queued state.
+- [x] User sees queued state.
 
 ---
 
@@ -838,18 +838,18 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ## 10. Current Handoff State
 
 ```text
-Current Slice: VS3 - User can buy credits and start a paid processing job
-Current Task: VS3-T7 - Show queued processing state in UI
+Current Slice: VS4 - User receives AI-generated clip previews from an uploaded video
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
 Last Maintenance Task: MAINT-13 - Correct VS3-T5 tracker status after independent review
 Current Status: NOT_STARTED
-Last Completed Task: VS3-T6 - Enqueue analysis job in BullMQ
-Next Recommended Task: VS3-T7 - Show the persisted queued processing state in the UI without adding worker consumption.
-Uncommitted Changes: No intended uncommitted changes remain after the VS3-T6 task commit; local `.env` remains ignored and must never be committed.
-Known Failing Tests: None. `pnpm ci:check` passes formatting, lint, strict typecheck, 222 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
-Known Blockers: None.
-Important Context: `POST /api/v1/projects/:projectId/analyze` now commits the paid PostgreSQL job, publishes `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`, uses the durable job UUID as BullMQ `jobId`, persists `bullmq_job_id`, and returns HTTP 202 only after both external steps succeed. Queue failures return retry-safe `QUEUE_UNAVAILABLE` without refund or another deduction. Worker consumption and automatic reconciliation remain deferred.
-Required Commands Before Continuing: Implement VS3-T7 against persisted project/job state, keep worker consumption out of scope, and run `pnpm ci:check` before completion.
-Last Updated Date: 2026-07-19
-Last Updated Time: 13:58
+Last Completed Task: VS3-T7 - Show queued processing state in UI
+Next Recommended Task: VS4-T1 - Consume queued analysis jobs and persist truthful lifecycle progress without changing credit state.
+Uncommitted Changes: No intended uncommitted changes should remain after the VS3-T7 commit; local `.env` remains ignored and must never be committed.
+Known Failing Tests: None. `pnpm ci:check` passes formatting, lint, strict typecheck, 264 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+Known Blockers: None. Browser automation previously rejected the local site under browser security policy, so responsive visual verification remains a documented limitation rather than an implementation blocker.
+Important Context: Paid start now shows the exact credit effect, posts only `{ confirmed: true }`, navigates to a refresh-safe Server Component, and reopens queued/active projects from the dashboard. `GET /api/v1/projects/:projectId/status` is owner-scoped and no-store; it fails closed on malformed persistence and maps the database queued-zero sentinel to null so the UI does not invent progress. No polling or worker mutation exists yet. Browser automation against the local app was blocked by the browser's local-site security policy; automated web tests, production build, and live PostgreSQL API integration passed.
+Required Commands Before Continuing: Implement VS4-T1 lifecycle updates against the existing queue/job contract, add polling only after truthful progress exists, and run `pnpm ci:check` before completion.
+Last Updated Date: 2026-07-25
+Last Updated Time: 14:55
 Last Updated By: Codex
 ```

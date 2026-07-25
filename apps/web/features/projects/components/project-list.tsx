@@ -3,6 +3,9 @@ import { Clapperboard, FileVideo, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/app/empty-state";
+import { StatusBadge } from "@/components/app/status-badge";
+
+import { getProjectCardAction } from "./project-card-action";
 
 interface ProjectListProps {
   readonly projects: readonly ProjectSummary[];
@@ -36,6 +39,7 @@ export function ProjectList({ projects }: ProjectListProps) {
       {projects.map((project) => {
         const Icon = project.outputType === "clips" ? Clapperboard : FileVideo;
         const outputLabel = project.outputType === "clips" ? "Short clips" : "Summary video";
+        const action = getProjectCardAction(project.id, project.status);
 
         return (
           <article
@@ -46,9 +50,7 @@ export function ProjectList({ projects }: ProjectListProps) {
               <span className="grid size-11 place-items-center rounded-rp-md border border-rp-primary/25 bg-rp-primary-soft text-rp-primary">
                 <Icon aria-hidden="true" className="size-5" />
               </span>
-              <span className="rounded-full border border-rp-primary/25 bg-rp-primary-soft px-2.5 py-1 text-xs font-medium text-rp-primary">
-                Draft
-              </span>
+              <StatusBadge status={project.status} />
             </div>
             <h2 className="mt-5 text-lg font-semibold text-rp-text">{project.name}</h2>
             <p className="mt-2 text-sm text-rp-text-muted">{outputLabel}</p>
@@ -56,9 +58,9 @@ export function ProjectList({ projects }: ProjectListProps) {
               <p>Created {formatCreatedAt(project.createdAt)}</p>
               <Link
                 className="mt-3 inline-flex min-h-9 items-center text-sm font-semibold text-rp-primary hover:text-rp-text"
-                href={`/projects/${project.id}/upload`}
+                href={action.href}
               >
-                Upload video
+                {action.label}
               </Link>
             </div>
           </article>

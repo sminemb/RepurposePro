@@ -4,6 +4,37 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 
 ## Files Changed Log
 
+### VS3-T7 Operational Update - 2026-07-19 17:32 Asia/Manila
+
+- Files changed: shared processing snapshots; protected processing-status repository/service/controller/module; unit and PostgreSQL API integration coverage; upload credit/start surface; processing Server Component; static status badge and dashboard routing; task records.
+- Decision: expose only the owned project's current persisted job, fail closed on missing joined jobs or malformed enum/progress data, and mark the response private/no-store.
+- Decision: translate the database's queued `0` sentinel to `null` at the public status boundary so pre-worker state never displays an invented percentage. No schema migration or worker mutation was added.
+- Security: identity is derived only from the authenticated session; the SQL read is parameterized and owner-scoped; foreign and missing projects share `PROJECT_NOT_FOUND`; persistence failures return safe `PROCESSING_STATUS_UNAVAILABLE`.
+- Verification: 48 focused tests, 2 focused live PostgreSQL API tests, full `pnpm ci:check`, changed-file Prettier, and `git diff --check` pass. Full CI reports 264 unit tests passed with 16 intentional skips and 16 live integration tests passed.
+- Failure resolved: live integration revealed queued jobs persist progress `0`; the API now returns `null` only for queued zero and has a dedicated regression test.
+- Tooling limitation: the first `pnpm ci:check` shell attempt timed out during ESLint; the extended run found and resolved one type-import lint issue. Browser automation was then blocked by the local-site security policy, so responsive visual checks remain unverified.
+- Known limitation: no polling, worker consumption, transcription, or preview generation is included; these remain VS4 work.
+
+---
+
+### VS3-T7 Git Handoff Blocker - 2026-07-19 17:35 Asia/Manila
+
+- Failure: `git add` could not create `.git/index.lock` under the workspace sandbox.
+- Escalation result: the required `.git` write approval was rejected because the approval service reports its usage limit is exhausted until 2026-07-25 11:24.
+- Decision: do not bypass the repository permission boundary. Leave the complete verified VS3-T7 diff uncommitted and document the exact recovery command in the live handoff.
+- Verification state remains green: full `pnpm ci:check`, changed-file Prettier, shared-package rebuild, focused tests, live PostgreSQL integration, and `git diff --check` pass.
+
+---
+
+### VS3-T7 Git Recovery - 2026-07-25 14:55 Asia/Manila
+
+- State check: VS3-T7 diff and repository HEAD remained unchanged since blocked handoff.
+- Verification: `git diff --check` and fresh full `pnpm ci:check` pass; CI reports 264 unit tests passed with 16 intentional skips, 16 live integration tests passed, and all production builds completed.
+- Decision: close the temporary Git approval blocker, complete VS3, and commit the original vertical slice as `feat(processing): show queued project status`.
+- Existing limitation: Next.js emits the known non-fatal NFT tracing warning; browser local-site policy still prevents responsive visual automation.
+
+---
+
 | Date | Task ID | File | Change Summary |
 |---|---|---|---|
 | 2026-07-10 | VS0-T1/T7 | Root workspace and tooling files | Added the pnpm workspace, locked dependencies, strict TypeScript, ESLint, Vitest, Prettier, environment example, and root scripts. |

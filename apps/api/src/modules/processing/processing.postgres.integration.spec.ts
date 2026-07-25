@@ -210,6 +210,30 @@ describeIntegration("paid processing start API", () => {
       projectId: "00000000-0000-4000-8000-000000000601",
     });
 
+    const status = await request("/api/v1/projects/00000000-0000-4000-8000-000000000601/status", {
+      headers: { cookie: "session=processing-a" },
+    });
+    const refreshedStatus = await request(
+      "/api/v1/projects/00000000-0000-4000-8000-000000000601/status",
+      { headers: { cookie: "session=processing-a" } },
+    );
+
+    expect(status.status).toBe(200);
+    expect(status.headers.get("cache-control")).toBe("private, no-store");
+    await expect(status.json()).resolves.toEqual({
+      data: {
+        currentJob: {
+          id: storedJob.id,
+          progress: null,
+          status: "queued",
+          step: "queued",
+        },
+        projectId: "00000000-0000-4000-8000-000000000601",
+        status: "queued",
+      },
+    });
+    expect(refreshedStatus.status).toBe(200);
+
     await expect(
       migrationClient.pool.query<{
         balance: string;
@@ -241,9 +265,17 @@ describeIntegration("paid processing start API", () => {
         method: "POST",
       },
     );
+    const foreignStatus = await request(
+      "/api/v1/projects/00000000-0000-4000-8000-000000000601/status",
+      { headers: { cookie: "session=processing-b" } },
+    );
 
     expect(foreign.status).toBe(404);
     await expect(foreign.json()).resolves.toMatchObject({
+      error: { code: "PROJECT_NOT_FOUND", details: null, message: "Project not found." },
+    });
+    expect(foreignStatus.status).toBe(404);
+    await expect(foreignStatus.json()).resolves.toMatchObject({
       error: { code: "PROJECT_NOT_FOUND", details: null, message: "Project not found." },
     });
     expect(unconfirmed.status).toBe(422);

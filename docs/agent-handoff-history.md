@@ -4,6 +4,68 @@ Historical handoff snapshots moved from docs/progress-tracker.md. Current handof
 
 ## Superseded Handoff State
 
+### VS3-T7 Completion Handoff Snapshot - 2026-07-19 17:32 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews from an uploaded video
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T7 - Show queued processing state in UI
+Next Recommended Task: VS4-T1 - Consume queued analysis jobs and persist truthful lifecycle progress without changing credit state.
+Uncommitted Changes: No intended uncommitted changes should remain after the VS3-T7 task commit; local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes formatting, lint, strict typecheck, 264 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+Known Blockers: None.
+Important Context: Paid start now shows exact credit effects, posts only confirmed true, and opens a refresh-safe persisted processing snapshot. The owner-scoped no-store status API fails closed on malformed persistence and maps queued zero progress to null. Dashboard cards show real status and reopen processing projects. Polling and worker lifecycle updates remain deferred to VS4. Browser automation against the local app was blocked by browser local-site policy; automated web coverage, production build, and live PostgreSQL API integration passed.
+Required Commands Before Continuing: Implement VS4-T1 lifecycle updates against the existing queue/job contract, add polling only after truthful progress exists, and run pnpm ci:check before completion.
+Last Updated Date: 2026-07-19
+Last Updated Time: 17:32
+Last Updated By: Codex
+```
+
+---
+
+### VS3-T7 Blocked Commit Correction - 2026-07-19 17:35 Asia/Manila
+
+This snapshot supersedes the completion snapshot above because the required Git staging and commit could not be authorized after verification.
+
+```text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS3-T7 - Show queued processing state in UI
+Current Status: BLOCKED
+Last Completed Task: VS3-T6 - Enqueue analysis job in BullMQ
+Next Recommended Task: Stage and commit the fully verified VS3-T7 source, tests, and task records, then begin VS4-T1.
+Uncommitted Changes: All VS3-T7 source, tests, and task records remain intentionally uncommitted because the sandbox approval service rejected Git staging after its usage limit was exhausted. Local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes formatting, lint, strict typecheck, 264 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+Known Blockers: Git staging and commit require elevated .git write permission, but the approval service reports its usage limit is exhausted until 2026-07-25 11:24. Browser automation also rejected the local site under browser security policy.
+Important Context: VS3-T7 implementation is complete and verified. The owner-scoped no-store status API, exact paid-start client, credit availability states, refresh-safe queued Server Component, static status badge, and dashboard routing are present. No polling or worker mutation was added.
+Required Commands Before Continuing: When Git write approval is available, run git add for the documented VS3-T7 files, review git diff --cached --check, and commit with feat(processing): show queued project status. Then begin VS4-T1.
+Last Updated Date: 2026-07-19
+Last Updated Time: 17:35
+Last Updated By: Codex
+```
+
+---
+
+### VS3-T7 Commit Recovery Handoff - 2026-07-25 14:55 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews from an uploaded video
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T7 - Show queued processing state in UI
+Next Recommended Task: VS4-T1 - Consume queued analysis jobs and persist truthful lifecycle progress without changing credit state.
+Uncommitted Changes: No intended uncommitted changes should remain after the VS3-T7 commit; local .env remains ignored and must never be committed.
+Known Failing Tests: None. pnpm ci:check passes formatting, lint, strict typecheck, 264 unit tests (16 skipped), 16 live PostgreSQL/Redis integration tests, and production builds.
+Known Blockers: None. Browser automation previously rejected the local site under browser security policy, so responsive visual verification remains a documented limitation.
+Important Context: VS3-T7 exposes an owner-scoped no-store status snapshot, exact confirmed paid-start client, credit availability states, refresh-safe queued page, static status badge, and dashboard routing. Queued zero progress becomes null. Polling and worker lifecycle remain deferred to VS4.
+Required Commands Before Continuing: Implement VS4-T1 lifecycle updates against the existing queue/job contract, add polling only after truthful progress exists, and run pnpm ci:check before completion.
+Last Updated Date: 2026-07-25
+Last Updated Time: 14:55
+Last Updated By: Codex
+```
+
+---
+
 ---
 
 ### VS3-T3 Handoff Update - 2026-07-17 11:38 Asia/Manila

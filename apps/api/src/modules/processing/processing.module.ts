@@ -16,6 +16,11 @@ import {
   ProcessingStartRepository,
 } from "./processing-start.repository";
 import { ProcessingStartService } from "./processing-start.service";
+import {
+  PROCESSING_STATUS_REPOSITORY,
+  ProcessingStatusRepository,
+} from "./processing-status.repository";
+import { ProcessingStatusService } from "./processing-status.service";
 
 @Module({
   controllers: [ProcessingController],
@@ -23,6 +28,8 @@ import { ProcessingStartService } from "./processing-start.service";
   providers: [
     ProcessingStartService,
     ProcessingStartRepository,
+    ProcessingStatusService,
+    ProcessingStatusRepository,
     AnalysisRateLimitGuard,
     {
       provide: ANALYSIS_RATE_LIMIT_CLIENT,
@@ -31,6 +38,10 @@ import { ProcessingStartService } from "./processing-start.service";
     {
       provide: PROCESSING_START_REPOSITORY,
       useExisting: ProcessingStartRepository,
+    },
+    {
+      provide: PROCESSING_STATUS_REPOSITORY,
+      useExisting: ProcessingStatusRepository,
     },
     {
       provide: ANALYSIS_QUEUE_GATEWAY,

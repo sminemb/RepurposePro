@@ -4,6 +4,83 @@ Historical task execution archive moved from docs/progress-tracker.md to keep th
 
 ## Completed Task Logs
 
+### VS3-T7 - Queued Processing UI
+
+Status: COMPLETED
+Start Date: 2026-07-19
+Start Time: 16:43
+End Date: 2026-07-19
+End Time: 17:32
+
+User Outcome:
+
+- After a validated upload, the user sees required credits, current balance, remaining balance, and the eligible-failure refund policy before confirming the charge.
+- A successful paid start opens a refresh-safe queued page, and the dashboard shows the persisted project status and reopens processing work.
+- Insufficient credit routes to Billing, unavailable balance never becomes zero, and retry-safe queue failures remain actionable.
+
+Layers Touched:
+
+- Shared contracts
+- NestJS API and PostgreSQL repository
+- Next.js web UI
+- Unit and live integration tests
+
+Files Changed:
+
+- `packages/shared/src/processing.ts`.
+- `apps/api/src/modules/processing/processing-status.repository.ts`, `processing-status.service.ts`, controller/module wiring, and focused/live integration tests.
+- `apps/web/features/processing/**` and `apps/web/app/projects/[projectId]/processing/page.tsx`.
+- Upload-page balance wiring, dashboard project actions, reusable status badge, and focused web tests.
+- Progress, execution, operational, and handoff records.
+
+Commands Run:
+
+- Focused Vitest RED/GREEN runs for API status, processing client/server boundaries, status mapping, project actions, and credit availability.
+- Focused live PostgreSQL processing API integration.
+- Changed-file Prettier write/check and `git diff --check`.
+- `pnpm ci:check`.
+- Local dev startup and in-app browser verification attempt.
+
+Verification:
+
+- PASS: owner-scoped status reads return the paid start's same queued job; foreign users receive the same safe 404 as missing projects.
+- PASS: refresh reads do not create another job or deduction, and queued progress is null rather than an invented percentage.
+- PASS: the client sends the exact confirmed body, validates HTTP 202 before navigation, and preserves safe API/network errors.
+- PASS: unavailable and zero balances remain distinct; insufficient credit exposes Billing instead of a charged action.
+- PASS: full CI passes formatting, lint, strict typecheck, 264 unit tests with 16 intentional skips, 16 live integration tests, and production builds.
+- PASS: `git diff --check` reports no whitespace errors.
+
+Assumptions:
+
+- The processing screen intentionally reads one persisted snapshot; polling begins only after VS4 owns truthful worker progress.
+
+Known Limitations:
+
+- Browser verification at 390px and 1440px could not run because the in-app browser security policy rejected the local site. No workaround was attempted.
+- The existing non-fatal Next.js NFT tracing warning remains during production builds.
+
+Next Recommended Task:
+
+- VS4-T1 - Consume analysis jobs and persist worker lifecycle/progress updates without changing financial state.
+
+---
+
+### VS3-T7 Completion Status Correction - 2026-07-19 17:35 Asia/Manila
+
+- The implementation and verification described in the preceding VS3-T7 record are complete.
+- Task status remains `BLOCKED`, not `COMPLETED`, because required Git staging and commit could not be authorized after the approval service exhausted its usage limit.
+- The full verified diff remains uncommitted. The authoritative recovery steps are in the current tracker handoff and the newest handoff-history snapshot.
+
+---
+
+### VS3-T7 Commit Recovery Completion - 2026-07-25 14:55 Asia/Manila
+
+- Resumed the unchanged VS3-T7 diff after Git approval became available.
+- Re-ran full `pnpm ci:check`: formatting, lint, strict typecheck, 264 unit tests with 16 intentional skips, 16 live integration tests, and production builds pass.
+- Task and VS3 slice return to `COMPLETED`; VS4-T1 becomes next recommended task.
+
+---
+
 ### VS3-T3 - Stripe Checkout Entry
 
 Status: COMPLETED

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   NotFoundException,
   ServiceUnavailableException,
@@ -9,6 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AuthenticatedRequest } from "../auth/auth.guard";
 import { ProcessingController } from "./processing.controller";
 import { ProcessingStartError, type ProcessingStartService } from "./processing-start.service";
+import { ProcessingStatusError, type ProcessingStatusService } from "./processing-status.service";
 
 const projectId = "00000000-0000-4000-8000-000000000501";
 const request = {
@@ -24,7 +26,10 @@ describe("ProcessingController", () => {
       projectId,
       status: "queued",
     });
-    const controller = new ProcessingController({ start } as unknown as ProcessingStartService);
+    const controller = new ProcessingController(
+      { start } as unknown as ProcessingStartService,
+      {} as ProcessingStatusService,
+    );
 
     await expect(controller.start(projectId, { confirmed: true }, request)).resolves.toEqual({
       data: {
@@ -39,7 +44,10 @@ describe("ProcessingController", () => {
 
   it("returns the confirmation error before calling processing", async () => {
     const start = vi.fn();
-    const controller = new ProcessingController({ start } as unknown as ProcessingStartService);
+    const controller = new ProcessingController(
+      { start } as unknown as ProcessingStartService,
+      {} as ProcessingStatusService,
+    );
 
     const error = await controller
       .start(projectId, { confirmed: false }, request)
@@ -78,9 +86,12 @@ describe("ProcessingController", () => {
       "Your processing job is saved, but the queue is unavailable. Retry is safe.",
     ],
   ])("maps %s to the standard safe envelope", async (code, statusCode, exception, message) => {
-    const controller = new ProcessingController({
-      start: vi.fn().mockRejectedValue(new ProcessingStartError(code, statusCode, message)),
-    } as unknown as ProcessingStartService);
+    const controller = new ProcessingController(
+      {
+        start: vi.fn().mockRejectedValue(new ProcessingStartError(code, statusCode, message)),
+      } as unknown as ProcessingStartService,
+      {} as ProcessingStatusService,
+    );
 
     const error = await controller
       .start(projectId, { confirmed: true }, request)
@@ -91,4 +102,75 @@ describe("ProcessingController", () => {
       error: { code, details: null, message, requestId: "req_processing_test" },
     });
   });
+
+  it("returns the owned persisted project status", async () => {
+    const get = vi.fn().mockResolvedValue({
+      currentJob: {
+        id: "00000000-0000-4000-8000-000000000502",
+        progress: null,
+        status: "queued",
+        step: "queued",
+      },
+      projectId,
+      status: "queued",
+    });
+    const controller = new ProcessingController(
+      {} as ProcessingStartService,
+      { get } as unknown as ProcessingStatusService,
+    );
+
+    await expect(controller.status(projectId, request)).resolves.toEqual({
+      data: {
+        currentJob: {
+          id: "00000000-0000-4000-8000-000000000502",
+          progress: null,
+          status: "queued",
+          step: "queued",
+        },
+        projectId,
+        status: "queued",
+      },
+    });
+    expect(get).toHaveBeenCalledWith("user_1", projectId);
+  });
+
+  it("rejects an invalid status project id before querying persistence", async () => {
+    const get = vi.fn();
+    const controller = new ProcessingController(
+      {} as ProcessingStartService,
+      { get } as unknown as ProcessingStatusService,
+    );
+
+    const error = await controller.status("not-a-uuid", request).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["PROJECT_NOT_FOUND", 404, NotFoundException, "Project not found."],
+    [
+      "PROCESSING_STATUS_UNAVAILABLE",
+      503,
+      ServiceUnavailableException,
+      "We could not load this project's processing status.",
+    ],
+  ])(
+    "maps status error %s to the standard safe envelope",
+    async (code, statusCode, exception, message) => {
+      const controller = new ProcessingController(
+        {} as ProcessingStartService,
+        {
+          get: vi.fn().mockRejectedValue(new ProcessingStatusError(code, statusCode, message)),
+        } as unknown as ProcessingStatusService,
+      );
+
+      const error = await controller.status(projectId, request).catch((reason: unknown) => reason);
+
+      expect(error).toBeInstanceOf(exception);
+      expect((error as { getResponse(): unknown }).getResponse()).toEqual({
+        error: { code, details: null, message, requestId: "req_processing_test" },
+      });
+    },
+  );
 });
