@@ -839,18 +839,18 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ## 10. Current Handoff State
 
 ```text
-Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
-Last Maintenance Task: MAINT-13 - Correct VS3-T5 tracker status after independent review
+Last Maintenance Task: MAINT-14 - Rotate and configure local infrastructure secrets
 Current Status: NOT_STARTED
 Last Completed Task: VS3-T8 - Remediate adversarial VS3 security review
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No intended changes remain after the VS3-T8 task commit; local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: No intended changes remain after the MAINT-14 task-record commit; local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: None. `pnpm ci:check` passes formatting, lint, strict typecheck, 276 unit tests (21 skipped), 21 live PostgreSQL/Redis integration tests, and all production builds on Next.js 16.2.11.
 Known Blockers: None. The npm registry returned a malformed compressed response to `pnpm audit --prod --audit-level high`, so that supplemental audit produced no result; the patched Next version was independently verified.
-Important Context: Forward migration `0014` requires the checkout, webhook, and processing roles to be provisioned before migration. Checkout is card-only and grants require a persisted server-created session plus authoritative Stripe retrieval. The API still holds all scoped runtime secrets in one process; this limits a leaked generic runtime credential but is not a full service-secret split. Automatic failure refunds remain deferred to VS9 and the UI no longer promises them.
-Required Commands Before Continuing: Provision the new database roles and rotate local/deployment secrets before applying migration `0014`; then begin VS4-T1 with TDD and run `pnpm ci:check`.
+Important Context: Ignored local environment files now contain unique bootstrap, owner, runtime, checkout, webhook, processing, and Redis credentials. Scoped PostgreSQL roles are provisioned, migration `0014` is applied, and Redis authentication is active. Checkout is card-only and grants require a persisted server-created session plus authoritative Stripe retrieval. The API still holds all scoped runtime secrets in one process; this limits a leaked generic runtime credential but is not a full service-secret split. Automatic failure refunds remain deferred to VS9.
+Required Commands Before Continuing: Run `pnpm infra:check` if local containers are restarted; then begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
 Last Updated Date: 2026-07-26
-Last Updated Time: 16:47
+Last Updated Time: 19:05
 Last Updated By: Codex
 ```

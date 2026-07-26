@@ -391,3 +391,25 @@ Status: COMPLETED
 - Change: removed the standalone completion-correction prose. The table row and authoritative handoff now accurately retain VS3-T5 as `IN_PROGRESS` with its required correctness fix.
 - Verification: full `pnpm ci:check` passes; the remaining review finding requires an `analyze_video` job-type predicate and PostgreSQL regression coverage.
 - Next: complete VS3-T5 before beginning VS3-T6.
+
+---
+
+### MAINT-14 - Rotate and Configure Local Infrastructure Secrets
+
+Date: 2026-07-26
+Time: 19:05 Asia/Manila
+Status: COMPLETED
+
+- Scope: ignored local runtime/database environments, PostgreSQL role credentials, Redis
+  authentication, migration `0014`, and live infrastructure verification.
+- Change: generated unique bootstrap, owner, runtime, checkout, webhook, processing, and Redis
+  credentials without exposing their values; synchronized the scoped URLs between `.env` and
+  `.env.database`.
+- Database: provisioned restricted roles, removed unsafe inheritance, applied migration `0014`,
+  and rotated the bootstrap credential only after migration access was confirmed.
+- Redis: recreated only Redis with password authentication; PostgreSQL data was not recreated.
+- Verification: all scoped PostgreSQL URLs authenticate as their expected roles, role credentials
+  are distinct, unsafe role flags and memberships are absent, migration reruns cleanly,
+  `pnpm infra:check` passes, and unauthenticated Redis access is rejected.
+- Source control: `.env` and `.env.database` remain ignored and no temporary secret helper remains.
+- Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.

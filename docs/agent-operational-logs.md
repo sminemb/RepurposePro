@@ -387,3 +387,34 @@ Record decisions such as:
 - Audit limitation: `pnpm audit --prod --audit-level high` received malformed compressed JSON from
   the registry and produced no security result.
 - Handoff: VS3 is complete; VS4-T1 is next.
+
+---
+
+### MAINT-14 Local Secret Rotation Start - 2026-07-26 18:55 Asia/Manila
+
+- Scope: ignored local `.env` and `.env.database`, local PostgreSQL roles, local Redis
+  authentication, migration `0014`, and infrastructure verification.
+- Security constraint: generate unique URL-safe secrets without printing or logging them; never
+  stage ignored environment files.
+- Initial state: specialized database URLs/passwords and Redis password are absent; generic
+  database credentials use the legacy local naming pattern; Redis URL is unauthenticated.
+- Status: IN_PROGRESS.
+
+---
+
+### MAINT-14 Local Secret Rotation Completion - 2026-07-26 19:05 Asia/Manila
+
+- Files changed: ignored local `.env` and `.env.database`; tracker, operational, execution,
+  maintenance, and handoff records.
+- Secret handling: generated separate cryptographically random credentials for bootstrap, owner,
+  runtime, checkout, webhook, processing, and Redis without printing them. Ignored environment
+  files remain outside source control.
+- Database: provisioned and rotated all scoped roles, removed restricted-role memberships, applied
+  migration `0014`, rotated the bootstrap role last, and verified all six intended role
+  connections plus safe role attributes.
+- Redis: recreated only the local Redis container with authentication enabled. The authenticated
+  application health check returns `PONG`; an unauthenticated check returns `NOAUTH`.
+- Verification: `pnpm db:provision-roles`, two successful `pnpm db:migrate` runs, scoped-role
+  credential verification, `pnpm infra:check`, ignored-file status, and Git whitespace validation
+  pass.
+- Decision: MAINT-14 is complete. VS4-T1 is next.

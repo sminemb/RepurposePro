@@ -1731,3 +1731,59 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
+### MAINT-14 - Rotate and Configure Local Infrastructure Secrets
+
+Status: COMPLETED
+Start Date: 2026-07-26
+Start Time: 18:55
+End Date: 2026-07-26
+End Time: 19:05
+
+User Outcome:
+
+- The local application now uses separate, non-placeholder credentials for PostgreSQL duties and
+  an authenticated Redis connection.
+- Migration `0014` is applied and the hardened VS3 financial boundaries are operational locally.
+
+Layers Touched:
+
+- Local environment
+- PostgreSQL roles and migration state
+- Redis
+- Task records
+
+Files Changed:
+
+- Ignored `.env` and `.env.database`
+- Progress tracker, execution log, operational log, maintenance log, and handoff history
+
+Commands Run:
+
+- Local secret generation and scoped-role provisioning without secret output
+- `pnpm db:provision-roles`
+- `pnpm db:migrate` twice to confirm an idempotent rerun
+- `docker compose --env-file .env.database up -d --force-recreate redis`
+- `pnpm infra:check`
+- Unauthenticated Redis access check
+
+Verification:
+
+- PASS: bootstrap, owner, runtime, checkout, webhook, and processing URLs authenticate as their
+  intended PostgreSQL roles with unique credentials.
+- PASS: scoped roles have no unsafe attributes or inherited memberships.
+- PASS: migration `0014` is applied and reruns successfully.
+- PASS: authenticated PostgreSQL/Redis infrastructure health check passes.
+- PASS: unauthenticated Redis access is rejected with `NOAUTH`.
+- PASS: environment files remain ignored and no temporary rotation helper remains.
+
+Known Limitations:
+
+- Secrets were rotated only for the user-authorized local environment; deployment environments
+  require their own secret-manager rotation.
+
+Next Recommended Task:
+
+- VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
