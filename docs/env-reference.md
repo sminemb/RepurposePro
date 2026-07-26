@@ -286,6 +286,25 @@ Startup validation rejects bootstrap and migration-owner roles. Do not commit re
 
 ---
 
+## Sensitive API database URLs
+
+The API also requires three least-privilege PostgreSQL identities:
+
+```env
+DATABASE_CHECKOUT_URL=postgresql://repurposepro_checkout:password@localhost:5432/repurposepro
+DATABASE_WEBHOOK_URL=postgresql://repurposepro_webhook:password@localhost:5432/repurposepro
+DATABASE_PROCESSING_URL=postgresql://repurposepro_processing:password@localhost:5432/repurposepro
+```
+
+Checkout may only create and attach Checkout attempts. Webhook may only record Stripe events,
+expire attempts, and grant correlated purchases. Processing may only start and mark paid analysis
+jobs. The generic runtime identity cannot call these financial functions.
+
+These identities reduce the impact of a leaked generic runtime credential. The API process still
+holds all four runtime secrets, so deployment secret isolation remains a later service-split option.
+
+---
+
 ## `DATABASE_MIGRATION_URL`
 
 Purpose:
@@ -407,7 +426,7 @@ DATABASE_SSL=false
 
 Purpose:
 
-Redis connection string.
+Authenticated Redis connection string.
 
 Required:
 
@@ -432,10 +451,10 @@ Potentially
 Example:
 
 ```env
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:strong-password@localhost:6379
 ```
 
-Authenticated format:
+Required format:
 
 ```text
 redis://default:password@host:6379
@@ -1544,11 +1563,14 @@ API_PORT=4000
 
 # Database runtime
 DATABASE_URL=postgresql://repurposepro_runtime:password@localhost:5432/repurposepro
+DATABASE_CHECKOUT_URL=postgresql://repurposepro_checkout:password@localhost:5432/repurposepro
+DATABASE_WEBHOOK_URL=postgresql://repurposepro_webhook:password@localhost:5432/repurposepro
+DATABASE_PROCESSING_URL=postgresql://repurposepro_processing:password@localhost:5432/repurposepro
 DATABASE_POOL_MAX=10
 DATABASE_SSL=false
 
 # Redis / BullMQ
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:password@localhost:6379
 BULLMQ_PREFIX=repurposepro
 ANALYSIS_WORKER_CONCURRENCY=1
 RENDER_WORKER_CONCURRENCY=1

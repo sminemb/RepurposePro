@@ -16,6 +16,7 @@ import { RedisService } from "../infrastructure/redis.service";
 import { ANALYSIS_RATE_LIMIT_CLIENT } from "./analysis-rate-limit.guard";
 import { ANALYSIS_QUEUE_GATEWAY } from "./analysis-queue.gateway";
 import { ProcessingModule } from "./processing.module";
+import { PROCESSING_DATABASE } from "./scoped-database.provider";
 
 const bootstrapUrl = process.env.TEST_DATABASE_BOOTSTRAP_URL;
 const migrationUrl = process.env.TEST_DATABASE_MIGRATION_URL;
@@ -30,6 +31,12 @@ function withDatabase(url: string | undefined, database: string): string {
   return target.toString();
 }
 
+function withRole(url: string | undefined, role: string): string {
+  const target = new URL(url ?? skippedDatabaseUrl);
+  target.username = role;
+  return target.toString();
+}
+
 function createClient(connectionString: string): DatabaseClient {
   return createDatabaseClient({ connectionString, poolMax: 2, ssl: false });
 }
@@ -39,10 +46,41 @@ describeIntegration("paid processing start API", () => {
   const adminClient = createClient(bootstrapUrl ?? skippedDatabaseUrl);
   const migrationClient = createClient(withDatabase(migrationUrl, database));
   const runtimeClient = createClient(withDatabase(runtimeUrl, database));
+  const processingClient = createClient(
+    withDatabase(withRole(runtimeUrl, "repurposepro_processing"), database),
+  );
   const enqueue = vi.fn(async (payload: VideoAnalysisJobPayload) => payload.jobId);
+  let failNextQueueMarker = false;
   let app: INestApplication;
 
   beforeAll(async () => {
+    const runtimePassword = new URL(runtimeUrl ?? skippedDatabaseUrl).password;
+    await adminClient.pool.query(
+      `DO $$
+       BEGIN
+         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'repurposepro_checkout') THEN
+           CREATE ROLE repurposepro_checkout LOGIN;
+         END IF;
+         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'repurposepro_webhook') THEN
+           CREATE ROLE repurposepro_webhook LOGIN;
+         END IF;
+         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'repurposepro_processing') THEN
+           CREATE ROLE repurposepro_processing LOGIN;
+         END IF;
+       END;
+       $$`,
+    );
+    for (const role of [
+      "repurposepro_checkout",
+      "repurposepro_webhook",
+      "repurposepro_processing",
+    ]) {
+      const statement = await adminClient.pool.query<{ sql: string }>(
+        "SELECT format('ALTER ROLE %I PASSWORD %L', $1::text, $2::text) AS sql",
+        [role, decodeURIComponent(runtimePassword)],
+      );
+      await adminClient.pool.query(statement.rows[0]!.sql);
+    }
     await adminClient.pool.query(`CREATE DATABASE ${database} OWNER repurposepro_owner`);
     await migrate(migrationClient.db, {
       migrationsFolder: resolve(process.cwd(), "packages/db/drizzle"),
@@ -61,20 +99,24 @@ describeIntegration("paid processing start API", () => {
     );
     await migrationClient.pool.query(
       `INSERT INTO projects (id, user_id, name, output_type, status)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5), ($6, $2, $7, $4, $5)`,
       [
         "00000000-0000-4000-8000-000000000601",
         "processing-api-user-a",
         "Processing API project",
         "clips",
         "uploaded",
+        "00000000-0000-4000-8000-000000000603",
+        "Processing API marker recovery project",
       ],
     );
     await migrationClient.pool.query(
       `INSERT INTO uploaded_videos (
         id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
         duration_seconds, width, height, has_audio, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days')`,
+      ) VALUES
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days'),
+        ($11, $12, $13, $14, $5, $6, $15, $8, $9, $10, now() + interval '7 days')`,
       [
         "00000000-0000-4000-8000-000000000602",
         "00000000-0000-4000-8000-000000000601",
@@ -86,6 +128,11 @@ describeIntegration("paid processing start API", () => {
         1920,
         1080,
         true,
+        "00000000-0000-4000-8000-000000000604",
+        "00000000-0000-4000-8000-000000000603",
+        "marker-recovery.mp4",
+        "/private/marker-recovery.mp4",
+        "300.001",
       ],
     );
     await migrationClient.pool.query(
@@ -121,6 +168,21 @@ describeIntegration("paid processing start API", () => {
       .useValue({ auth: { api: { getSession } } })
       .overrideProvider(DatabaseService)
       .useValue({ database: runtimeClient })
+      .overrideProvider(PROCESSING_DATABASE)
+      .useValue({
+        database: {
+          pool: {
+            query: async (text: string, values: unknown[]) => {
+              if (failNextQueueMarker && text.includes("mark_paid_analysis_enqueued")) {
+                failNextQueueMarker = false;
+                throw new Error("simulated marker persistence failure");
+              }
+
+              return processingClient.pool.query(text, values);
+            },
+          },
+        },
+      })
       .overrideProvider(RedisService)
       .useValue({})
       .overrideProvider(ANALYSIS_RATE_LIMIT_CLIENT)
@@ -140,6 +202,7 @@ describeIntegration("paid processing start API", () => {
       await app.close();
     }
     await closeDatabaseClient(runtimeClient);
+    await closeDatabaseClient(processingClient);
     await closeDatabaseClient(migrationClient);
     await adminClient.pool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
     await closeDatabaseClient(adminClient);
@@ -285,6 +348,54 @@ describeIntegration("paid processing start API", () => {
         details: null,
         message: "Confirm the credit charge before starting processing.",
       },
+    });
+  });
+
+  it("recovers after queue publication succeeds but marker persistence fails", async () => {
+    failNextQueueMarker = true;
+    const path = "/api/v1/projects/00000000-0000-4000-8000-000000000603/analyze";
+    const init: RequestInit = {
+      body: JSON.stringify({ confirmed: true }),
+      headers: { "content-type": "application/json", cookie: "session=processing-a" },
+      method: "POST",
+    };
+
+    const first = await request(path, init);
+    expect(first.status).toBe(503);
+
+    const durable = await migrationClient.pool.query<{
+      bullmqJobId: string | null;
+      id: string;
+    }>(
+      `SELECT id, bullmq_job_id AS "bullmqJobId"
+       FROM processing_jobs
+       WHERE project_id = $1
+         AND type = 'analyze_video'`,
+      ["00000000-0000-4000-8000-000000000603"],
+    );
+    expect(durable.rows).toHaveLength(1);
+    expect(durable.rows[0]?.bullmqJobId).toBeNull();
+    expect(typeof durable.rows[0]?.id).toBe("string");
+
+    const retry = await request(path, init);
+    expect(retry.status).toBe(202);
+    expect(enqueue).toHaveBeenLastCalledWith({
+      jobId: durable.rows[0]!.id,
+      projectId: "00000000-0000-4000-8000-000000000603",
+    });
+
+    await expect(
+      migrationClient.pool.query<{ deductionCount: string; bullmqJobId: string | null }>(
+        `SELECT
+          (SELECT COUNT(*)::text FROM credit_ledger WHERE processing_job_id = $1)
+            AS "deductionCount",
+          bullmq_job_id AS "bullmqJobId"
+         FROM processing_jobs
+         WHERE id = $1`,
+        [durable.rows[0]!.id],
+      ),
+    ).resolves.toMatchObject({
+      rows: [{ bullmqJobId: durable.rows[0]!.id, deductionCount: "1" }],
     });
   });
 

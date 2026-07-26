@@ -349,3 +349,41 @@ Record decisions such as:
 - Verification: 42 focused tests, 16 live PostgreSQL/Redis integration tests, API typecheck, infrastructure checks, full `pnpm ci:check`, and `git diff --check` pass. CI reports 222 unit tests passed with 16 intentional skips.
 - Audit limitation: `pnpm audit --prod` reports three moderate advisories on pre-existing Better Auth/Next/Arcjet paths (`esbuild`, `postcss`, `uuid`); no reported advisory is introduced through BullMQ.
 - Decision: VS3-T6 is complete and VS3-T7 becomes the next task.
+
+---
+
+### VS3-T8 Security Remediation Start - 2026-07-26 15:11 Asia/Manila
+
+- Scope: remediate every confirmed vulnerability, security-design weakness, verification gap, and false claim from the adversarial VS3 review.
+- Decisions: restrict new Checkout sessions to cards; isolate Checkout, webhook, and paid-start database capabilities behind narrow roles; persist and verify server-created Checkout attempts; remove the premature automatic-refund promise while VS9 remains deferred.
+- Security constraints: use only forward migrations, preserve immutable-ledger and ownership invariants, keep public REST shapes stable, and fail closed on malformed persistence or production protection configuration.
+- Branch: `codex/vs3-security-remediation`.
+- Status: implementation started with TDD and focused verification after each increment.
+
+---
+
+### VS3-T8 Security Remediation Completion - 2026-07-26 16:47 Asia/Manila
+
+- Files changed: forward migration/schema/role provisioning; scoped billing and processing database
+  clients; Stripe Checkout/webhook flow; configuration, Compose, dependency lock, UI copy, tests,
+  and task records.
+- Security decision: Checkout uses cards only and is persisted before Stripe creation; fulfillment
+  requires authoritative retrieval plus exact database correlation. No client metadata, amount, or
+  credit count is trusted.
+- Security decision: separate checkout, webhook, and processing identities receive only narrow
+  function execution. Generic runtime and cross-role financial operations are denied.
+- Reliability decision: queue publish and marker-persistence failures remain retry-safe with one
+  durable job and one deduction. Automatic refunds remain deferred to VS9.
+- Infrastructure decision: Compose requires explicit PostgreSQL/Redis secrets, authenticates
+  Redis, and binds both data services to loopback. Production rejects Arcjet `DRY_RUN`.
+- Dependency decision: Next.js and its ESLint plugin are pinned to 16.2.11.
+- Failure resolved: initial full CI found one unsafe test matcher assignment; replaced it with
+  typed primitive assertions and focused lint passed.
+- Failure resolved: production build initially used stale compiled configuration and then exposed
+  an over-specific password-suffix rule. Rebuilt packages first and narrowed validation to reject
+  placeholders without treating password naming as policy.
+- Verification: full `pnpm ci:check` passes 276 unit tests (21 skipped), 21 live PostgreSQL/Redis
+  integration tests, formatting, lint, strict typecheck, and production builds.
+- Audit limitation: `pnpm audit --prod --audit-level high` received malformed compressed JSON from
+  the registry and produced no security result.
+- Handoff: VS3 is complete; VS4-T1 is next.

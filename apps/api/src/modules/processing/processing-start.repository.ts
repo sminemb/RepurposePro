@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { DatabaseService } from "../infrastructure/database.service";
+import type { ScopedDatabaseProvider } from "../billing/scoped-database.providers";
+import { PROCESSING_DATABASE } from "./scoped-database.provider";
 
 export const PROCESSING_START_REPOSITORY = Symbol("PROCESSING_START_REPOSITORY");
 
@@ -32,7 +33,10 @@ export interface ProcessingStartRepositoryContract {
 
 @Injectable()
 export class ProcessingStartRepository implements ProcessingStartRepositoryContract {
-  public constructor(private readonly databaseService: DatabaseService) {}
+  public constructor(
+    @Inject(PROCESSING_DATABASE)
+    private readonly databaseService: ScopedDatabaseProvider,
+  ) {}
 
   public async start(userId: string, projectId: string): Promise<ProcessingStartRecord> {
     const result = await this.databaseService.database.pool.query<ProcessingStartRecord>(
@@ -60,25 +64,12 @@ export class ProcessingStartRepository implements ProcessingStartRepositoryContr
     jobId: string,
     bullmqJobId: string,
   ): Promise<void> {
-    const result = await this.databaseService.database.pool.query<{ id: string }>(
-      `UPDATE processing_jobs AS processing_job
-       SET bullmq_job_id = $4,
-           updated_at = now()
-       FROM projects AS project
-       WHERE processing_job.id = $3
-         AND processing_job.project_id = project.id
-         AND project.id = $2
-         AND project.user_id = $1
-         AND processing_job.type = 'analyze_video'
-         AND (
-           processing_job.bullmq_job_id IS NULL
-           OR processing_job.bullmq_job_id = $4
-         )
-       RETURNING processing_job.id`,
+    const result = await this.databaseService.database.pool.query<{ outcome: string }>(
+      "SELECT public.mark_paid_analysis_enqueued($1, $2, $3, $4) AS outcome",
       [userId, projectId, jobId, bullmqJobId],
     );
 
-    if (result.rows.length !== 1) {
+    if (result.rows.length !== 1 || result.rows[0]?.outcome !== "marked") {
       throw new Error("Processing queue reference did not update one job.");
     }
   }

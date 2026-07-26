@@ -89,6 +89,14 @@ export const stripeWebhookEventStatusEnum = pgEnum("stripe_webhook_event_status"
   "ignored",
 ]);
 
+export const stripeCheckoutSessionStatusEnum = pgEnum("stripe_checkout_session_status", [
+  "creating",
+  "open",
+  "completed",
+  "failed",
+  "expired",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -288,6 +296,54 @@ export const stripeCustomers = pgTable(
     unique("stripe_customers_user_id_stripe_customer_id_unique").on(
       table.userId,
       table.stripeCustomerId,
+    ),
+  ],
+);
+
+export const stripeCheckoutSessions = pgTable(
+  "stripe_checkout_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    packCode: text("pack_code").notNull(),
+    stripePriceId: text("stripe_price_id").notNull(),
+    stripeSessionId: text("stripe_session_id"),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull(),
+    credits: integer("credits").notNull(),
+    livemode: boolean("livemode").notNull(),
+    status: stripeCheckoutSessionStatusEnum("status").default("creating").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("stripe_checkout_sessions_stripe_session_id_unique")
+      .on(table.stripeSessionId)
+      .where(sql`${table.stripeSessionId} IS NOT NULL`),
+    index("stripe_checkout_sessions_user_created_at_idx").on(table.userId, table.createdAt),
+    check(
+      "stripe_checkout_sessions_pack_code_check",
+      sql`${table.packCode} IN ('starter', 'creator', 'pro')`,
+    ),
+    check("stripe_checkout_sessions_price_id_check", sql`${table.stripePriceId} <> ''`),
+    check("stripe_checkout_sessions_amount_cents_check", sql`${table.amountCents} > 0`),
+    check("stripe_checkout_sessions_credits_check", sql`${table.credits} > 0`),
+    check(
+      "stripe_checkout_sessions_binding_check",
+      sql`(
+        (${table.status} IN ('creating', 'failed') AND ${table.stripeSessionId} IS NULL)
+        OR (
+          ${table.status} IN ('open', 'completed', 'expired')
+          AND ${table.stripeSessionId} IS NOT NULL
+          AND ${table.expiresAt} IS NOT NULL
+        )
+      )`,
     ),
   ],
 );

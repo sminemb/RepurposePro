@@ -31,8 +31,16 @@ function connectionRole(connectionString: string): {
   const name = decodeURIComponent(url.username);
   const password = decodeURIComponent(url.password);
 
-  if (!name || !password) {
-    throw new Error("Database connection URLs must include a role name and password.");
+  if (
+    !name ||
+    !password ||
+    password.toLowerCase().includes("replace") ||
+    password.toLowerCase().endsWith("_local") ||
+    password === "password"
+  ) {
+    throw new Error(
+      "Database connection URLs must include a role name and non-placeholder password.",
+    );
   }
 
   return { name, password };
@@ -56,18 +64,38 @@ async function provisionDatabaseRoles(): Promise<void> {
   const bootstrapRole = connectionRole(bootstrapUrl);
   const migrationRole = connectionRole(requiredEnvironment("DATABASE_MIGRATION_URL"));
   const runtimeRole = connectionRole(requiredEnvironment("DATABASE_RUNTIME_URL"));
+  const checkoutRole = connectionRole(requiredEnvironment("DATABASE_CHECKOUT_URL"));
+  const webhookRole = connectionRole(requiredEnvironment("DATABASE_WEBHOOK_URL"));
+  const processingRole = connectionRole(requiredEnvironment("DATABASE_PROCESSING_URL"));
+  const restrictedRoles = [runtimeRole, checkoutRole, webhookRole, processingRole] as const;
 
   if (
-    bootstrapRole.name === "repurposepro_owner" ||
-    bootstrapRole.name === "repurposepro_runtime"
+    [
+      "repurposepro_owner",
+      "repurposepro_runtime",
+      "repurposepro_checkout",
+      "repurposepro_webhook",
+      "repurposepro_processing",
+    ].includes(bootstrapRole.name)
   ) {
-    throw new Error("DATABASE_BOOTSTRAP_URL must use a role separate from owner and runtime.");
+    throw new Error(
+      "DATABASE_BOOTSTRAP_URL must use a role separate from owner and runtime roles.",
+    );
   }
   if (migrationRole.name !== "repurposepro_owner") {
     throw new Error("DATABASE_MIGRATION_URL must use repurposepro_owner.");
   }
   if (runtimeRole.name !== "repurposepro_runtime") {
     throw new Error("DATABASE_RUNTIME_URL must use repurposepro_runtime.");
+  }
+  if (checkoutRole.name !== "repurposepro_checkout") {
+    throw new Error("DATABASE_CHECKOUT_URL must use repurposepro_checkout.");
+  }
+  if (webhookRole.name !== "repurposepro_webhook") {
+    throw new Error("DATABASE_WEBHOOK_URL must use repurposepro_webhook.");
+  }
+  if (processingRole.name !== "repurposepro_processing") {
+    throw new Error("DATABASE_PROCESSING_URL must use repurposepro_processing.");
   }
 
   const bootstrap = new Client({ connectionString: bootstrapUrl });
@@ -90,28 +118,30 @@ async function provisionDatabaseRoles(): Promise<void> {
       "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
       migrationRole,
     );
-    await runRoleStatement(
-      bootstrap,
-      "CREATE ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
-      runtimeRole,
-    ).catch((error: unknown) => {
-      const code =
-        typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
-      if (code !== "42710") {
-        throw error;
-      }
-    });
-    await runRoleStatement(
-      bootstrap,
-      "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
-      runtimeRole,
-    );
-    await bootstrap.query("REVOKE repurposepro_owner FROM repurposepro_runtime");
-    const revokeBootstrapMembership = await bootstrap.query<{ readonly statement: string }>(
-      "SELECT format('REVOKE %I FROM repurposepro_runtime', $1::text) AS statement",
-      [bootstrapRole.name],
-    );
-    await bootstrap.query(revokeBootstrapMembership.rows[0]!.statement);
+    for (const role of restrictedRoles) {
+      await runRoleStatement(
+        bootstrap,
+        "CREATE ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        role,
+      ).catch((error: unknown) => {
+        const code =
+          typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+        if (code !== "42710") {
+          throw error;
+        }
+      });
+      await runRoleStatement(
+        bootstrap,
+        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        role,
+      );
+
+      const revokeMemberships = await bootstrap.query<{ readonly statement: string }>(
+        "SELECT format('REVOKE repurposepro_owner, %I FROM %I', $1::text, $2::text) AS statement",
+        [bootstrapRole.name, role.name],
+      );
+      await bootstrap.query(revokeMemberships.rows[0]!.statement);
+    }
 
     const databaseName = new URL(bootstrapUrl).pathname.slice(1);
     const database = await bootstrap.query<{ readonly statement: string }>(

@@ -39,7 +39,7 @@ describe("ProcessingStartRepository", () => {
   });
 
   it("persists the queue ID only for the matching owned analysis job", async () => {
-    const query = vi.fn().mockResolvedValue({ rows: [{ id: "job-1" }] });
+    const query = vi.fn().mockResolvedValue({ rows: [{ outcome: "marked" }] });
     const repository = new ProcessingStartRepository({
       database: { pool: { query } },
     } as never);
@@ -47,24 +47,22 @@ describe("ProcessingStartRepository", () => {
     await repository.markEnqueued("session-user", "project-1", "job-1", "job-1");
 
     expect(query).toHaveBeenCalledWith(
-      expect.stringMatching(/UPDATE processing_jobs[\s\S]+projects[\s\S]+analyze_video/),
+      "SELECT public.mark_paid_analysis_enqueued($1, $2, $3, $4) AS outcome",
       ["session-user", "project-1", "job-1", "job-1"],
-    );
-    expect(query.mock.calls[0]?.[0]).toMatch(
-      /processing_job\.bullmq_job_id IS NULL\s+OR processing_job\.bullmq_job_id = \$4/,
     );
   });
 
-  it.each([{ rows: [] }, { rows: [{ id: "job-1" }, { id: "job-1" }] }])(
-    "fails closed when the owned queue marker update is ambiguous: %#",
-    async ({ rows }) => {
-      const repository = new ProcessingStartRepository({
-        database: { pool: { query: vi.fn().mockResolvedValue({ rows }) } },
-      } as never);
+  it.each([
+    { rows: [] },
+    { rows: [{ outcome: "not_found" }] },
+    { rows: [{ outcome: "marked" }, { outcome: "marked" }] },
+  ])("fails closed when the owned queue marker update is ambiguous: %#", async ({ rows }) => {
+    const repository = new ProcessingStartRepository({
+      database: { pool: { query: vi.fn().mockResolvedValue({ rows }) } },
+    } as never);
 
-      await expect(
-        repository.markEnqueued("session-user", "project-1", "job-1", "job-1"),
-      ).rejects.toThrow("Processing queue reference did not update one job.");
-    },
-  );
+    await expect(
+      repository.markEnqueued("session-user", "project-1", "job-1", "job-1"),
+    ).rejects.toThrow("Processing queue reference did not update one job.");
+  });
 });

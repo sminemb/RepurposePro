@@ -8,24 +8,47 @@ const nodeEnvironmentSchema = z.enum(["development", "test", "production"]);
 const appEnvironmentSchema = z.enum(["local", "development", "staging", "production", "test"]);
 const logLevelSchema = z.enum(["debug", "info", "warn", "error"]);
 const arcjetModeSchema = z.enum(["DRY_RUN", "LIVE"]);
-const runtimeDatabaseUrlSchema = z
-  .string()
-  .min(1)
-  .refine(
-    (value) => {
-      try {
-        const url = new URL(value);
-        const role = decodeURIComponent(url.username);
+const databaseUrlSchema = (role: string) =>
+  z
+    .string()
+    .min(1)
+    .refine(
+      (value) => {
+        try {
+          const url = new URL(value);
+          const password = decodeURIComponent(url.password);
 
-        return (
-          ["postgres:", "postgresql:"].includes(url.protocol) && role === "repurposepro_runtime"
-        );
-      } catch {
-        return false;
-      }
-    },
-    { message: "Must use the repurposepro_runtime PostgreSQL role." },
-  );
+          return (
+            ["postgres:", "postgresql:"].includes(url.protocol) &&
+            decodeURIComponent(url.username) === role &&
+            password.length > 0 &&
+            !password.toLowerCase().includes("replace") &&
+            password !== "password"
+          );
+        } catch {
+          return false;
+        }
+      },
+      { message: `Must use the ${role} PostgreSQL role with a non-placeholder password.` },
+    );
+const runtimeDatabaseUrlSchema = databaseUrlSchema("repurposepro_runtime");
+const redisUrlSchema = z.string().refine(
+  (value) => {
+    try {
+      const url = new URL(value);
+      const password = decodeURIComponent(url.password);
+      return (
+        ["redis:", "rediss:"].includes(url.protocol) &&
+        password.length > 0 &&
+        !password.toLowerCase().includes("replace") &&
+        password !== "password"
+      );
+    } catch {
+      return false;
+    }
+  },
+  { message: "Must use an authenticated Redis URL with a non-placeholder password." },
+);
 
 const booleanFromEnvironment = z.preprocess((value: unknown) => {
   if (typeof value === "boolean") {
@@ -86,31 +109,47 @@ const serverEnvironmentSchema = z.object({
   DATABASE_URL: runtimeDatabaseUrlSchema,
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
   DATABASE_SSL: booleanFromEnvironment,
-  REDIS_URL: z.string().min(1),
+  REDIS_URL: redisUrlSchema,
   LOG_LEVEL: logLevelSchema,
   LOG_PRETTY: booleanFromEnvironment,
 });
 
-const apiEnvironmentSchema = serverEnvironmentSchema.extend({
-  ARCJET_KEY: arcjetKeySchema,
-  ARCJET_MODE: arcjetModeSchema,
-  APP_URL: z.string().url(),
-  API_PORT: z.coerce.number().int().min(1).max(65_535),
-  BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
-  FFPROBE_PATH: z.string().trim().min(1),
-  FILE_RETENTION_DAYS: z.coerce.number().int().positive(),
-  MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
-  MAX_VIDEO_DURATION_SECONDS: z.coerce.number().int().positive(),
-  STORAGE_DRIVER: z.literal("local"),
-  STORAGE_ROOT: z.string().trim().min(1),
-  STRIPE_CANCEL_URL: z.string().url(),
-  STRIPE_CREATOR_PRICE_ID: stripePriceIdSchema("STRIPE_CREATOR_PRICE_ID"),
-  STRIPE_PRO_PRICE_ID: stripePriceIdSchema("STRIPE_PRO_PRICE_ID"),
-  STRIPE_SECRET_KEY: stripeSecretKeySchema,
-  STRIPE_STARTER_PRICE_ID: stripePriceIdSchema("STRIPE_STARTER_PRICE_ID"),
-  STRIPE_SUCCESS_URL: z.string().url(),
-  STRIPE_WEBHOOK_SECRET: stripeWebhookSecretSchema,
-});
+const apiEnvironmentSchema = serverEnvironmentSchema
+  .extend({
+    ARCJET_KEY: arcjetKeySchema,
+    ARCJET_MODE: arcjetModeSchema,
+    APP_URL: z.string().url(),
+    API_PORT: z.coerce.number().int().min(1).max(65_535),
+    BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
+    DATABASE_CHECKOUT_URL: databaseUrlSchema("repurposepro_checkout"),
+    DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
+    DATABASE_WEBHOOK_URL: databaseUrlSchema("repurposepro_webhook"),
+    FFPROBE_PATH: z.string().trim().min(1),
+    FILE_RETENTION_DAYS: z.coerce.number().int().positive(),
+    MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
+    MAX_VIDEO_DURATION_SECONDS: z.coerce.number().int().positive(),
+    STORAGE_DRIVER: z.literal("local"),
+    STORAGE_ROOT: z.string().trim().min(1),
+    STRIPE_CANCEL_URL: z.string().url(),
+    STRIPE_CREATOR_PRICE_ID: stripePriceIdSchema("STRIPE_CREATOR_PRICE_ID"),
+    STRIPE_PRO_PRICE_ID: stripePriceIdSchema("STRIPE_PRO_PRICE_ID"),
+    STRIPE_SECRET_KEY: stripeSecretKeySchema,
+    STRIPE_STARTER_PRICE_ID: stripePriceIdSchema("STRIPE_STARTER_PRICE_ID"),
+    STRIPE_SUCCESS_URL: z.string().url(),
+    STRIPE_WEBHOOK_SECRET: stripeWebhookSecretSchema,
+  })
+  .superRefine((environment, context) => {
+    if (
+      (environment.NODE_ENV === "production" || environment.APP_ENV === "production") &&
+      environment.ARCJET_MODE !== "LIVE"
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Production requires Arcjet LIVE enforcement.",
+        path: ["ARCJET_MODE"],
+      });
+    }
+  });
 
 const authEnvironmentSchema = z.object({
   APP_ENV: appEnvironmentSchema,
@@ -150,10 +189,12 @@ export interface ApiConfig extends ServerConfig {
   readonly apiPort: number;
   readonly appUrl: string;
   readonly bullmqPrefix: string;
+  readonly checkoutDatabaseUrl: string;
   readonly ffprobePath: string;
   readonly fileRetentionDays: number;
   readonly maxUploadBytes: number;
   readonly maxVideoDurationSeconds: number;
+  readonly processingDatabaseUrl: string;
   readonly storageDriver: "local";
   readonly storageRoot: string;
   readonly stripe: {
@@ -164,9 +205,11 @@ export interface ApiConfig extends ServerConfig {
       readonly starter: string;
     };
     readonly secretKey: string;
+    readonly livemode: boolean;
     readonly successUrl: string;
     readonly webhookSecret: string;
   };
+  readonly webhookDatabaseUrl: string;
 }
 
 export interface AuthConfig {
@@ -266,6 +309,7 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     appEnv: parsed.APP_ENV,
     appUrl: parsed.APP_URL,
     bullmqPrefix: parsed.BULLMQ_PREFIX,
+    checkoutDatabaseUrl: parsed.DATABASE_CHECKOUT_URL,
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
@@ -276,6 +320,7 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
     maxUploadBytes: parsed.MAX_UPLOAD_BYTES,
     maxVideoDurationSeconds: parsed.MAX_VIDEO_DURATION_SECONDS,
     nodeEnv: parsed.NODE_ENV,
+    processingDatabaseUrl: parsed.DATABASE_PROCESSING_URL,
     redisUrl: parsed.REDIS_URL,
     storageDriver: parsed.STORAGE_DRIVER,
     storageRoot: resolveStorageRoot(parsed.STORAGE_ROOT),
@@ -287,9 +332,11 @@ export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
         starter: parsed.STRIPE_STARTER_PRICE_ID,
       },
       secretKey: parsed.STRIPE_SECRET_KEY,
+      livemode: parsed.STRIPE_SECRET_KEY.startsWith("sk_live_"),
       successUrl: parsed.STRIPE_SUCCESS_URL,
       webhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
     },
+    webhookDatabaseUrl: parsed.DATABASE_WEBHOOK_URL,
   };
 }
 

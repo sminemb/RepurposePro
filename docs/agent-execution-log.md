@@ -1639,3 +1639,95 @@ Known Limitations:
 Next Recommended Task:
 
 - VS3-T7 - Show the persisted queued processing state in the UI without adding worker consumption.
+
+---
+
+### VS3-T8 - Adversarial VS3 Security Remediation
+
+Status: COMPLETED
+Start Date: 2026-07-26
+Start Time: 15:11
+End Date: 2026-07-26
+End Time: 16:47
+
+User Outcome:
+
+- Credit purchases are now fulfilled only from a persisted, server-created, card-only Stripe
+  Checkout session whose authoritative Stripe data exactly matches the stored user, Price, amount,
+  currency, quantity, payment state, and test/live mode.
+- A leaked generic runtime database credential can no longer invoke Checkout creation, webhook
+  grants, paid processing start, queue marking, or direct processing-job insertion.
+- Production refuses Arcjet dry-run protection, local infrastructure has no working default
+  secrets and binds only to loopback, Redis requires authentication, and Next.js is patched to
+  16.2.11.
+- The processing UI no longer promises automatic refunds before VS9 exists.
+
+Layers Touched:
+
+- PostgreSQL migration, schema, roles, grants, and role provisioning
+- NestJS billing, Stripe, processing, database infrastructure, and tests
+- Web copy and Next.js dependency
+- Compose, environment validation, test configuration, and documentation
+
+Files Changed:
+
+- Forward migration `0014`, migration journal, database schema, provisioning script, Compose
+  PostgreSQL initialization, and billing-integrity integration tests.
+- Billing Checkout/webhook services, gateways, repositories, scoped database providers, module
+  wiring, HTTP/unit/PostgreSQL tests, and shared database service.
+- Processing scoped database provider, repository/module wiring, and PostgreSQL/Redis recovery
+  tests.
+- API configuration and tests, runtime/database environment examples, Vitest configurations,
+  `package.json` files, and `pnpm-lock.yaml`.
+- Processing start UI copy plus API, architecture, environment, progress, operational, execution,
+  and handoff documentation.
+- `.codebase-memory/artifact.json` received the formatting-only repair required by the full
+  repository Prettier gate.
+
+Commands Run:
+
+- Focused RED/GREEN Vitest runs for null aggregates, Stripe card/idempotency input, Arcjet
+  production mode, database role denial, Checkout correlation, concurrent grants, and concurrent
+  processing starts.
+- `pnpm install --lockfile-only` and `pnpm install --offline`.
+- Focused unit, HTTP, PostgreSQL, and Redis integration test runs.
+- `docker compose --env-file <temporary-test-env> config --quiet`.
+- Changed-file Prettier write/check and focused ESLint.
+- `pnpm typecheck`, production web build, `pnpm ci:check`, and `git diff --check`.
+- `pnpm audit --prod --audit-level high` attempted but the registry returned malformed compressed
+  JSON, so no audit result was produced.
+
+Verification:
+
+- PASS: scoped checkout/webhook/processing roles alone can execute their narrow fixed-search-path
+  `SECURITY DEFINER` functions; generic and cross-role calls fail with PostgreSQL permission
+  errors.
+- PASS: two concurrent completed events for one correlated Stripe session create one payment, one
+  purchase ledger row, and one credit grant.
+- PASS: real raw HTTP Stripe signature verification plus authoritative session retrieval grants
+  only a pre-attached Checkout attempt in a disposable PostgreSQL database.
+- PASS: concurrent starts for one project reuse one job and one deduction; concurrent projects
+  cannot overspend a shared balance.
+- PASS: both queue publication failure and post-publication marker persistence failure recover
+  with the same durable job ID and exactly one deduction; real Redis duplicate publication leaves
+  one waiting job.
+- PASS: production Arcjet dry-run, unauthenticated Redis URLs, placeholder secrets, and incorrectly
+  scoped database URLs fail configuration validation.
+- PASS: Compose configuration requires explicit secrets, uses authenticated Redis, and binds
+  PostgreSQL/Redis to `127.0.0.1`.
+- PASS: `pnpm ci:check` passes formatting, lint, strict typecheck, 276 unit tests (21 skipped), 21
+  live PostgreSQL/Redis integration tests, and all production builds on Next.js 16.2.11.
+- PASS: `git diff --check` reports no whitespace errors.
+
+Known Limitations:
+
+- The API process still holds all scoped database credentials. This isolates a leaked generic
+  runtime credential but does not provide a full service/process secret split.
+- Automatic processing-failure refunds remain deferred to VS9.
+- The pre-existing non-fatal Next.js NFT tracing warning from `apps/web/next.config.ts` remains.
+- The supplemental production dependency audit had no result because the registry response was
+  malformed; no successful audit result is claimed.
+
+Next Recommended Task:
+
+- VS4-T1 - Define clip candidate metadata and analysis-stage contracts.

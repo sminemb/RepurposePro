@@ -33,10 +33,6 @@ export class BillingLedgerUnavailableError extends Error {
 }
 
 export function parseLedgerBalance(rawBalance: unknown): number {
-  if (rawBalance === null) {
-    return 0;
-  }
-
   if (typeof rawBalance !== "string" || !integerText.test(rawBalance)) {
     throw new BillingBalanceInvalidError();
   }

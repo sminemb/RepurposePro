@@ -19,17 +19,67 @@ function withDatabase(url: string | undefined, database: string): string {
   return target.toString();
 }
 
+function withRole(url: string | undefined, role: string): string {
+  const target = new URL(url ?? skippedDatabaseUrl);
+  target.username = role;
+  return target.toString();
+}
+
 describeIntegration("billing integrity migrations", () => {
   const database = `repurposepro_billing_${randomUUID().replaceAll("-", "")}`;
   const bootstrapDatabaseUrl = withDatabase(bootstrapUrl, database);
   const migrationDatabaseUrl = withDatabase(migrationUrl, database);
   const runtimeDatabaseUrl = withDatabase(runtimeUrl, database);
+  const checkoutDatabaseUrl = withDatabase(withRole(runtimeUrl, "repurposepro_checkout"), database);
+  const webhookDatabaseUrl = withDatabase(withRole(runtimeUrl, "repurposepro_webhook"), database);
+  const processingDatabaseUrl = withDatabase(
+    withRole(runtimeUrl, "repurposepro_processing"),
+    database,
+  );
   const bootstrapDatabasePool = new Pool({ connectionString: bootstrapDatabaseUrl });
   const migrationPool = new Pool({ connectionString: migrationDatabaseUrl });
   const runtimePool = new Pool({ connectionString: runtimeDatabaseUrl });
+  const checkoutPool = new Pool({ connectionString: checkoutDatabaseUrl });
+  const webhookPool = new Pool({ connectionString: webhookDatabaseUrl });
+  const processingPool = new Pool({ connectionString: processingDatabaseUrl });
   const adminPool = new Pool({ connectionString: bootstrapUrl ?? skippedDatabaseUrl });
 
   beforeAll(async () => {
+    const runtimePassword = new URL(runtimeUrl ?? skippedDatabaseUrl).password;
+
+    for (const role of [
+      "repurposepro_checkout",
+      "repurposepro_webhook",
+      "repurposepro_processing",
+    ]) {
+      const statement = await adminPool.query<{ statement: string }>(
+        `SELECT format(
+          'CREATE ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+          $1::text,
+          $2::text
+        ) AS statement`,
+        [role, runtimePassword],
+      );
+
+      await adminPool.query(statement.rows[0]!.statement).catch((error: unknown) => {
+        const code =
+          typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+        if (code !== "42710") {
+          throw error;
+        }
+      });
+
+      const alterStatement = await adminPool.query<{ statement: string }>(
+        `SELECT format(
+          'ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+          $1::text,
+          $2::text
+        ) AS statement`,
+        [role, runtimePassword],
+      );
+      await adminPool.query(alterStatement.rows[0]!.statement);
+    }
+
     await adminPool.query(`CREATE DATABASE ${database} OWNER repurposepro_owner`);
 
     const migrationDatabase = drizzle({ client: migrationPool });
@@ -39,9 +89,15 @@ describeIntegration("billing integrity migrations", () => {
     await migrate(migrationDatabase, { migrationsFolder });
 
     await runtimePool.query("SELECT 1");
+    await checkoutPool.query("SELECT 1");
+    await webhookPool.query("SELECT 1");
+    await processingPool.query("SELECT 1");
   });
 
   afterAll(async () => {
+    await processingPool.end();
+    await webhookPool.end();
+    await checkoutPool.end();
     await runtimePool.end();
     await migrationPool.end();
     await bootstrapDatabasePool.end();
@@ -380,92 +436,214 @@ describeIntegration("billing integrity migrations", () => {
     }
   });
 
-  it("allows the restricted runtime role to grant one verified Stripe purchase idempotently", async () => {
+  it("prevents the generic runtime role from invoking Stripe purchase grants", async () => {
     await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
       "billing-webhook-user",
       "Billing Webhook User",
       "billing-webhook@example.test",
     ]);
 
-    const grantPurchase = (eventId: string) =>
-      runtimePool.query<{ outcome: string }>(
+    await expect(
+      runtimePool.query(
         `SELECT public.grant_stripe_credit_purchase(
-          $1, $2, $3, $4, $5, $6, $7, $8, $9
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        )`,
+        [
+          "evt_runtime_webhook",
+          "checkout.session.completed",
+          "billing-webhook-user",
+          "cs_runtime_webhook",
+          "pi_runtime_webhook",
+          "price_creator",
+          1,
+          2500,
+          "usd",
+          false,
+          "payment",
+          "paid",
+          "complete",
+        ],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("confines each sensitive database identity to its own financial capability", async () => {
+    await expect(
+      runtimePool.query("SELECT outcome FROM public.start_paid_video_analysis($1, $2)", [
+        "user-does-not-exist",
+        "00000000-0000-4000-8000-000000000001",
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    await expect(
+      checkoutPool.query("SELECT outcome FROM public.start_paid_video_analysis($1, $2)", [
+        "user-does-not-exist",
+        "00000000-0000-4000-8000-000000000001",
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    await expect(
+      webhookPool.query("SELECT * FROM public.create_stripe_checkout_attempt($1, $2, $3, $4)", [
+        "user-does-not-exist",
+        "starter",
+        "price_starter",
+        false,
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    await expect(
+      processingPool.query("SELECT * FROM public.create_stripe_checkout_attempt($1, $2, $3, $4)", [
+        "user-does-not-exist",
+        "starter",
+        "price_starter",
+        false,
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    await expect(
+      runtimePool.query(
+        `INSERT INTO public.processing_jobs (
+          project_id, user_id, type, status, progress, step, attempt_count
+        )
+        VALUES (
+          '00000000-0000-4000-8000-000000000001',
+          'user-does-not-exist',
+          'analyze_video',
+          'queued',
+          0,
+          'queued',
+          0
+        )`,
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("grants one purchase only through correlated Checkout and webhook roles", async () => {
+    const userId = "billing-correlated-user";
+    const sessionId = "cs_correlated_webhook";
+
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      userId,
+      "Billing Correlated User",
+      "billing-correlated@example.test",
+    ]);
+
+    const attempt = await checkoutPool.query<{
+      attemptId: string;
+      idempotencyKey: string;
+    }>(
+      `SELECT
+        attempt_id AS "attemptId",
+        idempotency_key AS "idempotencyKey"
+       FROM public.create_stripe_checkout_attempt($1, $2, $3, $4)`,
+      [userId, "creator", "price_creator", false],
+    );
+
+    expect(attempt.rows[0]?.idempotencyKey).toBe(`stripe-checkout:${attempt.rows[0]?.attemptId}`);
+    await checkoutPool.query(
+      "SELECT public.attach_stripe_checkout_session($1, $2, now() + interval '30 minutes')",
+      [attempt.rows[0]?.attemptId, sessionId],
+    );
+
+    await expect(
+      checkoutPool.query(
+        `SELECT public.grant_stripe_credit_purchase(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        )`,
+        [
+          "evt_checkout_role_denied",
+          "checkout.session.completed",
+          userId,
+          sessionId,
+          "pi_correlated",
+          "price_creator",
+          1,
+          2500,
+          "usd",
+          false,
+          "payment",
+          "paid",
+          "complete",
+        ],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+
+    await expect(
+      webhookPool.query(
+        `SELECT public.grant_stripe_credit_purchase(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        )`,
+        [
+          "evt_correlated_mismatch",
+          "checkout.session.completed",
+          userId,
+          sessionId,
+          "pi_correlated",
+          "price_wrong",
+          1,
+          2500,
+          "usd",
+          false,
+          "payment",
+          "paid",
+          "complete",
+        ],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+
+    const grant = (eventId: string) =>
+      webhookPool.query<{ outcome: string }>(
+        `SELECT public.grant_stripe_credit_purchase(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
         ) AS outcome`,
         [
           eventId,
           "checkout.session.completed",
-          "billing-webhook-user",
-          "cs_billing_webhook",
-          "pi_billing_webhook",
-          "creator",
+          userId,
+          sessionId,
+          "pi_correlated",
+          "price_creator",
+          1,
           2500,
           "usd",
-          100,
+          false,
+          "payment",
+          "paid",
+          "complete",
         ],
       );
 
-    await expect(grantPurchase("evt_billing_webhook")).resolves.toMatchObject({
-      rows: [{ outcome: "granted" }],
-    });
-    await expect(grantPurchase("evt_billing_webhook")).resolves.toMatchObject({
-      rows: [{ outcome: "duplicate_event" }],
-    });
-    await expect(grantPurchase("evt_billing_webhook_replay")).resolves.toMatchObject({
-      rows: [{ outcome: "already_granted" }],
-    });
+    const outcomes = await Promise.all([grant("evt_correlated_one"), grant("evt_correlated_two")]);
+
+    expect(outcomes.map((result) => result.rows[0]?.outcome).sort()).toEqual([
+      "already_granted",
+      "granted",
+    ]);
 
     const records = await migrationPool.query<{
-      creditsGranted: number;
-      eventId: string;
+      attemptStatus: string;
+      balance: string;
       ledgerCount: string;
       paymentCount: string;
-      status: string;
-    }>(`
-      SELECT
-        payments.credits_granted AS "creditsGranted",
-        payments.stripe_event_id AS "eventId",
-        events.status,
-        (SELECT COUNT(*)::text FROM stripe_payments WHERE stripe_checkout_session_id = 'cs_billing_webhook') AS "paymentCount",
-        (SELECT COUNT(*)::text FROM credit_ledger WHERE idempotency_key = 'stripe-purchase:evt_billing_webhook') AS "ledgerCount"
-      FROM stripe_payments AS payments
-      JOIN stripe_webhook_events AS events ON events.stripe_event_id = payments.stripe_event_id
-      WHERE payments.stripe_checkout_session_id = 'cs_billing_webhook'
-    `);
+    }>(
+      `SELECT
+        status AS "attemptStatus",
+        (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
+        (SELECT COUNT(*)::text FROM credit_ledger WHERE user_id = $1 AND type = 'purchase') AS "ledgerCount",
+        (SELECT COUNT(*)::text FROM stripe_payments WHERE user_id = $1) AS "paymentCount"
+       FROM stripe_checkout_sessions
+       WHERE stripe_session_id = $2`,
+      [userId, sessionId],
+    );
 
     expect(records.rows).toEqual([
       {
-        creditsGranted: 100,
-        eventId: "evt_billing_webhook",
+        attemptStatus: "completed",
+        balance: "100",
         ledgerCount: "1",
         paymentCount: "1",
-        status: "processed",
       },
     ]);
-
-    await expect(
-      runtimePool.query(
-        `SELECT public.grant_stripe_credit_purchase(
-          $1, $2, $3, $4, $5, $6, $7, $8, $9
-        )`,
-        [
-          "evt_billing_webhook_invalid",
-          "checkout.session.completed",
-          "billing-webhook-user",
-          "cs_billing_webhook_invalid",
-          "pi_billing_webhook_invalid",
-          "creator",
-          2500,
-          "usd",
-          999,
-        ],
-      ),
-    ).rejects.toMatchObject({ code: "23514" });
-    await expect(
-      migrationPool.query("SELECT 1 FROM stripe_webhook_events WHERE stripe_event_id = $1", [
-        "evt_billing_webhook_invalid",
-      ]),
-    ).resolves.toMatchObject({ rowCount: 0 });
   });
 
   it("returns a user-scoped credit aggregate to the restricted runtime role", async () => {
@@ -555,7 +733,7 @@ describeIntegration("billing integrity migrations", () => {
     );
 
     const start = () =>
-      runtimePool.query<{
+      processingPool.query<{
         creditsCharged: number | null;
         jobId: string | null;
         outcome: string;
@@ -695,7 +873,7 @@ describeIntegration("billing integrity migrations", () => {
       );
 
       await expect(
-        runtimePool.query("SELECT outcome FROM public.start_paid_video_analysis($1, $2)", [
+        processingPool.query("SELECT outcome FROM public.start_paid_video_analysis($1, $2)", [
           userId,
           projectId,
         ]),
@@ -789,7 +967,7 @@ describeIntegration("billing integrity migrations", () => {
     );
 
     const start = (projectId: string) =>
-      runtimePool.query<{ outcome: string }>(
+      processingPool.query<{ outcome: string }>(
         "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
         ["analysis-user-b", projectId],
       );
@@ -880,11 +1058,11 @@ describeIntegration("billing integrity migrations", () => {
     );
 
     const starts = await Promise.all([
-      runtimePool.query<{ outcome: string }>(
+      processingPool.query<{ outcome: string }>(
         "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
         ["analysis-user-c", "00000000-0000-0000-0000-000000000408"],
       ),
-      runtimePool.query<{ outcome: string }>(
+      processingPool.query<{ outcome: string }>(
         "SELECT outcome FROM public.start_paid_video_analysis($1, $2)",
         ["analysis-user-c", "00000000-0000-0000-0000-000000000409"],
       ),
@@ -903,5 +1081,74 @@ describeIntegration("billing integrity migrations", () => {
     );
 
     expect(result.rows).toEqual([{ balance: "0", jobCount: "1" }]);
+  });
+
+  it("serializes concurrent starts for one project into one job and one deduction", async () => {
+    const userId = "analysis-same-project-user";
+    const projectId = "00000000-0000-0000-0000-000000000501";
+
+    await migrationPool.query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)", [
+      userId,
+      "Analysis Same Project User",
+      "analysis-same-project@example.test",
+    ]);
+    await migrationPool.query(
+      `INSERT INTO projects (id, user_id, name, output_type, status)
+       VALUES ($1, $2, $3, 'clips', 'uploaded')`,
+      [projectId, userId, "Concurrent same project"],
+    );
+    await migrationPool.query(
+      `INSERT INTO uploaded_videos (
+        id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
+        duration_seconds, width, height, has_audio, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days')`,
+      [
+        "00000000-0000-0000-0000-000000000502",
+        projectId,
+        "same-project.mp4",
+        "/private/same-project.mp4",
+        "video/mp4",
+        1024,
+        600,
+        1920,
+        1080,
+        true,
+      ],
+    );
+    await migrationPool.query(
+      `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
+       VALUES ($1, 'manual_adjustment', 40, $2, $3)`,
+      [userId, "Same-project race credit", "analysis-same-project-credit"],
+    );
+
+    const starts = await Promise.all([
+      processingPool.query<{ jobId: string; outcome: string }>(
+        `SELECT outcome, job_id AS "jobId"
+         FROM public.start_paid_video_analysis($1, $2)`,
+        [userId, projectId],
+      ),
+      processingPool.query<{ jobId: string; outcome: string }>(
+        `SELECT outcome, job_id AS "jobId"
+         FROM public.start_paid_video_analysis($1, $2)`,
+        [userId, projectId],
+      ),
+    ]);
+
+    expect(starts.map((result) => result.rows[0]?.outcome).sort()).toEqual(["created", "existing"]);
+    expect(new Set(starts.map((result) => result.rows[0]?.jobId)).size).toBe(1);
+
+    const records = await migrationPool.query<{
+      balance: string;
+      deductionCount: string;
+      jobCount: string;
+    }>(
+      `SELECT
+        (SELECT COALESCE(SUM(amount), 0)::text FROM credit_ledger WHERE user_id = $1) AS balance,
+        (SELECT COUNT(*)::text FROM credit_ledger WHERE user_id = $1 AND type = 'processing_deduction') AS "deductionCount",
+        (SELECT COUNT(*)::text FROM processing_jobs WHERE user_id = $1) AS "jobCount"`,
+      [userId],
+    );
+
+    expect(records.rows).toEqual([{ balance: "30", deductionCount: "1", jobCount: "1" }]);
   });
 });

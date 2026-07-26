@@ -7,17 +7,11 @@ import {
   type DatabaseClient,
 } from "@repurposepro/db";
 
-@Injectable()
-export class DatabaseService implements OnModuleInit, OnModuleDestroy {
-  private readonly client: DatabaseClient;
+export class ScopedDatabaseService implements OnModuleInit, OnModuleDestroy {
+  protected readonly client: DatabaseClient;
 
-  public constructor() {
-    const config = loadApiConfig();
-    this.client = createDatabaseClient({
-      connectionString: config.databaseUrl,
-      poolMax: config.databasePoolMax,
-      ssl: config.databaseSsl,
-    });
+  public constructor(connectionString: string, poolMax: number, ssl: boolean) {
+    this.client = createDatabaseClient({ connectionString, poolMax, ssl });
   }
 
   public async onModuleInit(): Promise<void> {
@@ -34,5 +28,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   public get database(): DatabaseClient {
     return this.client;
+  }
+}
+
+@Injectable()
+export class DatabaseService extends ScopedDatabaseService {
+  public constructor() {
+    const config = loadApiConfig();
+    super(config.databaseUrl, config.databasePoolMax, config.databaseSsl);
   }
 }

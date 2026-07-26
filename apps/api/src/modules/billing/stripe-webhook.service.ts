@@ -1,6 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { loadApiConfig } from "@repurposepro/config";
-import { CREDIT_PACKS } from "@repurposepro/shared";
 import type Stripe from "stripe";
 
 import {
@@ -45,7 +44,24 @@ export class StripeWebhookService {
       throw new InvalidStripeWebhookSignatureError();
     }
 
-    const purchase = trustedCheckoutPurchase(event);
+    if (event.type === "checkout.session.expired") {
+      await this.stripeWebhookRepository.expireSession({
+        checkoutSessionId: event.data.object.id,
+        ...eventReference(event),
+      });
+      return;
+    }
+
+    if (event.type !== "checkout.session.completed") {
+      await this.stripeWebhookRepository.recordIgnored(eventReference(event));
+      return;
+    }
+
+    const session = await this.stripeWebhookGateway.retrieveCheckoutSession(
+      event.data.object.id,
+      config.stripe.secretKey,
+    );
+    const purchase = trustedCheckoutPurchase(event, session);
 
     if (!purchase) {
       await this.stripeWebhookRepository.recordIgnored(eventReference(event));
@@ -56,41 +72,55 @@ export class StripeWebhookService {
   }
 }
 
-function trustedCheckoutPurchase(event: Stripe.Event): StripeCreditPurchase | null {
+function trustedCheckoutPurchase(
+  event: Stripe.Event,
+  session: Stripe.Checkout.Session,
+): StripeCreditPurchase | null {
   if (event.type !== "checkout.session.completed") {
     return null;
   }
 
-  const session = event.data.object;
-  const pack = CREDIT_PACKS.find((candidate) => candidate.code === session.metadata?.packCode);
+  const lines = session.line_items?.data;
+  const line = lines?.length === 1 ? lines[0] : undefined;
+  const priceId = typeof line?.price === "string" ? line.price : (line?.price?.id ?? null);
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : (session.payment_intent?.id ?? null);
 
   if (
-    !pack ||
-    session.amount_total !== pack.priceCents ||
+    event.data.object.id !== session.id ||
+    !line ||
+    line.quantity !== 1 ||
+    !priceId ||
+    session.amount_total === null ||
+    session.amount_total <= 0 ||
     session.client_reference_id === null ||
     session.client_reference_id.length === 0 ||
-    session.currency !== pack.currency.toLowerCase() ||
+    session.currency === null ||
+    session.currency.length === 0 ||
     session.id.length === 0 ||
     session.mode !== "payment" ||
     session.payment_status !== "paid" ||
-    session.status !== "complete"
+    session.status !== "complete" ||
+    typeof session.livemode !== "boolean"
   ) {
     return null;
   }
 
   return {
-    amountCents: pack.priceCents,
+    amountCents: session.amount_total,
     checkoutSessionId: session.id,
-    credits: pack.credits,
     currency: session.currency,
     eventId: event.id,
     eventType: event.type,
-    packCode: pack.code,
+    livemode: session.livemode,
+    mode: session.mode,
     paymentIntentId,
+    paymentStatus: session.payment_status,
+    priceId,
+    quantity: line.quantity,
+    sessionStatus: session.status,
     userId: session.client_reference_id,
   };
 }

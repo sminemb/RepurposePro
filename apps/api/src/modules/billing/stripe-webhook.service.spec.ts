@@ -13,20 +13,11 @@ const webhookConfig = {
   },
 };
 
-function paidCheckoutCompletedEvent(overrides: Record<string, unknown> = {}): unknown {
+function paidCheckoutCompletedEvent(): unknown {
   return {
     data: {
       object: {
-        amount_total: 2500,
-        client_reference_id: "user-1",
-        currency: "usd",
         id: "cs_test_creator",
-        metadata: { packCode: "creator" },
-        mode: "payment",
-        payment_intent: "pi_test_creator",
-        payment_status: "paid",
-        status: "complete",
-        ...overrides,
       },
     },
     id: "evt_test_creator",
@@ -34,22 +25,48 @@ function paidCheckoutCompletedEvent(overrides: Record<string, unknown> = {}): un
   };
 }
 
+function retrievedPaidSession(overrides: Record<string, unknown> = {}): unknown {
+  return {
+    amount_total: 2500,
+    client_reference_id: "user-1",
+    currency: "usd",
+    id: "cs_test_creator",
+    line_items: {
+      data: [{ price: { id: "price_creator" }, quantity: 1 }],
+    },
+    livemode: false,
+    mode: "payment",
+    payment_intent: "pi_test_creator",
+    payment_status: "paid",
+    status: "complete",
+    ...overrides,
+  };
+}
+
 describe("StripeWebhookService", () => {
   const constructEvent = vi.fn();
+  const expireSession = vi.fn();
   const grantPurchase = vi.fn();
   const recordIgnored = vi.fn();
-  const service = new StripeWebhookService({ constructEvent }, { grantPurchase, recordIgnored });
+  const retrieveCheckoutSession = vi.fn();
+  const service = new StripeWebhookService(
+    { constructEvent, retrieveCheckoutSession },
+    { expireSession, grantPurchase, recordIgnored },
+  );
   const payload = Buffer.from('{"test":true}');
 
   beforeEach(() => {
     constructEvent.mockReset();
+    expireSession.mockReset();
     grantPurchase.mockReset();
     recordIgnored.mockReset();
+    retrieveCheckoutSession.mockReset();
     loadApiConfigMock.mockReturnValue(webhookConfig);
   });
 
   it("verifies the raw payload and grants exactly one trusted paid Checkout purchase", async () => {
     constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
+    retrieveCheckoutSession.mockResolvedValue(retrievedPaidSession());
 
     await expect(service.handle(payload, "signature_test")).resolves.toBeUndefined();
 
@@ -59,15 +76,23 @@ describe("StripeWebhookService", () => {
       "sk_test_checkouttests",
       "whsec_checkouttests",
     );
+    expect(retrieveCheckoutSession).toHaveBeenCalledWith(
+      "cs_test_creator",
+      "sk_test_checkouttests",
+    );
     expect(grantPurchase).toHaveBeenCalledWith({
       amountCents: 2500,
       checkoutSessionId: "cs_test_creator",
-      credits: 100,
       currency: "usd",
       eventId: "evt_test_creator",
       eventType: "checkout.session.completed",
-      packCode: "creator",
+      livemode: false,
+      mode: "payment",
       paymentIntentId: "pi_test_creator",
+      paymentStatus: "paid",
+      priceId: "price_creator",
+      quantity: 1,
+      sessionStatus: "complete",
       userId: "user-1",
     });
     expect(recordIgnored).not.toHaveBeenCalled();
@@ -87,10 +112,11 @@ describe("StripeWebhookService", () => {
 
   it.each([
     ["an unpaid session", { payment_status: "unpaid" }],
-    ["a session with a mismatched amount", { amount_total: 999 }],
     ["a session without a trusted user correlation", { client_reference_id: null }],
+    ["a session with multiple line items", { line_items: { data: [{}, {}] } }],
   ])("records %s without granting credits", async (_label, overrides) => {
-    constructEvent.mockReturnValue(paidCheckoutCompletedEvent(overrides));
+    constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
+    retrieveCheckoutSession.mockResolvedValue(retrievedPaidSession(overrides));
 
     await expect(service.handle(payload, "signature_test")).resolves.toBeUndefined();
 
@@ -114,6 +140,33 @@ describe("StripeWebhookService", () => {
       eventId: "evt_test_unrelated",
       eventType: "customer.created",
     });
+    expect(grantPurchase).not.toHaveBeenCalled();
+    expect(retrieveCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it("persists signed Checkout expiration without trusting purchase metadata", async () => {
+    constructEvent.mockReturnValue({
+      data: { object: { id: "cs_test_expired" } },
+      id: "evt_test_expired",
+      type: "checkout.session.expired",
+    });
+
+    await expect(service.handle(payload, "signature_test")).resolves.toBeUndefined();
+
+    expect(expireSession).toHaveBeenCalledWith({
+      checkoutSessionId: "cs_test_expired",
+      eventId: "evt_test_expired",
+      eventType: "checkout.session.expired",
+    });
+    expect(retrieveCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it("fails for retry when authoritative Checkout retrieval is unavailable", async () => {
+    constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
+    retrieveCheckoutSession.mockRejectedValue(new Error("Stripe unavailable"));
+
+    await expect(service.handle(payload, "signature_test")).rejects.toThrow("Stripe unavailable");
+    expect(recordIgnored).not.toHaveBeenCalled();
     expect(grantPurchase).not.toHaveBeenCalled();
   });
 });

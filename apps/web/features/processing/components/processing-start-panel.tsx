@@ -93,7 +93,7 @@ export function ProcessingStartPanel({
 
       <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-rp-text-muted">
         <ShieldCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-rp-success" />
-        Credits are automatically refunded when processing ends in an eligible failure.
+        Credits are charged once. Retrying the same queued analysis will not charge them again.
       </p>
 
       {balanceError ? (

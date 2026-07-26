@@ -310,8 +310,6 @@ Last Updated Time: 18:21
 Last Updated By: Codex
 ~~~
 
----
-
 ### VS3-T4 Live Acceptance Checkpoint - 2026-07-18 18:02 Asia/Manila
 
 ~~~text
@@ -785,5 +783,25 @@ Important Context: POST /api/v1/projects/:projectId/analyze commits the paid Pos
 Required Commands Before Continuing: Implement VS3-T7 against persisted project/job state, keep worker consumption out of scope, and run pnpm ci:check before completion.
 Last Updated Date: 2026-07-19
 Last Updated Time: 13:58
+Last Updated By: Codex
+~~~
+
+---
+
+### VS3-T8 Security Remediation Completion Snapshot - 2026-07-26 16:47 Asia/Manila
+
+~~~text
+Current Slice: VS3 - User can buy credits and start a paid processing job
+Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
+Current Status: NOT_STARTED
+Last Completed Task: VS3-T8 - Remediate adversarial VS3 security review
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: No intended changes remain after the VS3-T8 task commit; local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. `pnpm ci:check` passes formatting, lint, strict typecheck, 276 unit tests (21 skipped), 21 live PostgreSQL/Redis integration tests, and all production builds on Next.js 16.2.11.
+Known Blockers: None. The npm registry returned a malformed compressed response to `pnpm audit --prod --audit-level high`, so that supplemental audit produced no result; the patched Next version was independently verified.
+Important Context: Forward migration `0014` requires the checkout, webhook, and processing roles to be provisioned before migration. Checkout is card-only and grants require a persisted server-created session plus authoritative Stripe retrieval. The API still holds all scoped runtime secrets in one process; this limits a leaked generic runtime credential but is not a full service-secret split. Automatic failure refunds remain deferred to VS9 and the UI no longer promises them.
+Required Commands Before Continuing: Provision the new database roles and rotate local/deployment secrets before applying migration `0014`; then begin VS4-T1 with TDD and run `pnpm ci:check`.
+Last Updated Date: 2026-07-26
+Last Updated Time: 16:47
 Last Updated By: Codex
 ~~~

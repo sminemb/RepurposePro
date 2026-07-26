@@ -16,6 +16,7 @@ import {
   ProcessingStartRepository,
 } from "./processing-start.repository";
 import { ProcessingStartService } from "./processing-start.service";
+import { processingDatabaseProvider } from "./scoped-database.provider";
 import {
   PROCESSING_STATUS_REPOSITORY,
   ProcessingStatusRepository,
@@ -28,6 +29,7 @@ import { ProcessingStatusService } from "./processing-status.service";
   providers: [
     ProcessingStartService,
     ProcessingStartRepository,
+    processingDatabaseProvider,
     ProcessingStatusService,
     ProcessingStatusRepository,
     AnalysisRateLimitGuard,

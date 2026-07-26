@@ -1,9 +1,10 @@
 import Stripe from "stripe";
 
 export interface StripeCheckoutRequest {
+  readonly attemptId: string;
   readonly cancelUrl: string;
   readonly customerEmail: string;
-  readonly packCode: string;
+  readonly idempotencyKey: string;
   readonly priceId: string;
   readonly secretKey: string;
   readonly successUrl: string;
@@ -11,6 +12,8 @@ export interface StripeCheckoutRequest {
 }
 
 export interface StripeCheckoutSession {
+  readonly expires_at: number;
+  readonly id: string;
   readonly url: string | null;
 }
 
@@ -21,7 +24,10 @@ export interface StripeCheckoutGatewayContract {
 interface StripeCheckoutClient {
   readonly checkout: {
     readonly sessions: {
-      create(input: Stripe.Checkout.SessionCreateParams): Promise<StripeCheckoutSession>;
+      create(
+        input: Stripe.Checkout.SessionCreateParams,
+        options: Stripe.RequestOptions,
+      ): Promise<StripeCheckoutSession>;
     };
   };
 }
@@ -36,17 +42,20 @@ export class StripeCheckoutGateway implements StripeCheckoutGatewayContract {
   public async createSession(request: StripeCheckoutRequest): Promise<StripeCheckoutSession> {
     const stripe = this.createClient(request.secretKey);
 
-    return stripe.checkout.sessions.create({
-      cancel_url: request.cancelUrl,
-      client_reference_id: request.userId,
-      customer_email: request.customerEmail,
-      line_items: [{ price: request.priceId, quantity: 1 }],
-      metadata: {
-        packCode: request.packCode,
-        userId: request.userId,
+    return stripe.checkout.sessions.create(
+      {
+        cancel_url: request.cancelUrl,
+        client_reference_id: request.userId,
+        customer_email: request.customerEmail,
+        line_items: [{ price: request.priceId, quantity: 1 }],
+        metadata: {
+          checkoutAttemptId: request.attemptId,
+        },
+        mode: "payment",
+        payment_method_types: ["card"],
+        success_url: request.successUrl,
       },
-      mode: "payment",
-      success_url: request.successUrl,
-    });
+      { idempotencyKey: request.idempotencyKey },
+    );
   }
 }

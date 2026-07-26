@@ -11,6 +11,7 @@ import { RedisService } from "../infrastructure/redis.service";
 import { BillingModule } from "./billing.module";
 import { CHECKOUT_RATE_LIMIT_CLIENT } from "./checkout-rate-limit.guard";
 import { CheckoutService } from "./checkout.service";
+import { CHECKOUT_DATABASE, WEBHOOK_DATABASE } from "./scoped-database.providers";
 
 describe("POST /api/v1/billing/checkout", () => {
   let app: INestApplication;
@@ -34,6 +35,10 @@ describe("POST /api/v1/billing/checkout", () => {
       .useValue({ auth: { api: { getSession } } })
       .overrideProvider(DatabaseService)
       .useValue({ database: { db: {} } })
+      .overrideProvider(CHECKOUT_DATABASE)
+      .useValue({ database: { pool: {} } })
+      .overrideProvider(WEBHOOK_DATABASE)
+      .useValue({ database: { pool: {} } })
       .overrideProvider(RedisService)
       .useValue({})
       .overrideProvider(CheckoutService)

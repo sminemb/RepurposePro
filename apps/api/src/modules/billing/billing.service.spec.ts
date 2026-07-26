@@ -40,7 +40,6 @@ function createLedgerDatabase(rows: readonly unknown[], failure?: Error): Databa
 
 describe("parseLedgerBalance", () => {
   it.each([
-    [null, 0],
     ["40", 40],
     ["0", 0],
     ["-11", -11],
@@ -48,6 +47,10 @@ describe("parseLedgerBalance", () => {
     [String(Number.MIN_SAFE_INTEGER), Number.MIN_SAFE_INTEGER],
   ])("returns exact safe integers for %j", (raw, expected) => {
     expect(parseLedgerBalance(raw)).toBe(expected);
+  });
+
+  it("rejects a null aggregate instead of treating it as an empty ledger", () => {
+    expect(() => parseLedgerBalance(null)).toThrow(BillingBalanceInvalidError);
   });
 
   it.each([undefined, "40.1", "40 credits", "01", "", "9007199254740992", "-9007199254740992", 40])(

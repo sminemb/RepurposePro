@@ -9,9 +9,18 @@ export interface StripeWebhookGatewayContract {
     secretKey: string,
     webhookSecret: string,
   ): Stripe.Event;
+  retrieveCheckoutSession(sessionId: string, secretKey: string): Promise<Stripe.Checkout.Session>;
 }
 
 interface StripeWebhookClient {
+  readonly checkout: {
+    readonly sessions: {
+      retrieve(
+        sessionId: string,
+        params: Stripe.Checkout.SessionRetrieveParams,
+      ): Promise<Stripe.Checkout.Session>;
+    };
+  };
   readonly webhooks: {
     constructEvent(payload: Buffer, signature: string, webhookSecret: string): Stripe.Event;
   };
@@ -31,5 +40,14 @@ export class StripeWebhookGateway implements StripeWebhookGatewayContract {
     webhookSecret: string,
   ): Stripe.Event {
     return this.createClient(secretKey).webhooks.constructEvent(payload, signature, webhookSecret);
+  }
+
+  public async retrieveCheckoutSession(
+    sessionId: string,
+    secretKey: string,
+  ): Promise<Stripe.Checkout.Session> {
+    return this.createClient(secretKey).checkout.sessions.retrieve(sessionId, {
+      expand: ["line_items"],
+    });
   }
 }

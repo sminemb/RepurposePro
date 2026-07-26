@@ -1198,9 +1198,15 @@ Do not accept arbitrary price or credit amount from the client.
 The server maps pack ID to a trusted Stripe Price ID. It limits Checkout creation to three
 attempts per authenticated user per minute.
 
-The Checkout-entry request is intentionally database-free. It must not create a payment,
-customer, or credit-ledger record, and it must not grant credits. Only the signature-verified
-webhook flow may persist payment state or grant credits.
+Before contacting Stripe, the API persists a server-derived Checkout attempt containing the
+authenticated user, approved pack, exact configured Price ID, amount, currency, credits, and
+Stripe mode. Stripe receives one Price line item with quantity one, card payment only, and the
+attempt ID as correlation metadata. An idempotency key derived from the attempt prevents duplicate
+session creation.
+
+The Checkout response is returned only after its Stripe session ID and expiry are attached to the
+attempt. Checkout creation must not create a payment or credit-ledger row and must not grant
+credits. Only the signature-verified webhook flow may do that.
 
 ### Errors
 
@@ -1221,9 +1227,12 @@ Stripe webhook endpoint.
 
 - No user session required.
 - Verify Stripe signature.
+- Retrieve the Checkout session from Stripe after signature verification.
 - Persist event ID.
 - Process idempotently.
-- Grant credits only after confirmed successful payment event.
+- Require one configured Price line, quantity one, matching persisted user/amount/currency/mode,
+  paid and complete status, and matching test/live mode.
+- Grant credits only when the retrieved session matches the preexisting Checkout attempt.
 - Return 2xx for already-processed valid event.
 
 ### Response — 200
@@ -1239,6 +1248,9 @@ Stripe webhook endpoint.
 # 17. Refund Contract
 
 Refunds for normal processing failures are **credit refunds**, not Stripe money refunds.
+
+This contract belongs to VS9 and is not implemented by VS3. Until VS9 is complete, the UI must not
+promise automatic refunds.
 
 Eligible failures may include:
 

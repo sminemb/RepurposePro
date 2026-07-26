@@ -11,6 +11,8 @@ import {
   CheckoutRateLimitGuard,
 } from "./checkout-rate-limit.guard";
 import { CheckoutService, STRIPE_CHECKOUT_GATEWAY } from "./checkout.service";
+import { CHECKOUT_REPOSITORY, CheckoutRepository } from "./checkout.repository";
+import { checkoutDatabaseProvider, webhookDatabaseProvider } from "./scoped-database.providers";
 import { StripeCheckoutGateway } from "./stripe-checkout.gateway";
 import { StripeWebhookController } from "./stripe-webhook.controller";
 import { STRIPE_WEBHOOK_GATEWAY, StripeWebhookGateway } from "./stripe-webhook.gateway";
@@ -23,12 +25,19 @@ import { StripeWebhookService } from "./stripe-webhook.service";
   providers: [
     BillingService,
     CheckoutService,
+    CheckoutRepository,
     StripeWebhookService,
     StripeWebhookRepository,
+    checkoutDatabaseProvider,
+    webhookDatabaseProvider,
     CheckoutRateLimitGuard,
     {
       provide: CHECKOUT_RATE_LIMIT_CLIENT,
       useClass: ArcjetCheckoutRateLimitClient,
+    },
+    {
+      provide: CHECKOUT_REPOSITORY,
+      useExisting: CheckoutRepository,
     },
     {
       provide: STRIPE_CHECKOUT_GATEWAY,

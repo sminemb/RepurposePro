@@ -9,6 +9,7 @@ import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../infrastructure/database.service";
 import { RedisService } from "../infrastructure/redis.service";
 import { BillingModule } from "./billing.module";
+import { CHECKOUT_DATABASE, WEBHOOK_DATABASE } from "./scoped-database.providers";
 
 describe("GET /api/v1/billing/credits", () => {
   let app: INestApplication;
@@ -32,6 +33,10 @@ describe("GET /api/v1/billing/credits", () => {
       .useValue({ auth: { api: { getSession } } })
       .overrideProvider(DatabaseService)
       .useValue({ database: { db: { select } } })
+      .overrideProvider(CHECKOUT_DATABASE)
+      .useValue({ database: { pool: {} } })
+      .overrideProvider(WEBHOOK_DATABASE)
+      .useValue({ database: { pool: {} } })
       .overrideProvider(RedisService)
       .useValue({})
       .compile();

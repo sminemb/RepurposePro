@@ -14,9 +14,15 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: "development",
   APP_ENV: "local",
   DATABASE_URL: "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
+  DATABASE_CHECKOUT_URL:
+    "postgresql://repurposepro_checkout:secret-password@localhost:5432/repurposepro",
+  DATABASE_WEBHOOK_URL:
+    "postgresql://repurposepro_webhook:secret-password@localhost:5432/repurposepro",
+  DATABASE_PROCESSING_URL:
+    "postgresql://repurposepro_processing:secret-password@localhost:5432/repurposepro",
   DATABASE_POOL_MAX: "12",
   DATABASE_SSL: "false",
-  REDIS_URL: "redis://localhost:6379",
+  REDIS_URL: "redis://:redis-test-secret@localhost:6379",
   LOG_LEVEL: "debug",
   LOG_PRETTY: "true",
   STORAGE_DRIVER: "local",
@@ -123,12 +129,29 @@ describe("configuration loaders", () => {
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
     expect(config.appUrl).toBe("http://localhost:3000");
     expect(config.arcjet.mode).toBe("DRY_RUN");
+    expect(config.checkoutDatabaseUrl).toContain("repurposepro_checkout");
+    expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
+    expect(config.webhookDatabaseUrl).toContain("repurposepro_webhook");
+    expect(config.stripe.livemode).toBe(false);
     expect(config.stripe.priceIds).toEqual({
       creator: "price_creatortests",
       pro: "price_protests",
       starter: "price_startertests",
     });
     expect(config.stripe.webhookSecret).toBe("whsec_checkouttests");
+  });
+
+  it("rejects unauthenticated Redis and incorrectly scoped database URLs", () => {
+    expect(() =>
+      loadApiConfig({
+        ...validServerEnvironment,
+        APP_URL: "http://localhost:3000",
+        API_PORT: "4000",
+        DATABASE_WEBHOOK_URL:
+          "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
+        REDIS_URL: "redis://localhost:6379",
+      }),
+    ).toThrow(ConfigValidationError);
   });
 
   it("loads a configured BullMQ prefix", () => {
@@ -140,6 +163,21 @@ describe("configuration loaders", () => {
     });
 
     expect(config.bullmqPrefix).toBe("repurposepro-test");
+  });
+
+  it.each([
+    ["NODE_ENV", { NODE_ENV: "production", APP_ENV: "local" }],
+    ["APP_ENV", { NODE_ENV: "development", APP_ENV: "production" }],
+  ])("rejects Arcjet DRY_RUN when %s is production", (_productionKey, productionEnvironment) => {
+    expect(() =>
+      loadApiConfig({
+        ...validServerEnvironment,
+        ...productionEnvironment,
+        APP_URL: "https://app.example.com",
+        API_PORT: "4000",
+        ARCJET_MODE: "DRY_RUN",
+      }),
+    ).toThrow(ConfigValidationError);
   });
 
   it.each([
