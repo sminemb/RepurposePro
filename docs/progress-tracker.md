@@ -845,12 +845,12 @@ Last Maintenance Task: MAINT-17 - Recover paid test Checkout and add local webho
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: MAINT-17 command, runbook, and task records are ready to commit. Pre-existing `apps/web/next-env.d.ts` remains outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: No MAINT-17 changes remain after commit `4cfd32f` (`fix(billing): add local webhook recovery workflow`). Pre-existing `apps/web/next-env.d.ts` remains outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: `pnpm lint` reports one project-service configuration error for the pre-existing `apps/api/src/startup-diagnostics.spec.ts`; MAINT-17 changed no ESLint or API source. All 283 unit tests, 17 focused PostgreSQL billing tests, 15 focused webhook tests, full typecheck, formatting, and whitespace checks pass.
 Known Blockers: None for the recovered purchase. Browser automation was unavailable, so signed-in Dashboard and Billing rendering was not rechecked automatically.
 Important Context: The latest `$50` sandbox `pro` Checkout was resent through the signed webhook. PostgreSQL now has one completed session, one paid 200-credit payment, one immutable 200-credit ledger row, one processed event, and a 200-credit affected balance. A duplicate resend left every count unchanged. Local API readiness remains healthy; local billing requires `pnpm stripe:listen` in a second terminal.
 Required Commands Before Continuing: Run `pnpm stripe:listen` beside `pnpm dev` before another local Checkout. Address the unrelated ESLint project-service allowlist gap separately, then begin VS4-T1 with TDD.
 Last Updated Date: 2026-07-27
-Last Updated Time: 16:34
+Last Updated Time: 16:38
 Last Updated By: Codex
 ```

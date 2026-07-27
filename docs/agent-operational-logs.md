@@ -489,3 +489,10 @@ Record decisions such as:
   unavailable, so authenticated page rendering was not rechecked.
 - Decision: no API, schema, or billing-logic change. Keep signed webhook replay as the only recovery
   path; never insert financial rows manually.
+
+### MAINT-17 Commit Completion - 2026-07-27 16:38 Asia/Manila
+
+- Commit: `4cfd32f` (`fix(billing): add local webhook recovery workflow`).
+- Scope check: commit contains only the listener command, runbook, and MAINT-17 task records.
+  Pre-existing `apps/web/next-env.d.ts` remains unstaged and outside task scope.
+- Final source state: no intended MAINT-17 changes remain uncommitted.

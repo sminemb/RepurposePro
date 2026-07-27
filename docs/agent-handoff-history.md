@@ -930,3 +930,23 @@ Last Updated Date: 2026-07-27
 Last Updated Time: 16:34
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-17 Commit Completion - 2026-07-27 16:38 Asia/Manila
+
+~~~text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: No MAINT-17 changes remain after commit `4cfd32f` (`fix(billing): add local webhook recovery workflow`). Pre-existing `apps/web/next-env.d.ts` remains outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: `pnpm lint` reports one project-service configuration error for pre-existing `apps/api/src/startup-diagnostics.spec.ts`. All 283 unit tests, 17 focused PostgreSQL billing tests, 15 focused webhook tests, full typecheck, formatting, and whitespace checks pass.
+Known Blockers: None for the recovered purchase. Browser automation was unavailable, so signed-in Dashboard and Billing rendering was not rechecked automatically.
+Important Context: The latest `$50` sandbox `pro` Checkout now has one completed session, one paid 200-credit payment, one immutable purchase row, one processed event, and a 200-credit affected balance. Duplicate resend changes nothing. Local API readiness is healthy; run `pnpm stripe:listen` beside `pnpm dev` for local Checkout.
+Required Commands Before Continuing: Address the unrelated ESLint project-service allowlist gap separately, then begin VS4-T1 with TDD.
+Last Updated Date: 2026-07-27
+Last Updated Time: 16:38
+Last Updated By: Codex
+~~~
