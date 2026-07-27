@@ -591,3 +591,11 @@ Record decisions such as:
 - All MAINT-20 files pass targeted Prettier, focused ESLint, and `git diff --check`.
 - Scope: the user-generated `apps/web/next-env.d.ts` change remains untouched and uncommitted.
 - Status: COMPLETED.
+
+### MAINT-20 Commit Completion - 2026-07-27 19:08 Asia/Manila
+
+- Commit: `bbed3e3` (`fix(test): restore local database roles`).
+- Scope check: commit contains only the integration-test cleanup guard, tests, command/docs updates,
+  and MAINT-20 records.
+- Final source state: no intended MAINT-20 source changes remain uncommitted.
+- Preserved user state: `apps/web/next-env.d.ts` remains modified and outside the commit.
