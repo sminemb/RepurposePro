@@ -436,3 +436,23 @@ Status: COMPLETED
 - Escalated Git access succeeded after the initial ref-lock denial.
 - Commit `8c564cc` (`feat(web): add generated project icon`) now contains the verified task files;
   no intended changes remain uncommitted.
+
+### MAINT-16 - Credit-Balance Runtime Restoration Checkpoint
+
+Date: 2026-07-27
+Time: 15:29 Asia/Manila
+Status: IN_PROGRESS
+
+- Started the required local PostgreSQL and Redis services; `pnpm infra:check` passes.
+- Added tested, secret-safe API startup diagnostics for port, dependency, and PostgreSQL-credential failures.
+- API still fails during Nest dependency initialization before binding port 4000; preserve changes and continue diagnosis before claiming recovery.
+
+### MAINT-16 - Credit-Balance Runtime Restoration Completion
+
+Date: 2026-07-27
+Time: 15:55 Asia/Manila
+Status: COMPLETED
+
+- Fixed Redis lifecycle race between BullMQ queue creation and Nest startup.
+- Verified local API binds port 4000 and returns healthy live/ready responses with PostgreSQL and Redis up.
+- Focused tests, full typecheck, formatting, API build, and whitespace checks pass; repository-wide lint timed out without diagnostics.

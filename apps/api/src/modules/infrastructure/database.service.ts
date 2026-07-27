@@ -7,6 +7,13 @@ import {
   type DatabaseClient,
 } from "@repurposepro/db";
 
+export class DatabaseInitializationError extends Error {
+  public constructor(cause: unknown) {
+    super("Database initialization failed.", { cause });
+    this.name = "DatabaseInitializationError";
+  }
+}
+
 export class ScopedDatabaseService implements OnModuleInit, OnModuleDestroy {
   protected readonly client: DatabaseClient;
 
@@ -15,7 +22,11 @@ export class ScopedDatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async onModuleInit(): Promise<void> {
-    await this.checkConnection();
+    try {
+      await this.checkConnection();
+    } catch (error) {
+      throw new DatabaseInitializationError(error);
+    }
   }
 
   public async onModuleDestroy(): Promise<void> {

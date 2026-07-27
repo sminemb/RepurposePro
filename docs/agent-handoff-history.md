@@ -865,3 +865,43 @@ Last Updated Date: 2026-07-26
 Last Updated Time: 19:05
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-16 Credit-Balance Runtime Restoration Checkpoint - 2026-07-27 15:29 Asia/Manila
+
+~~~text
+Current Slice: VS3 maintenance - Credit balance runtime restoration
+Current Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
+Current Status: IN_PROGRESS
+Last Completed Task: MAINT-15 - Generate and wire RepurposePro project icon
+Next Recommended Task: Diagnose the remaining Nest initialization failure, verify authenticated `/api/v1/billing/credits`, then complete MAINT-16.
+Uncommitted Changes: MAINT-16 API diagnostics, regression test, and task-record updates. Pre-existing `apps/web/next-env.d.ts` remains outside this task.
+Known Failing Tests: Focused 12-test suite passes. Focused ESLint exceeded 30 seconds without diagnostic output.
+Known Blockers: PostgreSQL and Redis are healthy, but API initialization fails before port 4000 binds and has no safe error classification yet.
+Important Context: New startup output never logs secrets and classifies `EADDRINUSE`, service connection failures, and PostgreSQL SQLSTATE `28P01`. The generic failure occurs after Nest begins connecting dependencies.
+Required Commands Before Continuing: `pnpm infra:check`; temporary API boot/readiness probe; focused tests; then `pnpm ci:check` before commit.
+Last Updated Date: 2026-07-27
+Last Updated Time: 15:29
+Last Updated By: Codex
+~~~
+
+---
+
+### MAINT-16 Credit-Balance Runtime Restoration Completion - 2026-07-27 15:55 Asia/Manila
+
+~~~text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: MAINT-16 task files are ready to commit; pre-existing `apps/web/next-env.d.ts` remains outside this task.
+Known Failing Tests: 42 focused tests, full typecheck, formatting, API build, infrastructure health, and whitespace pass. `pnpm lint` timed out after 121 seconds without diagnostics.
+Known Blockers: None for API startup or credit loading.
+Important Context: BullMQ may connect the shared lazy Redis client before Nest lifecycle. `RedisService` now avoids a second `connect()` and waits for `ready`; API live and ready endpoints both returned HTTP 200.
+Required Commands Before Continuing: Commit MAINT-16; optionally rerun repository lint in a less constrained shell, then begin VS4-T1 with TDD.
+Last Updated Date: 2026-07-27
+Last Updated Time: 15:55
+Last Updated By: Codex
+~~~

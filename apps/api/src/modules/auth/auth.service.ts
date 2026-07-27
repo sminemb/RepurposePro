@@ -4,6 +4,13 @@ import { schema } from "@repurposepro/db";
 
 import { DatabaseService } from "../infrastructure/database.service";
 
+export class AuthenticationInitializationError extends Error {
+  public constructor(cause: unknown) {
+    super("Authentication initialization failed.", { cause });
+    this.name = "AuthenticationInitializationError";
+  }
+}
+
 @Injectable()
 export class AuthService implements OnModuleInit {
   private authInstance: {
@@ -29,25 +36,29 @@ export class AuthService implements OnModuleInit {
   }
 
   public async onModuleInit(): Promise<void> {
-    const config = loadAuthConfig();
-    const [{ drizzleAdapter }, { betterAuth }] = await Promise.all([
-      import("@better-auth/drizzle-adapter"),
-      import("better-auth"),
-    ]);
+    try {
+      const config = loadAuthConfig();
+      const [{ drizzleAdapter }, { betterAuth }] = await Promise.all([
+        import("@better-auth/drizzle-adapter"),
+        import("better-auth"),
+      ]);
 
-    this.authInstance = betterAuth({
-      baseURL: config.url,
-      database: drizzleAdapter(this.databaseService.database.db, {
-        provider: "pg",
-        schema,
-        transaction: true,
-        usePlural: true,
-      }),
-      emailAndPassword: {
-        enabled: true,
-      },
-      secret: config.secret,
-      trustedOrigins: [...config.trustedOrigins],
-    });
+      this.authInstance = betterAuth({
+        baseURL: config.url,
+        database: drizzleAdapter(this.databaseService.database.db, {
+          provider: "pg",
+          schema,
+          transaction: true,
+          usePlural: true,
+        }),
+        emailAndPassword: {
+          enabled: true,
+        },
+        secret: config.secret,
+        trustedOrigins: [...config.trustedOrigins],
+      });
+    } catch (error) {
+      throw new AuthenticationInitializationError(error);
+    }
   }
 }

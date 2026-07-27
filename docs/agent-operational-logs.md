@@ -443,3 +443,18 @@ Record decisions such as:
 - Escalated Git staging and commit succeeded after the initial branch/ref-lock denial.
 - Commit: `8c564cc` (`feat(web): add generated project icon`).
 - Final state: no intended uncommitted changes remain; `.env` and `.env.database` remain ignored.
+
+### MAINT-16 Credit-Balance Runtime Restoration Checkpoint - 2026-07-27 15:29 Asia/Manila
+
+- Files changed: API startup diagnostics and its regression test; live tracker state.
+- Evidence: `pnpm infra:up` and `pnpm infra:check` report healthy PostgreSQL and Redis; TCP connections succeed on ports 5432 and 6379.
+- Evidence: a temporary API boot reaches dependency initialization but exits before binding port 4000. It reports no safe driver/config classification yet.
+- Verification: focused startup/billing/server API suite passes 12 tests; changed-file Prettier, API typecheck, and `git diff --check` pass.
+- Limitation: focused ESLint exceeded the 30-second command limit without output; full authenticated credit-balance recovery remains pending.
+
+### MAINT-16 Credit-Balance Runtime Restoration Completion - 2026-07-27 15:55 Asia/Manila
+
+- Root cause: BullMQ opened the shared lazy Redis client before Nest lifecycle initialization; a second `connect()` call threw `Redis is already connecting/connected`.
+- Fix: Redis initialization now connects only from `wait`; otherwise waits for `ready` before pinging.
+- Verification: API binds port 4000; live and ready endpoints return 200 with database/Redis up; 42 focused tests, full typecheck, Prettier, API build, and whitespace checks pass.
+- Limitation: repository-wide `pnpm lint` timed out after 121 seconds during `eslint .` without diagnostics.

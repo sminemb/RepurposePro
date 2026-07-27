@@ -14,4 +14,16 @@ describe("RedisService", () => {
 
     await service.onModuleDestroy();
   });
+
+  it("does not reconnect a client already opened by a dependent provider", async () => {
+    const service = new RedisService();
+    const connect = vi.spyOn(service.connection, "connect");
+    const ping = vi.spyOn(service.connection, "ping").mockResolvedValue("PONG");
+    vi.spyOn(service.connection, "status", "get").mockReturnValue("ready");
+
+    await service.onModuleInit();
+
+    expect(connect).not.toHaveBeenCalled();
+    expect(ping).toHaveBeenCalledOnce();
+  });
 });

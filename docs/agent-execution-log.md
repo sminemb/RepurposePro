@@ -1732,6 +1732,37 @@ Next Recommended Task:
 
 - VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
 
+### MAINT-16 — Restore Credit-Balance API Availability
+
+Status: COMPLETED
+Start Date: 2026-07-27
+Start Time: 15:13
+End Date: 2026-07-27
+End Time: 15:55
+
+User Outcome:
+
+- Billing can again reach a live API because its shared Redis client no longer aborts Nest startup.
+
+Files Changed:
+
+- API bootstrap, Redis/database/auth initialization diagnostics, Redis regression tests, and task records.
+
+Commands Run:
+
+- `pnpm infra:up`
+- `pnpm infra:check`
+- Focused billing/startup tests, full typecheck, Prettier, API build, and temporary live API readiness probe.
+
+Verification:
+
+- PASS: API binds port 4000; `/api/v1/health/live` and `/api/v1/health/ready` return HTTP 200 with database and Redis up.
+- PASS: 42 focused tests, full typecheck, changed-file formatting, and Git whitespace checks pass.
+
+Known Limitations:
+
+- `pnpm lint` exceeded 121 seconds during `eslint .` without output.
+
 Post-Completion Correction - 2026-07-27 14:53 Asia/Manila:
 
 - The initial completion record noted a temporary `.git` permission blocker. Escalated Git access

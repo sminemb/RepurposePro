@@ -841,16 +841,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
-Last Maintenance Task: MAINT-15 - Generate and wire RepurposePro project icon
+Last Maintenance Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
 Current Status: NOT_STARTED
-Last Completed Task: MAINT-15 - Generate and wire RepurposePro project icon
+Last Completed Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No intended changes remain after the MAINT-15 commit; local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, web production build, `pnpm test` with 276 passed tests and 21 skipped, and `git diff --check` pass. Browser DevTools MCP was unavailable, so runtime screenshot verification was not run.
-Known Blockers: None. Initial branch creation was denied by workspace `.git` permissions, but the verified MAINT-15 task was committed successfully on `main`. `pnpm exec prettier` could not resolve the binary; the repository-local Prettier executable passed the required changed-file check.
-Important Context: MAINT-15 generated `apps/web/public/repurposepro-icon.png` and copied it to `apps/web/app/icon.png`; `BrandMark` uses the public asset and Next metadata uses the app icon convention. The build exposes `/icon.png`. Existing scoped infrastructure credentials remain ignored and automatic failure refunds remain deferred to VS9.
-Required Commands Before Continuing: Begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
+Uncommitted Changes: `apps/web/next-env.d.ts` was already modified before MAINT-16 and remains outside this task. MAINT-16 task files are ready to commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: Focused 42-test suite, full typecheck, changed-file Prettier, API build, infrastructure health, and Git whitespace checks pass. `pnpm lint` timed out after 121 seconds during `eslint .` without diagnostics.
+Known Blockers: None for credit-balance runtime availability. Repository-wide lint timeout remains tooling follow-up.
+Important Context: Redis could be opened by BullMQ before Nest invokes `RedisService.onModuleInit`; calling `connect()` again raised `Redis is already connecting/connected` and prevented API port 4000 from binding. The service now waits for the shared client to become ready and keeps startup diagnostics secret-safe.
+Required Commands Before Continuing: Run `pnpm lint` in a less constrained shell if repository-wide lint evidence is required; then begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
 Last Updated Date: 2026-07-27
-Last Updated Time: 14:51
+Last Updated Time: 15:55
 Last Updated By: Codex
 ```
