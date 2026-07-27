@@ -845,12 +845,12 @@ Last Maintenance Task: MAINT-19 - Recover pending Stripe credits and auto-start 
 Current Status: COMPLETED
 Last Completed Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: MAINT-19 source, tests, tooling, documentation, and task records are verified and ready for commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: No MAINT-19 source changes remain after commit `62f7bda` (`fix(dev): keep Stripe webhooks connected`). Local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`.
 Known Blockers: None. Browser automation was unavailable, so authenticated Billing and Dashboard rendering was not rechecked automatically.
 Important Context: Signed replay of `evt_1TxkYbFfO8YnaNpS154UzeNK` recovered the pending Starter purchase. PostgreSQL proves one processed webhook, one payment, one purchase ledger row, and a 40-credit balance after two replays. `pnpm dev` now starts web, API, worker, and validated Stripe forwarding; `pnpm dev:apps` remains the no-Stripe option. The listener waits for IPv4 API readiness, validates its signing secret without disclosure, supports npm-installed Stripe CLI shims on Windows without shell mode, and redacts webhook secrets from child output.
 Required Commands Before Continuing: Run `pnpm dev` for the complete local stack or `pnpm dev:apps` only when Stripe is intentionally excluded. Fix the pre-existing startup-diagnostics ESLint project-service allowlist before expecting repository-wide `pnpm ci:check` to pass.
 Last Updated Date: 2026-07-27
-Last Updated Time: 17:50
+Last Updated Time: 17:52
 Last Updated By: Codex
 ```

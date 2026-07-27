@@ -547,3 +547,11 @@ Record decisions such as:
   `apps/api/src/startup-diagnostics.spec.ts` is outside ESLint project-service configuration.
 - Temporary logs and task-owned development processes were removed after verification.
 - Status: COMPLETED.
+
+### MAINT-19 Commit Completion - 2026-07-27 17:52 Asia/Manila
+
+- Commit: `62f7bda` (`fix(dev): keep Stripe webhooks connected`).
+- Scope check: commit contains only Stripe listener automation, tests, workspace/tooling integration,
+  README guidance, and MAINT-19 records.
+- Security check: staged diff contains no real webhook signing secret or environment credential.
+- Final source state: no intended MAINT-19 source changes remain uncommitted.
