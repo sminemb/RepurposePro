@@ -496,3 +496,17 @@ Record decisions such as:
 - Scope check: commit contains only the listener command, runbook, and MAINT-17 task records.
   Pre-existing `apps/web/next-env.d.ts` remains unstaged and outside task scope.
 - Final source state: no intended MAINT-17 changes remain uncommitted.
+
+### MAINT-18 Local PostgreSQL Credential Repair - 2026-07-27 16:51 Asia/Manila
+
+- Failure evidence: PostgreSQL and Redis were healthy, but checkout, processing, and webhook
+  connections failed authentication with SQLSTATE `28P01`; only the runtime role connected.
+- Root cause: persisted local scoped-role passwords no longer matched the ignored local environment.
+- Repair: stopped the stale API watcher, reprovisioned existing roles with
+  `pnpm db:provision-roles`, applied migrations, and started one clean API watcher.
+- Verification: all four API database URLs authenticate as their intended roles and the IPv4
+  readiness endpoint returns HTTP 200.
+- Security: removed old temporary API logs containing webhook request headers. No secret values
+  were printed, documented, or committed during the repair.
+- Scope: no application source, public API, schema, or financial data changed. Pre-existing
+  `apps/web/next-env.d.ts` remains untouched.

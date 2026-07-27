@@ -1953,3 +1953,55 @@ Known Limitations:
 Next Recommended Task:
 
 - Address the standalone ESLint project-service allowlist gap, then begin VS4-T1.
+
+---
+
+### MAINT-18 - Repair Local Scoped PostgreSQL Credentials and API Startup
+
+Status: COMPLETED
+Start Date: 2026-07-27
+Start Time: 16:47
+End Date: 2026-07-27
+End Time: 16:51
+
+User Outcome:
+
+- The local API starts successfully and its readiness endpoint returns HTTP 200.
+
+Layers Touched:
+
+- Local PostgreSQL roles
+- Local API runtime
+- Operational documentation
+
+Files Changed:
+
+- Progress tracker and agent execution, operational, maintenance, and handoff records
+
+Commands Run:
+
+- `pnpm infra:check`
+- Secret-safe connectivity checks for all four API database URLs
+- `pnpm db:provision-roles`
+- `pnpm db:migrate`
+- `pnpm dev:api`
+- IPv4 API readiness probe
+
+Verification:
+
+- PASS: PostgreSQL and Redis infrastructure are healthy.
+- PASS: runtime, checkout, processing, and webhook URLs authenticate as their intended roles.
+- PASS: migrations apply successfully.
+- PASS: one clean API watcher starts and `http://127.0.0.1:4000/api/v1/health/ready`
+  returns HTTP 200.
+
+Known Limitations:
+
+- On this Windows host, `localhost` may resolve to IPv6 while Nest listens on IPv4; use
+  `127.0.0.1` for an unambiguous local readiness probe.
+- Repository lint retains the pre-existing project-service allowlist issue for
+  `startup-diagnostics.spec.ts`; MAINT-18 changed no application source.
+
+Next Recommended Task:
+
+- VS4-T1 - Define clip candidate metadata and analysis-stage contracts.

@@ -475,3 +475,19 @@ Status: COMPLETED
 - Limitation: browser automation was unavailable. Full lint exposes an unrelated pre-existing
   project-service allowlist gap for `startup-diagnostics.spec.ts`.
 - Next: fix the standalone lint configuration gap, then begin VS4-T1.
+
+### MAINT-18 - Repair Local Scoped PostgreSQL Credentials and API Startup
+
+Date: 2026-07-27
+Time: 16:51 Asia/Manila
+Status: COMPLETED
+
+- Diagnosed the startup failure as stale passwords for the checkout, processing, and webhook
+  PostgreSQL roles; database and Redis services were healthy.
+- Reprovisioned only the existing local roles from ignored environment configuration and applied
+  current migrations without recreating PostgreSQL or changing financial data.
+- Stopped the stale API watcher, started one clean watcher, and verified HTTP 200 readiness over
+  IPv4.
+- Removed old temporary API logs containing webhook request headers.
+- No application source or schema changed. The existing lint allowlist issue remains unrelated.
+- Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.

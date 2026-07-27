@@ -841,16 +841,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
-Last Maintenance Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
+Last Maintenance Task: MAINT-18 - Repair local scoped PostgreSQL credentials and API startup
 Current Status: NOT_STARTED
-Last Completed Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
+Last Completed Task: MAINT-18 - Repair local scoped PostgreSQL credentials and API startup
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No MAINT-17 changes remain after commit `4cfd32f` (`fix(billing): add local webhook recovery workflow`). Pre-existing `apps/web/next-env.d.ts` remains outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: `pnpm lint` reports one project-service configuration error for the pre-existing `apps/api/src/startup-diagnostics.spec.ts`; MAINT-17 changed no ESLint or API source. All 283 unit tests, 17 focused PostgreSQL billing tests, 15 focused webhook tests, full typecheck, formatting, and whitespace checks pass.
-Known Blockers: None for the recovered purchase. Browser automation was unavailable, so signed-in Dashboard and Billing rendering was not rechecked automatically.
-Important Context: The latest `$50` sandbox `pro` Checkout was resent through the signed webhook. PostgreSQL now has one completed session, one paid 200-credit payment, one immutable 200-credit ledger row, one processed event, and a 200-credit affected balance. A duplicate resend left every count unchanged. Local API readiness remains healthy; local billing requires `pnpm stripe:listen` in a second terminal.
-Required Commands Before Continuing: Run `pnpm stripe:listen` beside `pnpm dev` before another local Checkout. Address the unrelated ESLint project-service allowlist gap separately, then begin VS4-T1 with TDD.
+Uncommitted Changes: MAINT-18 task records are ready to commit. Pre-existing `apps/web/next-env.d.ts` remains untouched and outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`. MAINT-18 changed no application source.
+Known Blockers: None for local API startup.
+Important Context: PostgreSQL was healthy, but the persisted checkout, processing, and webhook role passwords no longer matched the ignored local environment, producing SQLSTATE `28P01`. `pnpm db:provision-roles` synchronized the existing roles without recreating the database; migrations are current and all four API database URLs authenticate. One clean API watcher is running, and `http://127.0.0.1:4000/api/v1/health/ready` returns HTTP 200. On this Windows host, `localhost` may resolve to IPv6 while Nest listens on IPv4.
+Required Commands Before Continuing: Keep the current API watcher or run `pnpm dev:api`; use the IPv4 readiness URL when diagnosing local startup. Run `pnpm stripe:listen` beside the API before another local Checkout.
 Last Updated Date: 2026-07-27
-Last Updated Time: 16:38
+Last Updated Time: 16:51
 Last Updated By: Codex
 ```
