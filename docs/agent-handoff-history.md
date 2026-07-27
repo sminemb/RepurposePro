@@ -292,6 +292,11 @@ Last Updated Time: 19:01
 Last Updated By: Codex
 ~~~
 
+### MAINT-16 Commit Confirmation - 2026-07-27 15:55 Asia/Manila
+
+- Commit: `6119a4a` (`fix(api): restore credit balance startup`).
+- Remaining tracked change: pre-existing `apps/web/next-env.d.ts` only; it remains outside MAINT-16.
+
 ---
 
 ### MAINT-15 Commit Correction Snapshot - 2026-07-27 14:53 Asia/Manila

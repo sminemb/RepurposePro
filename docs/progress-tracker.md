@@ -845,7 +845,7 @@ Last Maintenance Task: MAINT-16 - Restore local credit-balance API availability 
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: `apps/web/next-env.d.ts` was already modified before MAINT-16 and remains outside this task. MAINT-16 task files are ready to commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: `apps/web/next-env.d.ts` was already modified before MAINT-16 and remains outside this task. MAINT-16 committed as `6119a4a` (`fix(api): restore credit balance startup`). Local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: Focused 42-test suite, full typecheck, changed-file Prettier, API build, infrastructure health, and Git whitespace checks pass. `pnpm lint` timed out after 121 seconds during `eslint .` without diagnostics.
 Known Blockers: None for credit-balance runtime availability. Repository-wide lint timeout remains tooling follow-up.
 Important Context: Redis could be opened by BullMQ before Nest invokes `RedisService.onModuleInit`; calling `connect()` again raised `Redis is already connecting/connected` and prevented API port 4000 from binding. The service now waits for the shared client to become ready and keeps startup diagnostics secret-safe.
