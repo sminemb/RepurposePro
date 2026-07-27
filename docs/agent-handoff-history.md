@@ -294,6 +294,26 @@ Last Updated By: Codex
 
 ---
 
+### MAINT-15 Commit Correction Snapshot - 2026-07-27 14:53 Asia/Manila
+
+~~~text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-15 - Generate and wire RepurposePro project icon
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: No intended changes remain after commit `8c564cc`; local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, web production build, `pnpm test` with 276 passed tests and 21 skipped, and `git diff --check` pass. Browser DevTools MCP was unavailable, so runtime screenshot verification was not run.
+Known Blockers: None. Initial branch creation was denied by workspace `.git` permissions, but escalated staging and commit succeeded.
+Important Context: Generated `apps/web/public/repurposepro-icon.png` is used by `BrandMark`; identical `apps/web/app/icon.png` enables Next browser metadata. Next build exposes `/icon.png`.
+Required Commands Before Continuing: Begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
+Last Updated Date: 2026-07-27
+Last Updated Time: 14:53
+Last Updated By: Codex
+~~~
+
+---
+
 ### MAINT-15 Completion Handoff Snapshot - 2026-07-27 14:51 Asia/Manila
 
 ~~~text

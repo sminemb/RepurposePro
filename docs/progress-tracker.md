@@ -845,11 +845,11 @@ Last Maintenance Task: MAINT-15 - Generate and wire RepurposePro project icon
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-15 - Generate and wire RepurposePro project icon
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: MAINT-15 source and generated icon assets remain intentionally uncommitted because this workspace cannot write `.git` refs; local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: No intended changes remain after the MAINT-15 commit; local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: None. Changed-file Prettier, focused ESLint, web typecheck, web production build, `pnpm test` with 276 passed tests and 21 skipped, and `git diff --check` pass. Browser DevTools MCP was unavailable, so runtime screenshot verification was not run.
-Known Blockers: Git cannot create branch/lock files under `.git` in this workspace, so MAINT-15 could not be committed. `pnpm exec prettier` also could not resolve the binary; the repository-local Prettier executable passed the required changed-file check.
+Known Blockers: None. Initial branch creation was denied by workspace `.git` permissions, but the verified MAINT-15 task was committed successfully on `main`. `pnpm exec prettier` could not resolve the binary; the repository-local Prettier executable passed the required changed-file check.
 Important Context: MAINT-15 generated `apps/web/public/repurposepro-icon.png` and copied it to `apps/web/app/icon.png`; `BrandMark` uses the public asset and Next metadata uses the app icon convention. The build exposes `/icon.png`. Existing scoped infrastructure credentials remain ignored and automatic failure refunds remain deferred to VS9.
-Required Commands Before Continuing: Resolve `.git` write permission, commit MAINT-15, then begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
+Required Commands Before Continuing: Begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
 Last Updated Date: 2026-07-27
 Last Updated Time: 14:51
 Last Updated By: Codex

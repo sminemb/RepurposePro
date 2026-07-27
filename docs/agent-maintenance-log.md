@@ -430,3 +430,9 @@ Status: COMPLETED
 - Known limitations: Chrome DevTools MCP was unavailable. Git could not create a branch or commit
   because `.git` ref lock creation is denied in this workspace.
 - Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+### MAINT-15 Commit Correction - 2026-07-27
+
+- Escalated Git access succeeded after the initial ref-lock denial.
+- Commit `8c564cc` (`feat(web): add generated project icon`) now contains the verified task files;
+  no intended changes remain uncommitted.

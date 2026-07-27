@@ -437,3 +437,9 @@ Record decisions such as:
 - Blocker: branch creation and commit failed because workspace permissions deny `.git` ref lock
   creation; source changes remain intentionally uncommitted.
 - Decision: MAINT-15 is complete. VS4-T1 is next.
+
+### MAINT-15 Commit Correction - 2026-07-27 14:53 Asia/Manila
+
+- Escalated Git staging and commit succeeded after the initial branch/ref-lock denial.
+- Commit: `8c564cc` (`feat(web): add generated project icon`).
+- Final state: no intended uncommitted changes remain; `.env` and `.env.database` remain ignored.
