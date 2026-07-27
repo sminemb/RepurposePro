@@ -413,3 +413,20 @@ Status: COMPLETED
   `pnpm infra:check` passes, and unauthenticated Redis access is rejected.
 - Source control: `.env` and `.env.database` remain ignored and no temporary secret helper remains.
 - Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
+### MAINT-15 - Generate and Wire RepurposePro Project Icon
+
+Date: 2026-07-27
+Time: 14:51 Asia/Manila
+Status: COMPLETED
+
+- Scope: generated project icon, shared brand mark, browser metadata, and task records.
+- Change: added generated `repurposepro-icon.png` to public assets, copied it to the Next app icon
+  convention, replaced the old text-only `R` brand tile, and declared `/icon.png` in metadata.
+- Verification: repository-local Prettier, focused ESLint, web typecheck, web production build,
+  276 passing unit tests with 21 skipped, and Git whitespace check pass.
+- Known limitations: Chrome DevTools MCP was unavailable. Git could not create a branch or commit
+  because `.git` ref lock creation is denied in this workspace.
+- Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.

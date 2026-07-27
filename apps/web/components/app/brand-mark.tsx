@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
@@ -11,12 +12,14 @@ interface BrandMarkProps {
 export function BrandMark({ className, compact = false, href }: BrandMarkProps) {
   const content = (
     <>
-      <span
+      <Image
+        alt=""
         aria-hidden="true"
-        className="grid size-9 place-items-center rounded-rp-sm border border-rp-primary/45 bg-rp-primary-soft font-bold text-rp-primary shadow-rp-glow"
-      >
-        R
-      </span>
+        className="size-9 rounded-rp-sm object-cover"
+        height={36}
+        src="/repurposepro-icon.png"
+        width={36}
+      />
       {!compact ? (
         <span className="text-base font-semibold tracking-[-0.04em]">
           Repurpose<span className="text-rp-primary">Pro</span>

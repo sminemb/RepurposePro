@@ -9,6 +9,9 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   description: "Turn long videos into focused, social-ready clips with RepurposePro.",
+  icons: {
+    icon: "/icon.png",
+  },
   title: "RepurposePro",
 };
 

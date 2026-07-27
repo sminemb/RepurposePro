@@ -418,3 +418,22 @@ Record decisions such as:
   credential verification, `pnpm infra:check`, ignored-file status, and Git whitespace validation
   pass.
 - Decision: MAINT-14 is complete. VS4-T1 is next.
+
+---
+
+### MAINT-15 Project Icon - 2026-07-27 14:40 to 14:51 Asia/Manila
+
+- Files changed: generated `apps/web/public/repurposepro-icon.png` and `apps/web/app/icon.png`;
+  `apps/web/components/app/brand-mark.tsx`; `apps/web/app/layout.tsx`; task records.
+- Design decision: keep one dark-tech geometric emblem across navigation and browser metadata;
+  copper frame communicates vertical video, mist waveform communicates audio, and the forward cut
+  communicates editing/repurposing.
+- Verification: changed-file Prettier, focused ESLint, web typecheck, web production build,
+  `pnpm test` (276 passed, 21 skipped), and `git diff --check` pass.
+- Build evidence: Next build exposes static `/icon.png`; existing non-fatal NFT tracing warning
+  remains unrelated to this task.
+- Tool limitation: Chrome DevTools MCP was unavailable, so runtime screenshot and console checks
+  could not run.
+- Blocker: branch creation and commit failed because workspace permissions deny `.git` ref lock
+  creation; source changes remain intentionally uncommitted.
+- Decision: MAINT-15 is complete. VS4-T1 is next.

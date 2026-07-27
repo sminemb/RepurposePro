@@ -1734,6 +1734,71 @@ Next Recommended Task:
 
 ---
 
+### MAINT-15 - Generate and Wire RepurposePro Project Icon
+
+Status: COMPLETED
+Start Date: 2026-07-27
+Start Time: 14:40
+End Date: 2026-07-27
+End Time: 14:51
+
+User Outcome:
+
+- RepurposePro now has a generated copper, mist, and charcoal project mark in shared navigation
+  and as the browser icon.
+
+Layers Touched:
+
+- Web UI
+- Browser metadata
+- Project asset records
+
+Files Changed:
+
+- `apps/web/public/repurposepro-icon.png`
+- `apps/web/app/icon.png`
+- `apps/web/components/app/brand-mark.tsx`
+- `apps/web/app/layout.tsx`
+- `docs/progress-tracker.md`
+- Agent execution, operational, maintenance, and handoff records
+
+Commands Run:
+
+- Built-in image generation for the square logo-brand asset
+- Repository-local Prettier changed-file check
+- Focused ESLint on layout and brand mark
+- `pnpm --filter @repurposepro/web typecheck`
+- `pnpm --filter @repurposepro/web build`
+- `pnpm test`
+- `git diff --check`
+
+Verification:
+
+- PASS: generated asset inspected visually and remains legible as a compact app mark.
+- PASS: Next production build compiled, typechecked, and exposed static `/icon.png`.
+- PASS: web typecheck passed.
+- PASS: web production build passed with the existing non-fatal NFT tracing warning.
+- PASS: 276 unit tests passed and 21 remained intentionally skipped.
+- PASS: repository-local Prettier and focused ESLint passed.
+- PASS: Git whitespace check reported warnings only about existing LF-to-CRLF normalization.
+
+Assumptions:
+
+- Existing dark-only product theme is authoritative, so one generated icon asset serves both the
+  shared brand mark and browser metadata.
+
+Known Limitations:
+
+- Chrome DevTools MCP was not available in this context, so browser screenshot and console checks
+  were not run.
+- Git branch creation and commit were blocked by workspace permission on `.git` ref lock files.
+
+Next Recommended Task:
+
+- VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
 ### MAINT-14 - Rotate and Configure Local Infrastructure Secrets
 
 Status: COMPLETED
