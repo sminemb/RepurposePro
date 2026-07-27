@@ -845,12 +845,12 @@ Last Maintenance Task: MAINT-18 - Repair local scoped PostgreSQL credentials and
 Current Status: NOT_STARTED
 Last Completed Task: MAINT-18 - Repair local scoped PostgreSQL credentials and API startup
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: MAINT-18 task records are ready to commit. Pre-existing `apps/web/next-env.d.ts` remains untouched and outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
+Uncommitted Changes: No MAINT-18 changes remain after commit `e0806d2` (`chore(dev): repair local database roles`). Pre-existing `apps/web/next-env.d.ts` remains untouched and outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`. MAINT-18 changed no application source.
 Known Blockers: None for local API startup.
 Important Context: PostgreSQL was healthy, but the persisted checkout, processing, and webhook role passwords no longer matched the ignored local environment, producing SQLSTATE `28P01`. `pnpm db:provision-roles` synchronized the existing roles without recreating the database; migrations are current and all four API database URLs authenticate. One clean API watcher is running, and `http://127.0.0.1:4000/api/v1/health/ready` returns HTTP 200. On this Windows host, `localhost` may resolve to IPv6 while Nest listens on IPv4.
 Required Commands Before Continuing: Keep the current API watcher or run `pnpm dev:api`; use the IPv4 readiness URL when diagnosing local startup. Run `pnpm stripe:listen` beside the API before another local Checkout.
 Last Updated Date: 2026-07-27
-Last Updated Time: 16:51
+Last Updated Time: 16:53
 Last Updated By: Codex
 ```

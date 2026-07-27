@@ -510,3 +510,10 @@ Record decisions such as:
   were printed, documented, or committed during the repair.
 - Scope: no application source, public API, schema, or financial data changed. Pre-existing
   `apps/web/next-env.d.ts` remains untouched.
+
+### MAINT-18 Commit Completion - 2026-07-27 16:53 Asia/Manila
+
+- Commit: `e0806d2` (`chore(dev): repair local database roles`).
+- Scope check: commit contains only MAINT-18 tracker and operational records. Pre-existing
+  `apps/web/next-env.d.ts` remains unstaged and outside task scope.
+- Final source state: no intended MAINT-18 changes remain uncommitted.
