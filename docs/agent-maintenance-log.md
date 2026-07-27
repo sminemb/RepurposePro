@@ -456,3 +456,22 @@ Status: COMPLETED
 - Fixed Redis lifecycle race between BullMQ queue creation and Nest startup.
 - Verified local API binds port 4000 and returns healthy live/ready responses with PostgreSQL and Redis up.
 - Focused tests, full typecheck, formatting, API build, and whitespace checks pass; repository-wide lint timed out without diagnostics.
+
+### MAINT-17 - Recover Missing Stripe Credits and Document Local Webhooks
+
+Date: 2026-07-27
+Time: 16:34 Asia/Manila
+Status: COMPLETED
+
+- Recovered the latest paid `$50` sandbox Checkout only through the existing signed Stripe webhook;
+  no manual financial rows or adjustments were used.
+- Verified one completed session, one paid 200-credit payment, one immutable purchase row, one
+  processed event, and a 200-credit affected balance.
+- Replayed the same event a second time and proved every financial count remained unchanged.
+- Added `pnpm stripe:listen` and a local Checkout startup, signing-secret, resend, and
+  troubleshooting runbook.
+- Verification: focused webhook and live PostgreSQL billing suites, full unit suite, typecheck,
+  formatting, API readiness, final database state, and whitespace checks pass.
+- Limitation: browser automation was unavailable. Full lint exposes an unrelated pre-existing
+  project-service allowlist gap for `startup-diagnostics.spec.ts`.
+- Next: fix the standalone lint configuration gap, then begin VS4-T1.

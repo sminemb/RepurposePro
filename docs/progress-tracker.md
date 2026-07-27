@@ -841,16 +841,16 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
-Last Maintenance Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
+Last Maintenance Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
 Current Status: NOT_STARTED
-Last Completed Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
+Last Completed Task: MAINT-17 - Recover paid test Checkout and add local webhook runbook
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: `apps/web/next-env.d.ts` was already modified before MAINT-16 and remains outside this task. MAINT-16 committed as `6119a4a` (`fix(api): restore credit balance startup`). Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: Focused 42-test suite, full typecheck, changed-file Prettier, API build, infrastructure health, and Git whitespace checks pass. `pnpm lint` timed out after 121 seconds during `eslint .` without diagnostics.
-Known Blockers: None for credit-balance runtime availability. Repository-wide lint timeout remains tooling follow-up.
-Important Context: Redis could be opened by BullMQ before Nest invokes `RedisService.onModuleInit`; calling `connect()` again raised `Redis is already connecting/connected` and prevented API port 4000 from binding. The service now waits for the shared client to become ready and keeps startup diagnostics secret-safe.
-Required Commands Before Continuing: Run `pnpm lint` in a less constrained shell if repository-wide lint evidence is required; then begin VS4-T1 with TDD and run `pnpm ci:check` before completion.
+Uncommitted Changes: MAINT-17 command, runbook, and task records are ready to commit. Pre-existing `apps/web/next-env.d.ts` remains outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: `pnpm lint` reports one project-service configuration error for the pre-existing `apps/api/src/startup-diagnostics.spec.ts`; MAINT-17 changed no ESLint or API source. All 283 unit tests, 17 focused PostgreSQL billing tests, 15 focused webhook tests, full typecheck, formatting, and whitespace checks pass.
+Known Blockers: None for the recovered purchase. Browser automation was unavailable, so signed-in Dashboard and Billing rendering was not rechecked automatically.
+Important Context: The latest `$50` sandbox `pro` Checkout was resent through the signed webhook. PostgreSQL now has one completed session, one paid 200-credit payment, one immutable 200-credit ledger row, one processed event, and a 200-credit affected balance. A duplicate resend left every count unchanged. Local API readiness remains healthy; local billing requires `pnpm stripe:listen` in a second terminal.
+Required Commands Before Continuing: Run `pnpm stripe:listen` beside `pnpm dev` before another local Checkout. Address the unrelated ESLint project-service allowlist gap separately, then begin VS4-T1 with TDD.
 Last Updated Date: 2026-07-27
-Last Updated Time: 15:55
+Last Updated Time: 16:34
 Last Updated By: Codex
 ```

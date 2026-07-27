@@ -458,3 +458,34 @@ Record decisions such as:
 - Fix: Redis initialization now connects only from `wait`; otherwise waits for `ready` before pinging.
 - Verification: API binds port 4000; live and ready endpoints return 200 with database/Redis up; 42 focused tests, full typecheck, Prettier, API build, and whitespace checks pass.
 - Limitation: repository-wide `pnpm lint` timed out after 121 seconds during `eslint .` without diagnostics.
+
+### MAINT-17 Missing Stripe Credit Recovery Start - 2026-07-27 16:19 Asia/Manila
+
+- Scope: recover the latest paid test-mode `pro` Checkout through the existing signed webhook path,
+  then add a repeatable local Stripe listener command and billing runbook.
+- Evidence: Stripe reports the `$50` Checkout `complete` and `paid`; PostgreSQL keeps its correlated
+  session `open` with no matching webhook event, payment, or ledger row. The affected balance is
+  zero.
+- Constraint: preserve financial idempotency; do not insert or adjust credits manually. Existing
+  `apps/web/next-env.d.ts` change and ignored environment files remain outside task scope.
+- Status: IN_PROGRESS.
+
+### MAINT-17 Missing Stripe Credit Recovery Completion - 2026-07-27 16:34 Asia/Manila
+
+- Recovery: restored healthy API readiness, ran a matching Stripe CLI listener, and resent the
+  original paid `checkout.session.completed` sandbox event through the signed webhook.
+- Financial verification: latest `pro` session is `completed`; exactly one paid payment grants 200
+  credits; exactly one immutable purchase row yields a 200-credit affected balance; exactly one
+  processed webhook event exists.
+- Idempotency: resent the same event again. Both CLI resends exited zero, API recorded HTTP 200, and
+  payment, ledger, event, and balance counts remained unchanged.
+- Files changed: `package.json`, `README.md`, progress tracker, execution log, operational log,
+  maintenance log, and handoff history. Pre-existing `apps/web/next-env.d.ts` remains untouched.
+- Verification: new `pnpm stripe:listen --help` command resolves; 15 focused webhook tests, 17 live
+  PostgreSQL billing tests, 283 full unit tests, full typecheck, changed-file Prettier, API
+  readiness, final database checks, and `git diff --check` pass.
+- Known failure: full lint reaches one unrelated project-service allowlist error for
+  `apps/api/src/startup-diagnostics.spec.ts`, introduced before MAINT-17. Browser automation was
+  unavailable, so authenticated page rendering was not rechecked.
+- Decision: no API, schema, or billing-logic change. Keep signed webhook replay as the only recovery
+  path; never insert financial rows manually.

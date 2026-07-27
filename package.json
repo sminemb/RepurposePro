@@ -29,6 +29,7 @@
     "prelint": "pnpm run build:packages",
     "pretest": "pnpm run build:packages",
     "start": "pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run start",
+    "stripe:listen": "stripe listen --events=checkout.session.completed,checkout.session.expired --forward-to http://localhost:4000/api/v1/billing/webhook",
     "test": "vitest run",
     "test:db-integration": "vitest run --config packages/db/vitest.integration.config.mts",
     "typecheck": "pnpm run build:packages && pnpm --filter @repurposepro/db exec tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @repurposepro/db exec tsc -p tsconfig.config.json --noEmit && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"

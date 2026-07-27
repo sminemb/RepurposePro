@@ -1888,3 +1888,68 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
+### MAINT-17 - Recover Missing Stripe Credits and Document Local Webhooks
+
+Status: COMPLETED
+Start Date: 2026-07-27
+Start Time: 16:19
+End Date: 2026-07-27
+End Time: 16:34
+
+User Outcome:
+
+- The latest paid `$50` Stripe sandbox Checkout now grants the affected account 200 credits.
+- Local developers have one documented command and recovery procedure for Checkout webhooks.
+
+Layers Touched:
+
+- Local Stripe/API runtime
+- PostgreSQL financial records through the existing signed webhook
+- Root development commands and repository documentation
+
+Files Changed:
+
+- `package.json`
+- `README.md`
+- Progress tracker and agent execution, operational, maintenance, and handoff records
+
+Commands Run:
+
+- API readiness probe and temporary local API start
+- Stripe session and event read-only lookups
+- Stripe CLI listener plus two resends of the original completed event
+- Read-only PostgreSQL payment, ledger, event, and balance verification
+- `pnpm stripe:listen --help`
+- Focused Stripe webhook Vitest suite
+- Focused PostgreSQL billing integration suite
+- `pnpm typecheck`
+- `pnpm test`
+- Changed-file Prettier check/write/check
+- `pnpm lint`
+- `git diff --check`
+
+Verification:
+
+- PASS: API readiness reports API, PostgreSQL, and Redis healthy.
+- PASS: first signed event resend changed the correlated Checkout from `open` to `completed` and
+  created one paid 200-credit payment plus one immutable 200-credit purchase row.
+- PASS: affected user balance is 200 credits and one processed webhook event is recorded.
+- PASS: duplicate resend returned success and left one payment, one ledger row, one event, and a
+  200-credit balance.
+- PASS: `pnpm stripe:listen` resolves to the filtered local webhook-forwarding command.
+- PASS: 15 focused webhook tests, 17 focused live PostgreSQL billing tests, 283 full unit tests,
+  full typecheck, formatting, and whitespace checks pass.
+
+Known Limitations:
+
+- Browser runtime was unavailable, so authenticated Dashboard and Billing rendering was not
+  rechecked automatically; authoritative API/database state is correct.
+- Full lint reports the pre-existing `startup-diagnostics.spec.ts` project-service allowlist gap.
+  MAINT-17 changed no TypeScript, ESLint configuration, API, or database source.
+
+Next Recommended Task:
+
+- Address the standalone ESLint project-service allowlist gap, then begin VS4-T1.
