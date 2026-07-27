@@ -491,3 +491,20 @@ Status: COMPLETED
 - Removed old temporary API logs containing webhook request headers.
 - No application source or schema changed. The existing lint allowlist issue remains unrelated.
 - Next: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+### MAINT-19 - Recover Missing Test Credits and Harden Local Stripe Startup
+
+Date: 2026-07-27
+Time: 17:50 Asia/Manila
+Status: COMPLETED
+
+- Recovered the latest paid Starter Checkout using signed Stripe event replay only.
+- Proved duplicate replay cannot duplicate its payment, ledger row, or 40-credit grant.
+- Made validated Stripe forwarding part of `pnpm dev`; retained `pnpm dev:apps` for intentional
+  app-only work.
+- Added fail-closed API readiness, Stripe CLI authentication, signing-secret comparison, Windows
+  npm shim support, signal forwarding, and secret-redacted output.
+- Added focused tests and brought root scripts into TypeScript, ESLint, and Vitest verification.
+- No billing API, financial database function, schema, price mapping, or production webhook logic
+  changed.
+- Next: fix the pre-existing startup-diagnostics lint allowlist, then begin VS4-T1.

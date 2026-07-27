@@ -990,3 +990,23 @@ Last Updated Date: 2026-07-27
 Last Updated Time: 16:53
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-19 Completion - 2026-07-27 17:50 Asia/Manila
+
+~~~text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Current Status: COMPLETED
+Last Completed Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: MAINT-19 source, tests, tooling, documentation, and task records are verified and ready for commit. Local .env and .env.database remain ignored and must never be committed.
+Known Failing Tests: pnpm lint and pnpm ci:check retain the pre-existing project-service configuration error for apps/api/src/startup-diagnostics.spec.ts.
+Known Blockers: None. Browser automation was unavailable, so authenticated Billing and Dashboard rendering was not rechecked automatically.
+Important Context: Signed replay of evt_1TxkYbFfO8YnaNpS154UzeNK recovered the Starter purchase. PostgreSQL proves one processed webhook, one payment, one purchase ledger row, and a 40-credit balance after two replays. pnpm dev now starts apps and validated Stripe forwarding; pnpm dev:apps intentionally excludes Stripe.
+Required Commands Before Continuing: Run pnpm dev for the complete local stack. Fix the startup-diagnostics ESLint project-service allowlist before expecting pnpm ci:check to pass.
+Last Updated Date: 2026-07-27
+Last Updated Time: 17:50
+Last Updated By: Codex
+~~~

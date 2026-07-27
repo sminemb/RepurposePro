@@ -64,6 +64,16 @@ export default tseslint.config(
     },
   },
   {
+    files: ["scripts/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./tsconfig.scripts.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
     files: ["packages/db/scripts/**/*.ts"],
     languageOptions: {
       parserOptions: {

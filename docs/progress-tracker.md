@@ -840,17 +840,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
-Last Maintenance Task: MAINT-18 - Repair local scoped PostgreSQL credentials and API startup
-Current Status: NOT_STARTED
-Last Completed Task: MAINT-18 - Repair local scoped PostgreSQL credentials and API startup
+Current Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Last Maintenance Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Current Status: COMPLETED
+Last Completed Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No MAINT-18 changes remain after commit `e0806d2` (`chore(dev): repair local database roles`). Pre-existing `apps/web/next-env.d.ts` remains untouched and outside this task. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`. MAINT-18 changed no application source.
-Known Blockers: None for local API startup.
-Important Context: PostgreSQL was healthy, but the persisted checkout, processing, and webhook role passwords no longer matched the ignored local environment, producing SQLSTATE `28P01`. `pnpm db:provision-roles` synchronized the existing roles without recreating the database; migrations are current and all four API database URLs authenticate. One clean API watcher is running, and `http://127.0.0.1:4000/api/v1/health/ready` returns HTTP 200. On this Windows host, `localhost` may resolve to IPv6 while Nest listens on IPv4.
-Required Commands Before Continuing: Keep the current API watcher or run `pnpm dev:api`; use the IPv4 readiness URL when diagnosing local startup. Run `pnpm stripe:listen` beside the API before another local Checkout.
+Uncommitted Changes: MAINT-19 source, tests, tooling, documentation, and task records are verified and ready for commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`.
+Known Blockers: None. Browser automation was unavailable, so authenticated Billing and Dashboard rendering was not rechecked automatically.
+Important Context: Signed replay of `evt_1TxkYbFfO8YnaNpS154UzeNK` recovered the pending Starter purchase. PostgreSQL proves one processed webhook, one payment, one purchase ledger row, and a 40-credit balance after two replays. `pnpm dev` now starts web, API, worker, and validated Stripe forwarding; `pnpm dev:apps` remains the no-Stripe option. The listener waits for IPv4 API readiness, validates its signing secret without disclosure, supports npm-installed Stripe CLI shims on Windows without shell mode, and redacts webhook secrets from child output.
+Required Commands Before Continuing: Run `pnpm dev` for the complete local stack or `pnpm dev:apps` only when Stripe is intentionally excluded. Fix the pre-existing startup-diagnostics ESLint project-service allowlist before expecting repository-wide `pnpm ci:check` to pass.
 Last Updated Date: 2026-07-27
-Last Updated Time: 16:53
+Last Updated Time: 17:50
 Last Updated By: Codex
 ```

@@ -31,21 +31,26 @@ cp .env.example .env
 cp .env.database.example .env.database
 ```
 
-The combined development command starts all three TypeScript applications:
+The combined development command starts all three TypeScript applications and validated Stripe
+webhook forwarding:
 
 - Web: <http://localhost:3000>
 - API liveness: <http://localhost:4000/api/v1/health/live>
 - API readiness: <http://localhost:4000/api/v1/health/ready>
 - Worker: non-HTTP process; readiness is emitted as the structured `worker.ready` log event
+- Stripe listener: waits for API readiness, verifies its signing secret, then forwards Checkout
+  events
 
 The API and worker fail startup when configuration is invalid or their required PostgreSQL and
-Redis connections cannot be established.
+Redis connections cannot be established. Stripe forwarding fails closed when the CLI is unavailable,
+unauthenticated, or uses a signing secret different from `.env`.
 
 ## Common commands
 
 | Command                    | Purpose                                                                 |
 | -------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`                 | Build shared packages and start web, API, and worker in watch mode      |
+| `pnpm dev`                 | Start apps and validated Stripe forwarding in watch mode                |
+| `pnpm dev:apps`            | Start web, API, and worker without Stripe forwarding                    |
 | `pnpm dev:web`             | Start only the web app                                                  |
 | `pnpm dev:api`             | Start only the API                                                      |
 | `pnpm dev:worker`          | Start only the worker                                                   |
@@ -76,22 +81,27 @@ The public web configuration contains only `APP_URL`, `APP_ENV`, `NODE_ENV`, and
 
 ## Local Stripe billing
 
-Local Checkout fulfillment requires both the API and Stripe CLI listener to stay running. Start the
-application in one terminal:
+Local Checkout fulfillment requires an authenticated Stripe CLI and the listener signing secret in
+ignored `.env`. Obtain the stable test listener secret before startup:
+
+```powershell
+stripe listen --events=checkout.session.completed,checkout.session.expired --print-secret
+```
+
+Store that `whsec_...` value as `STRIPE_WEBHOOK_SECRET`, then start the full development stack:
 
 ```powershell
 pnpm dev
 ```
 
-After API readiness returns HTTP 200, start webhook forwarding in another terminal:
+`pnpm dev` starts the applications and listener together. The listener waits up to 120 seconds for
+IPv4 API readiness, compares the Stripe CLI secret with API configuration without printing either
+value, and then forwards paid and expired Checkout events. Use `pnpm dev:apps` only when local work
+intentionally excludes Stripe. Use `pnpm stripe:listen` to run the same validated listener beside an
+already-running API.
 
-```powershell
-pnpm stripe:listen
-```
-
-The listener prints a `whsec_...` signing secret. Store it as `STRIPE_WEBHOOK_SECRET` in ignored
-`.env`, then restart the API whenever this value changes. Do not commit or paste the secret into
-logs, task records, or source files.
+Restart `pnpm dev` whenever the signing secret changes. Do not commit or paste the secret into logs,
+task records, or source files.
 
 Stripe Checkout redirects before webhook processing is guaranteed to finish. The Billing page may
 briefly report that confirmation is pending. Refresh after the listener reports an HTTP 200
@@ -99,8 +109,9 @@ delivery.
 
 If a completed test Checkout still has no credits:
 
-1. Confirm `http://localhost:4000/api/v1/health/ready` returns HTTP 200.
-2. Confirm `pnpm stripe:listen` is running and its signing secret matches `.env`.
+1. Confirm `http://127.0.0.1:4000/api/v1/health/ready` returns HTTP 200.
+2. Confirm the Stripe listener remains active under `pnpm dev` and its signing secret matches
+   `.env`.
 3. Find the original `checkout.session.completed` event in Stripe Workbench.
 4. Resend that event without creating a new Checkout:
 
@@ -127,8 +138,8 @@ Running `pnpm db:migrate` more than once is safe; already-applied migrations are
 - If startup reports invalid configuration, compare `.env` with `.env.example`. Errors list only
   invalid variable names and never include secret values.
 - If readiness returns HTTP 503, run `pnpm infra:status` and then `pnpm infra:check`.
-- If paid test credits remain pending, keep the API and `pnpm stripe:listen` running, verify their
-  signing secrets match, then resend the original completed event as described above.
+- If paid test credits remain pending, keep `pnpm dev` running, verify the listener preflight passes,
+  then resend the original completed event as described above.
 - If ports 5432 or 6379 are already occupied, stop the conflicting local service or override the
   Compose port mapping before starting the stack.
 - If a native dependency was installed without its approved build, rerun `pnpm install`; the

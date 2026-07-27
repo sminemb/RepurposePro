@@ -1732,6 +1732,53 @@ Next Recommended Task:
 
 - VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
 
+---
+
+## MAINT-19 - Recover Pending Stripe Credits and Auto-Start Validated Webhook Forwarding
+
+Date: 2026-07-27
+Start Time: 17:21 Asia/Manila
+End Time: 17:50 Asia/Manila
+Status: COMPLETED
+
+Outcome:
+
+- Replayed paid test event `evt_1TxkYbFfO8YnaNpS154UzeNK` through the signed webhook path twice.
+- Checkout moved from `open` to `completed`; exactly one processed webhook, payment, purchase ledger
+  row, and 40-credit balance remain.
+- Added a tested Stripe listener that waits for API readiness, validates the CLI signing secret,
+  supports Windows npm CLI shims without shell mode, redacts secrets, and forwards termination.
+- `pnpm dev` now starts web, API, worker, and validated Stripe forwarding together.
+- `pnpm dev:apps` preserves app-only development.
+
+Files Changed:
+
+- `scripts/stripe-listen.ts` and `scripts/stripe-listen.spec.ts`
+- `apps/stripe-listener/package.json`
+- Root package, lockfile, Vitest, ESLint, and script TypeScript configuration
+- README and mandatory progress, execution, operational, maintenance, and handoff records
+
+Verification:
+
+- PASS: 7 focused listener tests.
+- PASS: 290 unit tests; 21 tests skipped by existing suite configuration.
+- PASS: 21 live PostgreSQL/Redis integration tests.
+- PASS: full typecheck and production build.
+- PASS: repository Prettier check, focused ESLint, changed-file whitespace check.
+- PASS: unified `pnpm dev` smoke test; web/API ready and one Stripe forwarding process active.
+- PASS: duplicate event replay leaves exactly one financial grant and a 40-credit balance.
+- EXPECTED FAILURE: repository lint and `pnpm ci:check` stop at the pre-existing
+  `apps/api/src/startup-diagnostics.spec.ts` project-service allowlist error.
+
+Known Limitations:
+
+- No browser backend was available, so authenticated Billing and Dashboard rendering was not
+  automatically refreshed. Financial state was verified directly in PostgreSQL.
+
+Next Recommended Task:
+
+- Fix the standalone ESLint allowlist gap, then begin VS4-T1.
+
 ### MAINT-16 — Restore Credit-Balance API Availability
 
 Status: COMPLETED

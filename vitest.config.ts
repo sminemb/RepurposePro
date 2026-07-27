@@ -43,7 +43,7 @@ export default defineConfig({
       STRIPE_SUCCESS_URL: "http://localhost:3000/billing?checkout=success",
       STRIPE_WEBHOOK_SECRET: "whsec_vitestsecurity",
     },
-    include: ["apps/**/*.spec.ts", "packages/**/*.spec.ts"],
+    include: ["apps/**/*.spec.ts", "packages/**/*.spec.ts", "scripts/**/*.spec.ts"],
     passWithNoTests: false,
   },
 });

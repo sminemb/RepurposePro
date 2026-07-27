@@ -517,3 +517,33 @@ Record decisions such as:
 - Scope check: commit contains only MAINT-18 tracker and operational records. Pre-existing
   `apps/web/next-env.d.ts` remains unstaged and outside task scope.
 - Final source state: no intended MAINT-18 changes remain uncommitted.
+
+### MAINT-19 Started - 2026-07-27 17:21 Asia/Manila
+
+- Task: recover the latest paid Starter Checkout and prevent missed local Stripe webhooks.
+- Evidence: Stripe reports completed event `evt_1TxkYbFfO8YnaNpS154UzeNK`; PostgreSQL keeps the
+  correlated Starter Checkout open with no matching webhook, payment, or ledger row.
+- Root cause: Stripe CLI forwarding was not running when Checkout completed.
+- Decision: recover through signed event replay only, then make `pnpm dev` start validated webhook
+  forwarding with the app stack. Never insert financial rows manually.
+- Status: IN_PROGRESS.
+
+### MAINT-19 Recovery and Implementation - 2026-07-27 17:50 Asia/Manila
+
+- Replayed `evt_1TxkYbFfO8YnaNpS154UzeNK` twice through the authenticated Stripe CLI listener.
+- PostgreSQL result: Checkout `completed`; webhook rows `1`/`processed`; payment rows `1`; purchase
+  ledger rows `1`; affected user balance `40`.
+- Added secret-safe listener preflight, API readiness wait, signal forwarding, Windows npm Stripe
+  shim resolution without shell mode, and output redaction.
+- Added a private listener workspace process so pnpm 11.10 can run it with web, API, and worker.
+  Initial regex-script orchestration was rejected after smoke testing because pnpm 11.10 matched no
+  root scripts.
+- Unified smoke result: API ready, web ready, and exactly one forwarding `stripe.exe` process.
+- Browser connector reported no available browser; authenticated page verification was recorded as
+  unavailable rather than bypassing browser security boundaries.
+- Verification passed: 7 focused tests, 290 unit tests, 21 integration tests, typecheck, build,
+  repository Prettier, focused ESLint, and whitespace checks.
+- Repository lint and `pnpm ci:check` retain one pre-existing failure:
+  `apps/api/src/startup-diagnostics.spec.ts` is outside ESLint project-service configuration.
+- Temporary logs and task-owned development processes were removed after verification.
+- Status: COMPLETED.
