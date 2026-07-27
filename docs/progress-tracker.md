@@ -840,17 +840,17 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
-Last Maintenance Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Current Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Last Maintenance Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
 Current Status: COMPLETED
-Last Completed Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
 Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No MAINT-19 source changes remain after commit `62f7bda` (`fix(dev): keep Stripe webhooks connected`). Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: `pnpm lint` retains the pre-existing project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`.
-Known Blockers: None. Browser automation was unavailable, so authenticated Billing and Dashboard rendering was not rechecked automatically.
-Important Context: Signed replay of `evt_1TxkYbFfO8YnaNpS154UzeNK` recovered the pending Starter purchase. PostgreSQL proves one processed webhook, one payment, one purchase ledger row, and a 40-credit balance after two replays. `pnpm dev` now starts web, API, worker, and validated Stripe forwarding; `pnpm dev:apps` remains the no-Stripe option. The listener waits for IPv4 API readiness, validates its signing secret without disclosure, supports npm-installed Stripe CLI shims on Windows without shell mode, and redacts webhook secrets from child output.
-Required Commands Before Continuing: Run `pnpm dev` for the complete local stack or `pnpm dev:apps` only when Stripe is intentionally excluded. Fix the pre-existing startup-diagnostics ESLint project-service allowlist before expecting repository-wide `pnpm ci:check` to pass.
+Uncommitted Changes: MAINT-20 source, tests, documentation, and task records are verified and ready for commit. `apps/web/next-env.d.ts` was changed by the user's `pnpm dev` process and remains outside task scope. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: Task-scoped checks pass. `pnpm ci:check` stops at 35 pre-existing repository formatting failures; standalone `pnpm lint` timed out after 186 seconds without diagnostics and historically retains the project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`.
+Known Blockers: None for local development startup.
+Important Context: PostgreSQL integration tests temporarily replace the shared local test-role passwords. `pnpm test:db-integration` now runs cleanup unconditionally and restores configured development roles even when tests fail. All four database URLs authenticate after the 21-test integration suite. One clean `pnpm dev` stack remains running with web HTTP 200, API HTTP 200, one API runtime, and one Stripe listener. MAINT-20 changed files pass Prettier and focused ESLint.
+Required Commands Before Continuing: Use `pnpm test:db-integration` rather than invoking its Vitest config directly. Run `pnpm dev` for the complete local stack.
 Last Updated Date: 2026-07-27
-Last Updated Time: 17:52
+Last Updated Time: 19:00
 Last Updated By: Codex
 ```

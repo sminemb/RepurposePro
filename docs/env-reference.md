@@ -1454,8 +1454,10 @@ TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5
 
 The bootstrap role needs `CREATEDB` and may only be used by the test setup. Store all three URLs in
 `.env.database` or CI's database-test secret scope. `pnpm test:db-integration` fails before running
-when any URL is absent, and `pnpm ci:check` includes that required command. The ordinary unit-test
-command may still skip this file when the database-test environment is intentionally unavailable.
+when any URL is absent, and `pnpm ci:check` includes that required command. The command always runs
+`pnpm db:provision-roles` after the test process exits so temporary test passwords cannot leave the
+local API roles unusable. The ordinary unit-test command may still skip this file when the
+database-test environment is intentionally unavailable.
 
 ---
 

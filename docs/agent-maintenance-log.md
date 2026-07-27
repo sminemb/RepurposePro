@@ -508,3 +508,21 @@ Status: COMPLETED
 - No billing API, financial database function, schema, price mapping, or production webhook logic
   changed.
 - Next: fix the pre-existing startup-diagnostics lint allowlist, then begin VS4-T1.
+
+### MAINT-20 - Repair PostgreSQL Startup and Guard Integration-Test Cleanup
+
+Date: 2026-07-27
+Time: 19:00 Asia/Manila
+Status: COMPLETED
+
+- Repaired stale checkout, processing, and webhook role credentials without recreating PostgreSQL
+  or editing financial data.
+- Identified PostgreSQL integration tests as the source of recurring local password drift.
+- Wrapped the integration suite with unconditional, shell-free development-role restoration while
+  preserving test failure status.
+- Verified 294 unit tests, 21 integration tests, typecheck, focused lint, four database logins, web
+  and API readiness, one API runtime, and one Stripe listener.
+- Task files pass Prettier; repository CI remains blocked by 35 unrelated baseline formatting
+  failures, and root lint timed out without diagnostics.
+- Left the user-generated `apps/web/next-env.d.ts` change outside maintenance scope.
+- Next: fix the pre-existing startup-diagnostics lint allowlist, then begin VS4-T1.

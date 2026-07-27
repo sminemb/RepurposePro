@@ -32,7 +32,7 @@
     "start": "pnpm --parallel --stream --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker run start",
     "stripe:listen": "tsx scripts/stripe-listen.ts",
     "test": "vitest run",
-    "test:db-integration": "vitest run --config packages/db/vitest.integration.config.mts",
+    "test:db-integration": "tsx scripts/run-db-integration.ts",
     "typecheck": "pnpm run build:packages && tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @repurposepro/db exec tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @repurposepro/db exec tsc -p tsconfig.config.json --noEmit && pnpm --filter @repurposepro/web --filter @repurposepro/api --filter @repurposepro/worker -r run typecheck"
   },
   "devDependencies": {

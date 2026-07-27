@@ -47,26 +47,26 @@ unauthenticated, or uses a signing secret different from `.env`.
 
 ## Common commands
 
-| Command                    | Purpose                                                                 |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`                 | Start apps and validated Stripe forwarding in watch mode                |
-| `pnpm dev:apps`            | Start web, API, and worker without Stripe forwarding                    |
-| `pnpm dev:web`             | Start only the web app                                                  |
-| `pnpm dev:api`             | Start only the API                                                      |
-| `pnpm dev:worker`          | Start only the worker                                                   |
-| `pnpm infra:up`            | Start PostgreSQL and Redis and wait for health checks                   |
-| `pnpm infra:status`        | Show local infrastructure status                                        |
-| `pnpm infra:check`         | Query PostgreSQL and ping Redis from Node.js                            |
-| `pnpm infra:down`          | Stop containers while preserving named data volumes                     |
-| `pnpm stripe:listen`       | Forward paid and expired Stripe Checkout events to the local API        |
-| `pnpm db:generate`         | Generate a Drizzle migration from the current schema                    |
-| `pnpm db:migrate`          | Apply pending Drizzle migrations                                        |
-| `pnpm lint`                | Run the root ESLint flat configuration                                  |
-| `pnpm typecheck`           | Typecheck shared packages and all applications                          |
-| `pnpm test`                | Run Vitest unit tests                                                   |
-| `pnpm test:db-integration` | Run required billing integrity tests on disposable PostgreSQL databases |
-| `pnpm build`               | Build all workspace projects in dependency order                        |
-| `pnpm ci:check`            | Run formatting, lint, typecheck, tests, and builds                      |
+| Command                    | Purpose                                                                   |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `pnpm dev`                 | Start apps and validated Stripe forwarding in watch mode                  |
+| `pnpm dev:apps`            | Start web, API, and worker without Stripe forwarding                      |
+| `pnpm dev:web`             | Start only the web app                                                    |
+| `pnpm dev:api`             | Start only the API                                                        |
+| `pnpm dev:worker`          | Start only the worker                                                     |
+| `pnpm infra:up`            | Start PostgreSQL and Redis and wait for health checks                     |
+| `pnpm infra:status`        | Show local infrastructure status                                          |
+| `pnpm infra:check`         | Query PostgreSQL and ping Redis from Node.js                              |
+| `pnpm infra:down`          | Stop containers while preserving named data volumes                       |
+| `pnpm stripe:listen`       | Forward paid and expired Stripe Checkout events to the local API          |
+| `pnpm db:generate`         | Generate a Drizzle migration from the current schema                      |
+| `pnpm db:migrate`          | Apply pending Drizzle migrations                                          |
+| `pnpm lint`                | Run the root ESLint flat configuration                                    |
+| `pnpm typecheck`           | Typecheck shared packages and all applications                            |
+| `pnpm test`                | Run Vitest unit tests                                                     |
+| `pnpm test:db-integration` | Run PostgreSQL tests, then restore local least-privilege role credentials |
+| `pnpm build`               | Build all workspace projects in dependency order                          |
+| `pnpm ci:check`            | Run formatting, lint, typecheck, tests, and builds                        |
 
 ## Environment configuration
 
@@ -78,6 +78,10 @@ Real secrets and both local environment files are ignored by Git.
 
 The public web configuration contains only `APP_URL`, `APP_ENV`, `NODE_ENV`, and
 `NEXT_PUBLIC_API_URL`. Database and Redis connection values are loaded only by server processes.
+
+PostgreSQL integration tests temporarily rotate shared local test-role passwords. Always run them
+through `pnpm test:db-integration`; its cleanup restores the configured development role
+credentials even when the test runner fails.
 
 ## Local Stripe billing
 

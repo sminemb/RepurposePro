@@ -1030,3 +1030,23 @@ Last Updated Date: 2026-07-27
 Last Updated Time: 17:52
 Last Updated By: Codex
 ~~~
+
+---
+
+### MAINT-20 Completion - 2026-07-27 19:00 Asia/Manila
+
+~~~text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Current Status: COMPLETED
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+Uncommitted Changes: MAINT-20 source, tests, documentation, and task records are verified and ready for commit. apps/web/next-env.d.ts was changed by the user's pnpm dev process and remains outside task scope. Local .env and .env.database remain ignored and must never be committed.
+Known Failing Tests: Task-scoped checks pass. pnpm ci:check stops at 35 pre-existing repository formatting failures; standalone pnpm lint timed out after 186 seconds without diagnostics and historically retains the project-service configuration error for apps/api/src/startup-diagnostics.spec.ts.
+Known Blockers: None for local development startup.
+Important Context: PostgreSQL integration tests temporarily replace shared local test-role passwords. pnpm test:db-integration now restores configured development roles even when tests fail. All four URLs authenticate after the 21-test suite. One clean pnpm dev stack remains running with web and API HTTP 200, one API runtime, and one Stripe listener. MAINT-20 files pass Prettier and focused ESLint.
+Required Commands Before Continuing: Use pnpm test:db-integration rather than invoking its Vitest config directly. Run pnpm dev for the complete local stack.
+Last Updated Date: 2026-07-27
+Last Updated Time: 19:00
+Last Updated By: Codex
+~~~

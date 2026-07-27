@@ -1734,6 +1734,71 @@ Next Recommended Task:
 
 ---
 
+### MAINT-20 - Repair Scoped PostgreSQL Authentication and Preserve It After Tests
+
+Status: COMPLETED
+Start Date: 2026-07-27
+Start Time: 18:47
+End Date: 2026-07-27
+End Time: 19:00
+
+User Outcome:
+
+- `pnpm dev` now starts one healthy local stack, and database integration tests no longer leave the
+  API's least-privilege PostgreSQL credentials unusable.
+
+Layers Touched:
+
+- Local PostgreSQL roles
+- Development tooling
+- Tests
+- Documentation
+
+Files Changed:
+
+- `package.json`
+- `scripts/run-db-integration.ts`
+- `scripts/run-db-integration.spec.ts`
+- `README.md`
+- `docs/env-reference.md`
+- Progress tracker and agent execution, operational, maintenance, and handoff records
+
+Commands Run:
+
+- `pnpm infra:check`
+- `pnpm infra:status`
+- Secret-safe connectivity checks for all four API database URLs
+- `pnpm db:provision-roles`
+- `pnpm db:migrate`
+- `pnpm dev`
+- `pnpm exec vitest run scripts/run-db-integration.spec.ts`
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm typecheck`
+- Focused ESLint, Prettier, HTTP readiness, and process-count checks
+
+Verification:
+
+- PASS: all four configured database URLs authenticate after role repair and again after the
+  PostgreSQL integration suite.
+- PASS: 4 focused runner tests, 294 unit tests, and 21 PostgreSQL integration tests pass.
+- PASS: typecheck and focused ESLint pass.
+- PASS: web and API return HTTP 200 with exactly one API runtime and one Stripe listener.
+- PASS: all MAINT-20 files pass Prettier and `git diff --check`.
+
+Known Limitations:
+
+- `pnpm ci:check` stops on 35 pre-existing formatting failures outside MAINT-20. Standalone
+  `pnpm lint` timed out after 186 seconds without diagnostics; the historical project-service
+  allowlist issue for `apps/api/src/startup-diagnostics.spec.ts` remains known.
+- `apps/web/next-env.d.ts` was changed by the user's Next.js process and remains outside this task.
+
+Next Recommended Task:
+
+- VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
 ## MAINT-19 - Recover Pending Stripe Credits and Auto-Start Validated Webhook Forwarding
 
 Date: 2026-07-27
