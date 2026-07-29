@@ -3,7 +3,7 @@ import { loadApiConfig } from "@repurposepro/config";
 
 import { AuthModule } from "../auth/auth.module";
 import { InfrastructureModule } from "../infrastructure/infrastructure.module";
-import { RedisService } from "../infrastructure/redis.service";
+import { BullMqConnectionFactory } from "../infrastructure/bullmq-connection.factory";
 import {
   ANALYSIS_DISPATCH_REPOSITORY,
   AnalysisDispatchRepository,
@@ -24,6 +24,20 @@ import {
   AnalysisRateLimitGuard,
   ArcjetAnalysisRateLimitClient,
 } from "./analysis-rate-limit.guard";
+import {
+  PROCESSING_EXECUTION_LEASE_REPOSITORY,
+  ProcessingExecutionLeaseRepository,
+} from "./processing-execution-lease.repository";
+import {
+  PROCESSING_FAILURE_INTENT_REPOSITORY,
+  ProcessingFailureIntentRepository,
+} from "./processing-failure-intent.repository";
+import { ProcessingFailureIntentService } from "./processing-failure-intent.service";
+import {
+  PROCESSING_FAILURE_SWEEPER_OPTIONS,
+  ProcessingFailureSweeperService,
+  createProcessingFailureSweeperOptions,
+} from "./processing-failure-sweeper.service";
 import { ProcessingController } from "./processing.controller";
 import {
   PROCESSING_START_REPOSITORY,
@@ -51,8 +65,12 @@ import { ProcessingStatusService } from "./processing-status.service";
     AnalysisDispatchRepository,
     AnalysisDispatcherService,
     AnalysisQueueFailureListener,
+    ProcessingExecutionLeaseRepository,
+    ProcessingFailureIntentRepository,
+    ProcessingFailureIntentService,
     ProcessingFailureRepository,
     ProcessingFailureService,
+    ProcessingFailureSweeperService,
     processingDatabaseProvider,
     ProcessingStatusService,
     ProcessingStatusRepository,
@@ -78,20 +96,45 @@ import { ProcessingStatusService } from "./processing-status.service";
       useExisting: ProcessingFailureRepository,
     },
     {
+      provide: PROCESSING_FAILURE_INTENT_REPOSITORY,
+      useExisting: ProcessingFailureIntentRepository,
+    },
+    {
+      provide: PROCESSING_EXECUTION_LEASE_REPOSITORY,
+      useExisting: ProcessingExecutionLeaseRepository,
+    },
+    {
+      provide: PROCESSING_FAILURE_SWEEPER_OPTIONS,
+      useFactory: createProcessingFailureSweeperOptions,
+    },
+    {
       provide: PROCESSING_STATUS_REPOSITORY,
       useExisting: ProcessingStatusRepository,
     },
     {
       provide: ANALYSIS_QUEUE_GATEWAY,
-      inject: [RedisService],
-      useFactory: (redisService: RedisService) =>
-        new BullMqAnalysisQueueGateway(redisService.connection, loadApiConfig().bullmqPrefix),
+      inject: [BullMqConnectionFactory],
+      useFactory: (connectionFactory: BullMqConnectionFactory) => {
+        const connection = connectionFactory.createProducer();
+        return new BullMqAnalysisQueueGateway(
+          connection,
+          loadApiConfig().bullmqPrefix,
+          undefined,
+          (ownedConnection) => connectionFactory.close(ownedConnection),
+        );
+      },
     },
     {
       provide: ANALYSIS_QUEUE_EVENTS,
-      inject: [RedisService],
-      useFactory: (redisService: RedisService) =>
-        createAnalysisQueueEventsClient(redisService.connection, loadApiConfig().bullmqPrefix),
+      inject: [BullMqConnectionFactory],
+      useFactory: (connectionFactory: BullMqConnectionFactory) => {
+        const connection = connectionFactory.createBlockingConsumer();
+        return createAnalysisQueueEventsClient(
+          connection,
+          loadApiConfig().bullmqPrefix,
+          (ownedConnection) => connectionFactory.close(ownedConnection),
+        );
+      },
     },
   ],
 })

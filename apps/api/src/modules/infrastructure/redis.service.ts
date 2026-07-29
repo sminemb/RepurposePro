@@ -2,6 +2,8 @@ import { Injectable, type OnModuleDestroy, type OnModuleInit } from "@nestjs/com
 import { loadApiConfig } from "@repurposepro/config";
 import Redis from "ioredis";
 
+import { redisReconnectDelay } from "./bullmq-connection.factory";
+
 export class RedisInitializationError extends Error {
   public constructor(cause: unknown) {
     super("Redis initialization failed.", { cause });
@@ -20,7 +22,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       enableOfflineQueue: false,
       lazyConnect: true,
       maxRetriesPerRequest: 1,
-      retryStrategy: () => null,
+      retryStrategy: redisReconnectDelay,
     });
     this.client.on("error", () => undefined);
   }

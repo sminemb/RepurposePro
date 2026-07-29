@@ -12,6 +12,8 @@ export type DispatchFailureStage =
 export interface AnalysisDispatchRecord {
   readonly attemptCount: number;
   readonly dispatchId: string;
+  readonly dispatchStatus: "pending" | "published";
+  readonly executionLeaseExpiresAt: Date | null;
   readonly jobId: string;
   readonly jobStatus: ProcessingJobStatus;
   readonly leaseToken: string;
@@ -45,6 +47,8 @@ export class AnalysisDispatchRepository implements AnalysisDispatchRepositoryCon
       `SELECT
         attempt_count AS "attemptCount",
         dispatch_id AS "dispatchId",
+        dispatch_status AS "dispatchStatus",
+        execution_lease_expires_at AS "executionLeaseExpiresAt",
         job_id AS "jobId",
         job_status AS "jobStatus",
         lease_token AS "leaseToken",

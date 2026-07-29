@@ -7,8 +7,10 @@ import {
 } from "./processing-failure.repository";
 
 export const ANALYSIS_RETRIES_EXHAUSTED = "ANALYSIS_RETRIES_EXHAUSTED";
+export const WORKER_EXECUTION_LEASE_EXPIRED = "WORKER_EXECUTION_LEASE_EXPIRED";
 
-const safeFailureMessage = "Processing failed before a usable result was produced.";
+export const PROCESSING_FAILURE_SAFE_MESSAGE =
+  "Processing failed before a usable result was produced.";
 
 @Injectable()
 export class ProcessingFailureService {
@@ -27,7 +29,7 @@ export class ProcessingFailureService {
     let result: ProcessingFailureResult;
 
     try {
-      result = await this.repository.finalize(jobId, failureCode, safeFailureMessage);
+      result = await this.repository.finalize(jobId, failureCode, PROCESSING_FAILURE_SAFE_MESSAGE);
     } catch {
       this.logger.error({
         event: "processing_failure_finalize_failed",

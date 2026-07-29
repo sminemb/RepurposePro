@@ -1175,3 +1175,24 @@ Last Updated Date: 2026-07-29
 Last Updated Time: 12:15
 Last Updated By: Codex
 ```
+
+### VS3-R2 Completion Handoff - 2026-07-29 13:33 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Last Maintenance Task: MAINT-21 - Reconcile stale OPS-PR blocker records
+Current Status: NOT_STARTED
+Start Date: —
+Start Time: —
+Last Completed Task: VS3-R2 - Close remaining VS3 cross-system reliability gaps
+Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
+Uncommitted Changes: No intended VS3-R2 changes remain after its verified commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. Full unit and PostgreSQL/Redis integration suites, full typecheck, production builds, changed-file formatting, focused lint, and whitespace checks pass.
+Known Blockers: None. OPS-PR-01 remains an optional GitHub follow-up, not a product-delivery blocker.
+Important Context: Migration `0016_close_vs3_reliability_gaps.sql` must be applied before the updated API starts. PostgreSQL now durably owns failure intents, execution leases, immutable terminal reasons, and verified Stripe receipt states. Dedicated BullMQ connections reconnect without producer offline buffering, and published jobs reconcile against retained Redis state.
+Required Commands Before Continuing: Apply migration `0016` in each environment. Begin VS4-T1 with TDD and retain execution-lease heartbeats in the analysis worker.
+Last Updated Date: 2026-07-29
+Last Updated Time: 13:33
+Last Updated By: Codex
+```

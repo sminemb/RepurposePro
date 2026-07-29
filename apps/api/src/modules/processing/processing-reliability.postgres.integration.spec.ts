@@ -242,6 +242,189 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     ).resolves.toMatchObject({ rows: [{ count: 0 }] });
   });
 
+  it("never upgrades an accepted ineligible failure into a refundable reason", async () => {
+    const projectId = await createUploadedProject(
+      "reliability-user-a",
+      "Immutable ineligible failure",
+    );
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    await expect(
+      finalizeFailure(processingClientA, started.jobId, "USER_CANCELLED"),
+    ).resolves.toEqual({ outcome: "failed_no_refund", refundedCredits: 0 });
+    await expect(
+      finalizeFailure(processingClientB, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+    ).resolves.toEqual({ outcome: "terminal_failure_conflict", refundedCredits: 0 });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT
+          job.error_code AS "errorCode",
+          job.refund_eligible AS "refundEligible",
+          COUNT(*) FILTER (WHERE ledger.type = 'refund')::integer AS refunds
+         FROM processing_jobs AS job
+         LEFT JOIN credit_ledger AS ledger ON ledger.processing_job_id = job.id
+         WHERE job.id = $1
+         GROUP BY job.error_code, job.refund_eligible`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [{ errorCode: "USER_CANCELLED", refundEligible: false, refunds: 0 }],
+    });
+  });
+
+  it("keeps the original eligible failure and exact refund across a conflicting replay", async () => {
+    const projectId = await createUploadedProject(
+      "reliability-user-a",
+      "Immutable eligible failure",
+    );
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    await expect(
+      finalizeFailure(processingClientA, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+    ).resolves.toEqual({ outcome: "refunded", refundedCredits: 11 });
+    await expect(
+      finalizeFailure(processingClientB, started.jobId, "USER_CANCELLED"),
+    ).resolves.toEqual({ outcome: "terminal_failure_conflict", refundedCredits: 0 });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT
+          job.error_code AS "errorCode",
+          job.refund_eligible AS "refundEligible",
+          COUNT(*) FILTER (WHERE ledger.type = 'refund')::integer AS refunds
+         FROM processing_jobs AS job
+         LEFT JOIN credit_ledger AS ledger ON ledger.processing_job_id = job.id
+         WHERE job.id = $1
+         GROUP BY job.error_code, job.refund_eligible`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          errorCode: "ANALYSIS_RETRIES_EXHAUSTED",
+          refundEligible: true,
+          refunds: 1,
+        },
+      ],
+    });
+  });
+
+  it("accepts one concurrent conflicting terminal reason without a later policy flip", async () => {
+    const projectId = await createUploadedProject(
+      "reliability-user-a",
+      "Concurrent conflicting failure",
+    );
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    const results = await Promise.all([
+      finalizeFailure(processingClientA, started.jobId, "USER_CANCELLED"),
+      finalizeFailure(processingClientB, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+    ]);
+    const state = await migrationClient.pool.query<{
+      errorCode: string;
+      refundEligible: boolean;
+      refunds: number;
+    }>(
+      `SELECT
+        job.error_code AS "errorCode",
+        job.refund_eligible AS "refundEligible",
+        COUNT(*) FILTER (WHERE ledger.type = 'refund')::integer AS refunds
+       FROM processing_jobs AS job
+       LEFT JOIN credit_ledger AS ledger ON ledger.processing_job_id = job.id
+       WHERE job.id = $1
+       GROUP BY job.error_code, job.refund_eligible`,
+      [started.jobId],
+    );
+
+    expect(results.map((result) => result.outcome)).toContain("terminal_failure_conflict");
+    const accepted = state.rows[0]!;
+    expect(accepted.refundEligible).toBe(accepted.errorCode === "ANALYSIS_RETRIES_EXHAUSTED");
+    expect(accepted.refunds).toBe(accepted.refundEligible ? 1 : 0);
+  });
+
+  it("retries the same ineligible failure without creating a refund", async () => {
+    const projectId = await createUploadedProject(
+      "reliability-user-a",
+      "Repeated ineligible failure",
+    );
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    const results = await Promise.all([
+      finalizeFailure(processingClientA, started.jobId, "USER_CANCELLED"),
+      finalizeFailure(processingClientB, started.jobId, "USER_CANCELLED"),
+    ]);
+
+    expect(results).toEqual([
+      { outcome: "failed_no_refund", refundedCredits: 0 },
+      { outcome: "failed_no_refund", refundedCredits: 0 },
+    ]);
+    await expect(
+      migrationClient.pool.query(
+        `SELECT COUNT(*)::integer AS refunds
+         FROM credit_ledger
+         WHERE processing_job_id = $1 AND type = 'refund'`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ refunds: 0 }] });
+  });
+
+  it("leases one durable failure intent to one sweeper and survives a lost marker", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Durable failure intent");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    await expect(
+      persistFailureIntent(
+        processingClientA,
+        started.jobId,
+        "ANALYSIS_RETRIES_EXHAUSTED",
+        "queue:event-1",
+      ),
+    ).resolves.toBe("persisted");
+    const claims = await Promise.all([
+      claimFailureIntent(processingClientA, "sweeper-a", started.jobId),
+      claimFailureIntent(processingClientB, "sweeper-b", started.jobId),
+    ]);
+    const firstClaim = claims.find((claim) => claim !== undefined)!;
+    expect(claims.filter((claim) => claim !== undefined)).toHaveLength(1);
+
+    await expect(
+      finalizeFailure(processingClientA, started.jobId, firstClaim.failureCode),
+    ).resolves.toEqual({ outcome: "refunded", refundedCredits: 11 });
+
+    await migrationClient.pool.query(
+      `UPDATE processing_failure_intents
+       SET lease_expires_at = now() - interval '1 second'
+       WHERE id = $1`,
+      [firstClaim.intentId],
+    );
+    const retryClaim = await claimFailureIntent(
+      processingClientB,
+      "sweeper-restarted",
+      started.jobId,
+    );
+    expect(retryClaim).toBeDefined();
+    await expect(
+      finalizeFailure(processingClientB, started.jobId, retryClaim!.failureCode),
+    ).resolves.toEqual({ outcome: "already_refunded", refundedCredits: 11 });
+    await processingClientB.pool.query(
+      "SELECT public.mark_processing_failure_intent_finalized($1, $2)",
+      [retryClaim!.intentId, retryClaim!.leaseToken],
+    );
+
+    await expect(
+      migrationClient.pool.query(
+        `SELECT
+          intent.status::text AS status,
+          COUNT(*) FILTER (WHERE ledger.type = 'refund')::integer AS refunds
+         FROM processing_failure_intents AS intent
+         LEFT JOIN credit_ledger AS ledger
+           ON ledger.processing_job_id = intent.processing_job_id
+         WHERE intent.processing_job_id = $1
+         GROUP BY intent.status`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ refunds: 1, status: "finalized" }] });
+  });
+
   it("rejects a refund when the project no longer owns the charged current job", async () => {
     const projectId = await createUploadedProject("reliability-user-a", "Refund ownership");
     const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
@@ -351,5 +534,50 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
       [jobId, failureCode, "Processing failed before a usable result was produced."],
     );
     return result.rows[0]!;
+  }
+
+  async function persistFailureIntent(
+    client: DatabaseClient,
+    jobId: string,
+    failureCode: string,
+    sourceReference: string,
+  ): Promise<string> {
+    const result = await client.pool.query<{ outcome: string }>(
+      "SELECT public.persist_processing_failure_intent($1, $2, $3, $4) AS outcome",
+      [
+        jobId,
+        failureCode,
+        "Processing failed before a usable result was produced.",
+        sourceReference,
+      ],
+    );
+    return result.rows[0]!.outcome;
+  }
+
+  async function claimFailureIntent(
+    client: DatabaseClient,
+    sweeperId: string,
+    jobId: string,
+  ): Promise<
+    | {
+        failureCode: string;
+        intentId: string;
+        leaseToken: string;
+      }
+    | undefined
+  > {
+    const result = await client.pool.query<{
+      failureCode: string;
+      intentId: string;
+      leaseToken: string;
+    }>(
+      `SELECT
+        failure_code AS "failureCode",
+        intent_id AS "intentId",
+        lease_token AS "leaseToken"
+       FROM public.claim_processing_failure_intent($1, $2)`,
+      [sweeperId, jobId],
+    );
+    return result.rows[0];
   }
 });

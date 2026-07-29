@@ -900,6 +900,13 @@ Do not store permanent project state only in Redis.
 
 If Redis is lost, the system should be able to reconcile important job state from Postgres.
 
+API BullMQ connections use explicit ownership and separate policies:
+
+- Producers: offline queue disabled, one request retry, short command timeout.
+- QueueEvents/blocking consumers: `maxRetriesPerRequest: null`.
+- Both: bounded exponential reconnect delay with jitter.
+- Queue/BullMQ clients close first; the connection owner then closes each Redis client once.
+
 ---
 
 ## 11. BullMQ
@@ -968,7 +975,9 @@ For paid analysis, use the durable PostgreSQL processing-job UUID as BullMQ's cu
 Create durable dispatch state in the same PostgreSQL transaction as the paid job and deduction,
 then claim it with leased `SKIP LOCKED` rows. Retain completed and failed BullMQ records so
 publishing the same durable job remains idempotent even after a crash between queue acceptance and
-the PostgreSQL publication marker. Inspect database-active jobs; never blindly republish them.
+the PostgreSQL publication marker. Periodically reconcile published queued jobs against Redis and
+restore a missing job with the same UUID. Inspect database-active jobs; never blindly republish
+them. Use a durable execution lease/heartbeat before terminally recovering missing active work.
 
 ---
 
@@ -1149,7 +1158,8 @@ Stripe webhook handlers must:
 
 - Verify signature
 - Be idempotent
-- Store processed event IDs
+- Commit signature-verified event IDs before Checkout retrieval or financial processing
+- Use durable received, processing, processed, failed, and ignored states
 - Never grant credits twice
 - Handle duplicate events safely
 - Return success for already-processed valid events
@@ -1171,8 +1181,10 @@ processing failed -> add refund ledger entry -> user receives credits back
 
 Use the restricted processing-role refund operation for terminal failures. It locks the job and
 owning current project, validates the original charge and exact deduction, inserts at most one
-immutable exact refund, and updates job/project state atomically. Queue retry exhaustion is wired
-through this operation; VS9 expands coverage to all worker failure stages.
+immutable exact refund, and updates job/project state atomically. Persist a PostgreSQL failure intent
+first, then claim it with a leased `SKIP LOCKED` sweeper. The accepted failure reason is immutable;
+QueueEvents and stale-job reconciliation only provide discovery/wake-up signals. VS9 expands
+coverage to later worker stages.
 
 ---
 

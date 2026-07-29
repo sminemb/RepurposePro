@@ -2161,6 +2161,90 @@ Next Recommended Task:
 
 - VS4-T1 - Implement worker job lifecycle and progress updates.
 
+## VS3-R2 - Close Remaining VS3 Cross-System Reliability Gaps
+
+Status: COMPLETED
+
+Start: 2026-07-29 12:55 Asia/Manila
+
+End: 2026-07-29 13:33 Asia/Manila
+
+Outcome:
+
+- Added forward-only migration `0016_close_vs3_reliability_gaps.sql`; applied migrations `0014`
+  and `0015` remain unchanged.
+- Gave BullMQ producers and blocking consumers dedicated, explicitly owned Redis connections.
+  Producer calls fail fast without an offline command backlog, while all clients reconnect with
+  bounded jittered backoff and close idempotently.
+- Made the first terminal processing failure immutable. PostgreSQL now persists one durable failure
+  intent per job, leases it with `SKIP LOCKED`, finalizes it through a restart-safe sweeper, and
+  surfaces conflicting later failure codes without changing financial state.
+- Reconciled published dispatches against retained BullMQ state. Missing queued jobs are restored
+  with deterministic IDs, concurrent reconcilers cannot duplicate them, and active jobs only fail
+  after their durable execution lease expires.
+- Added the global safe exception filter. Unexpected exceptions return the standard request-ID
+  envelope and log only allowlisted context, while existing valid application envelopes pass
+  through unchanged.
+- Changed Stripe webhooks to persist a verified receipt before retrieval, correlation, or credit
+  mutation. Durable `received`, `processing`, `processed`, `ignored`, and safe `failed` transitions
+  allow replay after downstream failure and preserve exactly-once credit grants under concurrency.
+- Updated contracts, architecture, schema, library guidance, tracker, and handoff records.
+
+Tests Added:
+
+- RED unit coverage for connection policy/ownership, immutable failure handling, durable intent
+  sweeping, dispatcher reconciliation, safe exception handling, and Stripe receipt transitions.
+- Live PostgreSQL/Redis coverage for real disconnect/reconnect in one process, concurrent
+  reconcilers, execution-lease expiry, an actual exhausted BullMQ Worker, deliberately missed queue
+  events, failure-intent crash windows, concurrent terminal reasons, signed Stripe concurrency,
+  downstream failure/replay, and invalid-signature rejection.
+
+Files Changed:
+
+- API composition and error handling: `apps/api/src/app.module.ts`,
+  `apps/api/src/common/filters/unexpected-exception.filter.ts`, and its infrastructure test.
+- Infrastructure: BullMQ connection factory/spec, Redis service, and infrastructure module.
+- Processing: dispatch repository/service/spec, queue gateway/listener/spec, processing module,
+  execution-lease repository, failure repository/service, durable intent repository/service/sweeper
+  and specs, plus PostgreSQL/Redis reliability integrations.
+- Billing: Stripe webhook repository/service and their unit/live integration tests.
+- Database: migration `0016`, migration journal, schema/tests, billing integrity integration tests,
+  and sequential live-integration configuration.
+- Documentation and planning: API contracts, architecture, database schema, library docs, progress
+  tracker, execution/operational/handoff logs, and `tasks/plan.md` / `tasks/todo.md`.
+
+Commands Run:
+
+- Focused Vitest RED and GREEN suites for infrastructure, processing, billing, and global errors.
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm typecheck`
+- Focused ESLint across every changed TypeScript file.
+- Changed-file Prettier write/check.
+- `pnpm build`
+- `git diff --check`
+
+Verification:
+
+- PASS: 320 unit tests; 44 integration tests skipped outside the live integration command.
+- PASS: 44 live PostgreSQL/Redis integration tests across 6 files.
+- PASS: full monorepo typecheck.
+- PASS: focused ESLint for changed TypeScript.
+- PASS: committed Prettier rules for every changed supported file.
+- PASS: all production builds. Next.js emitted its existing non-fatal NFT tracing warning.
+- PASS: migration `0016` applies from the complete migration chain; `0014` and `0015` have no diff.
+- PASS: whitespace and adversarial invariant review.
+
+Known Limitations:
+
+- The production analysis Worker arrives in VS4. Its lifecycle must call the durable execution-lease
+  operation while active; real BullMQ Worker integration already proves the recovery contract.
+- VS9 still owns the user-facing refund explanation and wiring for later render-stage failures.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement worker job lifecycle and progress updates.
+
 ---
 
 ### VS3-R1 - Durable Analysis Dispatch, Automatic Refunds, and Webhook Envelope

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Server } from "node:http";
+import { request as requestHttp, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { resolve } from "node:path";
 
@@ -10,6 +10,7 @@ import { closeDatabaseClient, createDatabaseClient, type DatabaseClient } from "
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { UnexpectedExceptionFilter } from "../../common/filters/unexpected-exception.filter";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../infrastructure/database.service";
 import { RedisService } from "../infrastructure/redis.service";
@@ -168,6 +169,7 @@ describeIntegration("billing credits production query", () => {
       .compile();
 
     app = moduleRef.createNestApplication({ rawBody: true });
+    app.useGlobalFilters(new UnexpectedExceptionFilter());
     app.setGlobalPrefix("api/v1");
     await app.init();
     await app.listen(0, "127.0.0.1");
@@ -319,22 +321,24 @@ describeIntegration("billing credits production query", () => {
       payload,
       secret: config.stripe.webhookSecret,
     });
-    const response = await request("/api/v1/billing/webhook", {
-      body: payload,
-      headers: {
-        "content-type": "application/json",
-        "stripe-signature": signedHeader,
-      },
-      method: "POST",
-    });
-    const duplicateResponse = await request("/api/v1/billing/webhook", {
-      body: payload,
-      headers: {
-        "content-type": "application/json",
-        "stripe-signature": signedHeader,
-      },
-      method: "POST",
-    });
+    const [response, duplicateResponse] = await Promise.all([
+      request("/api/v1/billing/webhook", {
+        body: payload,
+        headers: {
+          "content-type": "application/json",
+          "stripe-signature": signedHeader,
+        },
+        method: "POST",
+      }),
+      request("/api/v1/billing/webhook", {
+        body: payload,
+        headers: {
+          "content-type": "application/json",
+          "stripe-signature": signedHeader,
+        },
+        method: "POST",
+      }),
+    ]);
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ data: { received: true } });
@@ -354,9 +358,240 @@ describeIntegration("billing credits production query", () => {
     ).resolves.toMatchObject({ rows: [{ count: "1" }] });
   });
 
+  it("keeps a verified failed receipt retryable and grants once after correlation repair", async () => {
+    const config = loadApiConfig();
+    const attempt = await checkoutClient.pool.query<{ attemptId: string }>(
+      `SELECT attempt_id AS "attemptId"
+       FROM public.create_stripe_checkout_attempt($1, $2, $3, $4)`,
+      ["billing-api-user-a", "starter", config.stripe.priceIds.starter, config.stripe.livemode],
+    );
+    const checkoutSessionId = `cs_test_${randomUUID().replaceAll("-", "")}`;
+    await checkoutClient.pool.query("SELECT public.attach_stripe_checkout_session($1, $2, $3)", [
+      attempt.rows[0]!.attemptId,
+      checkoutSessionId,
+      new Date(Date.now() + 30 * 60_000),
+    ]);
+    const authoritativeSession = {
+      amount_total: 1000,
+      client_reference_id: "billing-api-user-a",
+      currency: "usd",
+      id: checkoutSessionId,
+      line_items: {
+        data: [{ price: { id: "price_corrupt" }, quantity: 1 }],
+      },
+      livemode: config.stripe.livemode,
+      mode: "payment",
+      payment_intent: `pi_test_${randomUUID().replaceAll("-", "")}`,
+      payment_status: "paid",
+      status: "complete",
+    };
+    retrieveCheckoutSession.mockResolvedValue(authoritativeSession);
+
+    const eventId = `evt_test_${randomUUID().replaceAll("-", "")}`;
+    const payload = JSON.stringify({
+      api_version: "2026-04-29.preview",
+      created: Math.floor(Date.now() / 1_000),
+      data: { object: { id: checkoutSessionId, object: "checkout.session" } },
+      id: eventId,
+      livemode: config.stripe.livemode,
+      object: "event",
+      pending_webhooks: 1,
+      request: null,
+      type: "checkout.session.completed",
+    });
+    const stripe = new (await import("stripe")).default(config.stripe.secretKey);
+    const signedHeader = stripe.webhooks.generateTestHeaderString({
+      payload,
+      secret: config.stripe.webhookSecret,
+    });
+    const failedResponse = await request("/api/v1/billing/webhook", {
+      body: payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedHeader,
+      },
+      method: "POST",
+    });
+
+    expect(failedResponse.status).toBe(500);
+    await expect(failedResponse.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        details: null,
+        message: "We could not complete this request.",
+        requestId: "req_unknown",
+      },
+    });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT
+          event.error_message AS "errorMessage",
+          event.status::text AS status,
+          (SELECT COUNT(*)::integer FROM stripe_payments WHERE stripe_event_id = $1)
+            AS payments
+         FROM stripe_webhook_events AS event
+         WHERE event.stripe_event_id = $1`,
+        [eventId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          errorMessage: "STRIPE_PURCHASE_PROCESSING_FAILED",
+          payments: 0,
+          status: "failed",
+        },
+      ],
+    });
+
+    retrieveCheckoutSession.mockResolvedValue({
+      ...authoritativeSession,
+      line_items: {
+        data: [{ price: { id: config.stripe.priceIds.starter }, quantity: 1 }],
+      },
+    });
+    const repairedResponse = await request("/api/v1/billing/webhook", {
+      body: payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedHeader,
+      },
+      method: "POST",
+    });
+
+    expect(repairedResponse.status).toBe(200);
+    await expect(
+      migrationClient.pool.query(
+        `SELECT
+          event.status::text AS status,
+          (SELECT COUNT(*)::integer FROM stripe_payments WHERE stripe_event_id = $1)
+            AS payments,
+          (SELECT COUNT(*)::integer
+             FROM credit_ledger
+            WHERE idempotency_key = $2 AND type = 'purchase') AS purchases
+         FROM stripe_webhook_events AS event
+         WHERE event.stripe_event_id = $1`,
+        [eventId, `stripe-checkout:${attempt.rows[0]!.attemptId}`],
+      ),
+    ).resolves.toMatchObject({
+      rows: [{ payments: 1, purchases: 1, status: "processed" }],
+    });
+  });
+
+  it("persists a safe failed receipt when Stripe retrieval fails", async () => {
+    const config = loadApiConfig();
+    const checkoutSessionId = `cs_test_${randomUUID().replaceAll("-", "")}`;
+    const eventId = `evt_test_${randomUUID().replaceAll("-", "")}`;
+    const payload = JSON.stringify({
+      api_version: "2026-04-29.preview",
+      created: Math.floor(Date.now() / 1_000),
+      data: { object: { id: checkoutSessionId, object: "checkout.session" } },
+      id: eventId,
+      livemode: config.stripe.livemode,
+      object: "event",
+      pending_webhooks: 1,
+      request: null,
+      type: "checkout.session.completed",
+    });
+    const stripe = new (await import("stripe")).default(config.stripe.secretKey);
+    const signedHeader = stripe.webhooks.generateTestHeaderString({
+      payload,
+      secret: config.stripe.webhookSecret,
+    });
+    retrieveCheckoutSession.mockRejectedValueOnce(
+      new Error("Stripe secret and internal endpoint must not leak"),
+    );
+
+    const response = await request("/api/v1/billing/webhook", {
+      body: payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedHeader,
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        details: null,
+        message: "We could not complete this request.",
+      },
+    });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT error_message AS "errorMessage", status::text AS status
+         FROM stripe_webhook_events
+         WHERE stripe_event_id = $1`,
+        [eventId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          errorMessage: "STRIPE_CHECKOUT_RETRIEVAL_FAILED",
+          status: "failed",
+        },
+      ],
+    });
+  });
+
+  it("persists nothing for an invalid Stripe signature", async () => {
+    const eventId = `evt_test_${randomUUID().replaceAll("-", "")}`;
+    const payload = JSON.stringify({
+      data: { object: { id: "cs_invalid" } },
+      id: eventId,
+      type: "checkout.session.completed",
+    });
+
+    const response = await request("/api/v1/billing/webhook", {
+      body: payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": "invalid-signature",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(
+      migrationClient.pool.query(
+        "SELECT COUNT(*)::integer AS count FROM stripe_webhook_events WHERE stripe_event_id = $1",
+        [eventId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ count: 0 }] });
+  });
+
   function request(path: string, init?: RequestInit): Promise<Response> {
     const server = app.getHttpServer() as Server;
     const address = server.address() as AddressInfo;
-    return fetch(`http://127.0.0.1:${address.port}${path}`, init);
+    const headers = new Headers(init?.headers);
+    return new Promise<Response>((resolvePromise, reject) => {
+      const request = requestHttp(
+        {
+          headers: Object.fromEntries(headers.entries()),
+          hostname: "127.0.0.1",
+          method: init?.method ?? "GET",
+          path,
+          port: address.port,
+        },
+        (response) => {
+          const chunks: Buffer[] = [];
+          response.on("data", (chunk: Buffer) => chunks.push(chunk));
+          response.once("end", () => {
+            resolvePromise(
+              new Response(Buffer.concat(chunks), {
+                headers: response.headers as HeadersInit,
+                status: response.statusCode,
+              }),
+            );
+          });
+        },
+      );
+      request.once("error", reject);
+      if (init?.body !== undefined && init.body !== null) {
+        request.write(init.body);
+      }
+      request.end();
+    });
   }
 });

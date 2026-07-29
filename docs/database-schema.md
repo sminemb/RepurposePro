@@ -63,6 +63,8 @@ users / Better Auth tables
 projects
 uploaded_videos
 processing_jobs
+processing_job_dispatches
+processing_failure_intents
 transcripts
 transcript_segments
 clip_candidates
@@ -233,6 +235,10 @@ Durable record of analysis, render, regeneration, and cleanup work.
 | `bullmq_job_id` | text nullable | Queue reference |
 | `error_code` | text nullable | Stable code |
 | `error_message` | text nullable | Sanitized message |
+| `execution_lease_token` | uuid nullable | Durable active-execution identity |
+| `execution_lease_owner` | text nullable | Worker/event source identity |
+| `execution_lease_expires_at` | timestamptz nullable | Stale-active recovery boundary |
+| `execution_heartbeat_at` | timestamptz nullable | Last durable heartbeat |
 | `started_at` | timestamptz nullable | |
 | `completed_at` | timestamptz nullable | |
 | `created_at` | timestamptz | Required |
@@ -290,6 +296,8 @@ Credit deduction happens before queueing and never inside the worker.
 The (id, project_id, user_id) ownership tuple is immutable after job creation.
 credits_charged is immutable and every deduction must equal its negative value.
 Projects may point only to a job for the same project; deleting that job clears current_job_id.
+The first accepted terminal error code, safe message, and refund eligibility are immutable.
+Active analysis recovery waits for a valid execution lease and terminally fails an expired lease.
 ```
 
 ---
@@ -315,9 +323,38 @@ Durable outbox state for paid analysis publication.
 | `updated_at` | timestamptz | Required |
 
 The paid-start transaction creates this row with the processing job and deduction. Dispatchers use
-leased `SKIP LOCKED` claims. A claim is publishable only for queued or active analysis jobs with a
-positive charge and one exact immutable deduction. The table is inaccessible to generic runtime,
+leased `SKIP LOCKED` claims for pending publication and published reconciliation. A claim is valid
+only for queued or active analysis jobs with a positive charge and one exact immutable deduction.
+Published queued rows are checked against Redis and deterministically restored when missing.
+Published active rows are never blindly republished. The table is inaccessible to generic runtime,
 Checkout, and webhook roles; the processing role can use only restricted dispatch functions.
+
+---
+
+## 7.2 `processing_failure_intents`
+
+Durable terminal-failure work awaiting centralized finalization.
+
+| Column | Type | Rules |
+|---|---|---|
+| `id` | uuid | PK |
+| `processing_job_id` | uuid | Unique FK to `processing_jobs` |
+| `failure_code` | text | Supported safe code; immutable first reason |
+| `safe_message` | text | Sanitized, maximum 500 characters |
+| `source_reference` | text | Sanitized worker/event/reconciler reference |
+| `status` | enum | `pending` or `finalized` |
+| `attempt_count` | integer | Non-negative |
+| `next_attempt_at` | timestamptz | Due time for automatic retry |
+| `lease_token` | uuid nullable | Claim identity |
+| `lease_owner` | text nullable | Sweeper identity |
+| `lease_expires_at` | timestamptz nullable | Crash-recovery boundary |
+| `finalized_at` | timestamptz nullable | Required only for finalized rows |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
+
+QueueEvents and stale-job reconciliation persist this row before attempting a refund. Concurrent
+sweepers claim with `SKIP LOCKED`; lease expiry recovers crashes. A crash after refund commit but
+before the intent marker is safe because refund finalization is idempotent.
 
 ---
 
@@ -712,12 +749,16 @@ Recommended for webhook idempotency.
 | `processed_at` | timestamptz nullable | |
 | `status` | enum | Required |
 | `error_message` | text nullable | Sanitized |
+| `attempt_count` | integer | Non-negative processing attempts |
+| `last_attempt_at` | timestamptz nullable | Last financial-processing attempt |
 | `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
 
 Statuses:
 
 ```text
 received
+processing
 processed
 failed
 ignored
@@ -729,8 +770,10 @@ Critical constraint:
 unique(stripe_event_id)
 ```
 
-The webhook handler must claim this record atomically before it creates a payment or purchase ledger row.
-Webhook identity is immutable; status changes follow a constrained transition path.
+Immediately after signature verification, the handler commits this receipt before Stripe retrieval,
+correlation, or financial processing. Financial processing locks the receipt and transitions
+`received/failed -> processing -> processed`; unrelated events become `ignored`. Retryable failures
+store only an allowlisted safe classification. Webhook identity is immutable.
 
 ---
 
@@ -897,17 +940,21 @@ commit
 
 After commit, a leased background dispatcher publishes the IDs-only BullMQ job and atomically marks
 the outbox row published. Pending state survives API or Redis failure and retries automatically.
-BullMQ records remain retained so a crash between queue acceptance and publication marking cannot
-reuse the deterministic job ID for duplicate executable work.
+Published rows remain due for reconciliation: missing queued jobs are restored by deterministic ID,
+matching jobs are reused, and missing active jobs wait for a valid durable execution lease or enter
+the terminal-failure intent flow after lease expiry.
 
 ---
 
 ## Stripe payment processing
 
-One transaction should:
+Receipt and grant use two durable boundaries:
 
 ```text
-insert/verify webhook event
+verify signature
+insert/verify webhook receipt
+commit receipt
+lock receipt for processing
 insert payment record
 insert purchase ledger row
 mark webhook processed
@@ -933,8 +980,9 @@ update project/job status
 commit
 ```
 
-Only the scoped processing role may call this `SECURITY DEFINER` operation. Generic runtime,
-Checkout, webhook, and `PUBLIC` access is revoked.
+Before this transaction, the terminal path persists one failure intent. Leased sweepers call the
+scoped `SECURITY DEFINER` operation and then mark the intent finalized. Generic runtime, Checkout,
+webhook, and `PUBLIC` access is revoked. The accepted terminal reason cannot change on a later retry.
 
 ---
 

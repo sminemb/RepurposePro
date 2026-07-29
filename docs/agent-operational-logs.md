@@ -691,3 +691,62 @@ Record decisions such as:
 - Known limitation: VS9 must connect the same refund operation to every later worker-stage terminal
   failure and add complete refund UI.
 - Status: COMPLETED.
+
+### VS3-R2 Started - 2026-07-29 12:55 Asia/Manila
+
+- Reopened VS3 for six cross-system reliability defects from the attached implementation brief.
+- Confirmed baseline commit `5150a0f` and an initially clean worktree.
+- Recorded the task in the live tracker and added `tasks/plan.md` / `tasks/todo.md`.
+- Read current BullMQ, ioredis, NestJS, Stripe, and PostgreSQL guidance before implementation.
+
+### VS3-R2 RED Evidence - 2026-07-29 13:01 Asia/Manila
+
+- Four focused suites failed because the BullMQ connection factory, durable failure intent
+  repository/sweeper, and global unexpected-exception filter did not exist.
+- Added failing dispatcher and Stripe webhook cases before changing runtime behavior.
+- Live PostgreSQL tests later exposed missing function ACLs, obsolete receipt assumptions, shared
+  role setup concurrency, and an HTTP port blocked by the browser-oriented client.
+
+### VS3-R2 Implementation - 2026-07-29 13:18 Asia/Manila
+
+- Added forward migration `0016_close_vs3_reliability_gaps.sql`; verified no edits to `0014` or
+  `0015`.
+- Added separately owned producer and blocking BullMQ connections with fail-fast producer behavior,
+  reconnect backoff, and idempotent shutdown.
+- Added immutable terminal failure enforcement, durable PostgreSQL failure intents, leased sweeping,
+  and execution-lease heartbeat persistence.
+- Added published-job reconciliation for missing, matching, failed, valid-active, and expired-active
+  BullMQ states.
+- Added the global standard 500 envelope and allowlisted exception logging.
+- Added verified Stripe receipt-first persistence, durable processing/failure states, replay, and
+  exactly-once grant locking.
+- Updated domain documentation and database schema declarations.
+
+### VS3-R2 Failure and Repair Evidence - 2026-07-29 13:29 Asia/Manila
+
+- Fixed migration execution ACLs after the first live PostgreSQL run denied a recreated function.
+- Updated pre-existing billing integrity tests to persist the required receipt before grant.
+- Disabled test-file parallelism for the live suite because independent databases still alter the
+  same cluster roles, causing PostgreSQL catalog tuple contention.
+- Replaced test `fetch` with Node HTTP after a random local port was blocked by browser-port policy.
+- Corrected changed-file Prettier invocation under PowerShell and resolved all focused ESLint
+  diagnostics.
+- A final live run exposed an observation race: the refund transaction committed before the durable
+  intent marker. The integration assertion now waits for both states, proving the full asynchronous
+  boundary instead of relying on event-loop timing.
+
+### VS3-R2 Verification - 2026-07-29 13:33 Asia/Manila
+
+- PASS: `pnpm test` - 65 files passed, 6 skipped; 320 tests passed, 44 skipped.
+- PASS: `pnpm test:db-integration` - 6 files and 44 live PostgreSQL/Redis tests passed.
+- PASS: `pnpm typecheck`.
+- PASS: focused ESLint for every changed TypeScript file.
+- PASS: changed-file Prettier check.
+- PASS: `pnpm build`; Next.js retained one known non-fatal NFT tracing warning.
+- PASS: `git diff --check`.
+- PASS: adversarial review of crash windows, concurrent claims, immutable reasons, connection
+  ownership, Stripe transaction rollback/replay, safe logging, fixed search paths, and role grants.
+- Decision: PostgreSQL remains durable truth; Redis events only wake/reconcile durable work.
+- Decision: active-job recovery is governed by a persisted execution lease, never local timers.
+- Decision: verified Stripe receipt persistence commits before any downstream API or financial work.
+- Status: COMPLETED. Live tracker advances to VS4-T1.

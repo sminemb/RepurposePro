@@ -72,6 +72,11 @@ export const processingDispatchStatusEnum = pgEnum("processing_dispatch_status",
   "published",
 ]);
 
+export const processingFailureIntentStatusEnum = pgEnum("processing_failure_intent_status", [
+  "pending",
+  "finalized",
+]);
+
 export const ledgerTypeEnum = pgEnum("ledger_type", [
   "purchase",
   "processing_deduction",
@@ -89,6 +94,7 @@ export const stripePaymentStatusEnum = pgEnum("stripe_payment_status", [
 
 export const stripeWebhookEventStatusEnum = pgEnum("stripe_webhook_event_status", [
   "received",
+  "processing",
   "processed",
   "failed",
   "ignored",
@@ -249,6 +255,10 @@ export const processingJobs = pgTable(
     bullmqJobId: text("bullmq_job_id"),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
+    executionLeaseToken: uuid("execution_lease_token"),
+    executionLeaseOwner: text("execution_lease_owner"),
+    executionLeaseExpiresAt: timestamp("execution_lease_expires_at", { withTimezone: true }),
+    executionHeartbeatAt: timestamp("execution_heartbeat_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -278,6 +288,23 @@ export const processingJobs = pgTable(
     ),
     check("processing_jobs_credits_charged_check", sql`${table.creditsCharged} >= 0`),
     check("processing_jobs_attempt_count_check", sql`${table.attemptCount} >= 0`),
+    check(
+      "processing_jobs_execution_lease_check",
+      sql`(
+        (
+          ${table.executionLeaseToken} IS NULL
+          AND ${table.executionLeaseOwner} IS NULL
+          AND ${table.executionLeaseExpiresAt} IS NULL
+          AND ${table.executionHeartbeatAt} IS NULL
+        )
+        OR (
+          ${table.executionLeaseToken} IS NOT NULL
+          AND ${table.executionLeaseOwner} IS NOT NULL
+          AND ${table.executionLeaseExpiresAt} IS NOT NULL
+          AND ${table.executionHeartbeatAt} IS NOT NULL
+        )
+      )`,
+    ),
   ],
 );
 
@@ -329,6 +356,72 @@ export const processingJobDispatches = pgTable(
           AND ${table.publishedAt} IS NOT NULL
           AND ${table.bullmqJobId} IS NOT NULL
         )
+      )`,
+    ),
+  ],
+);
+
+export const processingFailureIntents = pgTable(
+  "processing_failure_intents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    processingJobId: uuid("processing_job_id")
+      .notNull()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    failureCode: text("failure_code").notNull(),
+    safeMessage: text("safe_message").notNull(),
+    sourceReference: text("source_reference").notNull(),
+    status: processingFailureIntentStatusEnum("status").default("pending").notNull(),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow().notNull(),
+    leaseToken: uuid("lease_token"),
+    leaseOwner: text("lease_owner"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("processing_failure_intents_processing_job_id_unique").on(table.processingJobId),
+    index("processing_failure_intents_pending_idx")
+      .on(table.status, table.nextAttemptAt)
+      .where(sql`${table.status} = 'pending'`),
+    check("processing_failure_intents_attempt_count_check", sql`${table.attemptCount} >= 0`),
+    check(
+      "processing_failure_intents_failure_code_check",
+      sql`${table.failureCode} <> '' AND length(${table.failureCode}) <= 100`,
+    ),
+    check(
+      "processing_failure_intents_safe_message_check",
+      sql`${table.safeMessage} <> '' AND length(${table.safeMessage}) <= 500`,
+    ),
+    check(
+      "processing_failure_intents_source_reference_check",
+      sql`${table.sourceReference} <> '' AND length(${table.sourceReference}) <= 200`,
+    ),
+    check(
+      "processing_failure_intents_lease_check",
+      sql`(
+        (
+          ${table.leaseToken} IS NULL
+          AND ${table.leaseOwner} IS NULL
+          AND ${table.leaseExpiresAt} IS NULL
+        )
+        OR (
+          ${table.leaseToken} IS NOT NULL
+          AND ${table.leaseOwner} IS NOT NULL
+          AND ${table.leaseExpiresAt} IS NOT NULL
+        )
+      )`,
+    ),
+    check(
+      "processing_failure_intents_finalized_check",
+      sql`(
+        (${table.status} = 'pending' AND ${table.finalizedAt} IS NULL)
+        OR (${table.status} = 'finalized' AND ${table.finalizedAt} IS NOT NULL)
       )`,
     ),
   ],
@@ -456,9 +549,18 @@ export const stripeWebhookEvents = pgTable(
     processedAt: timestamp("processed_at", { withTimezone: true }),
     status: stripeWebhookEventStatusEnum("status").default("received").notNull(),
     errorMessage: text("error_message"),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
   },
-  (table) => [uniqueIndex("stripe_webhook_events_stripe_event_id_unique").on(table.stripeEventId)],
+  (table) => [
+    uniqueIndex("stripe_webhook_events_stripe_event_id_unique").on(table.stripeEventId),
+    check("stripe_webhook_events_attempt_count_check", sql`${table.attemptCount} >= 0`),
+  ],
 );
 
 export const creditLedger = pgTable(

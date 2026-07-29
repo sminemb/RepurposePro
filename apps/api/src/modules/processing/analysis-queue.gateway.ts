@@ -73,9 +73,10 @@ export class BullMqAnalysisQueueGateway implements AnalysisQueueGateway, OnModul
   private readonly queue: AnalysisQueueClient;
 
   public constructor(
-    connection: Redis,
+    private readonly connection: Redis,
     prefix: string,
     createQueue: AnalysisQueueClientFactory = createAnalysisQueueClient,
+    private readonly closeConnection: (connection: Redis) => Promise<void> = async () => undefined,
   ) {
     this.queue = createQueue(VIDEO_ANALYSIS_QUEUE_NAME, { connection, prefix });
   }
@@ -123,7 +124,11 @@ export class BullMqAnalysisQueueGateway implements AnalysisQueueGateway, OnModul
   }
 
   public async onModuleDestroy(): Promise<void> {
-    await this.queue.close();
+    try {
+      await this.queue.close();
+    } finally {
+      await this.closeConnection(this.connection);
+    }
   }
 }
 

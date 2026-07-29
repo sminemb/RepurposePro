@@ -10,6 +10,7 @@ import {
   STRIPE_WEBHOOK_REPOSITORY,
   type StripeCreditPurchase,
   type StripeWebhookEventReference,
+  type StripeWebhookFailureClassification,
   type StripeWebhookRepositoryContract,
 } from "./stripe-webhook.repository";
 
@@ -17,6 +18,13 @@ export class InvalidStripeWebhookSignatureError extends Error {
   public constructor() {
     super("Stripe webhook signature is invalid.");
     this.name = "InvalidStripeWebhookSignatureError";
+  }
+}
+
+export class StripeWebhookProcessingError extends Error {
+  public constructor() {
+    super("Stripe webhook processing failed.");
+    this.name = "StripeWebhookProcessingError";
   }
 }
 
@@ -44,31 +52,63 @@ export class StripeWebhookService {
       throw new InvalidStripeWebhookSignatureError();
     }
 
+    const reference = eventReference(event);
+    const receiptStatus = await this.stripeWebhookRepository.receive(reference);
+    if (receiptStatus === "processed" || receiptStatus === "ignored") {
+      return;
+    }
+
     if (event.type === "checkout.session.expired") {
-      await this.stripeWebhookRepository.expireSession({
-        checkoutSessionId: event.data.object.id,
-        ...eventReference(event),
-      });
+      try {
+        await this.stripeWebhookRepository.expireSession({
+          checkoutSessionId: event.data.object.id,
+          ...reference,
+        });
+      } catch {
+        return this.failRetryable(reference, "STRIPE_CHECKOUT_EXPIRATION_FAILED");
+      }
       return;
     }
 
     if (event.type !== "checkout.session.completed") {
-      await this.stripeWebhookRepository.recordIgnored(eventReference(event));
+      await this.stripeWebhookRepository.recordIgnored(reference);
       return;
     }
 
-    const session = await this.stripeWebhookGateway.retrieveCheckoutSession(
-      event.data.object.id,
-      config.stripe.secretKey,
-    );
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await this.stripeWebhookGateway.retrieveCheckoutSession(
+        event.data.object.id,
+        config.stripe.secretKey,
+      );
+    } catch {
+      return this.failRetryable(reference, "STRIPE_CHECKOUT_RETRIEVAL_FAILED");
+    }
+
     const purchase = trustedCheckoutPurchase(event, session);
 
     if (!purchase) {
-      await this.stripeWebhookRepository.recordIgnored(eventReference(event));
-      return;
+      return this.failRetryable(reference, "STRIPE_PURCHASE_CORRELATION_FAILED");
     }
 
-    await this.stripeWebhookRepository.grantPurchase(purchase);
+    try {
+      await this.stripeWebhookRepository.grantPurchase(purchase);
+    } catch {
+      return this.failRetryable(reference, "STRIPE_PURCHASE_PROCESSING_FAILED");
+    }
+  }
+
+  private async failRetryable(
+    event: StripeWebhookEventReference,
+    classification: StripeWebhookFailureClassification,
+  ): Promise<never> {
+    try {
+      await this.stripeWebhookRepository.markFailed(event, classification);
+    } catch {
+      // The verified receipt remains durable even if its retry classification cannot be updated.
+    }
+
+    throw new StripeWebhookProcessingError();
   }
 }
 

@@ -27,11 +27,13 @@ if (missingDatabaseVariables.length > 0) {
 export default defineConfig({
   test: {
     environment: "node",
+    fileParallelism: false,
     hookTimeout: 30_000,
     include: [
       "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",
       "apps/api/src/modules/processing/analysis-queue.redis.integration.spec.ts",
       "apps/api/src/modules/processing/processing.postgres.integration.spec.ts",
+      "apps/api/src/modules/processing/processing-recovery.postgres-redis.integration.spec.ts",
       "apps/api/src/modules/processing/processing-reliability.postgres.integration.spec.ts",
       "packages/db/src/schema/billing-integrity.integration.spec.ts",
     ],

@@ -3,6 +3,24 @@ import { describe, expect, it, vi } from "vitest";
 import { StripeWebhookRepository } from "./stripe-webhook.repository";
 
 describe("StripeWebhookRepository", () => {
+  it("persists a verified event receipt before financial processing", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ status: "received" }] });
+    const repository = new StripeWebhookRepository({
+      database: { pool: { query } },
+    } as never);
+
+    await expect(
+      repository.receive({
+        eventId: "evt_test_creator",
+        eventType: "checkout.session.completed",
+      }),
+    ).resolves.toBe("received");
+    expect(query).toHaveBeenCalledWith(
+      "SELECT public.receive_stripe_webhook_event($1, $2) AS status",
+      ["evt_test_creator", "checkout.session.completed"],
+    );
+  });
+
   it("passes the complete authoritative Checkout identity to the grant function", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [{ outcome: "granted" }] });
     const repository = new StripeWebhookRepository({
@@ -64,5 +82,25 @@ describe("StripeWebhookRepository", () => {
       "checkout.session.expired",
       "cs_test_expired",
     ]);
+  });
+
+  it("stores only an allowlisted safe retry classification", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ outcome: "failed" }] });
+    const repository = new StripeWebhookRepository({
+      database: { pool: { query } },
+    } as never);
+
+    await repository.markFailed(
+      {
+        eventId: "evt_test_creator",
+        eventType: "checkout.session.completed",
+      },
+      "STRIPE_PURCHASE_CORRELATION_FAILED",
+    );
+
+    expect(query).toHaveBeenCalledWith(
+      "SELECT public.mark_stripe_webhook_event_failed($1, $2, $3)",
+      ["evt_test_creator", "checkout.session.completed", "STRIPE_PURCHASE_CORRELATION_FAILED"],
+    );
   });
 });

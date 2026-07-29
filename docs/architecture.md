@@ -221,6 +221,16 @@ If the process crashes after queue acceptance but before the database marker com
 dispatcher inspects and reuses the same queue job. Concurrent dispatchers use `SKIP LOCKED` leases,
 and database-active jobs are inspected rather than blindly republished.
 
+The API owns separate Redis clients for BullMQ producers and blocking QueueEvents consumers.
+Producer clients disable the offline queue and use one command retry so PostgreSQL can schedule the
+next attempt quickly. Blocking clients use `maxRetriesPerRequest: null` as BullMQ requires. Both use
+bounded exponential reconnect delay with jitter and are closed once by their owner.
+
+Published dispatches remain reconcilable. A missing queued job is restored with the database UUID;
+a matching waiting, delayed, active, completed, or failed job is never duplicated. Active work uses
+a durable execution lease/heartbeat. Missing active work waits while its lease is valid and enters
+the centralized terminal-failure flow after expiry.
+
 ### Why Use Separate Queues?
 
 Separate queues make it easier to:
@@ -1326,7 +1336,10 @@ Queue analysis job
 Processing fails
  |
  v
-BullMQ reports terminal retry exhaustion
+Worker, QueueEvents, or stale-job reconciliation persists a failure intent
+ |
+ v
+Leased PostgreSQL sweeper claims the intent
  |
  v
 Restricted database operation locks and validates job, project, and deduction
@@ -1341,9 +1354,11 @@ Refund credits, not Stripe payments, for normal processing failures.
 
 Stripe refunds should only be used when you want to return actual money to the user.
 
-The queue-event listener replays retained terminal events on startup. The database operation is
-idempotent under concurrent or repeated delivery. VS9 extends this primitive to every worker-stage
-failure and the complete user-facing failure/refund experience.
+QueueEvents is a wake-up source, not durable truth. Pending intents survive API restarts, marker
+failures, duplicate events, and Redis event loss. Reconciliation detects retained failed jobs when
+an event was missed. The first accepted terminal reason is immutable, and the database operation is
+idempotent under concurrent or repeated delivery. VS9 extends this primitive to later worker stages
+and the complete user-facing failure/refund experience.
 
 ---
 
@@ -1399,7 +1414,8 @@ Stripe webhook endpoint must:
 
 - Verify webhook signature
 - Be idempotent
-- Store processed event IDs
+- Commit the verified event ID/type before retrieval or financial processing
+- Use constrained received/processing/processed/failed/ignored states
 - Never grant credits twice for the same event
 - Handle retries safely
 

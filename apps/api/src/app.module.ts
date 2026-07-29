@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
 import { loadApiConfig } from "@repurposepro/config";
 import { LoggerModule } from "nestjs-pino";
 
@@ -9,6 +10,7 @@ import { InfrastructureModule } from "./modules/infrastructure/infrastructure.mo
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProcessingModule } from "./modules/processing/processing.module";
 import { createLoggingConfig } from "./logging.config";
+import { UnexpectedExceptionFilter } from "./common/filters/unexpected-exception.filter";
 
 const config = loadApiConfig();
 
@@ -21,6 +23,12 @@ const config = loadApiConfig();
     BillingModule,
     ProjectsModule,
     ProcessingModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: UnexpectedExceptionFilter,
+    },
   ],
 })
 export class AppModule {}

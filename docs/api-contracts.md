@@ -165,6 +165,21 @@ Do not expose:
 - Gemini responses containing sensitive internals
 - FFmpeg command internals unless explicitly sanitized
 
+Any exception that is not already a valid application envelope returns HTTP 500 with:
+
+```json
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "We could not complete this request.",
+    "details": null,
+    "requestId": "req_..."
+  }
+}
+```
+
+The global exception filter preserves valid `HttpException` envelopes and logs only safe metadata.
+
 ---
 
 ## 6. HTTP Status Rules
@@ -640,17 +655,20 @@ Never deduct credits in the worker.
 
 After the transaction commits, the dispatcher must:
 
-1. Claim a due pending dispatch with a database lease and `SKIP LOCKED`.
+1. Claim a due pending or published dispatch with a database lease and `SKIP LOCKED`.
 2. Publish `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`.
 3. Use the durable PostgreSQL processing-job UUID as the BullMQ `jobId`.
 4. Retain completed and failed BullMQ records so the deterministic ID cannot be reused.
 5. Atomically mark the dispatch published and persist the queue ID on the matching job.
 6. Retry a pending dispatch automatically after startup, publication, or marker failure.
+7. Reconcile published queued jobs and restore a missing BullMQ record with the same UUID.
 
 Multiple dispatchers may run concurrently, but only one may hold a dispatch lease. A retry after
 BullMQ accepted work but before the PostgreSQL marker committed inspects and reuses the retained
 job with the same deterministic UUID. Active database jobs are inspected, never blindly
-republished. Existing queued or active jobs are recoverable only when they have a positive
+republished. Missing active jobs wait for a valid durable execution lease and become terminal
+through the centralized intent/refund flow after lease expiry. Existing queued or active jobs are
+recoverable only when they have a positive
 `creditsCharged` value and one exact matching immutable deduction.
 
 If publication or queue-reference persistence fails after the database commit, the API returns
@@ -1232,12 +1250,15 @@ Stripe webhook endpoint.
 - No user session required.
 - Verify Stripe signature.
 - Retrieve the Checkout session from Stripe after signature verification.
-- Persist event ID.
+- Commit the signature-verified event ID/type before Stripe retrieval or financial processing.
+- Transition receipts through `received`, `processing`, `processed`, `failed`, or `ignored`.
 - Process idempotently.
 - Require one configured Price line, quantity one, matching persisted user/amount/currency/mode,
   paid and complete status, and matching test/live mode.
 - Grant credits only when the retrieved session matches the preexisting Checkout attempt.
 - Return 2xx for already-processed valid event.
+- Keep transient retrieval/correlation/processing failures retryable and store only a safe
+  classification.
 
 ### Response — 200
 
@@ -1255,8 +1276,9 @@ Stripe webhook endpoint.
 
 Refunds for normal processing failures are **credit refunds**, not Stripe money refunds.
 
-VS3 now provides the centralized automatic-refund primitive and connects exhausted analysis queue
-attempts to it. VS9 still owns complete worker failure coverage and clear user-facing refund UI.
+VS3 provides the centralized automatic-refund primitive, durable terminal-failure intents, failed
+BullMQ reconciliation, and execution-lease expiry recovery. VS9 still owns later worker-stage
+coverage and clear user-facing refund UI.
 
 Eligible failures may include:
 
@@ -1274,7 +1296,9 @@ The exact eligibility policy is centralized in PostgreSQL. The restricted proces
 locks the job and owning current project, verifies the positive charge and exact immutable
 deduction, records at most one exact refund ledger row, and updates the project and job in the same
 transaction. Retries and concurrent terminal events are idempotent. Ineligible failures update
-failure state but create no refund.
+failure state but create no refund. The first accepted terminal reason and eligibility are
+immutable; a conflicting later reason returns a conflict outcome without changing state. Queue and
+worker paths persist a failure intent first, and leased sweepers finish or retry finalization.
 
 ---
 

@@ -4,7 +4,11 @@ const { loadApiConfigMock } = vi.hoisted(() => ({ loadApiConfigMock: vi.fn() }))
 
 vi.mock("@repurposepro/config", () => ({ loadApiConfig: loadApiConfigMock }));
 
-import { InvalidStripeWebhookSignatureError, StripeWebhookService } from "./stripe-webhook.service";
+import {
+  InvalidStripeWebhookSignatureError,
+  StripeWebhookProcessingError,
+  StripeWebhookService,
+} from "./stripe-webhook.service";
 
 const webhookConfig = {
   stripe: {
@@ -47,11 +51,13 @@ describe("StripeWebhookService", () => {
   const constructEvent = vi.fn();
   const expireSession = vi.fn();
   const grantPurchase = vi.fn();
+  const markFailed = vi.fn();
+  const receive = vi.fn();
   const recordIgnored = vi.fn();
   const retrieveCheckoutSession = vi.fn();
   const service = new StripeWebhookService(
     { constructEvent, retrieveCheckoutSession },
-    { expireSession, grantPurchase, recordIgnored },
+    { expireSession, grantPurchase, markFailed, receive, recordIgnored },
   );
   const payload = Buffer.from('{"test":true}');
 
@@ -59,6 +65,8 @@ describe("StripeWebhookService", () => {
     constructEvent.mockReset();
     expireSession.mockReset();
     grantPurchase.mockReset();
+    markFailed.mockReset();
+    receive.mockReset().mockResolvedValue("received");
     recordIgnored.mockReset();
     retrieveCheckoutSession.mockReset();
     loadApiConfigMock.mockReturnValue(webhookConfig);
@@ -95,6 +103,7 @@ describe("StripeWebhookService", () => {
       sessionStatus: "complete",
       userId: "user-1",
     });
+    expect(receive).toHaveBeenCalledBefore(retrieveCheckoutSession);
     expect(recordIgnored).not.toHaveBeenCalled();
   });
 
@@ -107,6 +116,7 @@ describe("StripeWebhookService", () => {
       InvalidStripeWebhookSignatureError,
     );
     expect(grantPurchase).not.toHaveBeenCalled();
+    expect(receive).not.toHaveBeenCalled();
     expect(recordIgnored).not.toHaveBeenCalled();
   });
 
@@ -114,16 +124,22 @@ describe("StripeWebhookService", () => {
     ["an unpaid session", { payment_status: "unpaid" }],
     ["a session without a trusted user correlation", { client_reference_id: null }],
     ["a session with multiple line items", { line_items: { data: [{}, {}] } }],
-  ])("records %s without granting credits", async (_label, overrides) => {
+  ])("persists %s as retryable without granting credits", async (_label, overrides) => {
     constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
     retrieveCheckoutSession.mockResolvedValue(retrievedPaidSession(overrides));
 
-    await expect(service.handle(payload, "signature_test")).resolves.toBeUndefined();
+    await expect(service.handle(payload, "signature_test")).rejects.toBeInstanceOf(
+      StripeWebhookProcessingError,
+    );
 
-    expect(recordIgnored).toHaveBeenCalledWith({
-      eventId: "evt_test_creator",
-      eventType: "checkout.session.completed",
-    });
+    expect(markFailed).toHaveBeenCalledWith(
+      {
+        eventId: "evt_test_creator",
+        eventType: "checkout.session.completed",
+      },
+      "STRIPE_PURCHASE_CORRELATION_FAILED",
+    );
+    expect(recordIgnored).not.toHaveBeenCalled();
     expect(grantPurchase).not.toHaveBeenCalled();
   });
 
@@ -140,6 +156,7 @@ describe("StripeWebhookService", () => {
       eventId: "evt_test_unrelated",
       eventType: "customer.created",
     });
+    expect(receive).toHaveBeenCalledBefore(recordIgnored);
     expect(grantPurchase).not.toHaveBeenCalled();
     expect(retrieveCheckoutSession).not.toHaveBeenCalled();
   });
@@ -158,6 +175,7 @@ describe("StripeWebhookService", () => {
       eventId: "evt_test_expired",
       eventType: "checkout.session.expired",
     });
+    expect(receive).toHaveBeenCalledBefore(expireSession);
     expect(retrieveCheckoutSession).not.toHaveBeenCalled();
   });
 
@@ -165,8 +183,26 @@ describe("StripeWebhookService", () => {
     constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
     retrieveCheckoutSession.mockRejectedValue(new Error("Stripe unavailable"));
 
-    await expect(service.handle(payload, "signature_test")).rejects.toThrow("Stripe unavailable");
-    expect(recordIgnored).not.toHaveBeenCalled();
+    await expect(service.handle(payload, "signature_test")).rejects.toBeInstanceOf(
+      StripeWebhookProcessingError,
+    );
+    expect(markFailed).toHaveBeenCalledWith(
+      {
+        eventId: "evt_test_creator",
+        eventType: "checkout.session.completed",
+      },
+      "STRIPE_CHECKOUT_RETRIEVAL_FAILED",
+    );
+    expect(grantPurchase).not.toHaveBeenCalled();
+  });
+
+  it("returns immediately for a durably processed duplicate receipt", async () => {
+    constructEvent.mockReturnValue(paidCheckoutCompletedEvent());
+    receive.mockResolvedValue("processed");
+
+    await expect(service.handle(payload, "signature_test")).resolves.toBeUndefined();
+
+    expect(retrieveCheckoutSession).not.toHaveBeenCalled();
     expect(grantPurchase).not.toHaveBeenCalled();
   });
 });

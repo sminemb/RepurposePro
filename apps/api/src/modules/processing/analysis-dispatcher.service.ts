@@ -16,6 +16,11 @@ import {
   type DispatchFailureStage,
 } from "./analysis-dispatch.repository";
 import { ANALYSIS_QUEUE_GATEWAY, type AnalysisQueueGateway } from "./analysis-queue.gateway";
+import { ProcessingFailureIntentService } from "./processing-failure-intent.service";
+import {
+  ANALYSIS_RETRIES_EXHAUSTED,
+  WORKER_EXECUTION_LEASE_EXPIRED,
+} from "./processing-failure.service";
 
 export const ANALYSIS_DISPATCHER_OPTIONS = Symbol("ANALYSIS_DISPATCHER_OPTIONS");
 
@@ -47,6 +52,8 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
     @Optional()
     @Inject(ANALYSIS_DISPATCHER_OPTIONS)
     options?: AnalysisDispatcherOptions,
+    @Optional()
+    private readonly processingFailureIntentService?: ProcessingFailureIntentService,
   ) {
     this.options = options ?? createAnalysisDispatcherOptions();
   }
@@ -115,10 +122,31 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
       if (dispatch.jobStatus === "active") {
         const state = await this.queue.inspect(payload);
         if (state === null) {
-          await this.reschedule(dispatch, requestId, "active_job_missing");
-          return false;
+          if (
+            dispatch.executionLeaseExpiresAt !== null &&
+            dispatch.executionLeaseExpiresAt.getTime() > Date.now()
+          ) {
+            bullmqJobId = dispatch.jobId;
+          } else {
+            await this.recordTerminalFailure(dispatch, WORKER_EXECUTION_LEASE_EXPIRED, requestId);
+            bullmqJobId = dispatch.jobId;
+          }
+        } else {
+          if (state === "failed") {
+            await this.recordTerminalFailure(dispatch, ANALYSIS_RETRIES_EXHAUSTED, requestId);
+          }
+          bullmqJobId = dispatch.jobId;
         }
-        bullmqJobId = dispatch.jobId;
+      } else if (dispatch.dispatchStatus === "published") {
+        const state = await this.queue.inspect(payload);
+        if (state === null) {
+          bullmqJobId = await this.queue.enqueue(payload);
+        } else {
+          if (state === "failed") {
+            await this.recordTerminalFailure(dispatch, ANALYSIS_RETRIES_EXHAUSTED, requestId);
+          }
+          bullmqJobId = dispatch.jobId;
+        }
       } else {
         bullmqJobId = await this.queue.enqueue(payload);
       }
@@ -142,6 +170,22 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
       requestId,
     });
     return true;
+  }
+
+  private async recordTerminalFailure(
+    dispatch: AnalysisDispatchRecord,
+    failureCode: string,
+    requestId: string,
+  ): Promise<void> {
+    if (!this.processingFailureIntentService) {
+      throw new Error("Processing failure intent service is unavailable.");
+    }
+
+    await this.processingFailureIntentService.recordTerminalFailure(
+      dispatch.jobId,
+      failureCode,
+      `reconcile:${requestId}`,
+    );
   }
 
   private async reschedule(

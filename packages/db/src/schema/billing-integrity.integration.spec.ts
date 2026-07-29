@@ -277,6 +277,11 @@ describeIntegration("billing integrity migrations", () => {
       ]),
     ).rejects.toMatchObject({ code: "23514" });
     await expect(
+      migrationPool.query("UPDATE stripe_webhook_events SET status = 'processing' WHERE id = $1", [
+        "00000000-0000-0000-0000-000000000111",
+      ]),
+    ).resolves.toBeDefined();
+    await expect(
       migrationPool.query(
         "UPDATE stripe_webhook_events SET status = 'processed', processed_at = now() WHERE id = $1",
         ["00000000-0000-0000-0000-000000000111"],
@@ -569,6 +574,12 @@ describeIntegration("billing integrity migrations", () => {
     ).rejects.toMatchObject({ code: "42501" });
 
     await expect(
+      webhookPool.query("SELECT public.receive_stripe_webhook_event($1, $2)", [
+        "evt_correlated_mismatch",
+        "checkout.session.completed",
+      ]),
+    ).resolves.toBeDefined();
+    await expect(
       webhookPool.query(
         `SELECT public.grant_stripe_credit_purchase(
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
@@ -613,6 +624,14 @@ describeIntegration("billing integrity migrations", () => {
         ],
       );
 
+    await Promise.all(
+      ["evt_correlated_one", "evt_correlated_two"].map((eventId) =>
+        webhookPool.query("SELECT public.receive_stripe_webhook_event($1, $2)", [
+          eventId,
+          "checkout.session.completed",
+        ]),
+      ),
+    );
     const outcomes = await Promise.all([grant("evt_correlated_one"), grant("evt_correlated_two")]);
 
     expect(outcomes.map((result) => result.rows[0]?.outcome).sort()).toEqual([

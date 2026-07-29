@@ -107,7 +107,7 @@ FAILED
 | VS0 | Repo boots and core infrastructure is ready | COMPLETED | 2026-07-10 | 13:24 | 2026-07-10 | 13:55 | None | 100% | — |
 | VS1 | User can sign up, log in, and see protected dashboard | COMPLETED | 2026-07-11 | 10:53 | 2026-07-11 | 21:34 | None | 100% | — |
 | VS2 | User can create a project and upload a validated video | COMPLETED | 2026-07-12 | 17:06 | 2026-07-13 | 19:01 | None | 100% | — |
-| VS3 | User can buy credits and start a paid processing job | COMPLETED | 2026-07-15 | 10:52 | 2026-07-29 | 12:15 | None | 100% | — |
+| VS3 | User can buy credits and start a paid processing job | COMPLETED | 2026-07-15 | 10:52 | 2026-07-29 | 13:33 | None | 100% | — |
 | VS4 | User receives AI-generated clip previews from an uploaded video | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS5 | User can edit one clip preview before rendering | NOT_STARTED | — | — | — | — | — | 0% | — |
 | VS6 | User can render and download one final vertical MP4 clip | NOT_STARTED | — | — | — | — | — | 0% | — |
@@ -228,7 +228,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Field | Value |
 |---|---|
 | Slice ID | VS2 |
-| Status | COMPLETED |
+| Status | IN_PROGRESS |
 | Start Date | 2026-07-12 |
 | Start Time | 17:06 |
 | End Date | 2026-07-13 |
@@ -282,9 +282,9 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Status | COMPLETED |
 | Start Date | 2026-07-15 |
 | Start Time | 10:52 |
-| End Date | 2026-07-29 |
-| End Time | 12:15 |
-| Progress | 100% |
+| End Date | — |
+| End Time | — |
+| Progress | 95% |
 | Dependency | VS2 |
 
 ## Tasks
@@ -310,6 +310,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-T7 | Show queued processing state in UI | Web + API | COMPLETED | 2026-07-19 | 16:43 | 2026-07-25 | 14:55 | Persisted status API, credit confirmation/start UI, refresh-safe processing page, dashboard routing, 264 unit tests, 16 live integration tests, and production builds pass. |
 | VS3-T8 | Remediate adversarial VS3 security review | DB + API + Web + Infra + Tests + Docs | COMPLETED | 2026-07-26 | 15:11 | 2026-07-26 | 16:47 | Scoped financial roles, persisted card-only Checkout correlation, authoritative webhook retrieval, production/Compose/Next hardening, and adversarial HTTP/PostgreSQL/Redis tests pass full CI. |
 | VS3-R1 | Fix durable analysis dispatch, automatic failure refunds, and Stripe webhook envelope | DB + API + Worker + Queue + Tests + Docs | COMPLETED | 2026-07-29 | 11:25 | 2026-07-29 | 12:15 | Migration `0015`; 303 unit tests and 31 live PostgreSQL/Redis tests pass; full typecheck, changed-file Prettier, focused lint, and whitespace checks pass. |
+| VS3-R2 | Close remaining VS3 cross-system reliability gaps | DB + API + Redis + Queue + Stripe + Tests + Docs | COMPLETED | 2026-07-29 | 12:55 | 2026-07-29 | 13:33 | Migration `0016`; 320 unit tests, 44 live PostgreSQL/Redis integration tests, typecheck, focused lint, Prettier, production builds, and whitespace checks pass. |
 
 ## Slice Acceptance Criteria
 
@@ -849,14 +850,14 @@ Last Maintenance Task: MAINT-21 - Reconcile stale OPS-PR blocker records
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: VS3-R1 - Fix durable analysis dispatch, automatic failure refunds, and Stripe webhook envelope
+Last Completed Task: VS3-R2 - Close remaining VS3 cross-system reliability gaps
 Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
-Uncommitted Changes: No intended VS3-R1 changes remain after its verified commit. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. Full unit and PostgreSQL/Redis integration suites, full typecheck, changed-file formatting, focused lint, and whitespace checks pass. Repository-wide lint was not rerun; its historical project-service limitation remains archived.
+Uncommitted Changes: No intended VS3-R2 changes remain after its verified commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. Full unit and PostgreSQL/Redis integration suites, full typecheck, production builds, changed-file formatting, focused lint, and whitespace checks pass.
 Known Blockers: None. OPS-PR-01 remains an optional GitHub follow-up, not a product-delivery blocker.
-Important Context: Migration `0015_reliable_processing_dispatch.sql` adds the paid-analysis outbox and restricted automatic-refund operation. The API runs leased automatic dispatch, retains deterministic BullMQ records for deduplication, and handles terminal analysis retry exhaustion through the idempotent refund path. VS9 still owns complete worker-stage failure coverage and refund UI.
-Required Commands Before Continuing: Apply migration `0015` in each environment before running the updated API. Use `pnpm test:db-integration` for PostgreSQL/Redis integration coverage.
+Important Context: Migration `0016_close_vs3_reliability_gaps.sql` must be applied before the updated API starts. PostgreSQL now durably owns failure intents, execution leases, immutable terminal reasons, and verified Stripe receipt states. Dedicated BullMQ connections reconnect without producer offline buffering, and published jobs reconcile against retained Redis state.
+Required Commands Before Continuing: Apply migration `0016` in each environment. Begin VS4-T1 with TDD and retain execution-lease heartbeats in the analysis worker.
 Last Updated Date: 2026-07-29
-Last Updated Time: 12:15
+Last Updated Time: 13:33
 Last Updated By: Codex
 ```

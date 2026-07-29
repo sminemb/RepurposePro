@@ -9,7 +9,12 @@ import { VIDEO_ANALYSIS_QUEUE_NAME } from "@repurposepro/shared";
 import { type ConnectionOptions, QueueEvents } from "bullmq";
 import type Redis from "ioredis";
 
-import { ANALYSIS_RETRIES_EXHAUSTED, ProcessingFailureService } from "./processing-failure.service";
+import {
+  PROCESSING_EXECUTION_LEASE_REPOSITORY,
+  type ProcessingExecutionLeaseRepositoryContract,
+} from "./processing-execution-lease.repository";
+import { ProcessingFailureIntentService } from "./processing-failure-intent.service";
+import { ANALYSIS_RETRIES_EXHAUSTED } from "./processing-failure.service";
 
 export const ANALYSIS_QUEUE_EVENTS = Symbol("ANALYSIS_QUEUE_EVENTS");
 
@@ -18,7 +23,11 @@ export interface AnalysisQueueEventsClient {
   on(event: "error", listener: (error: Error) => void): AnalysisQueueEventsClient;
   on(
     event: "retries-exhausted",
-    listener: (args: { readonly jobId: string }, eventId: string) => void,
+    listener: (args: { readonly jobId: string }, eventId: string) => Promise<void> | void,
+  ): AnalysisQueueEventsClient;
+  on(
+    event: "active" | "progress",
+    listener: (args: { readonly jobId: string }, eventId: string) => Promise<void> | void,
   ): AnalysisQueueEventsClient;
   waitUntilReady(): Promise<unknown>;
 }
@@ -26,23 +35,38 @@ export interface AnalysisQueueEventsClient {
 export function createAnalysisQueueEventsClient(
   connection: Redis,
   prefix: string,
+  closeConnection: (connection: Redis) => Promise<void> = async () => undefined,
 ): AnalysisQueueEventsClient {
-  const blockingConnection = connection.duplicate({ maxRetriesPerRequest: null });
-  return new QueueEvents(VIDEO_ANALYSIS_QUEUE_NAME, {
-    connection: blockingConnection as unknown as ConnectionOptions,
+  const queueEvents = new QueueEvents(VIDEO_ANALYSIS_QUEUE_NAME, {
+    connection: connection as unknown as ConnectionOptions,
     lastEventId: "0-0",
     prefix,
   });
+  const client: AnalysisQueueEventsClient = {
+    close: async () => {
+      try {
+        await queueEvents.close();
+      } finally {
+        await closeConnection(connection);
+      }
+    },
+    on: (event, listener) => {
+      queueEvents.on(event, listener);
+      return client;
+    },
+    waitUntilReady: () => queueEvents.waitUntilReady(),
+  };
+  return client;
 }
 
 @Injectable()
 export class AnalysisQueueFailureListener implements OnModuleInit, OnModuleDestroy {
-  private readonly finalizingJobs = new Set<string>();
   private readonly logger = new Logger(AnalysisQueueFailureListener.name);
-  private readonly retryTimers = new Map<string, NodeJS.Timeout>();
 
   public constructor(
-    private readonly processingFailureService: ProcessingFailureService,
+    private readonly processingFailureIntentService: ProcessingFailureIntentService,
+    @Inject(PROCESSING_EXECUTION_LEASE_REPOSITORY)
+    private readonly executionLeaseRepository: ProcessingExecutionLeaseRepositoryContract,
     @Inject(ANALYSIS_QUEUE_EVENTS)
     private readonly queueEvents: AnalysisQueueEventsClient,
   ) {}
@@ -51,46 +75,50 @@ export class AnalysisQueueFailureListener implements OnModuleInit, OnModuleDestr
     this.queueEvents.on("error", () => {
       this.logger.error({ event: "analysis_queue_events_failed" });
     });
-    this.queueEvents.on("retries-exhausted", ({ jobId }, eventId) => {
-      this.finalizeFailure(jobId, eventId, 1);
+    this.queueEvents.on("retries-exhausted", async ({ jobId }, eventId) => {
+      await this.persistTerminalFailure(jobId, eventId);
+    });
+    this.queueEvents.on("active", async ({ jobId }, eventId) => {
+      await this.touchExecutionLease(jobId, eventId);
+    });
+    this.queueEvents.on("progress", async ({ jobId }, eventId) => {
+      await this.touchExecutionLease(jobId, eventId);
     });
     await this.queueEvents.waitUntilReady();
   }
 
   public async onModuleDestroy(): Promise<void> {
-    for (const timer of this.retryTimers.values()) {
-      clearTimeout(timer);
-    }
-    this.retryTimers.clear();
     await this.queueEvents.close();
   }
 
-  private finalizeFailure(jobId: string, eventId: string, attempt: number): void {
-    if (this.finalizingJobs.has(jobId) || this.retryTimers.has(jobId)) {
-      return;
-    }
+  private async persistTerminalFailure(jobId: string, eventId: string): Promise<void> {
+    const requestId = `queue-event:${eventId}`;
 
-    this.finalizingJobs.add(jobId);
-    void this.processingFailureService
-      .handleTerminalFailure(jobId, ANALYSIS_RETRIES_EXHAUSTED, `queue-event:${eventId}`)
-      .then(() => {
-        this.finalizingJobs.delete(jobId);
-      })
-      .catch(() => {
-        this.finalizingJobs.delete(jobId);
-        const delayMs = Math.min(2 ** Math.max(attempt - 1, 0) * 1_000, 300_000);
-        const timer = setTimeout(() => {
-          this.retryTimers.delete(jobId);
-          this.finalizeFailure(jobId, eventId, attempt + 1);
-        }, delayMs);
-        timer.unref();
-        this.retryTimers.set(jobId, timer);
-        this.logger.error({
-          attempt,
-          event: "processing_failure_retry_scheduled",
-          jobId,
-          requestId: `queue-event:${eventId}`,
-        });
+    try {
+      await this.processingFailureIntentService.recordTerminalFailure(
+        jobId,
+        ANALYSIS_RETRIES_EXHAUSTED,
+        requestId,
+      );
+    } catch {
+      this.logger.error({
+        event: "processing_failure_intent_persist_failed",
+        failureCode: ANALYSIS_RETRIES_EXHAUSTED,
+        jobId,
+        requestId,
       });
+    }
+  }
+
+  private async touchExecutionLease(jobId: string, eventId: string): Promise<void> {
+    try {
+      await this.executionLeaseRepository.touch(jobId, `queue-event:${eventId}`);
+    } catch {
+      this.logger.error({
+        event: "processing_execution_lease_update_failed",
+        jobId,
+        requestId: `queue-event:${eventId}`,
+      });
+    }
   }
 }

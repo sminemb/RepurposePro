@@ -25,11 +25,25 @@ export interface StripeWebhookEventReference {
   readonly eventType: string;
 }
 
+export type StripeWebhookReceiptStatus =
+  "failed" | "ignored" | "processed" | "processing" | "received";
+
+export type StripeWebhookFailureClassification =
+  | "STRIPE_CHECKOUT_EXPIRATION_FAILED"
+  | "STRIPE_CHECKOUT_RETRIEVAL_FAILED"
+  | "STRIPE_PURCHASE_CORRELATION_FAILED"
+  | "STRIPE_PURCHASE_PROCESSING_FAILED";
+
 export interface StripeWebhookRepositoryContract {
   expireSession(
     event: StripeWebhookEventReference & { readonly checkoutSessionId: string },
   ): Promise<void>;
   grantPurchase(purchase: StripeCreditPurchase): Promise<void>;
+  markFailed(
+    event: StripeWebhookEventReference,
+    classification: StripeWebhookFailureClassification,
+  ): Promise<void>;
+  receive(event: StripeWebhookEventReference): Promise<StripeWebhookReceiptStatus>;
   recordIgnored(event: StripeWebhookEventReference): Promise<void>;
 }
 
@@ -60,6 +74,34 @@ export class StripeWebhookRepository implements StripeWebhookRepositoryContract 
         purchase.paymentStatus,
         purchase.sessionStatus,
       ],
+    );
+  }
+
+  public async receive(event: StripeWebhookEventReference): Promise<StripeWebhookReceiptStatus> {
+    const result = await this.databaseService.database.pool.query<{ status: string }>(
+      "SELECT public.receive_stripe_webhook_event($1, $2) AS status",
+      [event.eventId, event.eventType],
+    );
+    const status = result.rows[0]?.status;
+
+    if (
+      result.rows.length !== 1 ||
+      !status ||
+      !["failed", "ignored", "processed", "processing", "received"].includes(status)
+    ) {
+      throw new Error("Stripe webhook receipt returned an invalid state.");
+    }
+
+    return status as StripeWebhookReceiptStatus;
+  }
+
+  public async markFailed(
+    event: StripeWebhookEventReference,
+    classification: StripeWebhookFailureClassification,
+  ): Promise<void> {
+    await this.databaseService.database.pool.query(
+      "SELECT public.mark_stripe_webhook_event_failed($1, $2, $3)",
+      [event.eventId, event.eventType, classification],
     );
   }
 

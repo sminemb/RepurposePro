@@ -6,7 +6,12 @@ import { PROCESSING_DATABASE } from "./scoped-database.provider";
 export const PROCESSING_FAILURE_REPOSITORY = Symbol("PROCESSING_FAILURE_REPOSITORY");
 
 export type ProcessingFailureOutcome =
-  "already_refunded" | "failed_no_refund" | "invalid_job_state" | "job_not_found" | "refunded";
+  | "already_refunded"
+  | "failed_no_refund"
+  | "invalid_job_state"
+  | "job_not_found"
+  | "refunded"
+  | "terminal_failure_conflict";
 
 export interface ProcessingFailureResult {
   readonly outcome: ProcessingFailureOutcome;
@@ -63,5 +68,6 @@ function isProcessingFailureOutcome(outcome: string): outcome is ProcessingFailu
     "invalid_job_state",
     "job_not_found",
     "refunded",
+    "terminal_failure_conflict",
   ].includes(outcome);
 }

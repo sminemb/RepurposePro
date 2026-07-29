@@ -88,6 +88,7 @@ describe("VS3 billing schema", () => {
     expect(stripePaymentStatusEnum.enumValues).toEqual(["pending", "paid", "failed", "refunded"]);
     expect(stripeWebhookEventStatusEnum.enumValues).toEqual([
       "received",
+      "processing",
       "processed",
       "failed",
       "ignored",

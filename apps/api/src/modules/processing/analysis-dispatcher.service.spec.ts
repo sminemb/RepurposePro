@@ -17,6 +17,8 @@ function dispatchRecord(overrides: Partial<AnalysisDispatchRecord> = {}): Analys
   return {
     attemptCount: 1,
     dispatchId,
+    dispatchStatus: "pending",
+    executionLeaseExpiresAt: null,
     jobId,
     jobStatus: "queued",
     leaseToken,
@@ -48,6 +50,7 @@ function setup(records: Array<AnalysisDispatchRecord | null>) {
     reschedule,
   };
   const queue: AnalysisQueueGateway = { enqueue, inspect };
+  const recordTerminalFailure = vi.fn().mockResolvedValue("persisted");
 
   return {
     claim,
@@ -56,11 +59,17 @@ function setup(records: Array<AnalysisDispatchRecord | null>) {
     isPublished,
     markPublished,
     reschedule,
-    service: new AnalysisDispatcherService(repository, queue, {
-      dispatcherId: "dispatcher-test",
-      intervalMs: 60_000,
-      maxBatchSize: 10,
-    }),
+    recordTerminalFailure,
+    service: new AnalysisDispatcherService(
+      repository,
+      queue,
+      {
+        dispatcherId: "dispatcher-test",
+        intervalMs: 60_000,
+        maxBatchSize: 10,
+      },
+      { recordTerminalFailure } as never,
+    ),
   };
 }
 
@@ -122,6 +131,7 @@ describe("AnalysisDispatcherService", () => {
         intervalMs: 60_000,
         maxBatchSize: 10,
       },
+      { recordTerminalFailure: shared.recordTerminalFailure } as never,
     );
 
     await Promise.all([
@@ -145,5 +155,67 @@ describe("AnalysisDispatcherService", () => {
     expect(inspect).toHaveBeenCalledWith({ jobId, projectId });
     expect(enqueue).not.toHaveBeenCalled();
     expect(markPublished).toHaveBeenCalledWith(dispatchId, leaseToken, jobId);
+  });
+
+  it("restores a missing published queued job with the deterministic database UUID", async () => {
+    const { enqueue, inspect, markPublished, service } = setup([
+      dispatchRecord({ dispatchStatus: "published" }),
+      null,
+    ]);
+
+    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+
+    expect(inspect).toHaveBeenCalledWith({ jobId, projectId });
+    expect(enqueue).toHaveBeenCalledOnce();
+    expect(enqueue).toHaveBeenCalledWith({ jobId, projectId });
+    expect(markPublished).toHaveBeenCalledWith(dispatchId, leaseToken, jobId);
+  });
+
+  it("does not duplicate an existing matching published queued job", async () => {
+    const { enqueue, inspect, service } = setup([
+      dispatchRecord({ dispatchStatus: "published" }),
+      null,
+    ]);
+    inspect.mockResolvedValue("waiting");
+
+    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("waits for a missing active job while its durable execution lease remains valid", async () => {
+    const { enqueue, recordTerminalFailure, service } = setup([
+      dispatchRecord({
+        dispatchStatus: "published",
+        executionLeaseExpiresAt: new Date(Date.now() + 60_000),
+        jobStatus: "active",
+      }),
+      null,
+    ]);
+
+    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(recordTerminalFailure).not.toHaveBeenCalled();
+  });
+
+  it("persists one terminal intent for a missing active job with an expired lease", async () => {
+    const { enqueue, recordTerminalFailure, service } = setup([
+      dispatchRecord({
+        dispatchStatus: "published",
+        executionLeaseExpiresAt: new Date(Date.now() - 1),
+        jobStatus: "active",
+      }),
+      null,
+    ]);
+
+    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(recordTerminalFailure).toHaveBeenCalledWith(
+      jobId,
+      "WORKER_EXECUTION_LEASE_EXPIRED",
+      "reconcile:reconcile",
+    );
   });
 });
