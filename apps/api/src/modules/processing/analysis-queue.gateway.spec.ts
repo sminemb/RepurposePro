@@ -14,7 +14,8 @@ describe("BullMqAnalysisQueueGateway", () => {
   it("publishes the IDs-only contract with the durable job ID and configured prefix", async () => {
     const add = vi.fn().mockResolvedValue({ id: jobId });
     const close = vi.fn().mockResolvedValue(undefined);
-    const createQueue = vi.fn<AnalysisQueueClientFactory>().mockReturnValue({ add, close });
+    const getJob = vi.fn().mockResolvedValue(undefined);
+    const createQueue = vi.fn<AnalysisQueueClientFactory>().mockReturnValue({ add, close, getJob });
     const connection = {} as Redis;
     const gateway = new BullMqAnalysisQueueGateway(connection, "isolated-prefix", createQueue);
 
@@ -23,7 +24,37 @@ describe("BullMqAnalysisQueueGateway", () => {
       connection,
       prefix: "isolated-prefix",
     });
-    expect(add).toHaveBeenCalledWith("analyze_video", { jobId, projectId }, { jobId });
+    expect(add).toHaveBeenCalledWith(
+      "analyze_video",
+      { jobId, projectId },
+      { jobId, removeOnComplete: false, removeOnFail: false },
+    );
+  });
+
+  it("returns an existing active job without blindly adding it again", async () => {
+    const add = vi.fn();
+    const getState = vi.fn().mockResolvedValue("active");
+    const getJob = vi.fn().mockResolvedValue({
+      data: { jobId, projectId },
+      getState,
+      id: jobId,
+      name: "analyze_video",
+    });
+    const gateway = new BullMqAnalysisQueueGateway(
+      {} as Redis,
+      "test-prefix",
+      vi.fn().mockReturnValue({
+        add,
+        close: vi.fn().mockResolvedValue(undefined),
+        getJob,
+      }),
+    );
+
+    await expect(gateway.enqueue({ jobId, projectId })).resolves.toBe(jobId);
+    await expect(gateway.inspect({ jobId, projectId })).resolves.toBe("active");
+
+    expect(add).not.toHaveBeenCalled();
+    expect(getState).toHaveBeenCalledTimes(2);
   });
 
   it.each([{ id: undefined }, { id: "different-job-id" }])(
@@ -32,6 +63,7 @@ describe("BullMqAnalysisQueueGateway", () => {
       const client: AnalysisQueueClient = {
         add: vi.fn().mockResolvedValue(queueJob),
         close: vi.fn().mockResolvedValue(undefined),
+        getJob: vi.fn().mockResolvedValue(undefined),
       };
       const gateway = new BullMqAnalysisQueueGateway(
         {} as Redis,
@@ -47,7 +79,11 @@ describe("BullMqAnalysisQueueGateway", () => {
 
   it("closes the queue during application shutdown", async () => {
     const close = vi.fn().mockResolvedValue(undefined);
-    const client: AnalysisQueueClient = { add: vi.fn(), close };
+    const client: AnalysisQueueClient = {
+      add: vi.fn(),
+      close,
+      getJob: vi.fn().mockResolvedValue(undefined),
+    };
     const gateway = new BullMqAnalysisQueueGateway(
       {} as Redis,
       "test-prefix",

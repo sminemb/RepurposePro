@@ -294,6 +294,33 @@ Projects may point only to a job for the same project; deleting that job clears 
 
 ---
 
+## 7.1 `processing_job_dispatches`
+
+Durable outbox state for paid analysis publication.
+
+| Column | Type | Rules |
+|---|---|---|
+| `id` | uuid | PK |
+| `processing_job_id` | uuid | Unique FK to `processing_jobs` |
+| `status` | enum | `pending` or `published` |
+| `attempt_count` | integer | Non-negative |
+| `next_attempt_at` | timestamptz | Due time for automatic retry |
+| `lease_token` | uuid nullable | Claim identity |
+| `lease_owner` | text nullable | Dispatcher identity |
+| `lease_expires_at` | timestamptz nullable | Crash-recovery boundary |
+| `bullmq_job_id` | text nullable | Deterministic processing-job UUID when published |
+| `last_failure_stage` | text nullable | Sanitized internal stage |
+| `published_at` | timestamptz nullable | Required for published rows |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
+
+The paid-start transaction creates this row with the processing job and deduction. Dispatchers use
+leased `SKIP LOCKED` claims. A claim is publishable only for queued or active analysis jobs with a
+positive charge and one exact immutable deduction. The table is inaccessible to generic runtime,
+Checkout, and webhook roles; the processing role can use only restricted dispatch functions.
+
+---
+
 # 8. `transcripts`
 
 Stores one transcript per uploaded source video.
@@ -861,15 +888,17 @@ One database transaction should:
 ```text
 lock/check user credit state
 recalculate required credits
-insert deduction ledger row
 create processing job
+insert deduction ledger row
+create pending processing dispatch
 update project status
 commit
 ```
 
-Then enqueue after commit.
-
-If queueing fails permanently, use recovery logic to refund or requeue safely.
+After commit, a leased background dispatcher publishes the IDs-only BullMQ job and atomically marks
+the outbox row published. Pending state survives API or Redis failure and retries automatically.
+BullMQ records remain retained so a crash between queue acceptance and publication marking cannot
+reuse the deterministic job ID for duplicate executable work.
 
 ---
 
@@ -895,13 +924,17 @@ One transaction should:
 
 ```text
 lock processing job
+lock and verify the owning current project
 verify refund eligibility
-verify not already refunded
-insert refund ledger row
-mark refund_completed_at
+verify positive charge and exact immutable deduction
+insert exactly one matching refund ledger row
+mark refund_completed_at and refunded status
 update project/job status
 commit
 ```
+
+Only the scoped processing role may call this `SECURITY DEFINER` operation. Generic runtime,
+Checkout, webhook, and `PUBLIC` access is revoked.
 
 ---
 

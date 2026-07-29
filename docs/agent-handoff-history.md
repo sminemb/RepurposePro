@@ -1087,6 +1087,7 @@ Last Updated Date: 2026-07-29
 Last Updated Time: 09:45
 Last Updated By: Codex
 ```
+
 ### OPS-PR-01 Retry handoff - 2026-07-29 09:53 Asia/Manila
 
 ```text
@@ -1154,5 +1155,23 @@ Important Context: Remote review refs remain available, but no PR exists. Histor
 Required Commands Before Continuing: Begin VS4-T1 with TDD. Use pnpm test:db-integration rather than its Vitest config directly; run pnpm dev for the complete local stack.
 Last Updated Date: 2026-07-29
 Last Updated Time: 10:20
+Last Updated By: Codex
+```
+
+### VS3-R1 Completion Handoff - 2026-07-29 12:15 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Current Status: NOT_STARTED
+Last Completed Task: VS3-R1 - Fix durable analysis dispatch, automatic failure refunds, and Stripe webhook envelope
+Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
+Uncommitted Changes: No intended VS3-R1 changes remain after its verified commit. Local .env and .env.database remain ignored and must never be committed.
+Known Failing Tests: None. Full unit and PostgreSQL/Redis integration suites, full typecheck, changed-file formatting, focused lint, and whitespace checks pass. Repository-wide lint was not rerun; its historical project-service limitation remains archived.
+Known Blockers: None for VS4 work. OPS-PR-01 remains optional GitHub follow-up only.
+Important Context: Migration 0015_reliable_processing_dispatch.sql must be applied before the updated API starts. Paid analysis now uses a leased PostgreSQL outbox, permanently retained deterministic BullMQ job IDs, and automatic retry. Terminal analysis retry exhaustion calls the restricted exact-once credit refund operation. VS9 still owns remaining worker failure wiring and refund UI.
+Required Commands Before Continuing: Apply migration 0015 in each environment. Begin VS4-T1 with TDD and use pnpm test:db-integration for PostgreSQL/Redis integration coverage.
+Last Updated Date: 2026-07-29
+Last Updated Time: 12:15
 Last Updated By: Codex
 ```

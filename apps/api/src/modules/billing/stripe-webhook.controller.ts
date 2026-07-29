@@ -16,7 +16,7 @@ export class StripeWebhookController {
   public async webhook(
     @Req() request: StripeWebhookRequest,
     @Headers("stripe-signature") signature: string | undefined,
-  ): Promise<{ readonly received: true }> {
+  ): Promise<{ readonly data: { readonly received: true } }> {
     if (!Buffer.isBuffer(request.rawBody) || !signature) {
       throw this.invalidSignature(request);
     }
@@ -31,7 +31,7 @@ export class StripeWebhookController {
       throw error;
     }
 
-    return { received: true };
+    return { data: { received: true } };
   }
 
   private invalidSignature(request: StripeWebhookRequest): BadRequestException {

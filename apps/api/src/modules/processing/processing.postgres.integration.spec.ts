@@ -13,6 +13,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../infrastructure/database.service";
 import { RedisService } from "../infrastructure/redis.service";
+import { ANALYSIS_DISPATCHER_OPTIONS } from "./analysis-dispatcher.service";
+import { ANALYSIS_QUEUE_EVENTS } from "./analysis-queue-failure.listener";
 import { ANALYSIS_RATE_LIMIT_CLIENT } from "./analysis-rate-limit.guard";
 import { ANALYSIS_QUEUE_GATEWAY } from "./analysis-queue.gateway";
 import { ProcessingModule } from "./processing.module";
@@ -51,6 +53,8 @@ describeIntegration("paid processing start API", () => {
   );
   const enqueue = vi.fn(async (payload: VideoAnalysisJobPayload) => payload.jobId);
   let failNextQueueMarker = false;
+  let terminalFailureHandler:
+    ((args: { readonly jobId: string }, eventId: string) => void) | undefined;
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -99,7 +103,10 @@ describeIntegration("paid processing start API", () => {
     );
     await migrationClient.pool.query(
       `INSERT INTO projects (id, user_id, name, output_type, status)
-       VALUES ($1, $2, $3, $4, $5), ($6, $2, $7, $4, $5)`,
+       VALUES
+         ($1, $2, $3, $4, $5),
+         ($6, $2, $7, $4, $5),
+         ($8, $2, $9, $4, $5)`,
       [
         "00000000-0000-4000-8000-000000000601",
         "processing-api-user-a",
@@ -108,6 +115,8 @@ describeIntegration("paid processing start API", () => {
         "uploaded",
         "00000000-0000-4000-8000-000000000603",
         "Processing API marker recovery project",
+        "00000000-0000-4000-8000-000000000605",
+        "Processing API automatic refund project",
       ],
     );
     await migrationClient.pool.query(
@@ -116,7 +125,8 @@ describeIntegration("paid processing start API", () => {
         duration_seconds, width, height, has_audio, expires_at
       ) VALUES
         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now() + interval '7 days'),
-        ($11, $12, $13, $14, $5, $6, $15, $8, $9, $10, now() + interval '7 days')`,
+        ($11, $12, $13, $14, $5, $6, $15, $8, $9, $10, now() + interval '7 days'),
+        ($16, $17, $18, $19, $5, $6, $20, $8, $9, $10, now() + interval '7 days')`,
       [
         "00000000-0000-4000-8000-000000000602",
         "00000000-0000-4000-8000-000000000601",
@@ -133,6 +143,11 @@ describeIntegration("paid processing start API", () => {
         "marker-recovery.mp4",
         "/private/marker-recovery.mp4",
         "300.001",
+        "00000000-0000-4000-8000-000000000606",
+        "00000000-0000-4000-8000-000000000605",
+        "automatic-refund.mp4",
+        "/private/automatic-refund.mp4",
+        "120.001",
       ],
     );
     await migrationClient.pool.query(
@@ -173,7 +188,7 @@ describeIntegration("paid processing start API", () => {
         database: {
           pool: {
             query: async (text: string, values: unknown[]) => {
-              if (failNextQueueMarker && text.includes("mark_paid_analysis_enqueued")) {
+              if (failNextQueueMarker && text.includes("mark_analysis_dispatch_published")) {
                 failNextQueueMarker = false;
                 throw new Error("simulated marker persistence failure");
               }
@@ -188,7 +203,34 @@ describeIntegration("paid processing start API", () => {
       .overrideProvider(ANALYSIS_RATE_LIMIT_CLIENT)
       .useValue({ protect: vi.fn().mockResolvedValue({ isDenied: () => false }) })
       .overrideProvider(ANALYSIS_QUEUE_GATEWAY)
-      .useValue({ enqueue })
+      .useValue({ enqueue, inspect: vi.fn().mockResolvedValue(null) })
+      .overrideProvider(ANALYSIS_QUEUE_EVENTS)
+      .useValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        on: vi.fn(
+          (
+            event: "error" | "retries-exhausted",
+            listener:
+              | ((error: Error) => void)
+              | ((args: { readonly jobId: string }, eventId: string) => void),
+          ) => {
+            if (event === "retries-exhausted") {
+              terminalFailureHandler = listener as (
+                args: { readonly jobId: string },
+                eventId: string,
+              ) => void;
+            }
+            return undefined;
+          },
+        ),
+        waitUntilReady: vi.fn().mockResolvedValue(undefined),
+      })
+      .overrideProvider(ANALYSIS_DISPATCHER_OPTIONS)
+      .useValue({
+        dispatcherId: "processing-integration-dispatcher",
+        intervalMs: 25,
+        maxBatchSize: 10,
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -208,7 +250,7 @@ describeIntegration("paid processing start API", () => {
     await closeDatabaseClient(adminClient);
   });
 
-  it("recovers the same durable job after publication fails without a second deduction", async () => {
+  it("automatically dispatches the same durable job after publication fails without another request", async () => {
     enqueue.mockRejectedValueOnce(new Error("private redis failure"));
     const first = await request("/api/v1/projects/00000000-0000-4000-8000-000000000601/analyze", {
       body: JSON.stringify({ confirmed: true }),
@@ -219,15 +261,19 @@ describeIntegration("paid processing start API", () => {
     const durableJob = await migrationClient.pool.query<{
       bullmqJobId: string | null;
       creditsCharged: number;
+      dispatchStatus: string;
       id: string;
     }>(
       `SELECT
-        id,
-        bullmq_job_id AS "bullmqJobId",
-        credits_charged AS "creditsCharged"
-       FROM processing_jobs
-       WHERE project_id = $1
-         AND type = 'analyze_video'`,
+        job.id,
+        job.bullmq_job_id AS "bullmqJobId",
+        job.credits_charged AS "creditsCharged",
+        dispatch.status::text AS "dispatchStatus"
+       FROM processing_jobs AS job
+       JOIN processing_job_dispatches AS dispatch
+         ON dispatch.processing_job_id = job.id
+       WHERE job.project_id = $1
+         AND job.type = 'analyze_video'`,
       ["00000000-0000-4000-8000-000000000601"],
     );
     const [storedJob] = durableJob.rows;
@@ -237,33 +283,21 @@ describeIntegration("paid processing start API", () => {
       error: {
         code: "QUEUE_UNAVAILABLE",
         details: null,
-        message: "Your processing job is saved, but the queue is unavailable. Retry is safe.",
+        message:
+          "Your processing job is saved and will retry automatically when the queue recovers.",
       },
     });
-    expect(storedJob).toMatchObject({ bullmqJobId: null, creditsCharged: 11 });
-
-    const retry = await request("/api/v1/projects/00000000-0000-4000-8000-000000000601/analyze", {
-      body: JSON.stringify({ confirmed: true }),
-      headers: { "content-type": "application/json", cookie: "session=processing-a" },
-      method: "POST",
+    expect(storedJob).toMatchObject({
+      bullmqJobId: null,
+      creditsCharged: 11,
+      dispatchStatus: "pending",
     });
 
-    const retryBody = (await retry.json()) as {
-      data: { creditsCharged: number; jobId: string; projectId: string; status: string };
-    };
-
-    expect(retry.status).toBe(202);
     if (!storedJob) {
       throw new Error("The failed enqueue must leave one durable processing job.");
     }
-    expect(retryBody).toEqual({
-      data: {
-        creditsCharged: 11,
-        jobId: storedJob.id,
-        projectId: "00000000-0000-4000-8000-000000000601",
-        status: "queued",
-      },
-    });
+
+    await waitForDispatchPublished(storedJob.id);
     expect(enqueue).toHaveBeenNthCalledWith(1, {
       jobId: storedJob.id,
       projectId: "00000000-0000-4000-8000-000000000601",
@@ -377,8 +411,7 @@ describeIntegration("paid processing start API", () => {
     expect(durable.rows[0]?.bullmqJobId).toBeNull();
     expect(typeof durable.rows[0]?.id).toBe("string");
 
-    const retry = await request(path, init);
-    expect(retry.status).toBe(202);
+    await waitForDispatchPublished(durable.rows[0]!.id);
     expect(enqueue).toHaveBeenLastCalledWith({
       jobId: durable.rows[0]!.id,
       projectId: "00000000-0000-4000-8000-000000000603",
@@ -399,9 +432,110 @@ describeIntegration("paid processing start API", () => {
     });
   });
 
+  it("automatically refunds an eligible terminal queue failure exactly once", async () => {
+    const response = await request(
+      "/api/v1/projects/00000000-0000-4000-8000-000000000605/analyze",
+      {
+        body: JSON.stringify({ confirmed: true }),
+        headers: { "content-type": "application/json", cookie: "session=processing-a" },
+        method: "POST",
+      },
+    );
+    const body = (await response.json()) as { data?: { jobId: string } };
+
+    expect([202, 503]).toContain(response.status);
+    if (!terminalFailureHandler) {
+      throw new Error("Terminal queue failure listener was not registered.");
+    }
+
+    const stored = await migrationClient.pool.query<{ jobId: string }>(
+      `SELECT id AS "jobId"
+       FROM processing_jobs
+       WHERE project_id = $1 AND type = 'analyze_video'`,
+      ["00000000-0000-4000-8000-000000000605"],
+    );
+    const terminalJobId = body.data?.jobId ?? stored.rows[0]?.jobId;
+    if (!terminalJobId) {
+      throw new Error("Terminal failure test did not create one durable job.");
+    }
+
+    await waitForDispatchPublished(terminalJobId);
+    terminalFailureHandler({ jobId: terminalJobId }, "terminal-event-1");
+    terminalFailureHandler({ jobId: terminalJobId }, "terminal-event-retry");
+    await waitForJobStatus(terminalJobId, "refunded");
+
+    await expect(
+      migrationClient.pool.query<{
+        amount: number;
+        count: string;
+        jobStatus: string;
+        projectStatus: string;
+      }>(
+        `SELECT
+          job.status::text AS "jobStatus",
+          project.status::text AS "projectStatus",
+          COUNT(*) FILTER (WHERE ledger.type = 'refund')::text AS count,
+          COALESCE(SUM(ledger.amount) FILTER (WHERE ledger.type = 'refund'), 0)::integer AS amount
+         FROM processing_jobs AS job
+         JOIN projects AS project ON project.id = job.project_id
+         LEFT JOIN credit_ledger AS ledger ON ledger.processing_job_id = job.id
+         WHERE job.id = $1
+         GROUP BY job.status, project.status`,
+        [terminalJobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          amount: 3,
+          count: "1",
+          jobStatus: "refunded",
+          projectStatus: "refunded",
+        },
+      ],
+    });
+  });
+
   function request(path: string, init?: RequestInit): Promise<Response> {
     const server = app.getHttpServer() as Server;
     const address = server.address() as AddressInfo;
     return fetch(`http://127.0.0.1:${address.port}${path}`, init);
+  }
+
+  async function waitForDispatchPublished(jobId: string): Promise<void> {
+    const deadline = Date.now() + 3_000;
+
+    while (Date.now() < deadline) {
+      const result = await migrationClient.pool.query<{ status: string }>(
+        `SELECT status::text
+         FROM processing_job_dispatches
+         WHERE processing_job_id = $1`,
+        [jobId],
+      );
+      if (result.rows[0]?.status === "published") {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    throw new Error("Background dispatcher did not publish the pending analysis job.");
+  }
+
+  async function waitForJobStatus(jobId: string, expectedStatus: string): Promise<void> {
+    const deadline = Date.now() + 3_000;
+
+    while (Date.now() < deadline) {
+      const result = await migrationClient.pool.query<{ status: string }>(
+        `SELECT status::text FROM processing_jobs WHERE id = $1`,
+        [jobId],
+      );
+      if (result.rows[0]?.status === expectedStatus) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    throw new Error(`Processing job ${jobId} did not reach ${expectedStatus}.`);
   }
 });

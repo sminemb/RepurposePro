@@ -9,17 +9,40 @@ import type Redis from "ioredis";
 
 export const ANALYSIS_QUEUE_GATEWAY = Symbol("ANALYSIS_QUEUE_GATEWAY");
 
+export type AnalysisQueueJobState =
+  | "active"
+  | "completed"
+  | "delayed"
+  | "failed"
+  | "paused"
+  | "prioritized"
+  | "waiting"
+  | "waiting-children";
+
 export interface AnalysisQueueGateway {
   enqueue(payload: VideoAnalysisJobPayload): Promise<string>;
+  inspect(payload: VideoAnalysisJobPayload): Promise<AnalysisQueueJobState | null>;
+}
+
+export interface AnalysisQueueJob {
+  readonly data: VideoAnalysisJobPayload;
+  readonly id?: string;
+  readonly name: string;
+  getState(): Promise<string>;
 }
 
 export interface AnalysisQueueClient {
   add(
     name: typeof ANALYZE_VIDEO_JOB_NAME,
     payload: VideoAnalysisJobPayload,
-    options: { readonly jobId: string },
+    options: {
+      readonly jobId: string;
+      readonly removeOnComplete: false;
+      readonly removeOnFail: false;
+    },
   ): Promise<{ readonly id?: string }>;
   close(): Promise<void>;
+  getJob(jobId: string): Promise<AnalysisQueueJob | undefined>;
 }
 
 interface AnalysisQueueOptions {
@@ -42,6 +65,7 @@ const createAnalysisQueueClient: AnalysisQueueClientFactory = (name, options) =>
   return {
     add: (jobName, payload, jobOptions) => queue.add(jobName, payload, jobOptions),
     close: () => queue.close(),
+    getJob: (jobId) => queue.getJob(jobId),
   };
 };
 
@@ -57,7 +81,15 @@ export class BullMqAnalysisQueueGateway implements AnalysisQueueGateway, OnModul
   }
 
   public async enqueue(payload: VideoAnalysisJobPayload): Promise<string> {
-    const job = await this.queue.add(ANALYZE_VIDEO_JOB_NAME, payload, { jobId: payload.jobId });
+    if ((await this.inspect(payload)) !== null) {
+      return payload.jobId;
+    }
+
+    const job = await this.queue.add(ANALYZE_VIDEO_JOB_NAME, payload, {
+      jobId: payload.jobId,
+      removeOnComplete: false,
+      removeOnFail: false,
+    });
 
     if (job.id !== payload.jobId) {
       throw new Error("BullMQ returned an unexpected job ID.");
@@ -66,7 +98,44 @@ export class BullMqAnalysisQueueGateway implements AnalysisQueueGateway, OnModul
     return job.id;
   }
 
+  public async inspect(payload: VideoAnalysisJobPayload): Promise<AnalysisQueueJobState | null> {
+    const job = await this.queue.getJob(payload.jobId);
+
+    if (!job) {
+      return null;
+    }
+
+    if (
+      job.id !== payload.jobId ||
+      job.name !== ANALYZE_VIDEO_JOB_NAME ||
+      job.data.jobId !== payload.jobId ||
+      job.data.projectId !== payload.projectId
+    ) {
+      throw new Error("BullMQ job identity does not match the durable dispatch.");
+    }
+
+    const state = await job.getState();
+    if (!isAnalysisQueueJobState(state)) {
+      throw new Error("BullMQ returned an unsupported job state.");
+    }
+
+    return state;
+  }
+
   public async onModuleDestroy(): Promise<void> {
     await this.queue.close();
   }
+}
+
+function isAnalysisQueueJobState(state: string): state is AnalysisQueueJobState {
+  return [
+    "active",
+    "completed",
+    "delayed",
+    "failed",
+    "paused",
+    "prioritized",
+    "waiting",
+    "waiting-children",
+  ].includes(state);
 }

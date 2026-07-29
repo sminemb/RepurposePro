@@ -15,7 +15,7 @@ describe("StripeWebhookController.webhook", () => {
     const controller = new StripeWebhookController({ handle } as unknown as StripeWebhookService);
 
     await expect(controller.webhook({ rawBody }, "signature_test")).resolves.toEqual({
-      received: true,
+      data: { received: true },
     });
     expect(handle).toHaveBeenCalledWith(rawBody, "signature_test");
   });

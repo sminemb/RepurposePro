@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { type ProcessingJobStatus, type ProcessingStartResult } from "@repurposepro/shared";
 
 import {
@@ -6,7 +6,7 @@ import {
   type ProcessingStartRecord,
   type ProcessingStartRepositoryContract,
 } from "./processing-start.repository";
-import { ANALYSIS_QUEUE_GATEWAY, type AnalysisQueueGateway } from "./analysis-queue.gateway";
+import { AnalysisDispatcherService } from "./analysis-dispatcher.service";
 
 type ProcessingStartErrorCode =
   | "BILLING_DEDUCTION_FAILED"
@@ -29,13 +29,10 @@ export class ProcessingStartError extends Error {
 
 @Injectable()
 export class ProcessingStartService {
-  private readonly logger = new Logger(ProcessingStartService.name);
-
   public constructor(
     @Inject(PROCESSING_START_REPOSITORY)
     private readonly processingStartRepository: ProcessingStartRepositoryContract,
-    @Inject(ANALYSIS_QUEUE_GATEWAY)
-    private readonly analysisQueueGateway: AnalysisQueueGateway,
+    private readonly analysisDispatcher: AnalysisDispatcherService,
   ) {}
 
   public async start(
@@ -59,7 +56,18 @@ export class ProcessingStartService {
       case "created":
       case "existing": {
         const result = this.toResult(record);
-        await this.enqueueAndMark(userId, result, requestId, record.outcome === "existing");
+        let published: boolean;
+
+        try {
+          published = await this.analysisDispatcher.dispatchJob(result.jobId, requestId);
+        } catch {
+          return this.queueUnavailable();
+        }
+
+        if (!published) {
+          return this.queueUnavailable();
+        }
+
         return result;
       }
       case "project_not_found":
@@ -85,61 +93,6 @@ export class ProcessingStartService {
       default:
         return this.unavailable();
     }
-  }
-
-  private async enqueueAndMark(
-    userId: string,
-    result: ProcessingStartResult,
-    requestId: string,
-    recovery: boolean,
-  ): Promise<void> {
-    let bullmqJobId: string;
-
-    try {
-      bullmqJobId = await this.analysisQueueGateway.enqueue({
-        jobId: result.jobId,
-        projectId: result.projectId,
-      });
-    } catch {
-      this.logEnqueueFailure(result, requestId, recovery, "queue_publish");
-      return this.queueUnavailable();
-    }
-
-    try {
-      await this.processingStartRepository.markEnqueued(
-        userId,
-        result.projectId,
-        result.jobId,
-        bullmqJobId,
-      );
-    } catch {
-      this.logEnqueueFailure(result, requestId, recovery, "queue_reference_persist");
-      return this.queueUnavailable();
-    }
-
-    this.logger.log({
-      event: "analysis_job_enqueued",
-      jobId: result.jobId,
-      projectId: result.projectId,
-      recovery,
-      requestId,
-    });
-  }
-
-  private logEnqueueFailure(
-    result: ProcessingStartResult,
-    requestId: string,
-    recovery: boolean,
-    failureStage: "queue_publish" | "queue_reference_persist",
-  ): void {
-    this.logger.error({
-      event: "analysis_job_enqueue_failed",
-      failureStage,
-      jobId: result.jobId,
-      projectId: result.projectId,
-      recovery,
-      requestId,
-    });
   }
 
   private toResult(record: ProcessingStartRecord): ProcessingStartResult {
@@ -172,7 +125,7 @@ export class ProcessingStartService {
     throw new ProcessingStartError(
       "QUEUE_UNAVAILABLE",
       503,
-      "Your processing job is saved, but the queue is unavailable. Retry is safe.",
+      "Your processing job is saved and will retry automatically when the queue recovers.",
     );
   }
 }

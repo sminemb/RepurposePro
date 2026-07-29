@@ -67,6 +67,11 @@ export const processingJobStepEnum = pgEnum("processing_step", [
   "failed",
 ]);
 
+export const processingDispatchStatusEnum = pgEnum("processing_dispatch_status", [
+  "pending",
+  "published",
+]);
+
 export const ledgerTypeEnum = pgEnum("ledger_type", [
   "purchase",
   "processing_deduction",
@@ -273,6 +278,59 @@ export const processingJobs = pgTable(
     ),
     check("processing_jobs_credits_charged_check", sql`${table.creditsCharged} >= 0`),
     check("processing_jobs_attempt_count_check", sql`${table.attemptCount} >= 0`),
+  ],
+);
+
+export const processingJobDispatches = pgTable(
+  "processing_job_dispatches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    processingJobId: uuid("processing_job_id")
+      .notNull()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    status: processingDispatchStatusEnum("status").default("pending").notNull(),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow().notNull(),
+    leaseToken: uuid("lease_token"),
+    leaseOwner: text("lease_owner"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    bullmqJobId: text("bullmq_job_id"),
+    lastFailureStage: text("last_failure_stage"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("processing_job_dispatches_processing_job_id_unique").on(table.processingJobId),
+    index("processing_job_dispatches_pending_idx")
+      .on(table.status, table.nextAttemptAt)
+      .where(sql`${table.status} = 'pending'`),
+    check("processing_job_dispatches_attempt_count_check", sql`${table.attemptCount} >= 0`),
+    check(
+      "processing_job_dispatches_lease_check",
+      sql`(
+        (${table.leaseToken} IS NULL AND ${table.leaseOwner} IS NULL AND ${table.leaseExpiresAt} IS NULL)
+        OR (
+          ${table.leaseToken} IS NOT NULL
+          AND ${table.leaseOwner} IS NOT NULL
+          AND ${table.leaseExpiresAt} IS NOT NULL
+        )
+      )`,
+    ),
+    check(
+      "processing_job_dispatches_published_check",
+      sql`(
+        (${table.status} = 'pending' AND ${table.publishedAt} IS NULL)
+        OR (
+          ${table.status} = 'published'
+          AND ${table.publishedAt} IS NOT NULL
+          AND ${table.bullmqJobId} IS NOT NULL
+        )
+      )`,
+    ),
   ],
 );
 

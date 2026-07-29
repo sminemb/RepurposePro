@@ -83,7 +83,7 @@ describe("ProcessingController", () => {
       "QUEUE_UNAVAILABLE",
       503,
       ServiceUnavailableException,
-      "Your processing job is saved, but the queue is unavailable. Retry is safe.",
+      "Your processing job is saved and will retry automatically when the queue recovers.",
     ],
   ])("maps %s to the standard safe envelope", async (code, statusCode, exception, message) => {
     const controller = new ProcessingController(

@@ -643,3 +643,51 @@ Record decisions such as:
 - Decision: preserve OPS-PR-01 evidence as append-only history, but remove it as current VS4 delivery state.
 - Current impact: GitHub connector `403` and invalid local `gh` token prevent optional PR creation only; they do not block VS4-T1 implementation.
 - Status: COMPLETED. Live tracker now returns to `VS4-T1` with no current product-delivery blocker.
+
+### VS3-R1 Started - 2026-07-29 11:25 Asia/Manila
+
+- Reopened VS3 for three verified defects: paid queue orphaning, absent production automatic refund
+  orchestration, and the unwrapped Stripe webhook response.
+- Read the required project/domain documents and current BullMQ/PostgreSQL guidance before
+  implementation.
+- Added RED regression coverage before production code.
+
+### VS3-R1 RED Evidence - 2026-07-29 11:31 Asia/Manila
+
+- Focused tests failed because durable dispatch and refund modules did not exist and the webhook
+  controller returned the old envelope.
+- A later adversarial RED test proved finite BullMQ retention could eventually permit deterministic
+  ID reuse.
+- A PostgreSQL RED test proved the refund operation could refund a job no longer referenced as the
+  owning project's current job.
+
+### VS3-R1 Implementation - 2026-07-29 11:47 Asia/Manila
+
+- Added migration `0015_reliable_processing_dispatch.sql` with one transactional outbox row per
+  paid analysis job, leased `SKIP LOCKED` claims, backfill validation, deterministic publication
+  marking, centralized refund policy, and one restricted atomic refund operation.
+- Revoked old direct queue-marker capability and granted only required dispatch/refund functions to
+  `repurposepro_processing`.
+- Added automatic API lifecycle dispatch, BullMQ identity inspection, retained completed/failed
+  records, terminal retry-exhaustion listening, and safe structured logging.
+- Updated Stripe webhook success to the stable data envelope.
+
+### VS3-R1 Verification - 2026-07-29 12:15 Asia/Manila
+
+- PASS: `pnpm test` — 61 files passed, 5 skipped; 303 tests passed, 31 skipped.
+- PASS: `pnpm test:db-integration` — 5 files and 31 live PostgreSQL/Redis tests passed.
+- PASS: `pnpm typecheck`.
+- PASS: changed-file Prettier check after formatting.
+- PASS: changed-TypeScript ESLint. The first all-file run found one unnecessary assertion; after
+  removal, an isolated rerun passed. A concurrent rerun timed out without diagnostics and was
+  superseded by the successful isolated run.
+- PASS: `git diff --check`.
+- Decision: retain completed and failed BullMQ analysis jobs so a database outage cannot outlive a
+  finite deduplication window and permit duplicate execution.
+- Decision: require the locked project ownership/current-job link and exact immutable
+  deduction/refund rows before returning an idempotent refund outcome.
+- Decision: terminal-event finalization retries transient database failures indefinitely with
+  capped backoff; QueueEvents startup replay remains the process-crash fallback.
+- Known limitation: VS9 must connect the same refund operation to every later worker-stage terminal
+  failure and add complete refund UI.
+- Status: COMPLETED.

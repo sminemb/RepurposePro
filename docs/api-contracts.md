@@ -632,26 +632,30 @@ The backend must first complete this PostgreSQL transaction:
 3. Check balance.
 4. Create one database-queued processing job.
 5. Deduct credits and write an immutable ledger row.
-6. Set the project status to `queued` and its `current_job_id`.
-7. Commit all changes in one transaction.
+6. Create one pending analysis-dispatch record for the job.
+7. Set the project status to `queued` and its `current_job_id`.
+8. Commit all changes in one transaction.
 
 Never deduct credits in the worker.
 
-After the transaction commits, the API must:
+After the transaction commits, the dispatcher must:
 
-1. Publish `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`.
-2. Use the durable PostgreSQL processing-job UUID as the BullMQ `jobId`.
-3. Persist the returned queue ID to that matching owned `analyze_video` row.
-4. Return HTTP 202 only after publication and queue-reference persistence succeed.
+1. Claim a due pending dispatch with a database lease and `SKIP LOCKED`.
+2. Publish `analyze_video` to `video-analysis-queue` with only `{ jobId, projectId }`.
+3. Use the durable PostgreSQL processing-job UUID as the BullMQ `jobId`.
+4. Retain completed and failed BullMQ records so the deterministic ID cannot be reused.
+5. Atomically mark the dispatch published and persist the queue ID on the matching job.
+6. Retry a pending dispatch automatically after startup, publication, or marker failure.
 
-When a retry finds the owned project's current `analyze_video` job is `queued` or `active`, it
-republishes that same durable UUID and returns the stored job with its original `creditsCharged`.
-BullMQ's deterministic job ID prevents a second queue record, while the PostgreSQL operation
-prevents a second deduction. A current job of any other type is not reusable by this endpoint.
+Multiple dispatchers may run concurrently, but only one may hold a dispatch lease. A retry after
+BullMQ accepted work but before the PostgreSQL marker committed inspects and reuses the retained
+job with the same deterministic UUID. Active database jobs are inspected, never blindly
+republished. Existing queued or active jobs are recoverable only when they have a positive
+`creditsCharged` value and one exact matching immutable deduction.
 
 If publication or queue-reference persistence fails after the database commit, the API returns
-`QUEUE_UNAVAILABLE`. The durable job and financial transaction remain committed; the user may
-safely retry, and the API must not refund or deduct again during this recovery path.
+`QUEUE_UNAVAILABLE`. The durable job, deduction, and pending dispatch remain committed, and the
+background dispatcher retries without another HTTP request or credit deduction.
 
 ### Request
 
@@ -686,7 +690,7 @@ safely retry, and the API must not refund or deduct again during this recovery p
 | 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three analysis starts in one minute. |
 | 503 | `BILLING_DEDUCTION_FAILED` | The atomic database operation returned an unexpected or unavailable result. |
 | 503 | `PROCESSING_START_UNAVAILABLE` | Arcjet or its configuration is unavailable; no internal detail is exposed. |
-| 503 | `QUEUE_UNAVAILABLE` | The durable job is saved, queue publication or reference persistence failed, and retry is safe. |
+| 503 | `QUEUE_UNAVAILABLE` | The durable job is saved and background dispatch will retry automatically. |
 
 ---
 
@@ -1239,7 +1243,9 @@ Stripe webhook endpoint.
 
 ```json
 {
-  "received": true
+  "data": {
+    "received": true
+  }
 }
 ```
 
@@ -1249,8 +1255,8 @@ Stripe webhook endpoint.
 
 Refunds for normal processing failures are **credit refunds**, not Stripe money refunds.
 
-This contract belongs to VS9 and is not implemented by VS3. Until VS9 is complete, the UI must not
-promise automatic refunds.
+VS3 now provides the centralized automatic-refund primitive and connects exhausted analysis queue
+attempts to it. VS9 still owns complete worker failure coverage and clear user-facing refund UI.
 
 Eligible failures may include:
 
@@ -1264,15 +1270,11 @@ worker crash that permanently fails job
 storage failure that prevents usable result
 ```
 
-The exact eligibility policy must remain centralized.
-
-Refund transaction must be idempotent.
-
-Recommended uniqueness:
-
-```text
-one refund ledger row per processing job
-```
+The exact eligibility policy is centralized in PostgreSQL. The restricted processing operation
+locks the job and owning current project, verifies the positive charge and exact immutable
+deduction, records at most one exact refund ledger row, and updates the project and job in the same
+transaction. Retries and concurrent terminal events are idempotent. Ineligible failures update
+failure state but create no refund.
 
 ---
 

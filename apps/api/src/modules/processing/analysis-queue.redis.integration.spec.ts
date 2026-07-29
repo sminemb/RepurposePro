@@ -5,7 +5,7 @@ import {
   type VideoAnalysisJobPayload,
   VIDEO_ANALYSIS_QUEUE_NAME,
 } from "@repurposepro/shared";
-import { type ConnectionOptions, Queue } from "bullmq";
+import { type ConnectionOptions, Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -59,4 +59,59 @@ describeIntegration("BullMQ analysis queue Redis integration", () => {
     });
     await expect(inspectionQueue.getJobCounts("waiting")).resolves.toMatchObject({ waiting: 1 });
   });
+
+  it("executes once when publication replays after the retained job already completed", async () => {
+    const replayPayload: VideoAnalysisJobPayload = {
+      jobId: "00000000-0000-4000-8000-000000000723",
+      projectId: "00000000-0000-4000-8000-000000000724",
+    };
+    const workerConnection = new Redis(process.env.TEST_REDIS_URL ?? "redis://localhost:6379", {
+      maxRetriesPerRequest: null,
+    });
+    workerConnection.on("error", () => undefined);
+    let executionCount = 0;
+    const worker = new Worker<VideoAnalysisJobPayload>(
+      VIDEO_ANALYSIS_QUEUE_NAME,
+      async (job) => {
+        if (job.id === replayPayload.jobId) {
+          executionCount += 1;
+        }
+      },
+      {
+        connection: workerConnection as unknown as ConnectionOptions,
+        prefix,
+      },
+    );
+
+    try {
+      await worker.waitUntilReady();
+      await gateway.enqueue(replayPayload);
+      await waitForJobState(replayPayload.jobId, "completed");
+
+      await gateway.enqueue(replayPayload);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(executionCount).toBe(1);
+      await expect(inspectionQueue.getJob(replayPayload.jobId)).resolves.toBeDefined();
+      await expect(gateway.inspect(replayPayload)).resolves.toBe("completed");
+    } finally {
+      await worker.close();
+      await workerConnection.quit();
+    }
+  });
+
+  async function waitForJobState(jobId: string, expectedState: string): Promise<void> {
+    const deadline = Date.now() + 3_000;
+
+    while (Date.now() < deadline) {
+      const job = await inspectionQueue.getJob(jobId);
+      if ((await job?.getState()) === expectedState) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    throw new Error(`BullMQ job ${jobId} did not reach ${expectedState}.`);
+  }
 });

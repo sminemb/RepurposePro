@@ -965,7 +965,10 @@ Bad:
 The worker should load required data from Postgres/storage.
 
 For paid analysis, use the durable PostgreSQL processing-job UUID as BullMQ's custom `jobId`.
-Publishing the same durable job again is therefore idempotent while the queue record is retained.
+Create durable dispatch state in the same PostgreSQL transaction as the paid job and deduction,
+then claim it with leased `SKIP LOCKED` rows. Retain completed and failed BullMQ records so
+publishing the same durable job remains idempotent even after a crash between queue acceptance and
+the PostgreSQL publication marker. Inspect database-active jobs; never blindly republish them.
 
 ---
 
@@ -1150,6 +1153,7 @@ Stripe webhook handlers must:
 - Never grant credits twice
 - Handle duplicate events safely
 - Return success for already-processed valid events
+- Return the stable success envelope `{ "data": { "received": true } }`
 
 ---
 
@@ -1164,6 +1168,11 @@ Credit refund example:
 ```text
 processing failed -> add refund ledger entry -> user receives credits back
 ```
+
+Use the restricted processing-role refund operation for terminal failures. It locks the job and
+owning current project, validates the original charge and exact deduction, inserts at most one
+immutable exact refund, and updates job/project state atomically. Queue retry exhaustion is wired
+through this operation; VS9 expands coverage to all worker failure stages.
 
 ---
 

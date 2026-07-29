@@ -327,9 +327,21 @@ describeIntegration("billing credits production query", () => {
       },
       method: "POST",
     });
+    const duplicateResponse = await request("/api/v1/billing/webhook", {
+      body: payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedHeader,
+      },
+      method: "POST",
+    });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ received: true });
+    await expect(response.json()).resolves.toEqual({ data: { received: true } });
+    expect(duplicateResponse.status).toBe(200);
+    await expect(duplicateResponse.json()).resolves.toEqual({
+      data: { received: true },
+    });
     await expect(
       migrationClient.pool.query<{ count: string }>(
         `SELECT COUNT(*)::text AS count

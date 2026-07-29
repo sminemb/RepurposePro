@@ -211,9 +211,15 @@ Every queue job contains durable identifiers only:
 }
 ```
 
-For `analyze_video`, the PostgreSQL processing-job UUID is also the BullMQ job ID. The API
-publishes only after the paid database transaction commits and stores the returned queue ID before
-returning HTTP 202. A retry republishes the same UUID without another credit deduction.
+For `analyze_video`, the paid database transaction creates the processing job, immutable deduction,
+and one pending dispatch record together. A leased background dispatcher publishes only after
+commit, using the PostgreSQL processing-job UUID as the BullMQ job ID, then atomically marks the
+dispatch published. Pending rows survive API or Redis failure and retry automatically.
+
+BullMQ completed and failed records remain retained for permanent deterministic-ID deduplication.
+If the process crashes after queue acceptance but before the database marker commits, the next
+dispatcher inspects and reuses the same queue job. Concurrent dispatchers use `SKIP LOCKED` leases,
+and database-active jobs are inspected rather than blindly republished.
 
 ### Why Use Separate Queues?
 
@@ -1320,13 +1326,13 @@ Queue analysis job
 Processing fails
  |
  v
-Worker marks job failed
+BullMQ reports terminal retry exhaustion
  |
  v
-Backend creates refund ledger entry
+Restricted database operation locks and validates job, project, and deduction
  |
  v
-Project/job status updates to Refunded
+One exact refund ledger row and project/job Refunded state commit together
 ```
 
 ### Important
@@ -1334,6 +1340,10 @@ Project/job status updates to Refunded
 Refund credits, not Stripe payments, for normal processing failures.
 
 Stripe refunds should only be used when you want to return actual money to the user.
+
+The queue-event listener replays retained terminal events on startup. The database operation is
+idempotent under concurrent or repeated delivery. VS9 extends this primitive to every worker-stage
+failure and the complete user-facing failure/refund experience.
 
 ---
 

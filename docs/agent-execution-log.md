@@ -2160,3 +2160,110 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Implement worker job lifecycle and progress updates.
+
+---
+
+### VS3-R1 - Durable Analysis Dispatch, Automatic Refunds, and Webhook Envelope
+
+Status: COMPLETED
+Start Date: 2026-07-29
+Start Time: 11:25
+End Date: 2026-07-29
+End Time: 12:15
+
+User Outcome:
+
+- A paid analysis job can no longer remain orphaned after Redis or queue-marker failure. Its
+  transaction creates durable dispatch state, and background retries publish it without another
+  HTTP request or deduction.
+- Terminal analysis retry exhaustion restores the exact charged credits once through the immutable
+  ledger and moves the job/project to `refunded`.
+- Valid Stripe webhooks return the required `{ "data": { "received": true } }` envelope, including
+  duplicate signed delivery.
+
+Layers Touched:
+
+- PostgreSQL schema, migration, financial role boundaries, and integration tests
+- NestJS processing repositories, dispatcher, queue gateway, lifecycle wiring, and failure listener
+- BullMQ deterministic publication and terminal-event handling
+- Stripe webhook controller and HTTP integration assertions
+- Architecture, API, database, library, progress, operational, and handoff documentation
+
+Files Changed:
+
+- `apps/api/src/modules/billing/billing.postgres.integration.spec.ts`
+- `apps/api/src/modules/billing/stripe-webhook.controller.spec.ts`
+- `apps/api/src/modules/billing/stripe-webhook.controller.ts`
+- `apps/api/src/modules/processing/analysis-dispatch.repository.spec.ts`
+- `apps/api/src/modules/processing/analysis-dispatch.repository.ts`
+- `apps/api/src/modules/processing/analysis-dispatcher.service.spec.ts`
+- `apps/api/src/modules/processing/analysis-dispatcher.service.ts`
+- `apps/api/src/modules/processing/analysis-queue-failure.listener.spec.ts`
+- `apps/api/src/modules/processing/analysis-queue-failure.listener.ts`
+- `apps/api/src/modules/processing/analysis-queue.gateway.spec.ts`
+- `apps/api/src/modules/processing/analysis-queue.gateway.ts`
+- `apps/api/src/modules/processing/analysis-queue.redis.integration.spec.ts`
+- `apps/api/src/modules/processing/processing-failure.repository.spec.ts`
+- `apps/api/src/modules/processing/processing-failure.repository.ts`
+- `apps/api/src/modules/processing/processing-failure.service.spec.ts`
+- `apps/api/src/modules/processing/processing-failure.service.ts`
+- `apps/api/src/modules/processing/processing-reliability.postgres.integration.spec.ts`
+- `apps/api/src/modules/processing/processing-start.repository.spec.ts`
+- `apps/api/src/modules/processing/processing-start.repository.ts`
+- `apps/api/src/modules/processing/processing-start.service.spec.ts`
+- `apps/api/src/modules/processing/processing-start.service.ts`
+- `apps/api/src/modules/processing/processing.controller.spec.ts`
+- `apps/api/src/modules/processing/processing.module.ts`
+- `apps/api/src/modules/processing/processing.postgres.integration.spec.ts`
+- `packages/db/src/schema/index.ts`
+- `packages/db/drizzle/0015_reliable_processing_dispatch.sql`
+- `packages/db/drizzle/meta/0015_snapshot.json`
+- `packages/db/drizzle/meta/_journal.json`
+- `packages/db/vitest.integration.config.mts`
+- `docs/api-contracts.md`
+- `docs/architecture.md`
+- `docs/database-schema.md`
+- `docs/library-docs.md`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- Focused Vitest RED suites for dispatcher, refund, queue, controller, and repository behavior
+- `pnpm --filter @repurposepro/db exec drizzle-kit generate --config drizzle.config.ts --name reliable_processing_dispatch`
+- Focused Vitest GREEN suites for the changed processing and billing modules
+- `pnpm infra:up`
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm typecheck`
+- Changed-TypeScript ESLint through the repository ESLint binary
+- Changed-file Prettier check, write, and recheck
+- `git diff --check`
+
+Verification:
+
+- PASS: 303 unit tests; 31 integration tests skipped outside the live integration command.
+- PASS: 31 live PostgreSQL/Redis integration tests, including duplicate start, insufficient credit,
+  concurrent dispatch, crash replay, retained BullMQ deduplication, automatic refund, concurrent
+  refund, ownership isolation, ineligible failure, scoped-role denial, and duplicate signed webhook.
+- PASS: full repository typecheck.
+- PASS: changed files use committed Prettier rules.
+- PASS: focused ESLint after removing one unnecessary type assertion. One concurrent lint attempt
+  timed out without diagnostics; the isolated retry passed.
+- PASS: whitespace check and adversarial invariant review.
+- PASS: no global response interceptor exists; the webhook HTTP test receives exactly one wrapper.
+- PASS: a transient database failure during terminal-event handling retries automatically with
+  capped backoff and succeeds without another queue event.
+
+Known Limitations:
+
+- BullMQ completed and failed analysis records are retained to guarantee deterministic-ID
+  deduplication. A future safe cleanup policy must delete them only after durable reconciliation.
+- This task wires terminal BullMQ analysis retry exhaustion. VS9 still owns complete coverage for
+  every worker-stage terminal failure and the refund UI.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement worker job lifecycle and progress updates.

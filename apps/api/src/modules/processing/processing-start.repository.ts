@@ -22,12 +22,6 @@ export interface ProcessingStartRecord {
 }
 
 export interface ProcessingStartRepositoryContract {
-  markEnqueued(
-    userId: string,
-    projectId: string,
-    jobId: string,
-    bullmqJobId: string,
-  ): Promise<void>;
   start(userId: string, projectId: string): Promise<ProcessingStartRecord>;
 }
 
@@ -56,21 +50,5 @@ export class ProcessingStartRepository implements ProcessingStartRepositoryContr
     }
 
     return record;
-  }
-
-  public async markEnqueued(
-    userId: string,
-    projectId: string,
-    jobId: string,
-    bullmqJobId: string,
-  ): Promise<void> {
-    const result = await this.databaseService.database.pool.query<{ outcome: string }>(
-      "SELECT public.mark_paid_analysis_enqueued($1, $2, $3, $4) AS outcome",
-      [userId, projectId, jobId, bullmqJobId],
-    );
-
-    if (result.rows.length !== 1 || result.rows[0]?.outcome !== "marked") {
-      throw new Error("Processing queue reference did not update one job.");
-    }
   }
 }
