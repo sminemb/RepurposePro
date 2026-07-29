@@ -2117,3 +2117,46 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
+
+---
+
+### MAINT-21 - Reconcile Stale OPS-PR Blocker Records
+
+Status: COMPLETED
+Start Date: 2026-07-29
+Start Time: 10:19
+End Date: 2026-07-29
+End Time: 10:20
+
+User Outcome:
+
+- Project handoff no longer treats optional CodeRabbit PR creation as a blocker for VS4 work.
+
+Layers Touched:
+
+- Operational documentation
+- Handoff documentation
+
+Files Changed:
+
+- `docs/progress-tracker.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- `git diff -- docs/agent-handoff-history.md docs/agent-operational-logs.md docs/progress-tracker.md`
+- `rg -n 'Blockers|BLOCKED|OPS-PR-01' docs/agent-handoff-history.md docs/agent-operational-logs.md docs/progress-tracker.md`
+
+Verification:
+
+- PASS: OPS-PR-01 authentication evidence remains in append-only history.
+- PASS: live tracker returns to VS4-T1 with no current product-delivery blocker.
+
+Known Limitations:
+
+- GitHub connector access and local `gh` authentication still prevent optional PR creation.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement worker job lifecycle and progress updates.

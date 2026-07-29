@@ -840,17 +840,19 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
-Last Maintenance Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
-Current Status: COMPLETED
-Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
-Next Recommended Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts.
-Uncommitted Changes: No MAINT-20 source changes remain after commit `bbed3e3` (`fix(test): restore local database roles`). `apps/web/next-env.d.ts` was changed by the user's `pnpm dev` process and remains outside task scope. Local `.env` and `.env.database` remain ignored and must never be committed.
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Last Maintenance Task: MAINT-21 - Reconcile stale OPS-PR blocker records
+Current Status: NOT_STARTED
+Start Date: —
+Start Time: —
+Last Completed Task: MAINT-21 - Reconcile stale OPS-PR blocker records
+Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
+Uncommitted Changes: No intended uncommitted changes remain after this documentation commit. Local `.env` and `.env.database` remain ignored and must never be committed.
 Known Failing Tests: Task-scoped checks pass. `pnpm ci:check` stops at 35 pre-existing repository formatting failures; standalone `pnpm lint` timed out after 186 seconds without diagnostics and historically retains the project-service configuration error for `apps/api/src/startup-diagnostics.spec.ts`.
-Known Blockers: None for local development startup.
-Important Context: PostgreSQL integration tests temporarily replace the shared local test-role passwords. `pnpm test:db-integration` now runs cleanup unconditionally and restores configured development roles even when tests fail. All four database URLs authenticate after the 21-test integration suite. One clean `pnpm dev` stack remains running with web HTTP 200, API HTTP 200, one API runtime, and one Stripe listener. MAINT-20 changed files pass Prettier and focused ESLint.
-Required Commands Before Continuing: Use `pnpm test:db-integration` rather than invoking its Vitest config directly. Run `pnpm dev` for the complete local stack.
-Last Updated Date: 2026-07-27
-Last Updated Time: 19:08
+Known Blockers: None for VS4 work. OPS-PR-01 remains an optional GitHub follow-up, not a product-delivery blocker.
+Important Context: Remote review refs remain available: `codex/vs3-review-base-20260729` at `3569183c59b3e88cd2eacebaf317845a063c5ecf` and `codex/vs3-coderabbit-review-20260729` at `98750a175d7b743437cc72cb8adbdf07c372c8a8`; no PR exists. Historical OPS-PR-01 records retain GitHub authentication evidence.
+Required Commands Before Continuing: Begin VS4-T1 with TDD. Use `pnpm test:db-integration` rather than invoking its Vitest config directly; run `pnpm dev` for the complete local stack.
+Last Updated Date: 2026-07-29
+Last Updated Time: 10:20
 Last Updated By: Codex
 ```

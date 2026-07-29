@@ -1070,3 +1070,89 @@ Last Updated Date: 2026-07-27
 Last Updated Time: 19:08
 Last Updated By: Codex
 ~~~
+### OPS-PR-01 Blocked handoff - 2026-07-29 09:45 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: OPS-PR-01 - Create CodeRabbit review pull request
+Current Status: BLOCKED
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Next Recommended Task: Reconnect GitHub with repository write access or run gh auth login -h github.com, then create a reviewable PR.
+Uncommitted Changes: Documentation-only handoff updates for OPS-PR-01 are intentionally uncommitted because GitHub branch creation is blocked. Existing apps/web/next-env.d.ts user-generated change remains outside task scope.
+Known Failing Tests: No task-scoped tests run. Existing repository ci:check and lint limitations remain documented in progress-tracker.md.
+Known Blockers: GitHub connector returns 403 Resource not accessible by integration when creating branches; local gh auth status reports invalid token for sminemb.
+Important Context: Repository clean on main at 26107e0. Existing codex/vs3-security-remediation already ancestor of main; no remote feature branch or open PR exists.
+Required Commands Before Continuing: Reconnect GitHub with write access or run gh auth login -h github.com. Do not manufacture a code diff.
+Last Updated Date: 2026-07-29
+Last Updated Time: 09:45
+Last Updated By: Codex
+```
+### OPS-PR-01 Retry handoff - 2026-07-29 09:53 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: OPS-PR-01 - Create CodeRabbit review pull request
+Current Status: BLOCKED
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Next Recommended Task: Run gh auth login -h github.com in this checkout, confirm gh auth status, then retry branch push and PR creation.
+Uncommitted Changes: Documentation-only handoff updates for OPS-PR-01 remain intentionally uncommitted. Existing apps/web/next-env.d.ts user-generated change remains outside task scope.
+Known Failing Tests: No task-scoped tests run.
+Known Blockers: gh reports invalid token and GitHub connector branch creation returns 403 Resource not accessible by integration.
+Important Context: No branch, commit, or PR was created during retry.
+Required Commands Before Continuing: gh auth login -h github.com; gh auth status.
+Last Updated Date: 2026-07-29
+Last Updated Time: 09:53
+Last Updated By: Codex
+```
+### OPS-PR-01 Credential recheck handoff - 2026-07-29 09:55 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: OPS-PR-01 - Create CodeRabbit review pull request
+Current Status: BLOCKED
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Next Recommended Task: Run gh auth refresh -h github.com -u sminemb or gh auth login -h github.com, confirm gh repo view succeeds, then retry.
+Uncommitted Changes: Documentation-only handoff updates for OPS-PR-01 remain intentionally uncommitted. Existing apps/web/next-env.d.ts user-generated change remains outside task scope.
+Known Failing Tests: No task-scoped tests run.
+Known Blockers: gh API token remains invalid; GitHub connector write API returns 403 Resource not accessible by integration; HTTPS Git read works but push dry-run does not authenticate.
+Important Context: No branch, commit, or PR was created.
+Required Commands Before Continuing: gh auth refresh -h github.com -u sminemb; gh repo view --json nameWithOwner,defaultBranchRef.
+Last Updated Date: 2026-07-29
+Last Updated Time: 09:55
+Last Updated By: Codex
+```
+### OPS-PR-01 Remote review refs handoff - 2026-07-29 10:12 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: OPS-PR-01 - Create CodeRabbit review pull request
+Current Status: BLOCKED
+Last Completed Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
+Next Recommended Task: Run gh auth login -h github.com in this checkout, confirm gh auth status, then create the draft PR using the pushed review refs.
+Uncommitted Changes: Documentation-only handoff updates for OPS-PR-01 remain intentionally uncommitted. No source files staged. Existing apps/web/next-env.d.ts user-generated change remains outside task scope.
+Known Failing Tests: No new task-scoped tests run; existing repository CI and lint limitations remain documented in progress-tracker.md.
+Known Blockers: GitHub connector PR creation returns 403 Resource not accessible by integration. Local gh token remains invalid. Token extraction from Git credential storage is not permitted.
+Important Context: Remote refs exist: codex/vs3-review-base-20260729 at 3569183c59b3e88cd2eacebaf317845a063c5ecf and codex/vs3-coderabbit-review-20260729 at 98750a175d7b743437cc72cb8adbdf07c372c8a8. Temporary base keeps diff scoped to VS3 because VS3 already exists on main.
+Required Commands Before Continuing: gh auth login -h github.com; gh auth status; gh pr create --repo sminemb/RepurposePro --base codex/vs3-review-base-20260729 --head codex/vs3-coderabbit-review-20260729 --draft.
+Last Updated Date: 2026-07-29
+Last Updated Time: 10:12
+Last Updated By: Codex
+```
+
+### MAINT-21 Blocker Record Reconciliation - 2026-07-29 10:20 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Current Status: NOT_STARTED
+Last Completed Task: MAINT-21 - Reconcile stale OPS-PR blocker records
+Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
+Uncommitted Changes: No intended uncommitted changes remain after this documentation commit. Local .env and .env.database remain ignored and must never be committed.
+Known Failing Tests: Task-scoped checks pass. Historical repository ci:check and lint limitations remain documented in progress-tracker.md.
+Known Blockers: None for VS4 work. OPS-PR-01 remains optional GitHub follow-up only.
+Important Context: Remote review refs remain available, but no PR exists. Historical OPS-PR-01 entries retain the GitHub authentication evidence and are superseded as live state.
+Required Commands Before Continuing: Begin VS4-T1 with TDD. Use pnpm test:db-integration rather than its Vitest config directly; run pnpm dev for the complete local stack.
+Last Updated Date: 2026-07-29
+Last Updated Time: 10:20
+Last Updated By: Codex
+```

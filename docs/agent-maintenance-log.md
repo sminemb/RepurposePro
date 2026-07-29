@@ -526,3 +526,15 @@ Status: COMPLETED
   failures, and root lint timed out without diagnostics.
 - Left the user-generated `apps/web/next-env.d.ts` change outside maintenance scope.
 - Next: fix the pre-existing startup-diagnostics lint allowlist, then begin VS4-T1.
+
+### MAINT-21 - Reconcile Stale OPS-PR Blocker Records
+
+Date: 2026-07-29
+Time: 10:20 Asia/Manila
+Status: COMPLETED
+
+- Preserved append-only OPS-PR-01 evidence in operational and handoff archives.
+- Corrected live handoff so unavailable GitHub PR creation no longer blocks VS4 delivery.
+- Set current work to VS4-T1, `NOT_STARTED`, with no product-delivery blocker.
+- Verified all three live/history documents consistently classify GitHub issue as optional.
+- Next: VS4-T1 - Implement worker job lifecycle and progress updates.

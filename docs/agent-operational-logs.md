@@ -599,3 +599,47 @@ Record decisions such as:
   and MAINT-20 records.
 - Final source state: no intended MAINT-20 source changes remain uncommitted.
 - Preserved user state: `apps/web/next-env.d.ts` remains modified and outside the commit.
+### OPS-PR-01 CodeRabbit review PR blocked - 2026-07-29 09:45 Asia/Manila
+
+- Scope: Create GitHub pull request for CodeRabbit review.
+- Repository state: Clean `main` at `26107e0`; no remote feature branches; no open PRs.
+- Branch analysis: `codex/vs3-security-remediation` is already an ancestor of `main` and has no reviewable diff against it.
+- GitHub connector: Repository read succeeded; branch creation failed with `403 Resource not accessible by integration`.
+- Local GitHub CLI: `gh auth status` reports invalid token for `sminemb`.
+- Decision: Do not create fake code changes. Leave review PR uncreated until GitHub write access is restored.
+- Next action: Reconnect GitHub with repository write access or run `gh auth login -h github.com`, then create a real review ref/PR.
+- Status: BLOCKED.
+### OPS-PR-01 Retry - 2026-07-29 09:53 Asia/Manila
+
+- Rechecked `gh auth status`: active `sminemb` token remains invalid; `gh repo view` returns HTTP 401.
+- Rechecked GitHub connector branch creation: still fails with `403 Resource not accessible by integration`.
+- No remote refs, commits, or pull requests created.
+- Status: BLOCKED pending valid GitHub CLI authentication or GitHub app write access.
+### OPS-PR-01 Credential recheck - 2026-07-29 09:55 Asia/Manila
+
+- `gh auth status` still reports cached `sminemb` token invalid and `gh repo view` returns HTTP 401.
+- HTTPS Git read access works through `origin`; push dry-run does not authenticate successfully.
+- GitHub connector branch creation remains blocked with `403 Resource not accessible by integration`.
+- Status: BLOCKED pending token refresh or GitHub app write access.
+### OPS-PR-01 Retry after user auth refresh - 2026-07-29 10:00 Asia/Manila
+
+- User reports successful `gh auth refresh`.
+- Codex shell still reports cached `sminemb` token invalid; `gh repo view` returns HTTP 401.
+- No branch, commit, push, or PR action executed.
+- Status: BLOCKED by authentication state mismatch between user terminal and Codex shell.
+### OPS-PR-01 Remote review refs created, PR blocked - 2026-07-29 10:12 Asia/Manila
+
+- Scope: Create GitHub pull request for CodeRabbit review with VS3-only code diff.
+- VS3 boundary: base commit `3569183c59b3e88cd2eacebaf317845a063c5ecf`; head commit `98750a175d7b743437cc72cb8adbdf07c372c8a8`.
+- Remote refs pushed successfully: `codex/vs3-review-base-20260729` and `codex/vs3-coderabbit-review-20260729`.
+- GitHub connector repository read succeeded, but branch and PR creation endpoints returned `403 Resource not accessible by integration`.
+- `gh auth status` remains invalid in Codex shell. Policy disallows extracting a token from Git credential storage as workaround.
+- No local code changes staged or committed; existing documentation handoff changes remain uncommitted.
+- Status: BLOCKED pending user-side `gh auth login -h github.com` in this checkout.
+
+### MAINT-21 Blocker Record Reconciliation - 2026-07-29 10:20 Asia/Manila
+
+- Scope: correct stale OPS-PR-01 blocker state in live handoff records.
+- Decision: preserve OPS-PR-01 evidence as append-only history, but remove it as current VS4 delivery state.
+- Current impact: GitHub connector `403` and invalid local `gh` token prevent optional PR creation only; they do not block VS4-T1 implementation.
+- Status: COMPLETED. Live tracker now returns to `VS4-T1` with no current product-delivery blocker.
