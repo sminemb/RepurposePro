@@ -2161,6 +2161,37 @@ Next Recommended Task:
 
 - VS4-T1 - Implement worker job lifecycle and progress updates.
 
+### MAINT-22 — Re-index Project Codebase Graph
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 13:21
+End Date: 2026-07-30
+End Time: 13:23
+
+User Outcome:
+- Refreshed project codebase knowledge graph for current repository state.
+
+Files Changed:
+- `.codebase-memory/artifact.json`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+- Codebase-memory full repository index with persistence enabled.
+- Codebase-memory architecture readback.
+- `git status --short`.
+
+Verification:
+- PASS: Index status `indexed`.
+- PASS: 4,631 nodes and 6,801 graph edges available through readback.
+- PASS: 282 files indexed; 15 standard directories excluded; 0 files skipped.
+
+Known Limitations:
+- Indexer reported `artifact_present: false`; `.codebase-memory/graph.db.zst` remains deleted from pre-existing workspace state.
+
 ## VS3-R2 - Close Remaining VS3 Cross-System Reliability Gaps
 
 Status: COMPLETED

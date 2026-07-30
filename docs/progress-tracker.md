@@ -846,18 +846,18 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
-Last Maintenance Task: MAINT-21 - Reconcile stale OPS-PR blocker records
+Last Maintenance Task: MAINT-22 - Re-index project codebase graph
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: VS3-R2 - Close remaining VS3 cross-system reliability gaps
+Last Completed Task: MAINT-22 - Re-index project codebase graph
 Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
-Uncommitted Changes: No intended VS3-R2 changes remain after its verified commit. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. Full unit and PostgreSQL/Redis integration suites, full typecheck, production builds, changed-file formatting, focused lint, and whitespace checks pass.
-Known Blockers: None. OPS-PR-01 remains an optional GitHub follow-up, not a product-delivery blocker.
-Important Context: Migration `0016_close_vs3_reliability_gaps.sql` must be applied before the updated API starts. PostgreSQL now durably owns failure intents, execution leases, immutable terminal reasons, and verified Stripe receipt states. Dedicated BullMQ connections reconnect without producer offline buffering, and published jobs reconcile against retained Redis state.
+Uncommitted Changes: `.codebase-memory/artifact.json` refreshed by index; pre-existing `.codebase-memory/graph.db.zst` deletion and `apps/web/next-env.d.ts` modification preserved; MAINT-22 documentation records updated. Commit not created because workspace denied `.git/index.lock`.
+Known Failing Tests: None introduced; no test suite run because task only refreshed codebase index.
+Known Blockers: Indexer reports `artifact_present: false`; graph remains available through codebase-memory readback. Git commit blocked by workspace permission on `.git/index.lock`.
+Important Context: Current graph project name is `D-Projects-RepurposePro`; full index readback reports 4,631 nodes and 6,801 edges. Migration `0016_close_vs3_reliability_gaps.sql` remains required before updated API starts.
 Required Commands Before Continuing: Apply migration `0016` in each environment. Begin VS4-T1 with TDD and retain execution-lease heartbeats in the analysis worker.
-Last Updated Date: 2026-07-29
-Last Updated Time: 13:33
+Last Updated Date: 2026-07-30
+Last Updated Time: 13:23
 Last Updated By: Codex
 ```

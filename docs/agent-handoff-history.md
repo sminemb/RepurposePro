@@ -1196,3 +1196,24 @@ Last Updated Date: 2026-07-29
 Last Updated Time: 13:33
 Last Updated By: Codex
 ```
+
+### MAINT-22 Completion Handoff — 2026-07-30 13:23 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Last Maintenance Task: MAINT-22 - Re-index project codebase graph
+Current Status: NOT_STARTED
+Start Date: —
+Start Time: —
+Last Completed Task: MAINT-22 - Re-index project codebase graph
+Next Recommended Task: VS4-T1 - Implement worker job lifecycle and progress updates.
+Uncommitted Changes: Re-index metadata and maintenance docs remain uncommitted because `git add` could not create `.git/index.lock`; pre-existing `.codebase-memory/graph.db.zst` deletion and `apps/web/next-env.d.ts` modification preserved.
+Known Failing Tests: None introduced; no test suite run because task only refreshed codebase index.
+Known Blockers: Git metadata permission prevents commit. Indexer reports `artifact_present: false`, while graph readback succeeds.
+Important Context: Current graph project name is `D-Projects-RepurposePro`; full index readback reports 4,631 nodes and 6,801 edges.
+Required Commands Before Continuing: Commit MAINT-22 files when `.git/index.lock` is writable; apply migration `0016_close_vs3_reliability_gaps.sql` before VS4-T1.
+Last Updated Date: 2026-07-30
+Last Updated Time: 13:23
+Last Updated By: Codex
+```

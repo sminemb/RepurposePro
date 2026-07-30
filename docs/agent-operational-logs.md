@@ -750,3 +750,16 @@ Record decisions such as:
 - Decision: active-job recovery is governed by a persisted execution lease, never local timers.
 - Decision: verified Stripe receipt persistence commits before any downstream API or financial work.
 - Status: COMPLETED. Live tracker advances to VS4-T1.
+
+### MAINT-22 Re-index Project Codebase Graph — 2026-07-30 13:23 Asia/Manila
+
+- Full codebase-memory index completed with status `indexed`.
+- Readback verified 4,631 nodes, 6,801 edges, 282 files, and 0 skipped files.
+- Standard exclusions: `.git`, `node_modules`, build outputs, and storage; 15 directories excluded.
+- `.codebase-memory/artifact.json` refreshed. Indexer reported `artifact_present: false`; pre-existing `.codebase-memory/graph.db.zst` deletion preserved.
+- No application source changes made. Existing `apps/web/next-env.d.ts` modification preserved.
+
+### MAINT-22 Commit Attempt — 2026-07-30 13:23 Asia/Manila
+
+- Commit intentionally not created: `git add` failed with `fatal: Unable to create 'D:/Projects/RepurposePro/.git/index.lock': Permission denied`.
+- Re-index metadata and maintenance documentation remain uncommitted; pre-existing `graph.db.zst` deletion and `apps/web/next-env.d.ts` modification remain untouched.
