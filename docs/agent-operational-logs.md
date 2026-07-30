@@ -767,8 +767,6 @@ Record decisions such as:
   `git diff --check`.
 - Browser runtime unavailable: `http://localhost:3000` returned `ERR_CONNECTION_REFUSED` because
   no local development server was listening.
-- Decision: no billing API or Stripe webhook behavior changed; UI continues to wait for the
-  existing confirmed webhook credit grant.
 
 ### MAINT-22 Re-index Project Codebase Graph — 2026-07-30 13:23 Asia/Manila
 
@@ -848,3 +846,36 @@ Record decisions such as:
   and `git diff --check`.
 - Browser runtime unavailable: `http://localhost:3000` returned `ERR_CONNECTION_REFUSED` because
   no local development server was listening.
+
+### VS4-T1 Gated Worker Lifecycle — 2026-07-30 19:34 Asia/Manila
+
+- Branch: `feature/vs4-worker-lifecycle`.
+- Added strict ID-only BullMQ contract validation, fresh callback execution identity, token-fenced
+  lifecycle entry, abort/progress forwarding, exact `preview_ready` completion, and structured safe
+  logs.
+- Kept `AnalysisJobProcessor` out of `AppModule`; production consumption remains gated.
+- RED: worker lacked direct BullMQ dependency, then processor module was absent.
+- GREEN: 17 focused tests; 348 unit tests; 51 live integration tests; full typecheck and builds.
+- PASS: focused ESLint, changed-file Prettier, dependency lock scope review, and whitespace check.
+- Failure evidence: `pnpm ci:check` stops on 37 unchanged Prettier failures; full lint retains the
+  known `startup-diagnostics.spec.ts` project-service error.
+- Security evidence: strict queue boundary blocks extra fields and identity mismatch; logs omit raw
+  payloads and errors. `pnpm audit --prod` reports five high and four moderate pre-existing web/API
+  transitive findings, none through BullMQ.
+- Decision: VS4-T1 complete. VS4-T2 next; consumer activation stays deferred through T6.
+- Decision: no billing API or Stripe webhook behavior changed; UI continues to wait for the
+  existing confirmed webhook credit grant.
+
+### MAINT-23 Restore CI Check - 2026-07-30 21:12 Asia/Manila
+
+- Reproduced the full CI failure: typed ESLint project service excluded
+  `apps/api/src/startup-diagnostics.spec.ts` from its default project allowlist.
+- Added that exact root API test pattern to `eslint.config.mjs`; no source, dependency, or test
+  behavior changed.
+- PASS: full `pnpm ci:check` in 416.5 seconds: formatting, lint, typecheck, 348 unit tests, 51
+  live database-integration tests, and production builds.
+- Known non-blocking build output: existing Next.js NFT tracing warning.
+- Commit attempt failed before staging: Git could not create `.git/index.lock` because access was
+  denied. MAINT-23 files remain uncommitted; no user changes were staged.
+- Follow-up: scoped Git staging received required permission; MAINT-23 remains isolated from all
+  pre-existing user changes and is ready for commit.

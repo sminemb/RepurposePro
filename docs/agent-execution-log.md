@@ -2645,3 +2645,109 @@ Verification:
 Next Recommended Task:
 
 - VS4-T1 - Implement the first real analysis handler through `ProcessingLifecycleService`.
+
+---
+
+### VS4-T1 - Gated Worker Lifecycle
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 19:09
+End Date: 2026-07-30
+End Time: 19:34
+
+User Outcome:
+
+- Added a strict analysis-job processor boundary that rejects malformed or mismatched BullMQ work
+  before lease acquisition.
+- Valid callbacks receive a unique execution identity, token-fenced progress writer, lease token,
+  and abort signal through `ProcessingLifecycleService`.
+- Processor success requires an exact `preview_ready` result. Production queue consumption remains
+  intentionally disabled until T2-T6 can persist previews and finalize success truthfully.
+
+Files Changed:
+
+- `apps/worker/src/processors/analysis-job.processor.ts`
+- `apps/worker/src/processors/analysis-job.processor.spec.ts`
+- `apps/worker/package.json` and `pnpm-lock.yaml`
+- Task plan, checklist, tracker, execution log, operational log, and handoff history
+
+Commands Run:
+
+- RED-first focused Vitest runs
+- `pnpm db:migrate`
+- Focused worker typecheck, ESLint, Prettier, and whitespace checks
+- `pnpm ci:check`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm build`
+- `pnpm audit --prod`
+
+Verification:
+
+- PASS: 17 focused processor/lifecycle tests.
+- PASS: 348 unit tests with 51 integration-only skips.
+- PASS: 51 live PostgreSQL/Redis integration tests.
+- PASS: full typecheck and production builds; known non-fatal Next.js NFT warning remains.
+- PASS: focused ESLint, changed-file Prettier, and `git diff --check`.
+- REVIEWED: correctness, architecture, strict queue validation, logging disclosure, retry/lease
+  behavior, dependency scope, and bounded runtime work. No required findings remain.
+
+Known Limitations:
+
+- `pnpm ci:check` stops before later gates because 37 unchanged files fail repository-wide
+  Prettier. Full lint independently retains the pre-existing
+  `apps/api/src/startup-diagnostics.spec.ts` project-service error.
+- `pnpm audit --prod` reports five high and four moderate vulnerabilities in existing web/API
+  transitive dependencies. BullMQ is not in any reported path; remediation remains required before
+  release.
+- No BullMQ `Worker` is registered yet by design. VS4-T2 through VS4-T6 must complete the pipeline
+  before activation.
+
+Next Recommended Task:
+
+- VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind
+  `AnalysisPipelineHandler`.
+
+---
+
+### MAINT-23 - Restore `pnpm ci:check`
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 20:44
+End Date: 2026-07-30
+End Time: 21:12
+
+User Outcome:
+
+- Repository-wide CI completes without a typed-ESLint parsing error.
+
+Files Changed:
+
+- `eslint.config.mjs`
+- Required tracker and append-only agent logs.
+
+Commands Run:
+
+- `pnpm ci:check`
+- `pnpm exec prettier --check eslint.config.mjs`
+
+Verification:
+
+- RED: `pnpm ci:check` failed because typed ESLint could not associate
+  `apps/api/src/startup-diagnostics.spec.ts` with a TypeScript project.
+- GREEN: Added the existing root API test to `allowDefaultProject`.
+- PASS: full `pnpm ci:check` passed formatting, lint, typecheck, 348 unit tests with 51
+  intentional integration skips, 51 live database-integration tests, and all production builds.
+
+Known Limitations:
+
+- Next.js still emits its existing non-fatal NFT tracing warning during the web production build.
+
+Next Recommended Task:
+
+- VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind
+  `AnalysisPipelineHandler`.

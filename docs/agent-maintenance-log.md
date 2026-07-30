@@ -538,3 +538,19 @@ Status: COMPLETED
 - Set current work to VS4-T1, `NOT_STARTED`, with no product-delivery blocker.
 - Verified all three live/history documents consistently classify GitHub issue as optional.
 - Next: VS4-T1 - Implement worker job lifecycle and progress updates.
+
+### MAINT-23 - Restore `pnpm ci:check`
+
+Date: 2026-07-30
+Time: 21:12 Asia/Manila
+Status: COMPLETED
+
+- Fixed typed ESLint project-service configuration for the root API startup-diagnostics test.
+- Full `pnpm ci:check` passed after the exact allowlist addition.
+- Existing unrelated user changes remain unmodified; Next.js NFT tracing warning remains non-fatal.
+- Commit deferred: Git cannot create `.git/index.lock` because access is denied; no files were
+  staged.
+- Follow-up: scoped Git staging permission restored commit capability; MAINT-23 stays isolated
+  from pre-existing user changes.
+- Next: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind
+  `AnalysisPipelineHandler`.

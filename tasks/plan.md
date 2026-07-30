@@ -1,44 +1,32 @@
-# VS3-R2 Reliability Plan
+# VS4-T1 Gated Worker Lifecycle Plan
 
 ## Goal
 
-Close the six remaining VS3 reliability defects without changing applied
-migrations `0014` or `0015`.
+Add a strict, tested BullMQ analysis-job processor boundary through
+`ProcessingLifecycleService` without enabling production queue consumption before
+the remaining VS4 pipeline can complete truthfully.
 
 ## Scope
 
-1. Give BullMQ producers and blocking consumers separately owned Redis
-   connections with reconnect, fast-failure, and idempotent shutdown behavior.
-2. Preserve the first terminal processing failure reason and surface conflicting
-   later reasons.
-3. Persist terminal queue failure intents in PostgreSQL and drain them through a
-   leased, restart-safe sweeper.
-4. Reconcile published analysis jobs against Redis, restore missing queued jobs,
-   and expire only stale active execution leases.
-5. Add a global safe API error envelope for unexpected exceptions while
-   preserving valid application envelopes.
-6. Persist verified Stripe event receipts before financial processing and make
-   retry/concurrency behavior durable and exactly-once.
+1. Validate BullMQ job name, job ID, and strict ID-only payload before protected work.
+2. Create one execution identity per callback and acquire the PostgreSQL execution lease.
+3. Forward lease token, abort signal, and token-bound progress updates to an injected pipeline.
+4. Require an explicit `preview_ready` result before processor success.
+5. Classify malformed or rejected work as unrecoverable and busy leases as retryable.
+6. Keep the processor unregistered from the production worker module.
 
 ## Constraints
 
-- Add forward-only migrations; never edit `0014` or `0015`.
-- Keep PostgreSQL as durable truth and BullMQ payloads ID-only.
-- Add failing regression tests before implementation.
-- Do not expand into VS4 worker analysis behavior or VS9 refund UI.
-- Run changed-file Prettier, focused/full tests as appropriate, typecheck, lint,
-  integration tests, and `git diff --check`.
-- Update all required project records and commit the verified task.
+- Do not modify migration `0017` or financial state.
+- Do not add FFmpeg, Whisper, Gemini, polling, or preview persistence behavior.
+- Add failing tests before implementation.
+- Keep HTTP APIs, shared queue payloads, and database schema unchanged.
+- Verify formatting, lint, typecheck, tests, builds, and whitespace before commit.
 
 ## Acceptance
 
-- Redis outage/recovery works in one API process without an offline command
-  backlog.
-- Terminal failure reason is immutable under retries and concurrency.
-- Queue failure events survive restart, duplicate delivery, marker failures, and
-  event loss.
-- Queued jobs missing from Redis are restored deterministically; active jobs are
-  only failed after a durable lease expires.
-- Unexpected API errors use the standard safe envelope and safe logging.
-- Signature-verified Stripe receipts survive downstream failure and replay grants
-  credits exactly once.
+- Invalid queue data never reaches lease acquisition or the pipeline.
+- Valid work enters `ProcessingLifecycleService` with a fresh execution identity.
+- Pipeline receives the exact lease context and can report token-bound progress.
+- Only explicit `preview_ready` completion resolves successfully.
+- Production BullMQ consumption remains disabled until T2-T6 are complete.
