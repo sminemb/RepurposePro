@@ -7,7 +7,7 @@ import { PROCESSING_DATABASE } from "./scoped-database.provider";
 export const ANALYSIS_DISPATCH_REPOSITORY = Symbol("ANALYSIS_DISPATCH_REPOSITORY");
 
 export type DispatchFailureStage =
-  "active_job_missing" | "queue_publish" | "queue_reference_persist";
+  "active_job_missing" | "queue_handoff_wait" | "queue_publish" | "queue_reference_persist";
 
 export interface AnalysisDispatchRecord {
   readonly attemptCount: number;
@@ -16,6 +16,7 @@ export interface AnalysisDispatchRecord {
   readonly executionLeaseExpiresAt: Date | null;
   readonly jobId: string;
   readonly jobStatus: ProcessingJobStatus;
+  readonly lastFailureStage: DispatchFailureStage | null;
   readonly leaseToken: string;
   readonly projectId: string;
 }
@@ -51,6 +52,7 @@ export class AnalysisDispatchRepository implements AnalysisDispatchRepositoryCon
         execution_lease_expires_at AS "executionLeaseExpiresAt",
         job_id AS "jobId",
         job_status AS "jobStatus",
+        last_failure_stage AS "lastFailureStage",
         lease_token AS "leaseToken",
         project_id AS "projectId"
        FROM public.claim_pending_analysis_dispatch($1, $2)`,

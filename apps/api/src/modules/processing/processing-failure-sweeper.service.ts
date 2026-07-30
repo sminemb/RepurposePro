@@ -101,13 +101,21 @@ export class ProcessingFailureSweeperService implements OnModuleInit, OnModuleDe
     intent: ProcessingFailureIntentRecord,
     requestId: string,
   ): Promise<boolean> {
+    let outcome: string;
+
     try {
-      await this.processingFailureService.handleTerminalFailure(
+      const result = await this.processingFailureService.handleTerminalFailure(
         intent.jobId,
         intent.failureCode,
         requestId,
       );
+      outcome = result.outcome;
     } catch {
+      await this.reschedule(intent, requestId);
+      return false;
+    }
+
+    if (outcome === "lease_active") {
       await this.reschedule(intent, requestId);
       return false;
     }

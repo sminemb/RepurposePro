@@ -149,12 +149,12 @@ All API errors should use:
 
 Fields:
 
-| Field | Type | Required | Purpose |
-|---|---|---|---|
-| `code` | string | Yes | Stable machine-readable code |
-| `message` | string | Yes | Human-readable message |
-| `details` | object/null | Yes | Validation or contextual details |
-| `requestId` | string | Yes | Support/debug correlation |
+| Field       | Type        | Required | Purpose                          |
+| ----------- | ----------- | -------- | -------------------------------- |
+| `code`      | string      | Yes      | Stable machine-readable code     |
+| `message`   | string      | Yes      | Human-readable message           |
+| `details`   | object/null | Yes      | Validation or contextual details |
+| `requestId` | string      | Yes      | Support/debug correlation        |
 
 Do not expose:
 
@@ -184,22 +184,22 @@ The global exception filter preserves valid `HttpException` envelopes and logs o
 
 ## 6. HTTP Status Rules
 
-| Status | Use |
-|---|---|
-| 200 | Successful read/update/action |
-| 201 | Resource created |
-| 202 | Background job accepted |
-| 204 | Successful deletion with no body |
-| 400 | Invalid request |
-| 401 | Not authenticated |
-| 403 | Authenticated but forbidden |
-| 404 | Resource not found |
-| 409 | Conflict or invalid state transition |
-| 413 | File too large |
-| 422 | Validation failure |
-| 429 | Rate limited |
-| 500 | Unexpected internal failure |
-| 503 | Dependency unavailable |
+| Status | Use                                  |
+| ------ | ------------------------------------ |
+| 200    | Successful read/update/action        |
+| 201    | Resource created                     |
+| 202    | Background job accepted              |
+| 204    | Successful deletion with no body     |
+| 400    | Invalid request                      |
+| 401    | Not authenticated                    |
+| 403    | Authenticated but forbidden          |
+| 404    | Resource not found                   |
+| 409    | Conflict or invalid state transition |
+| 413    | File too large                       |
+| 422    | Validation failure                   |
+| 429    | Rate limited                         |
+| 500    | Unexpected internal failure          |
+| 503    | Dependency unavailable               |
 
 ---
 
@@ -661,15 +661,18 @@ After the transaction commits, the dispatcher must:
 4. Retain completed and failed BullMQ records so the deterministic ID cannot be reused.
 5. Atomically mark the dispatch published and persist the queue ID on the matching job.
 6. Retry a pending dispatch automatically after startup, publication, or marker failure.
-7. Reconcile published queued jobs and restore a missing BullMQ record with the same UUID.
+7. Give a published queued job one 15-second handoff grace after its first missing observation.
+8. Restore a still-missing BullMQ record with the same UUID after the grace.
 
 Multiple dispatchers may run concurrently, but only one may hold a dispatch lease. A retry after
 BullMQ accepted work but before the PostgreSQL marker committed inspects and reuses the retained
-job with the same deterministic UUID. Active database jobs are inspected, never blindly
-republished. Missing active jobs wait for a valid durable execution lease and become terminal
-through the centralized intent/refund flow after lease expiry. Existing queued or active jobs are
-recoverable only when they have a positive
-`creditsCharged` value and one exact matching immutable deduction.
+job with the same deterministic UUID. Before protected processing begins, the worker must acquire a
+60-second PostgreSQL execution lease using the job ID, project ID, and a unique worker execution
+identity. It renews every 15 seconds and supplies the exact token for progress writes. Active
+database jobs are never blindly republished. A valid lease overrides missing, failed, or stale
+Redis state; only lease expiry allows centralized intent/refund recovery. Existing queued or active
+jobs are recoverable only when they have a positive `creditsCharged` value and one exact matching
+immutable deduction.
 
 If publication or queue-reference persistence fails after the database commit, the API returns
 `QUEUE_UNAVAILABLE`. The durable job, deduction, and pending dispatch remain committed, and the
@@ -698,17 +701,17 @@ background dispatcher retries without another HTTP request or credit deduction.
 
 ### Errors
 
-| Status | Code | Meaning |
-|---|---|---|
-| 404 | `PROJECT_NOT_FOUND` | The project does not exist for the authenticated user. |
-| 409 | `PROCESSING_INVALID_PROJECT_STATE` | The project cannot begin paid processing in its current state. |
-| 409 | `PROCESSING_VIDEO_REQUIRED` | No active uploaded video with usable duration and audio exists. |
-| 409 | `BILLING_INSUFFICIENT_CREDITS` | Persisted credit balance is lower than `ceil(durationSeconds / 60)`. |
-| 422 | `PROCESSING_CONFIRMATION_REQUIRED` | The request body is not exactly `{ "confirmed": true }`. |
-| 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three analysis starts in one minute. |
-| 503 | `BILLING_DEDUCTION_FAILED` | The atomic database operation returned an unexpected or unavailable result. |
-| 503 | `PROCESSING_START_UNAVAILABLE` | Arcjet or its configuration is unavailable; no internal detail is exposed. |
-| 503 | `QUEUE_UNAVAILABLE` | The durable job is saved and background dispatch will retry automatically. |
+| Status | Code                               | Meaning                                                                     |
+| ------ | ---------------------------------- | --------------------------------------------------------------------------- |
+| 404    | `PROJECT_NOT_FOUND`                | The project does not exist for the authenticated user.                      |
+| 409    | `PROCESSING_INVALID_PROJECT_STATE` | The project cannot begin paid processing in its current state.              |
+| 409    | `PROCESSING_VIDEO_REQUIRED`        | No active uploaded video with usable duration and audio exists.             |
+| 409    | `BILLING_INSUFFICIENT_CREDITS`     | Persisted credit balance is lower than `ceil(durationSeconds / 60)`.        |
+| 422    | `PROCESSING_CONFIRMATION_REQUIRED` | The request body is not exactly `{ "confirmed": true }`.                    |
+| 429    | `RATE_LIMIT_EXCEEDED`              | The authenticated user exceeded three analysis starts in one minute.        |
+| 503    | `BILLING_DEDUCTION_FAILED`         | The atomic database operation returned an unexpected or unavailable result. |
+| 503    | `PROCESSING_START_UNAVAILABLE`     | Arcjet or its configuration is unavailable; no internal detail is exposed.  |
+| 503    | `QUEUE_UNAVAILABLE`                | The durable job is saved and background dispatch will retry automatically.  |
 
 ---
 
@@ -978,10 +981,7 @@ Starts final rendering.
 ```json
 {
   "type": "clips",
-  "clipIds": [
-    "clip_1",
-    "clip_2"
-  ]
+  "clipIds": ["clip_1", "clip_2"]
 }
 ```
 
@@ -1119,11 +1119,11 @@ Cache-Control: private, no-store
 
 ### Errors
 
-| Status | Code | Message |
-|---:|---|---|
-| 401 | `UNAUTHORIZED` | You need to sign in to access this resource. |
-| 500 | `BILLING_BALANCE_INVALID` | We could not verify your credit balance. Try again. |
-| 503 | `BILLING_CREDITS_UNAVAILABLE` | Your credit balance is temporarily unavailable. Try again. |
+| Status | Code                          | Message                                                    |
+| -----: | ----------------------------- | ---------------------------------------------------------- |
+|    401 | `UNAUTHORIZED`                | You need to sign in to access this resource.               |
+|    500 | `BILLING_BALANCE_INVALID`     | We could not verify your credit balance. Try again.        |
+|    503 | `BILLING_CREDITS_UNAVAILABLE` | Your credit balance is temporarily unavailable. Try again. |
 
 All errors use standard safe envelope with `details: null` and request ID.
 
@@ -1137,11 +1137,11 @@ account, or project owner ID from the request. Responses send `Cache-Control: pr
 
 ### Query Parameters
 
-| Name | Required | Rules |
-|---|---|---|
-| `cursor` | No | Opaque continuation token encoding the last returned `(createdAt, id)` pair. Do not construct or interpret it on the client. |
-| `limit` | No | Integer from `1` through `50`; defaults to `20`. |
-| `type` | No | One of `purchase`, `processing_deduction`, `refund`, `manual_adjustment`, or `expiration_adjustment`. |
+| Name     | Required | Rules                                                                                                                        |
+| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `cursor` | No       | Opaque continuation token encoding the last returned `(createdAt, id)` pair. Do not construct or interpret it on the client. |
+| `limit`  | No       | Integer from `1` through `50`; defaults to `20`.                                                                             |
+| `type`   | No       | One of `purchase`, `processing_deduction`, `refund`, `manual_adjustment`, or `expiration_adjustment`.                        |
 
 Pages use descending `createdAt`, then descending `id` ordering. A non-null `nextCursor` continues
 strictly after the final returned entry, so entries are not repeated across stable page boundaries.
@@ -1172,11 +1172,11 @@ fields are not part of this contract.
 
 ### Errors
 
-| Status | Code | Message |
-|---:|---|---|
-| 400 | `BILLING_LEDGER_QUERY_INVALID` | Invalid credit ledger query. |
-| 401 | `UNAUTHORIZED` | You need to sign in to access this resource. |
-| 503 | `BILLING_LEDGER_UNAVAILABLE` | Your credit history is temporarily unavailable. Try again. |
+| Status | Code                           | Message                                                    |
+| -----: | ------------------------------ | ---------------------------------------------------------- |
+|    400 | `BILLING_LEDGER_QUERY_INVALID` | Invalid credit ledger query.                               |
+|    401 | `UNAUTHORIZED`                 | You need to sign in to access this resource.               |
+|    503 | `BILLING_LEDGER_UNAVAILABLE`   | Your credit history is temporarily unavailable. Try again. |
 
 All errors use the standard safe envelope with `details: null` and a request ID.
 
@@ -1232,12 +1232,12 @@ credits. Only the signature-verified webhook flow may do that.
 
 ### Errors
 
-| Status | Code | Meaning |
-|---|---|---|
-| 401 | `UNAUTHORIZED` | No authenticated session is available. |
-| 422 | `BILLING_PACK_INVALID` | The request body is not exactly one approved pack. |
-| 429 | `RATE_LIMIT_EXCEEDED` | The authenticated user exceeded three Checkout attempts in one minute. |
-| 503 | `BILLING_CHECKOUT_UNAVAILABLE` | Stripe, Arcjet, or Checkout configuration is unavailable; no internal detail is exposed. |
+| Status | Code                           | Meaning                                                                                  |
+| ------ | ------------------------------ | ---------------------------------------------------------------------------------------- |
+| 401    | `UNAUTHORIZED`                 | No authenticated session is available.                                                   |
+| 422    | `BILLING_PACK_INVALID`         | The request body is not exactly one approved pack.                                       |
+| 429    | `RATE_LIMIT_EXCEEDED`          | The authenticated user exceeded three Checkout attempts in one minute.                   |
+| 503    | `BILLING_CHECKOUT_UNAVAILABLE` | Stripe, Arcjet, or Checkout configuration is unavailable; no internal detail is exposed. |
 
 ---
 
@@ -1418,19 +1418,19 @@ duplicate removal
 
 # 22. Endpoint-to-Vertical-Slice Map
 
-| Endpoint Group | First Required Slice |
-|---|---|
-| Auth | VS1 |
-| Projects | VS2 |
-| Upload | VS2 |
-| Billing | VS3 |
-| Processing | VS3–VS4 |
-| Clips | VS4–VS7 |
-| Summary | VS8 |
-| Render | VS6 |
-| Outputs | VS6 |
-| Refund behavior | VS9 |
-| Cleanup-related state | VS10 |
+| Endpoint Group        | First Required Slice |
+| --------------------- | -------------------- |
+| Auth                  | VS1                  |
+| Projects              | VS2                  |
+| Upload                | VS2                  |
+| Billing               | VS3                  |
+| Processing            | VS3–VS4              |
+| Clips                 | VS4–VS7              |
+| Summary               | VS8                  |
+| Render                | VS6                  |
+| Outputs               | VS6                  |
+| Refund behavior       | VS9                  |
+| Cleanup-related state | VS10                 |
 
 ---
 

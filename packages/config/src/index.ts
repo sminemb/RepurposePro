@@ -114,6 +114,11 @@ const serverEnvironmentSchema = z.object({
   LOG_PRETTY: booleanFromEnvironment,
 });
 
+const workerEnvironmentSchema = serverEnvironmentSchema.extend({
+  BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
+  DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
+});
+
 const apiEnvironmentSchema = serverEnvironmentSchema
   .extend({
     ARCJET_KEY: arcjetKeySchema,
@@ -224,7 +229,10 @@ export interface AuthConfig {
   readonly url: string;
 }
 
-export type WorkerConfig = ServerConfig;
+export interface WorkerConfig extends ServerConfig {
+  readonly bullmqPrefix: string;
+  readonly processingDatabaseUrl: string;
+}
 
 export class ConfigValidationError extends Error {
   public constructor(scope: string, issues: readonly z.core.$ZodIssue[]) {
@@ -360,16 +368,18 @@ export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
 }
 
 export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig {
-  const parsed = parseEnvironment(serverEnvironmentSchema, "worker", environment);
+  const parsed = parseEnvironment(workerEnvironmentSchema, "worker", environment);
 
   return {
     appEnv: parsed.APP_ENV,
+    bullmqPrefix: parsed.BULLMQ_PREFIX,
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
     nodeEnv: parsed.NODE_ENV,
+    processingDatabaseUrl: parsed.DATABASE_PROCESSING_URL,
     redisUrl: parsed.REDIS_URL,
   };
 }

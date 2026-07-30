@@ -71,4 +71,28 @@ describe("ProcessingFailureSweeperService", () => {
 
     expect(reschedule).toHaveBeenCalledWith(intent.intentId, intent.leaseToken, 1);
   });
+
+  it("reschedules an intent when an active worker lease defers finalization", async () => {
+    const markFinalized = vi.fn().mockResolvedValue(undefined);
+    const reschedule = vi.fn().mockResolvedValue(undefined);
+    const service = new ProcessingFailureSweeperService(
+      {
+        claim: vi.fn().mockResolvedValueOnce(intent).mockResolvedValueOnce(null),
+        markFinalized,
+        persist: vi.fn(),
+        reschedule,
+      },
+      {
+        handleTerminalFailure: vi
+          .fn()
+          .mockResolvedValue({ outcome: "lease_active", refundedCredits: 0 }),
+      } as never,
+      { intervalMs: 60_000, maxBatchSize: 10, sweeperId: "sweeper-test" },
+    );
+
+    await expect(service.sweepPending("background")).resolves.toBe(0);
+
+    expect(markFinalized).not.toHaveBeenCalled();
+    expect(reschedule).toHaveBeenCalledWith(intent.intentId, intent.leaseToken, 1);
+  });
 });

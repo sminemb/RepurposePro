@@ -103,12 +103,12 @@ Fields depend on Better Auth schema.
 
 Minimum application assumptions:
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid/text | Primary key |
-| `name` | text | Nullable depending on auth |
-| `email` | text | Unique |
-| `created_at` | timestamptz | Required |
+| Column       | Type        | Rules                      |
+| ------------ | ----------- | -------------------------- |
+| `id`         | uuid/text   | Primary key                |
+| `name`       | text        | Nullable depending on auth |
+| `email`      | text        | Unique                     |
+| `created_at` | timestamptz | Required                   |
 
 Ownership foreign keys should reference this user ID.
 
@@ -118,17 +118,17 @@ Ownership foreign keys should reference this user ID.
 
 Represents one user project.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `user_id` | uuid/text | FK users, required |
-| `name` | varchar(120) | Required |
-| `output_type` | enum | `clips` or `summary` |
-| `status` | enum | Required |
-| `current_job_id` | uuid nullable | FK processing_jobs; job must belong to this project |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
-| `deleted_at` | timestamptz nullable | Optional soft delete |
+| Column           | Type                 | Rules                                               |
+| ---------------- | -------------------- | --------------------------------------------------- |
+| `id`             | uuid                 | PK                                                  |
+| `user_id`        | uuid/text            | FK users, required                                  |
+| `name`           | varchar(120)         | Required                                            |
+| `output_type`    | enum                 | `clips` or `summary`                                |
+| `status`         | enum                 | Required                                            |
+| `current_job_id` | uuid nullable        | FK processing_jobs; job must belong to this project |
+| `created_at`     | timestamptz          | Required                                            |
+| `updated_at`     | timestamptz          | Required                                            |
+| `deleted_at`     | timestamptz nullable | Optional soft delete                                |
 
 Recommended status values:
 
@@ -167,27 +167,27 @@ Rules:
 
 Stores source video metadata.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects, unique for MVP |
-| `original_file_name` | text | Required |
-| `storage_path` | text | Internal only |
-| `mime_type` | text | Required |
-| `file_size_bytes` | bigint | Required |
-| `duration_seconds` | numeric | Required |
-| `width` | integer | Required |
-| `height` | integer | Required |
-| `fps` | numeric nullable | Optional |
-| `video_codec` | text nullable | Optional |
-| `audio_codec` | text nullable | Optional |
-| `has_audio` | boolean | Required |
-| `detected_language` | text nullable | Optional |
-| `checksum` | text nullable | Recommended |
-| `expires_at` | timestamptz | Required |
-| `deleted_at` | timestamptz nullable | Optional |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column               | Type                 | Rules                       |
+| -------------------- | -------------------- | --------------------------- |
+| `id`                 | uuid                 | PK                          |
+| `project_id`         | uuid                 | FK projects, unique for MVP |
+| `original_file_name` | text                 | Required                    |
+| `storage_path`       | text                 | Internal only               |
+| `mime_type`          | text                 | Required                    |
+| `file_size_bytes`    | bigint               | Required                    |
+| `duration_seconds`   | numeric              | Required                    |
+| `width`              | integer              | Required                    |
+| `height`             | integer              | Required                    |
+| `fps`                | numeric nullable     | Optional                    |
+| `video_codec`        | text nullable        | Optional                    |
+| `audio_codec`        | text nullable        | Optional                    |
+| `has_audio`          | boolean              | Required                    |
+| `detected_language`  | text nullable        | Optional                    |
+| `checksum`           | text nullable        | Recommended                 |
+| `expires_at`         | timestamptz          | Required                    |
+| `deleted_at`         | timestamptz nullable | Optional                    |
+| `created_at`         | timestamptz          | Required                    |
+| `updated_at`         | timestamptz          | Required                    |
 
 Constraints:
 
@@ -219,30 +219,30 @@ Indexes:
 
 Durable record of analysis, render, regeneration, and cleanup work.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects |
-| `user_id` | uuid/text | FK users |
-| `type` | enum | Required |
-| `status` | enum | Required |
-| `step` | enum nullable | Current processing step |
-| `progress` | integer nullable | 0–100 if meaningful |
-| `credits_charged` | integer | Default 0 |
-| `refund_eligible` | boolean | Default false |
-| `refund_completed_at` | timestamptz nullable | For idempotency |
-| `attempt_count` | integer | Default 0 |
-| `bullmq_job_id` | text nullable | Queue reference |
-| `error_code` | text nullable | Stable code |
-| `error_message` | text nullable | Sanitized message |
-| `execution_lease_token` | uuid nullable | Durable active-execution identity |
-| `execution_lease_owner` | text nullable | Worker/event source identity |
-| `execution_lease_expires_at` | timestamptz nullable | Stale-active recovery boundary |
-| `execution_heartbeat_at` | timestamptz nullable | Last durable heartbeat |
-| `started_at` | timestamptz nullable | |
-| `completed_at` | timestamptz nullable | |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column                       | Type                 | Rules                             |
+| ---------------------------- | -------------------- | --------------------------------- |
+| `id`                         | uuid                 | PK                                |
+| `project_id`                 | uuid                 | FK projects                       |
+| `user_id`                    | uuid/text            | FK users                          |
+| `type`                       | enum                 | Required                          |
+| `status`                     | enum                 | Required                          |
+| `step`                       | enum nullable        | Current processing step           |
+| `progress`                   | integer nullable     | 0–100 if meaningful               |
+| `credits_charged`            | integer              | Default 0                         |
+| `refund_eligible`            | boolean              | Default false                     |
+| `refund_completed_at`        | timestamptz nullable | For idempotency                   |
+| `attempt_count`              | integer              | Default 0                         |
+| `bullmq_job_id`              | text nullable        | Queue reference                   |
+| `error_code`                 | text nullable        | Stable code                       |
+| `error_message`              | text nullable        | Sanitized message                 |
+| `execution_lease_token`      | uuid nullable        | Durable active-execution identity |
+| `execution_lease_owner`      | text nullable        | Unique worker execution identity  |
+| `execution_lease_expires_at` | timestamptz nullable | Stale-active recovery boundary    |
+| `execution_heartbeat_at`     | timestamptz nullable | Last durable heartbeat            |
+| `started_at`                 | timestamptz nullable |                                   |
+| `completed_at`               | timestamptz nullable |                                   |
+| `created_at`                 | timestamptz          | Required                          |
+| `updated_at`                 | timestamptz          | Required                          |
 
 Job types:
 
@@ -297,7 +297,13 @@ The (id, project_id, user_id) ownership tuple is immutable after job creation.
 credits_charged is immutable and every deduction must equal its negative value.
 Projects may point only to a job for the same project; deleting that job clears current_job_id.
 The first accepted terminal error code, safe message, and refund eligibility are immutable.
-Active analysis recovery waits for a valid execution lease and terminally fails an expired lease.
+Only the restricted processing role may acquire, renew, release, or write progress through the
+execution-lease functions; direct lease-column mutation is denied.
+Lease acquisition validates the current project, published deterministic dispatch, positive charge,
+and one exact immutable deduction before `queued` becomes `active`.
+The 60-second lease requires exact owner/token renewal; expired leases permit fenced takeover.
+Active analysis recovery and failure intents wait for a valid lease and may terminally fail only
+after expiry.
 ```
 
 ---
@@ -306,28 +312,30 @@ Active analysis recovery waits for a valid execution lease and terminally fails 
 
 Durable outbox state for paid analysis publication.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `processing_job_id` | uuid | Unique FK to `processing_jobs` |
-| `status` | enum | `pending` or `published` |
-| `attempt_count` | integer | Non-negative |
-| `next_attempt_at` | timestamptz | Due time for automatic retry |
-| `lease_token` | uuid nullable | Claim identity |
-| `lease_owner` | text nullable | Dispatcher identity |
-| `lease_expires_at` | timestamptz nullable | Crash-recovery boundary |
-| `bullmq_job_id` | text nullable | Deterministic processing-job UUID when published |
-| `last_failure_stage` | text nullable | Sanitized internal stage |
-| `published_at` | timestamptz nullable | Required for published rows |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column               | Type                 | Rules                                            |
+| -------------------- | -------------------- | ------------------------------------------------ |
+| `id`                 | uuid                 | PK                                               |
+| `processing_job_id`  | uuid                 | Unique FK to `processing_jobs`                   |
+| `status`             | enum                 | `pending` or `published`                         |
+| `attempt_count`      | integer              | Non-negative                                     |
+| `next_attempt_at`    | timestamptz          | Due time for automatic retry                     |
+| `lease_token`        | uuid nullable        | Claim identity                                   |
+| `lease_owner`        | text nullable        | Dispatcher identity                              |
+| `lease_expires_at`   | timestamptz nullable | Crash-recovery boundary                          |
+| `bullmq_job_id`      | text nullable        | Deterministic processing-job UUID when published |
+| `last_failure_stage` | text nullable        | Sanitized internal stage                         |
+| `published_at`       | timestamptz nullable | Required for published rows                      |
+| `created_at`         | timestamptz          | Required                                         |
+| `updated_at`         | timestamptz          | Required                                         |
 
 The paid-start transaction creates this row with the processing job and deduction. Dispatchers use
 leased `SKIP LOCKED` claims for pending publication and published reconciliation. A claim is valid
 only for queued or active analysis jobs with a positive charge and one exact immutable deduction.
-Published queued rows are checked against Redis and deterministically restored when missing.
-Published active rows are never blindly republished. The table is inaccessible to generic runtime,
-Checkout, and webhook roles; the processing role can use only restricted dispatch functions.
+Published queued rows are checked against Redis. Their first missing observation records a
+15-second handoff wait; a later observation may deterministically restore the job. Published active
+rows are never blindly republished, and a valid execution lease overrides Redis state. The table is
+inaccessible to generic runtime, Checkout, and webhook roles; the processing role can use only
+restricted dispatch functions.
 
 ---
 
@@ -335,22 +343,22 @@ Checkout, and webhook roles; the processing role can use only restricted dispatc
 
 Durable terminal-failure work awaiting centralized finalization.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `processing_job_id` | uuid | Unique FK to `processing_jobs` |
-| `failure_code` | text | Supported safe code; immutable first reason |
-| `safe_message` | text | Sanitized, maximum 500 characters |
-| `source_reference` | text | Sanitized worker/event/reconciler reference |
-| `status` | enum | `pending` or `finalized` |
-| `attempt_count` | integer | Non-negative |
-| `next_attempt_at` | timestamptz | Due time for automatic retry |
-| `lease_token` | uuid nullable | Claim identity |
-| `lease_owner` | text nullable | Sweeper identity |
-| `lease_expires_at` | timestamptz nullable | Crash-recovery boundary |
-| `finalized_at` | timestamptz nullable | Required only for finalized rows |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column              | Type                 | Rules                                       |
+| ------------------- | -------------------- | ------------------------------------------- |
+| `id`                | uuid                 | PK                                          |
+| `processing_job_id` | uuid                 | Unique FK to `processing_jobs`              |
+| `failure_code`      | text                 | Supported safe code; immutable first reason |
+| `safe_message`      | text                 | Sanitized, maximum 500 characters           |
+| `source_reference`  | text                 | Sanitized worker/event/reconciler reference |
+| `status`            | enum                 | `pending` or `finalized`                    |
+| `attempt_count`     | integer              | Non-negative                                |
+| `next_attempt_at`   | timestamptz          | Due time for automatic retry                |
+| `lease_token`       | uuid nullable        | Claim identity                              |
+| `lease_owner`       | text nullable        | Sweeper identity                            |
+| `lease_expires_at`  | timestamptz nullable | Crash-recovery boundary                     |
+| `finalized_at`      | timestamptz nullable | Required only for finalized rows            |
+| `created_at`        | timestamptz          | Required                                    |
+| `updated_at`        | timestamptz          | Required                                    |
 
 QueueEvents and stale-job reconciliation persist this row before attempting a refund. Concurrent
 sweepers claim with `SKIP LOCKED`; lease expiry recovers crashes. A crash after refund commit but
@@ -362,17 +370,17 @@ before the intent marker is safe because refund finalization is idempotent.
 
 Stores one transcript per uploaded source video.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects |
-| `uploaded_video_id` | uuid | FK uploaded_videos |
-| `language` | text | MVP expects `en` |
-| `full_text` | text | Required |
-| `model_name` | text | Whisper model used |
-| `has_word_timestamps` | boolean | Required |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column                | Type        | Rules              |
+| --------------------- | ----------- | ------------------ |
+| `id`                  | uuid        | PK                 |
+| `project_id`          | uuid        | FK projects        |
+| `uploaded_video_id`   | uuid        | FK uploaded_videos |
+| `language`            | text        | MVP expects `en`   |
+| `full_text`           | text        | Required           |
+| `model_name`          | text        | Whisper model used |
+| `has_word_timestamps` | boolean     | Required           |
+| `created_at`          | timestamptz | Required           |
+| `updated_at`          | timestamptz | Required           |
 
 Constraints:
 
@@ -386,17 +394,17 @@ unique(uploaded_video_id)
 
 Timestamped transcript pieces.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `transcript_id` | uuid | FK transcripts |
-| `segment_index` | integer | Required |
-| `start_time` | numeric | Seconds |
-| `end_time` | numeric | Seconds |
-| `text` | text | Required |
-| `confidence` | numeric nullable | Optional |
-| `words_json` | jsonb nullable | Optional word timestamps |
-| `created_at` | timestamptz | Required |
+| Column          | Type             | Rules                    |
+| --------------- | ---------------- | ------------------------ |
+| `id`            | uuid             | PK                       |
+| `transcript_id` | uuid             | FK transcripts           |
+| `segment_index` | integer          | Required                 |
+| `start_time`    | numeric          | Seconds                  |
+| `end_time`      | numeric          | Seconds                  |
+| `text`          | text             | Required                 |
+| `confidence`    | numeric nullable | Optional                 |
+| `words_json`    | jsonb nullable   | Optional word timestamps |
+| `created_at`    | timestamptz      | Required                 |
 
 Constraints:
 
@@ -430,31 +438,31 @@ Example `words_json`:
 
 Stores primary and backup clip candidates plus editable preview metadata.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects |
-| `source_job_id` | uuid | FK processing_jobs |
-| `title` | text | Required |
-| `start_time` | numeric | Seconds |
-| `end_time` | numeric | Seconds |
-| `score` | integer nullable | 0–100 |
-| `reason` | text | Required |
-| `transcript_excerpt` | text nullable | Optional |
-| `is_backup` | boolean | Default false |
-| `selected` | boolean | Default true for primary |
-| `deleted` | boolean | Default false |
-| `replacement_for_clip_id` | uuid nullable | Self FK |
-| `caption_enabled` | boolean | Default true |
-| `caption_style` | text | Default `hormozi` |
-| `caption_font_size` | integer | Default from UI tokens |
-| `caption_position_json` | jsonb | Required |
-| `caption_lines_json` | jsonb | Required |
-| `crop_metadata_json` | jsonb nullable | Face-aware crop metadata |
-| `version` | integer | Optimistic locking, default 1 |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
-| `deleted_at` | timestamptz nullable | Optional |
+| Column                    | Type                 | Rules                         |
+| ------------------------- | -------------------- | ----------------------------- |
+| `id`                      | uuid                 | PK                            |
+| `project_id`              | uuid                 | FK projects                   |
+| `source_job_id`           | uuid                 | FK processing_jobs            |
+| `title`                   | text                 | Required                      |
+| `start_time`              | numeric              | Seconds                       |
+| `end_time`                | numeric              | Seconds                       |
+| `score`                   | integer nullable     | 0–100                         |
+| `reason`                  | text                 | Required                      |
+| `transcript_excerpt`      | text nullable        | Optional                      |
+| `is_backup`               | boolean              | Default false                 |
+| `selected`                | boolean              | Default true for primary      |
+| `deleted`                 | boolean              | Default false                 |
+| `replacement_for_clip_id` | uuid nullable        | Self FK                       |
+| `caption_enabled`         | boolean              | Default true                  |
+| `caption_style`           | text                 | Default `hormozi`             |
+| `caption_font_size`       | integer              | Default from UI tokens        |
+| `caption_position_json`   | jsonb                | Required                      |
+| `caption_lines_json`      | jsonb                | Required                      |
+| `crop_metadata_json`      | jsonb nullable       | Face-aware crop metadata      |
+| `version`                 | integer              | Optimistic locking, default 1 |
+| `created_at`              | timestamptz          | Required                      |
+| `updated_at`              | timestamptz          | Required                      |
+| `deleted_at`              | timestamptz nullable | Optional                      |
 
 Constraints:
 
@@ -515,18 +523,18 @@ Example crop metadata:
 
 Stores editable chronological summary selections.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects |
-| `source_job_id` | uuid | FK processing_jobs |
-| `segment_order` | integer | Required |
-| `start_time` | numeric | Required |
-| `end_time` | numeric | Required |
-| `reason` | text | Required |
-| `selected` | boolean | Default true |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column          | Type        | Rules              |
+| --------------- | ----------- | ------------------ |
+| `id`            | uuid        | PK                 |
+| `project_id`    | uuid        | FK projects        |
+| `source_job_id` | uuid        | FK processing_jobs |
+| `segment_order` | integer     | Required           |
+| `start_time`    | numeric     | Required           |
+| `end_time`      | numeric     | Required           |
+| `reason`        | text        | Required           |
+| `selected`      | boolean     | Default true       |
+| `created_at`    | timestamptz | Required           |
+| `updated_at`    | timestamptz | Required           |
 
 Constraints:
 
@@ -553,27 +561,27 @@ Recommended index:
 
 Stores final downloadable clip and summary files.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `project_id` | uuid | FK projects |
-| `render_job_id` | uuid | FK processing_jobs |
-| `clip_candidate_id` | uuid nullable | FK clip_candidates |
-| `type` | enum | `clip` or `summary` |
-| `title` | text | Required |
-| `storage_path` | text | Internal only |
-| `file_name` | text | Required |
-| `mime_type` | text | Usually `video/mp4` |
-| `file_size_bytes` | bigint | Required |
-| `duration_seconds` | numeric | Required |
-| `width` | integer | Required |
-| `height` | integer | Required |
-| `video_codec` | text | Expected H.264 |
-| `audio_codec` | text | Expected AAC |
-| `status` | enum | Required |
-| `expires_at` | timestamptz | Required |
-| `deleted_at` | timestamptz nullable | Optional |
-| `created_at` | timestamptz | Required |
+| Column              | Type                 | Rules               |
+| ------------------- | -------------------- | ------------------- |
+| `id`                | uuid                 | PK                  |
+| `project_id`        | uuid                 | FK projects         |
+| `render_job_id`     | uuid                 | FK processing_jobs  |
+| `clip_candidate_id` | uuid nullable        | FK clip_candidates  |
+| `type`              | enum                 | `clip` or `summary` |
+| `title`             | text                 | Required            |
+| `storage_path`      | text                 | Internal only       |
+| `file_name`         | text                 | Required            |
+| `mime_type`         | text                 | Usually `video/mp4` |
+| `file_size_bytes`   | bigint               | Required            |
+| `duration_seconds`  | numeric              | Required            |
+| `width`             | integer              | Required            |
+| `height`            | integer              | Required            |
+| `video_codec`       | text                 | Expected H.264      |
+| `audio_codec`       | text                 | Expected AAC        |
+| `status`            | enum                 | Required            |
+| `expires_at`        | timestamptz          | Required            |
+| `deleted_at`        | timestamptz nullable | Optional            |
+| `created_at`        | timestamptz          | Required            |
 
 Output statuses:
 
@@ -608,18 +616,18 @@ Immutable source of truth for credit movement.
 Never update, delete, or truncate ledger rows. The database rejects all three operations with
 immutability triggers.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `user_id` | uuid/text | FK users |
-| `type` | enum | Required |
-| `amount` | integer | Non-zero signed amount |
-| `project_id` | uuid nullable | FK projects |
-| `processing_job_id` | uuid nullable | FK processing_jobs |
-| `stripe_payment_id` | uuid nullable | FK stripe_payments |
-| `description` | text | Required |
-| `idempotency_key` | text | Required, unique |
-| `created_at` | timestamptz | Required |
+| Column              | Type          | Rules                  |
+| ------------------- | ------------- | ---------------------- |
+| `id`                | uuid          | PK                     |
+| `user_id`           | uuid/text     | FK users               |
+| `type`              | enum          | Required               |
+| `amount`            | integer       | Non-zero signed amount |
+| `project_id`        | uuid nullable | FK projects            |
+| `processing_job_id` | uuid nullable | FK processing_jobs     |
+| `stripe_payment_id` | uuid nullable | FK stripe_payments     |
+| `description`       | text          | Required               |
+| `idempotency_key`   | text          | Required, unique       |
+| `created_at`        | timestamptz   | Required               |
 
 Ledger types:
 
@@ -679,13 +687,13 @@ For performance, a cached balance may exist later, but the ledger remains author
 
 Maps RepurposePro users to Stripe customers.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `user_id` | uuid/text | FK users, unique |
-| `stripe_customer_id` | text | Unique |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| Column               | Type        | Rules            |
+| -------------------- | ----------- | ---------------- |
+| `id`                 | uuid        | PK               |
+| `user_id`            | uuid/text   | FK users, unique |
+| `stripe_customer_id` | text        | Unique           |
+| `created_at`         | timestamptz | Required         |
+| `updated_at`         | timestamptz | Required         |
 
 ---
 
@@ -693,20 +701,20 @@ Maps RepurposePro users to Stripe customers.
 
 Stores confirmed payment records.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `user_id` | uuid/text | FK users |
-| `stripe_customer_id` | text nullable | |
-| `stripe_checkout_session_id` | text nullable | Unique where present |
-| `stripe_payment_intent_id` | text nullable | Unique where present |
-| `stripe_event_id` | text | Unique |
-| `pack_code` | text | `starter`, `creator`, `pro` |
-| `amount_cents` | integer | Required |
-| `currency` | text | Usually `usd` |
-| `credits_granted` | integer | Required |
-| `status` | enum | Required |
-| `created_at` | timestamptz | Required |
+| Column                       | Type          | Rules                       |
+| ---------------------------- | ------------- | --------------------------- |
+| `id`                         | uuid          | PK                          |
+| `user_id`                    | uuid/text     | FK users                    |
+| `stripe_customer_id`         | text nullable |                             |
+| `stripe_checkout_session_id` | text nullable | Unique where present        |
+| `stripe_payment_intent_id`   | text nullable | Unique where present        |
+| `stripe_event_id`            | text          | Unique                      |
+| `pack_code`                  | text          | `starter`, `creator`, `pro` |
+| `amount_cents`               | integer       | Required                    |
+| `currency`                   | text          | Usually `usd`               |
+| `credits_granted`            | integer       | Required                    |
+| `status`                     | enum          | Required                    |
+| `created_at`                 | timestamptz   | Required                    |
 
 Statuses:
 
@@ -741,18 +749,18 @@ credits
 
 Recommended for webhook idempotency.
 
-| Column | Type | Rules |
-|---|---|---|
-| `id` | uuid | PK |
-| `stripe_event_id` | text | Unique |
-| `event_type` | text | Required |
-| `processed_at` | timestamptz nullable | |
-| `status` | enum | Required |
-| `error_message` | text nullable | Sanitized |
-| `attempt_count` | integer | Non-negative processing attempts |
+| Column            | Type                 | Rules                             |
+| ----------------- | -------------------- | --------------------------------- |
+| `id`              | uuid                 | PK                                |
+| `stripe_event_id` | text                 | Unique                            |
+| `event_type`      | text                 | Required                          |
+| `processed_at`    | timestamptz nullable |                                   |
+| `status`          | enum                 | Required                          |
+| `error_message`   | text nullable        | Sanitized                         |
+| `attempt_count`   | integer              | Non-negative processing attempts  |
 | `last_attempt_at` | timestamptz nullable | Last financial-processing attempt |
-| `created_at` | timestamptz | Required |
-| `updated_at` | timestamptz | Required |
+| `created_at`      | timestamptz          | Required                          |
+| `updated_at`      | timestamptz          | Required                          |
 
 Statuses:
 
@@ -1095,21 +1103,21 @@ Workers should load authoritative data from PostgreSQL and storage.
 
 # 25. Database-to-Vertical-Slice Map
 
-| Table | First Required Slice |
-|---|---|
-| Better Auth tables | VS1 |
-| projects | VS2 |
-| uploaded_videos | VS2 |
-| credit_ledger | VS3 |
-| stripe_customers | VS3 |
-| stripe_payments | VS3 |
-| stripe_webhook_events | VS3 |
-| processing_jobs | VS3 |
-| transcripts | VS4 |
-| transcript_segments | VS4 |
-| clip_candidates | VS4 |
-| rendered_outputs | VS6 |
-| summary_segments | VS8 |
+| Table                 | First Required Slice |
+| --------------------- | -------------------- |
+| Better Auth tables    | VS1                  |
+| projects              | VS2                  |
+| uploaded_videos       | VS2                  |
+| credit_ledger         | VS3                  |
+| stripe_customers      | VS3                  |
+| stripe_payments       | VS3                  |
+| stripe_webhook_events | VS3                  |
+| processing_jobs       | VS3                  |
+| transcripts           | VS4                  |
+| transcript_segments   | VS4                  |
+| clip_candidates       | VS4                  |
+| rendered_outputs      | VS6                  |
+| summary_segments      | VS8                  |
 
 ---
 

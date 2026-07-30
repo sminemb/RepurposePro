@@ -9,10 +9,6 @@ import { VIDEO_ANALYSIS_QUEUE_NAME } from "@repurposepro/shared";
 import { type ConnectionOptions, QueueEvents } from "bullmq";
 import type Redis from "ioredis";
 
-import {
-  PROCESSING_EXECUTION_LEASE_REPOSITORY,
-  type ProcessingExecutionLeaseRepositoryContract,
-} from "./processing-execution-lease.repository";
 import { ProcessingFailureIntentService } from "./processing-failure-intent.service";
 import { ANALYSIS_RETRIES_EXHAUSTED } from "./processing-failure.service";
 
@@ -23,10 +19,6 @@ export interface AnalysisQueueEventsClient {
   on(event: "error", listener: (error: Error) => void): AnalysisQueueEventsClient;
   on(
     event: "retries-exhausted",
-    listener: (args: { readonly jobId: string }, eventId: string) => Promise<void> | void,
-  ): AnalysisQueueEventsClient;
-  on(
-    event: "active" | "progress",
     listener: (args: { readonly jobId: string }, eventId: string) => Promise<void> | void,
   ): AnalysisQueueEventsClient;
   waitUntilReady(): Promise<unknown>;
@@ -65,8 +57,6 @@ export class AnalysisQueueFailureListener implements OnModuleInit, OnModuleDestr
 
   public constructor(
     private readonly processingFailureIntentService: ProcessingFailureIntentService,
-    @Inject(PROCESSING_EXECUTION_LEASE_REPOSITORY)
-    private readonly executionLeaseRepository: ProcessingExecutionLeaseRepositoryContract,
     @Inject(ANALYSIS_QUEUE_EVENTS)
     private readonly queueEvents: AnalysisQueueEventsClient,
   ) {}
@@ -77,12 +67,6 @@ export class AnalysisQueueFailureListener implements OnModuleInit, OnModuleDestr
     });
     this.queueEvents.on("retries-exhausted", async ({ jobId }, eventId) => {
       await this.persistTerminalFailure(jobId, eventId);
-    });
-    this.queueEvents.on("active", async ({ jobId }, eventId) => {
-      await this.touchExecutionLease(jobId, eventId);
-    });
-    this.queueEvents.on("progress", async ({ jobId }, eventId) => {
-      await this.touchExecutionLease(jobId, eventId);
     });
     await this.queueEvents.waitUntilReady();
   }
@@ -106,18 +90,6 @@ export class AnalysisQueueFailureListener implements OnModuleInit, OnModuleDestr
         failureCode: ANALYSIS_RETRIES_EXHAUSTED,
         jobId,
         requestId,
-      });
-    }
-  }
-
-  private async touchExecutionLease(jobId: string, eventId: string): Promise<void> {
-    try {
-      await this.executionLeaseRepository.touch(jobId, `queue-event:${eventId}`);
-    } catch {
-      this.logger.error({
-        event: "processing_execution_lease_update_failed",
-        jobId,
-        requestId: `queue-event:${eventId}`,
       });
     }
   }

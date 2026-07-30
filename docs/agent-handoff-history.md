@@ -276,7 +276,7 @@ Last Updated By: Codex
 
 This update supersedes earlier VS2 handoff snapshots.
 
-~~~text
+```text
 Current Slice: VS2 — User can create a project and upload a validated video
 Current Task: VS3-T1 — Create credit ledger and Stripe payment schemas
 Current Status: COMPLETED
@@ -290,7 +290,7 @@ Required Commands Before Continuing: pnpm infra:up; pnpm ci:check; run the VS3 d
 Last Updated Date: 2026-07-13
 Last Updated Time: 19:01
 Last Updated By: Codex
-~~~
+```
 
 ### MAINT-16 Commit Confirmation - 2026-07-27 15:55 Asia/Manila
 
@@ -301,7 +301,7 @@ Last Updated By: Codex
 
 ### MAINT-15 Commit Correction Snapshot - 2026-07-27 14:53 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -315,13 +315,13 @@ Required Commands Before Continuing: Begin VS4-T1 with TDD and run `pnpm ci:chec
 Last Updated Date: 2026-07-27
 Last Updated Time: 14:53
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-15 Completion Handoff Snapshot - 2026-07-27 14:51 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -335,11 +335,11 @@ Required Commands Before Continuing: Resolve `.git` write permission, commit MAI
 Last Updated Date: 2026-07-27
 Last Updated Time: 14:51
 Last Updated By: Codex
-~~~
+```
 
 ### VS3-T4 Completion Handoff - 2026-07-18 18:21 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4.1 - Expose credit ledger history and transaction-history UI
 Current Status: IN_PROGRESS
@@ -353,11 +353,11 @@ Required Commands Before Continuing: Run pnpm ci:check after new code. Start Str
 Last Updated Date: 2026-07-18
 Last Updated Time: 18:21
 Last Updated By: Codex
-~~~
+```
 
 ### VS3-T4 Live Acceptance Checkpoint - 2026-07-18 18:02 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
 Current Status: IN_PROGRESS
@@ -371,11 +371,11 @@ Required Commands Before Continuing: Use the active listener and API. Authentica
 Last Updated Date: 2026-07-18
 Last Updated Time: 18:02
 Last Updated By: Codex
-~~~
+```
 
 ### MAINT-11 Handoff Update - 2026-07-18 12:08 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
 Current Status: NOT_STARTED
@@ -389,13 +389,13 @@ Required Commands Before Continuing: Add valid Stripe and Arcjet local environme
 Last Updated Date: 2026-07-18
 Last Updated Time: 12:08
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-8 Handoff Update - 2026-07-16 21:31 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -409,13 +409,13 @@ Required Commands Before Continuing: Commit MAINT-8; then keep runtime DATABASE_
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:31
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T2 Handoff Update — 2026-07-16 19:32 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T3 — Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -429,13 +429,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; start lo
 Last Updated Date: 2026-07-16
 Last Updated Time: 19:32
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T1 Handoff Update — 2026-07-15 11:56 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1.1 — Harden payment, job-charge, runtime-role, and integration-test integrity
 Current Status: IN_PROGRESS
@@ -449,13 +449,13 @@ Required Commands Before Continuing: pnpm infra:up; run owner-role migrations an
 Last Updated Date: 2026-07-15
 Last Updated Time: 11:56
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T1.1 Handoff Update — 2026-07-15 13:28 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T1.2 — Close runtime credential and mandatory PostgreSQL test gaps
 Current Status: IN_PROGRESS
@@ -469,13 +469,13 @@ Required Commands Before Continuing: pnpm db:migrate:bootstrap; pnpm db:provisio
 Last Updated Date: 2026-07-15
 Last Updated Time: 13:28
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T1.2 Handoff Update — 2026-07-15 15:22 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 — User can buy credits and start a paid processing job
 Current Task: VS3-T2 — Build credit balance and credit-pack UI
 Current Status: IN_PROGRESS
@@ -489,13 +489,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; run pnpm
 Last Updated Date: 2026-07-15
 Last Updated Time: 15:22
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-5 Handoff Update — 2026-07-16 07:31 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T2 - Build credit balance and credit-pack UI
 Current Status: IN_PROGRESS
@@ -509,13 +509,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; run pnpm
 Last Updated Date: 2026-07-16
 Last Updated Time: 07:31
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T2-R1 Handoff Update — 2026-07-16 20:26 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -529,13 +529,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcj
 Last Updated Date: 2026-07-16
 Last Updated Time: 20:26
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-6 Handoff Update - 2026-07-16 20:53 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -549,13 +549,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcj
 Last Updated Date: 2026-07-16
 Last Updated Time: 20:53
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-7 Handoff Update — 2026-07-16 21:04 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -569,13 +569,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcj
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:04
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-7 Commit Handoff Update — 2026-07-16 21:08 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -589,13 +589,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env; add Arcj
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:08
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-9 Handoff Update - 2026-07-16 21:36 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -609,13 +609,13 @@ Required Commands Before Continuing: Commit MAINT-8 and MAINT-9; then keep runti
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:36
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-9 Commit Handoff Update - 2026-07-16 21:40 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T3 - Create Stripe Checkout session and redirect flow
 Current Status: NOT_STARTED
@@ -629,13 +629,13 @@ Required Commands Before Continuing: Keep runtime DATABASE_URL in .env, add Arcj
 Last Updated Date: 2026-07-16
 Last Updated Time: 21:40
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-10 Handoff Update - 2026-07-18 11:28 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
 Current Status: NOT_STARTED
@@ -649,13 +649,13 @@ Required Commands Before Continuing: Commit MAINT-10. Then add valid STRIPE_WEBH
 Last Updated Date: 2026-07-18
 Last Updated Time: 11:28
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-10 Commit Handoff Update - 2026-07-18 11:31 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Verify Stripe webhook signature and idempotently grant credits
 Current Status: NOT_STARTED
@@ -669,13 +669,13 @@ Required Commands Before Continuing: Add valid STRIPE_WEBHOOK_SECRET, Stripe tes
 Last Updated Date: 2026-07-18
 Last Updated Time: 11:31
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T4 Implementation Handoff Update - 2026-07-18 16:44 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
 Current Status: IN_PROGRESS
@@ -689,13 +689,13 @@ Required Commands Before Continuing: Set the five Stripe values in .env without 
 Last Updated Date: 2026-07-18
 Last Updated Time: 16:44
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T4 Stripe Price Provisioning Handoff Update - 2026-07-18 17:37 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T4 - Complete live Stripe test-mode webhook acceptance
 Current Status: IN_PROGRESS
@@ -709,13 +709,13 @@ Required Commands Before Continuing: Paste the three returned price_ IDs and sk_
 Last Updated Date: 2026-07-18
 Last Updated Time: 17:37
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T4.1 Completion Handoff Snapshot - 2026-07-19 08:49 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T5 - Deduct credits and create processing job in one DB transaction
 Current Status: NOT_STARTED
@@ -729,13 +729,13 @@ Required Commands Before Continuing: Run pnpm ci:check before handoff after new 
 Last Updated Date: 2026-07-19
 Last Updated Time: 08:49
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T5 Completion Handoff Snapshot - 2026-07-19 11:44 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Current Status: NOT_STARTED
@@ -749,13 +749,13 @@ Required Commands Before Continuing: Run pnpm ci:check after VS3-T6 changes. Add
 Last Updated Date: 2026-07-19
 Last Updated Time: 11:44
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T5 Documentation Reconciliation Snapshot - 2026-07-19 11:58 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Current Status: NOT_STARTED
@@ -769,13 +769,13 @@ Required Commands Before Continuing: Commit this documentation reconciliation. T
 Last Updated Date: 2026-07-19
 Last Updated Time: 11:58
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T5 Independent Review Snapshot - 2026-07-19 12:16 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T5 - Restrict paid-analysis retries to analysis jobs
 Current Status: IN_PROGRESS
@@ -789,13 +789,13 @@ Required Commands Before Continuing: Add the analysis-job type predicate and its
 Last Updated Date: 2026-07-19
 Last Updated Time: 12:16
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T5 Required Fix Completion Snapshot - 2026-07-19 12:59 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T6 - Enqueue analysis job in BullMQ
 Current Status: NOT_STARTED
@@ -809,13 +809,13 @@ Required Commands Before Continuing: Implement VS3-T6 against the durable queued
 Last Updated Date: 2026-07-19
 Last Updated Time: 12:59
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T6 Completion Handoff Snapshot - 2026-07-19 13:58 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS3-T7 - Show queued processing state in UI
 Current Status: NOT_STARTED
@@ -829,13 +829,13 @@ Required Commands Before Continuing: Implement VS3-T7 against persisted project/
 Last Updated Date: 2026-07-19
 Last Updated Time: 13:58
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### VS3-T8 Security Remediation Completion Snapshot - 2026-07-26 16:47 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 - User can buy credits and start a paid processing job
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -849,13 +849,13 @@ Required Commands Before Continuing: Provision the new database roles and rotate
 Last Updated Date: 2026-07-26
 Last Updated Time: 16:47
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-14 Local Secret Rotation Completion Snapshot - 2026-07-26 19:05 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -869,13 +869,13 @@ Required Commands Before Continuing: Run `pnpm infra:check` if local containers 
 Last Updated Date: 2026-07-26
 Last Updated Time: 19:05
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-16 Credit-Balance Runtime Restoration Checkpoint - 2026-07-27 15:29 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS3 maintenance - Credit balance runtime restoration
 Current Task: MAINT-16 - Restore local credit-balance API availability and startup diagnostics
 Current Status: IN_PROGRESS
@@ -889,13 +889,13 @@ Required Commands Before Continuing: `pnpm infra:check`; temporary API boot/read
 Last Updated Date: 2026-07-27
 Last Updated Time: 15:29
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-16 Credit-Balance Runtime Restoration Completion - 2026-07-27 15:55 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -909,13 +909,13 @@ Required Commands Before Continuing: Commit MAINT-16; optionally rerun repositor
 Last Updated Date: 2026-07-27
 Last Updated Time: 15:55
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-17 Missing Stripe Credit Recovery Completion - 2026-07-27 16:34 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -929,13 +929,13 @@ Required Commands Before Continuing: Address the unrelated ESLint project-servic
 Last Updated Date: 2026-07-27
 Last Updated Time: 16:34
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-17 Commit Completion - 2026-07-27 16:38 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -949,13 +949,13 @@ Required Commands Before Continuing: Address the unrelated ESLint project-servic
 Last Updated Date: 2026-07-27
 Last Updated Time: 16:38
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-18 Local PostgreSQL Credential Repair Completion - 2026-07-27 16:51 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -969,13 +969,13 @@ Required Commands Before Continuing: Keep the current API watcher or run pnpm de
 Last Updated Date: 2026-07-27
 Last Updated Time: 16:51
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-18 Commit Completion - 2026-07-27 16:53 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T1 - Define clip candidate metadata and analysis-stage contracts
 Current Status: NOT_STARTED
@@ -989,13 +989,13 @@ Required Commands Before Continuing: Keep the current API watcher or run pnpm de
 Last Updated Date: 2026-07-27
 Last Updated Time: 16:53
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-19 Completion - 2026-07-27 17:50 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
 Current Status: COMPLETED
@@ -1009,13 +1009,13 @@ Required Commands Before Continuing: Run pnpm dev for the complete local stack. 
 Last Updated Date: 2026-07-27
 Last Updated Time: 17:50
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-19 Commit Completion - 2026-07-27 17:52 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: MAINT-19 - Recover pending Stripe credits and auto-start validated webhook forwarding
 Current Status: COMPLETED
@@ -1029,13 +1029,13 @@ Required Commands Before Continuing: Run pnpm dev for the complete local stack. 
 Last Updated Date: 2026-07-27
 Last Updated Time: 17:52
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-20 Completion - 2026-07-27 19:00 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
 Current Status: COMPLETED
@@ -1049,13 +1049,13 @@ Required Commands Before Continuing: Use pnpm test:db-integration rather than in
 Last Updated Date: 2026-07-27
 Last Updated Time: 19:00
 Last Updated By: Codex
-~~~
+```
 
 ---
 
 ### MAINT-20 Commit Completion - 2026-07-27 19:08 Asia/Manila
 
-~~~text
+```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: MAINT-20 - Repair scoped PostgreSQL authentication for pnpm dev
 Current Status: COMPLETED
@@ -1069,7 +1069,8 @@ Required Commands Before Continuing: Use pnpm test:db-integration rather than in
 Last Updated Date: 2026-07-27
 Last Updated Time: 19:08
 Last Updated By: Codex
-~~~
+```
+
 ### OPS-PR-01 Blocked handoff - 2026-07-29 09:45 Asia/Manila
 
 ```text
@@ -1105,6 +1106,7 @@ Last Updated Date: 2026-07-29
 Last Updated Time: 09:53
 Last Updated By: Codex
 ```
+
 ### OPS-PR-01 Credential recheck handoff - 2026-07-29 09:55 Asia/Manila
 
 ```text
@@ -1122,6 +1124,7 @@ Last Updated Date: 2026-07-29
 Last Updated Time: 09:55
 Last Updated By: Codex
 ```
+
 ### OPS-PR-01 Remote review refs handoff - 2026-07-29 10:12 Asia/Manila
 
 ```text
@@ -1215,5 +1218,26 @@ Important Context: Current graph project name is `D-Projects-RepurposePro`; full
 Required Commands Before Continuing: Commit MAINT-22 files when `.git/index.lock` is writable; apply migration `0016_close_vs3_reliability_gaps.sql` before VS4-T1.
 Last Updated Date: 2026-07-30
 Last Updated Time: 13:23
+Last Updated By: Codex
+```
+
+### VS3-R3 Completion Handoff — 2026-07-30 17:12 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Last Maintenance Task: MAINT-22 - Re-index project codebase graph
+Current Status: NOT_STARTED
+Start Date: —
+Start Time: —
+Last Completed Task: VS3-R3 - Fix worker execution-lease handoff race
+Next Recommended Task: VS4-T1 - Implement the first real analysis handler through ProcessingLifecycleService.
+Uncommitted Changes: No intended VS3-R3 changes remain after its focused commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. Full unit and live PostgreSQL/Redis suites, focused lint, API/worker typecheck, production builds, changed-file formatting, and whitespace checks pass.
+Known Blockers: None.
+Important Context: Apply migration `0017_worker_execution_leases.sql` before starting the updated API/worker. Production BullMQ analysis consumption remains disabled until VS4 adds a real handler. Every future handler must use ProcessingLifecycleService and its abort signal/token-bound persistence.
+Required Commands Before Continuing: Apply migration `0017` in each environment, then begin VS4-T1 with TDD. Keep FFmpeg, Whisper, and Gemini work behind the worker lifecycle boundary.
+Last Updated Date: 2026-07-30
+Last Updated Time: 17:12
 Last Updated By: Codex
 ```

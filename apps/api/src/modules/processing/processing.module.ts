@@ -25,10 +25,6 @@ import {
   ArcjetAnalysisRateLimitClient,
 } from "./analysis-rate-limit.guard";
 import {
-  PROCESSING_EXECUTION_LEASE_REPOSITORY,
-  ProcessingExecutionLeaseRepository,
-} from "./processing-execution-lease.repository";
-import {
   PROCESSING_FAILURE_INTENT_REPOSITORY,
   ProcessingFailureIntentRepository,
 } from "./processing-failure-intent.repository";
@@ -65,7 +61,6 @@ import { ProcessingStatusService } from "./processing-status.service";
     AnalysisDispatchRepository,
     AnalysisDispatcherService,
     AnalysisQueueFailureListener,
-    ProcessingExecutionLeaseRepository,
     ProcessingFailureIntentRepository,
     ProcessingFailureIntentService,
     ProcessingFailureRepository,
@@ -98,10 +93,6 @@ import { ProcessingStatusService } from "./processing-status.service";
     {
       provide: PROCESSING_FAILURE_INTENT_REPOSITORY,
       useExisting: ProcessingFailureIntentRepository,
-    },
-    {
-      provide: PROCESSING_EXECUTION_LEASE_REPOSITORY,
-      useExisting: ProcessingExecutionLeaseRepository,
     },
     {
       provide: PROCESSING_FAILURE_SWEEPER_OPTIONS,

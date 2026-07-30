@@ -286,9 +286,9 @@ Startup validation rejects bootstrap and migration-owner roles. Do not commit re
 
 ---
 
-## Sensitive API database URLs
+## Sensitive scoped database URLs
 
-The API also requires three least-privilege PostgreSQL identities:
+The API requires three least-privilege PostgreSQL identities:
 
 ```env
 DATABASE_CHECKOUT_URL=postgresql://repurposepro_checkout:password@localhost:5432/repurposepro
@@ -297,11 +297,16 @@ DATABASE_PROCESSING_URL=postgresql://repurposepro_processing:password@localhost:
 ```
 
 Checkout may only create and attach Checkout attempts. Webhook may only record Stripe events,
-expire attempts, and grant correlated purchases. Processing may only start and mark paid analysis
-jobs. The generic runtime identity cannot call these financial functions.
+expire attempts, and grant correlated purchases. Processing may start paid analysis, reconcile
+dispatch/failure state, and call the token-fenced execution-lease functions. The generic runtime
+identity cannot call these restricted functions or mutate lease columns directly.
 
-These identities reduce the impact of a leaked generic runtime credential. The API process still
-holds all four runtime secrets, so deployment secret isolation remains a later service-split option.
+The worker also requires `DATABASE_PROCESSING_URL`; startup rejects another database role. It uses
+this identity to acquire, renew, release, and persist lease-bound progress. Production BullMQ
+analysis consumption remains disabled until VS4 supplies a real protected handler.
+
+These identities reduce the impact of a leaked generic runtime credential. The API holds its scoped
+secrets, while the worker receives only the database credentials required by its process.
 
 ---
 
@@ -1672,39 +1677,39 @@ TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5
 
 # 21. App Ownership Matrix
 
-| Variable Group | Web | API | Worker |
-|---|---:|---:|---:|
-| App URLs | Yes | Yes | Optional |
-| Database | No | Yes | Yes |
-| Redis | No | Yes | Yes |
-| Better Auth | Yes/Server | Yes | No |
-| Stripe secret | No | Yes | No |
-| Gemini | No | No | Yes |
-| Whisper | No | No | Yes |
-| FFmpeg | No | Optional probe | Yes |
-| Storage | Optional | Yes | Yes |
-| Arcjet | Optional | Yes | No |
-| Logging | Yes | Yes | Yes |
+| Variable Group |        Web |            API |   Worker |
+| -------------- | ---------: | -------------: | -------: |
+| App URLs       |        Yes |            Yes | Optional |
+| Database       |         No |            Yes |      Yes |
+| Redis          |         No |            Yes |      Yes |
+| Better Auth    | Yes/Server |            Yes |       No |
+| Stripe secret  |         No |            Yes |       No |
+| Gemini         |         No |             No |      Yes |
+| Whisper        |         No |             No |      Yes |
+| FFmpeg         |         No | Optional probe |      Yes |
+| Storage        |   Optional |            Yes |      Yes |
+| Arcjet         |   Optional |            Yes |       No |
+| Logging        |        Yes |            Yes |      Yes |
 
 ---
 
 # 22. Vertical-Slice Activation Map
 
-| Slice | New Environment Groups First Needed |
-|---|---|
-| VS0 | Runtime, database, Redis, logging |
-| VS1 | Better Auth, CORS, cookies |
-| VS2 | FFprobe, storage, upload limits |
-| VS3 | Stripe |
-| VS4 | Whisper, Gemini, FFmpeg audio extraction |
-| VS5 | No major new env group |
-| VS6 | FFmpeg render configuration |
-| VS7 | Gemini regeneration settings |
-| VS8 | Gemini summary model |
-| VS9 | No major new env group |
-| VS10 | Cleanup schedule, retention |
-| VS11 | Arcjet |
-| VS12 | Test env and mocks |
+| Slice | New Environment Groups First Needed      |
+| ----- | ---------------------------------------- |
+| VS0   | Runtime, database, Redis, logging        |
+| VS1   | Better Auth, CORS, cookies               |
+| VS2   | FFprobe, storage, upload limits          |
+| VS3   | Stripe                                   |
+| VS4   | Whisper, Gemini, FFmpeg audio extraction |
+| VS5   | No major new env group                   |
+| VS6   | FFmpeg render configuration              |
+| VS7   | Gemini regeneration settings             |
+| VS8   | Gemini summary model                     |
+| VS9   | No major new env group                   |
+| VS10  | Cleanup schedule, retention              |
+| VS11  | Arcjet                                   |
+| VS12  | Test env and mocks                       |
 
 ---
 

@@ -120,18 +120,18 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
 
     try {
       if (dispatch.jobStatus === "active") {
-        const state = await this.queue.inspect(payload);
-        if (state === null) {
-          if (
-            dispatch.executionLeaseExpiresAt !== null &&
-            dispatch.executionLeaseExpiresAt.getTime() > Date.now()
-          ) {
-            bullmqJobId = dispatch.jobId;
-          } else {
-            await this.recordTerminalFailure(dispatch, WORKER_EXECUTION_LEASE_EXPIRED, requestId);
-            bullmqJobId = dispatch.jobId;
-          }
+        const hasValidLease =
+          dispatch.executionLeaseExpiresAt !== null &&
+          dispatch.executionLeaseExpiresAt.getTime() > Date.now();
+
+        if (hasValidLease) {
+          bullmqJobId = dispatch.jobId;
         } else {
+          const state = await this.queue.inspect(payload);
+
+          if (state === null) {
+            await this.recordTerminalFailure(dispatch, WORKER_EXECUTION_LEASE_EXPIRED, requestId);
+          }
           if (state === "failed") {
             await this.recordTerminalFailure(dispatch, ANALYSIS_RETRIES_EXHAUSTED, requestId);
           }
@@ -140,6 +140,10 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
       } else if (dispatch.dispatchStatus === "published") {
         const state = await this.queue.inspect(payload);
         if (state === null) {
+          if (dispatch.lastFailureStage !== "queue_handoff_wait") {
+            await this.scheduleHandoffGrace(dispatch, requestId);
+            return false;
+          }
           bullmqJobId = await this.queue.enqueue(payload);
         } else {
           if (state === "failed") {
@@ -170,6 +174,30 @@ export class AnalysisDispatcherService implements OnModuleInit, OnModuleDestroy 
       requestId,
     });
     return true;
+  }
+
+  private async scheduleHandoffGrace(
+    dispatch: AnalysisDispatchRecord,
+    requestId: string,
+  ): Promise<void> {
+    try {
+      await this.repository.reschedule(
+        dispatch.dispatchId,
+        dispatch.leaseToken,
+        "queue_handoff_wait",
+        15,
+      );
+    } catch {
+      // Dispatch lease expiry keeps the observation recoverable.
+    }
+
+    this.logger.log({
+      dispatchAttempt: dispatch.attemptCount,
+      event: "analysis_dispatch_handoff_wait",
+      jobId: dispatch.jobId,
+      projectId: dispatch.projectId,
+      requestId,
+    });
   }
 
   private async recordTerminalFailure(

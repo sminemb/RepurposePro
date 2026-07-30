@@ -132,10 +132,12 @@ End Date: 2026-07-10
 End Time: 13:55
 
 User Outcome:
+
 - A developer can install one pnpm workspace and start the branded Next.js app, versioned NestJS API, non-HTTP NestJS worker, PostgreSQL, and Redis.
 - The API and worker validate configuration, prove both infrastructure connections, use structured logs, and shut down cleanly.
 
 Layers Touched:
+
 - Repository and developer tooling
 - Web
 - API
@@ -145,6 +147,7 @@ Layers Touched:
 - Tests and documentation
 
 Files Changed:
+
 - Root workspace/configuration: package.json, pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig.base.json, eslint.config.mjs, vitest.config.ts, prettier.config.mjs, .npmrc, .nvmrc, .gitignore, .prettierignore, and .env.example.
 - Runtime/documentation: compose.yaml, README.md, scripts/check-infrastructure.ts, and docs/progress-tracker.md.
 - Web: apps/web App Router, Tailwind v4 theme, shadcn configuration/primitives, branded smoke page, and package configuration.
@@ -153,6 +156,7 @@ Files Changed:
 - Shared packages: packages/config, packages/db, packages/shared, and the VS0 Drizzle migration baseline.
 
 Commands Run:
+
 - Read AGENTS.md and the relevant project, tracker, build, architecture, library, environment, schema, API, code-standard, and UI documentation.
 - Used Context7 to verify current Next.js 16, NestJS 11, Tailwind CSS v4, and Drizzle conventions.
 - pnpm install / pnpm install --frozen-lockfile
@@ -167,6 +171,7 @@ Commands Run:
 - git diff --check / git status --short
 
 Verification:
+
 - PASS: `pnpm install --frozen-lockfile` completed for all seven workspace projects.
 - PASS: `pnpm ci:check` completed formatting, ESLint, strict TypeScript, seven Vitest tests, and all production builds.
 - PASS: Web returned HTTP 200 and contained the RepurposePro page.
@@ -178,22 +183,26 @@ Verification:
 - PASS: Temporary application processes and Compose containers were stopped; named volumes were preserved.
 
 Tests:
+
 - 2 Vitest files passed; 7 tests passed.
 - Configuration tests cover valid parsing, number/boolean coercion, API/web scoping, missing variables, and secret-safe failures.
 - Health tests cover liveness, successful readiness, and the documented HTTP 503 response payload.
 - Production builds passed for web, API, worker, config, db, and shared packages.
 
 Assumptions:
+
 - Node 22.18 and pnpm 11.10 are the supported VS0 local toolchain.
 - PostgreSQL 17 and Redis 7.4 Docker images provide the local development services.
 - The root `.env` is the ignored local source of truth; app-specific loaders expose only their owned variables.
 - BullMQ and all later-slice integrations remain intentionally absent.
 
 Known Limitations:
+
 - The migration baseline intentionally contains no product tables.
 - VS0 provides foundational health and startup behavior only; authentication begins in VS1.
 
 Notes:
+
 - The initial shadcn run required the documented `@/*` import alias; the final configuration is the current `base-nova` preset with RepurposePro semantic tokens reapplied.
 - pnpm native-build approvals are explicitly scoped to NestJS, esbuild, and sharp in pnpm-workspace.yaml.
 
@@ -206,22 +215,27 @@ End Date: 2026-07-11
 End Time: 21:34
 
 User Outcome:
+
 - A user can create an email/password account, sign in, retain a database-backed session, open the protected dashboard, call an authenticated API endpoint, and sign out.
 
 Layers Touched:
+
 - Web, API, PostgreSQL/Drizzle, configuration, tests, and documentation.
 
 Files Changed:
+
 - Web auth routes, client/server auth helpers, login/signup/dashboard pages, shared app branding, input primitive, and package configuration.
 - API auth module, session guard/controller tests, CORS bootstrap, infrastructure database access, and package configuration.
 - Better Auth environment validation, PostgreSQL auth schema/migrations, ESLint test registration, lockfile, and progress tracker.
 
 Commands Run:
+
 - Context7 Better Auth documentation lookup; `pnpm db:generate`; `pnpm infra:up`; `pnpm db:migrate`; local web/API/worker startup.
 - HTTP signup, dashboard, authenticated/unauthenticated API, logout, redirect, login, and session-persistence probes.
 - Headless Chrome desktop/mobile captures; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `git diff --check`.
 
 Verification:
+
 - PASS: PostgreSQL and Redis became healthy and both auth migrations applied successfully.
 - PASS: signup, login, logout, protected dashboard, and persisted sessions returned the expected 200/redirect behavior.
 - PASS: `GET /api/v1/auth/session` returned user data with the cookie and the stable 401 envelope without it.
@@ -229,14 +243,17 @@ Verification:
 - PASS: formatting, full ESLint, strict TypeScript, 11 Vitest tests, and all production builds pass.
 
 Tests:
+
 - 3 Vitest files passed; 11 tests passed.
 - Auth guard tests cover accepted sessions, request identity attachment, and the documented unauthorized error envelope.
 
 Known Limitations:
+
 - Chrome DevTools MCP is now configured in the workspace with a stdio launcher for the official package. A post-fix mobile recapture may still require a local Chrome/Chromium binary or an already-running debuggable browser instance; the responsive CSS fix typechecks and builds.
 - Email verification, password reset, OAuth providers, and Arcjet auth rate limiting remain outside VS1 scope.
 
 Notes:
+
 - Better Auth's Drizzle adapter requires the explicit schema plus `usePlural: true`; runtime verification caught and fixed the missing adapter mapping.
 
 ---
@@ -250,20 +267,24 @@ Implementation End Date: 2026-07-12
 Implementation End Time: 07:28
 
 User Outcome:
+
 - Visitors receive a creator-focused landing experience, users receive clearer login/signup forms, and authenticated users receive a responsive protected workspace shell.
 
 Files Changed:
+
 - Reworked `/`, `/login`, `/signup`, and `/dashboard` pages plus the shared brand mark and auth form.
 - Added marketing sections, authentication shell, app sidebar/topbar, page header, empty state, mobile navigation, and generated podcast media.
 - Added a server-post sign-out adapter at `/api/auth/sign-out` to preserve Better Auth session-cookie behavior with native forms.
 - Updated the UI registry and progress tracker.
 
 Commands Run:
+
 - `ui-ux-pro-max` design-system and UX searches; nine built-in image-generation reference calls plus one production media generation.
 - `pnpm exec prettier --write ...`; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build`; `pnpm ci:check`; `git diff --check`.
 - `pnpm infra:up`; `pnpm db:migrate`; Chrome DevTools screenshots, accessibility snapshots, responsive overflow checks, and Lighthouse audit.
 
 Verification:
+
 - PASS: `pnpm ci:check` completes formatting, ESLint, strict TypeScript, all 11 Vitest tests, and all production builds.
 - PASS: route build output includes `/`, `/login`, `/signup`, `/dashboard`, and Better Auth API handling.
 - PASS: review found no API, database, dependency, or auth-contract changes; no secrets or fabricated customer data were introduced.
@@ -272,6 +293,7 @@ Verification:
 - PASS: landing console clean and Lighthouse accessibility 100, SEO 100, agentic browsing 100; remaining best-practices failure is expected HTTP-on-localhost development mode.
 
 Known Limitations:
+
 - Billing checkout and project creation remain intentionally locked until VS2/VS3.
 
 ---
@@ -285,13 +307,16 @@ End Date: 2026-07-12
 End Time: 11:58
 
 User Outcome:
+
 - Workspace now declares official Chrome DevTools MCP launcher for isolated browser testing.
 
 Files Changed:
+
 - Added `.mcp.json` with `npx -y chrome-devtools-mcp@latest --isolated --no-usage-statistics`.
 - Updated this tracker with setup and verification evidence.
 
 Commands Run:
+
 - Context7 resolved `/chromedevtools/chrome-devtools-mcp` and queried configuration, isolation, auto-connect, and Windows troubleshooting docs.
 - `Get-Content -Raw .mcp.json | ConvertFrom-Json`.
 - `npx --yes chrome-devtools-mcp@latest --help`.
@@ -300,6 +325,7 @@ Commands Run:
 - Checked standard Windows Chrome install path.
 
 Verification:
+
 - PASS: `.mcp.json` parses as valid JSON.
 - PASS: Official package fetched successfully and CLI help returned.
 - PASS: `--isolated` and `--no-usage-statistics` are recognized by installed package.
@@ -307,6 +333,7 @@ Verification:
 - PASS: Chrome executable exists at `C:\Program Files\Google\Chrome\Application\chrome.exe`.
 
 Known Limitations:
+
 - MCP clients must restart or reload workspace configuration before newly added server becomes available.
 - Live page inspection remains pending VS1-UI-R1 browser verification.
 
@@ -321,14 +348,17 @@ End Date: 2026-07-12
 End Time: 12:04
 
 User Outcome:
+
 - Chrome DevTools MCP is configured globally for Codex; project no longer owns an `.mcp.json`.
 
 Files Changed:
+
 - Deleted project `.mcp.json`.
 - Updated global `C:\Users\Andrey\.codex\config.toml` with `chrome-devtools` MCP entry.
 - Updated this tracker.
 
 Commands Run:
+
 - Inspected global Codex config and confirmed no previous Chrome DevTools entry.
 - Added global stdio server using `npx -y chrome-devtools-mcp@latest --no-usage-statistics`.
 - Verified repo `.mcp.json` is absent.
@@ -336,12 +366,14 @@ Commands Run:
 - Ran `git diff --check`.
 
 Verification:
+
 - PASS: Global config contains `[mcp_servers.chrome-devtools]`.
 - PASS: Global args contain no `--isolated` flag.
 - PASS: Project `.mcp.json` no longer exists.
 - PASS: No whitespace errors; existing line-ending warnings only.
 
 Known Limitations:
+
 - Codex must restart/reload global config before new MCP server becomes available.
 - Live page inspection remains pending VS1-UI-R1 browser verification.
 
@@ -356,20 +388,24 @@ End Date: 2026-07-12
 End Time: 13:50
 
 User Outcome:
+
 - Small-screen sign-out is now a contained, full-width touch action with a protected drawer footer; the dashboard empty-state glyph no longer overflows its frame; auth form validation now uses branded inline feedback instead of the browser-native warning bubble.
 
 Files Changed:
+
 - `apps/web/components/app/mobile-navigation.tsx`
 - `apps/web/app/dashboard/page.tsx`
 - `apps/web/features/auth/components/auth-form.tsx`
 - `docs/progress-tracker.md`
 
 Commands Run:
+
 - `pnpm exec prettier --check apps/web/components/app/mobile-navigation.tsx apps/web/app/dashboard/page.tsx apps/web/features/auth/components/auth-form.tsx docs/progress-tracker.md`
 - `pnpm typecheck`; targeted ESLint; `pnpm lint`; `pnpm test`; `pnpm build`
 - `git diff --check`; Chrome DevTools 390px auth interaction, snapshot, screenshot, and console check
 
 Verification:
+
 - PASS: full workspace typecheck, full lint, 11 Vitest tests, and all production builds.
 - PASS: 390px login submit with empty fields renders the custom “Your email is missing” alert and no native “Please fill out this field” bubble.
 - PASS: browser console has no error or warning messages during the auth validation check.
@@ -377,6 +413,7 @@ Verification:
 - PASS: dashboard empty state now uses one contained `Clapperboard` icon rather than an over-wide icon cluster.
 
 Known Limitations:
+
 - A new authenticated drawer screenshot was not captured in this pass because creating a test account would add persistent local application data; the existing VS1 browser verification already covers the authenticated drawer interaction, and this change is covered by static validation plus the focused source review.
 
 ---
@@ -390,20 +427,24 @@ End Date: 2026-07-12
 End Time: 18:03
 
 User Outcome:
+
 - `pnpm dev:api` now resolves the protected projects controller and starts the API successfully.
 
 Layers Touched:
+
 - API module dependency injection
 - API regression test
 - Typed lint configuration
 
 Files Changed:
+
 - `apps/api/src/modules/auth/auth.module.ts`
 - `apps/api/src/modules/projects/projects.module.spec.ts`
 - `eslint.config.mjs`
 - `docs/progress-tracker.md`
 
 Commands Run:
+
 - Added and ran the focused projects-module test before the fix; it reproduced Nest's missing `AuthService` dependency error.
 - `pnpm exec vitest run apps/api/src/modules/projects/projects.module.spec.ts`
 - `pnpm --filter @repurposepro/api run typecheck`
@@ -414,12 +455,14 @@ Commands Run:
 - `git diff --check`
 
 Verification:
+
 - PASS: exporting `AuthService` from `AuthModule` lets the importing `ProjectsModule` resolve `AuthGuard`.
 - PASS: focused regression test passes after the fix.
 - PASS: API typecheck, workspace lint, and all 22 Vitest tests pass.
 - PASS: built API liveness endpoint returns HTTP 200 with `{ "data": { "service": "api", "status": "ok" } }`.
 
 Known Limitations:
+
 - Repository-wide `pnpm format:check` still reports pre-existing formatting issues in 11 unrelated files; no formatter was run to avoid unrelated edits.
 
 ---
@@ -433,19 +476,23 @@ End Date: 2026-07-13
 End Time: 07:29
 
 User Outcome:
+
 - The New Project navigation item now highlights on `/projects` and all nested project routes in both desktop and mobile navigation.
 
 Layers Touched:
+
 - Web navigation
 - Tests
 
 Files Changed:
+
 - `apps/web/components/app/app-sidebar.tsx`
 - `apps/web/components/app/app-navigation.ts`
 - `apps/web/components/app/app-sidebar.spec.ts`
 - `docs/progress-tracker.md`
 
 Commands Run:
+
 - `pnpm exec vitest run apps/web/components/app/app-sidebar.spec.ts`
 - `pnpm --filter @repurposepro/web typecheck`
 - `pnpm lint`
@@ -455,23 +502,28 @@ Commands Run:
 - `git diff --check`
 
 Verification:
+
 - PASS: route matcher tests cover `/dashboard`, `/projects`, `/projects/new`, `/projects/example`, and the `/projects-other` boundary.
 - PASS: web typecheck, workspace lint, all 27 Vitest tests, and all production builds pass.
 - PASS: desktop `/projects/new` renders `New Project` with `aria-current="page"` and active violet styling.
 - PASS: 390px mobile drawer renders the same active state with no console errors.
 
 Tests:
+
 - Focused navigation test: 1 file passed; 5 tests passed.
 - Full Vitest suite: 8 files passed; 27 tests passed.
 
 Assumptions:
+
 - The existing `/projects/new` href remains unchanged; `/projects` is treated as the active section path for future project routes.
 - The unrelated existing modification to `apps/web/next-env.d.ts` remains untouched.
 
 Known Limitations:
+
 - Repository-wide `pnpm format:check` was not rerun because the tracker records 11 pre-existing unrelated formatting failures; no formatter was run.
 
 Notes:
+
 - The browser check used an isolated local test account and verified desktop and mobile active navigation behavior without changing product code or API contracts.
 
 ---
@@ -485,13 +537,16 @@ End Date: 2026-07-13
 End Time: 08:55
 
 User Outcome:
+
 - Creating or reopening a draft project now opens a project-scoped upload screen with drag/drop, a file picker, and genuine multipart byte-progress feedback.
 
 Layers Touched:
+
 - Web
 - Tests
 
 Files Changed:
+
 - apps/web/app/projects/[projectId]/upload/page.tsx
 - apps/web/features/upload/client/upload-video.ts
 - apps/web/features/upload/client/upload-video.spec.ts
@@ -502,6 +557,7 @@ Files Changed:
 - docs/progress-tracker.md
 
 Commands Run:
+
 - Context7 Next.js documentation lookup for Server Action redirects and multipart client requests.
 - pnpm exec vitest run apps/web/features/upload/client/upload-video.spec.ts
 - pnpm lint
@@ -513,23 +569,28 @@ Commands Run:
 - git diff --check
 
 Verification:
+
 - PASS: upload endpoint construction percent-encodes the project ID and targets the documented multipart route.
 - PASS: client progress is driven only by browser XHR upload events; unknown totals never display a fabricated percentage.
 - PASS: project creation redirects to its upload page and draft project cards expose the same route.
 - PASS: workspace lint, typecheck, 30 Vitest tests, and the web production build pass.
 
 Tests:
+
 - Focused upload helper suite: 1 file passed; 3 tests passed.
 - Full Vitest suite: 9 files passed; 30 tests passed.
 
 Assumptions:
+
 - VS2-T4 will implement the documented `POST /projects/:projectId/upload` endpoint; this UI deliberately reports its real response rather than simulating progress or success.
 
 Known Limitations:
+
 - A full authenticated browser upload could not be run: `pnpm infra:status` cannot access the local Docker configuration, and a temporary local web server could not remain available to the DevTools browser. VS2-T4 is also not implemented, so a submitted file will correctly surface its endpoint error until then.
 - `pnpm format:check` still reports 11 pre-existing formatting issues in unrelated files. The new upload files pass targeted Prettier verification.
 
 Notes:
+
 - The route itself requires a valid web session. The forthcoming API endpoint remains the authorization boundary for project ownership and file handling.
 
 ---
@@ -543,20 +604,24 @@ End Date: 2026-07-13
 End Time: 09:11
 
 User Outcome:
+
 - The Create project form loads and submits without Next.js rejecting the Server Action module.
 
 Files Changed:
+
 - apps/web/features/projects/actions/create-project.ts
 - apps/web/features/projects/actions/create-project-server-action.spec.ts
 - apps/web/features/projects/components/new-project-form.tsx
 - docs/progress-tracker.md
 
 Verification:
+
 - PASS: The regression test failed with the invalid object export, then passed after the fix.
 - PASS: workspace typecheck, lint, 31 Vitest tests, and the production web build pass.
 - PASS: the development server loads `/projects/new` without a Server Action loader error or browser-console errors; it redirects the unauthenticated test browser to login.
 
 Known Limitations:
+
 - Authenticated form submission was not run because the isolated browser has no test session. The action's API and redirect behavior are unchanged.
 
 ---
@@ -570,17 +635,21 @@ End Date: 2026-07-13
 End Time: 09:22
 
 User Outcome:
+
 - Project instructions now explicitly require agents to use relevant installed skills from `addyosmani/agent-skills` before acting.
 
 Files Changed:
+
 - AGENTS.md
 - docs/progress-tracker.md
 
 Verification:
+
 - PASS: `AGENTS.md` Required Skills section contains the new installed-skills rule.
 - PASS: Documentation-only diff reviewed.
 
 Known Limitations:
+
 - No runtime tests were needed for this documentation-only task.
 
 ---
@@ -598,18 +667,22 @@ End Date: 2026-07-13
 End Time: 10:07
 
 User Outcome:
+
 - An authenticated project owner can send one bounded MP4, MOV, WebM, or MKV source upload to `POST /api/v1/projects/:projectId/upload`; the API stores it privately and returns `201 { data: { success: true } }`.
 
 Files Changed:
+
 - apps/api project and storage modules, tests, API package dependencies, and API test TypeScript configuration.
 - packages/config, `.env.example`, `.gitignore`, ESLint configuration, API contract, and this tracker.
 
 Verification:
+
 - PASS: private generated source paths, sidecar manifests, replacement behavior, and traversal resistance are covered by storage tests.
 - PASS: ownership lookup, non-draft rejection, staged-file cleanup, MIME/extension validation, Multer size mapping, and standard error envelopes are covered by API tests.
 - PASS: `pnpm lint`, `pnpm test` (47 tests), `pnpm typecheck`, `pnpm build`, targeted Prettier checks, and `git diff --check`.
 
 Known Limitations:
+
 - The local ignored `.env` must add `STORAGE_DRIVER`, `STORAGE_ROOT`, and `MAX_UPLOAD_BYTES` from `.env.example` before the API can start with this feature.
 - Authenticated live upload verification remains pending because local database/browser infrastructure is unavailable. Automated API and storage coverage verifies the behavior.
 - `pnpm audit --prod` reports two existing moderate transitive findings through Better Auth/Next; no high or critical finding was reported and no dependency upgrade was made in this scoped task.
@@ -711,9 +784,11 @@ End Date: 2026-07-16
 End Time: 07:31
 
 User Outcome:
+
 - Completed task narratives were moved out of the live tracker, operational evidence was indexed, and stale live state was removed.
 
 Files Changed:
+
 - AGENTS.md
 - docs/progress-tracker.md
 - docs/agent-execution-log.md
@@ -722,18 +797,22 @@ Files Changed:
 - docs/agent-maintenance-log.md
 
 Commands Run:
+
 - Documentation audit and archive reconciliation.
 - pnpm exec prettier --check on all changed Markdown files.
 - git diff --check.
 
 Verification:
+
 - PASS: One current handoff remains in the tracker; completed task narratives and operational records are archived.
 - PASS: AGENTS.md now requires regular execution, operational, handoff, and maintenance log updates plus stale-state cleanup.
 
 Known Limitations:
+
 - Documentation-only task; runtime tests were not required.
 
 Notes:
+
 - Detailed maintenance evidence is retained in agent-maintenance-log.md.
 
 ---
@@ -2170,9 +2249,11 @@ End Date: 2026-07-30
 End Time: 13:23
 
 User Outcome:
+
 - Refreshed project codebase knowledge graph for current repository state.
 
 Files Changed:
+
 - `.codebase-memory/artifact.json`
 - `docs/progress-tracker.md`
 - `docs/agent-execution-log.md`
@@ -2180,16 +2261,19 @@ Files Changed:
 - `docs/agent-handoff-history.md`
 
 Commands Run:
+
 - Codebase-memory full repository index with persistence enabled.
 - Codebase-memory architecture readback.
 - `git status --short`.
 
 Verification:
+
 - PASS: Index status `indexed`.
 - PASS: 4,631 nodes and 6,801 graph edges available through readback.
 - PASS: 282 files indexed; 15 standard directories excluded; 0 files skipped.
 
 Known Limitations:
+
 - Indexer reported `artifact_present: false`; `.codebase-memory/graph.db.zst` remains deleted from pre-existing workspace state.
 
 ## VS3-R2 - Close Remaining VS3 Cross-System Reliability Gaps
@@ -2382,3 +2466,96 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Implement worker job lifecycle and progress updates.
+
+---
+
+### VS3-R3 - Worker Execution-Lease Handoff Reliability
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 16:31
+End Date: 2026-07-30
+End Time: 17:12
+
+User Outcome:
+
+- A BullMQ callback cannot begin protected processing before PostgreSQL records its execution
+  lease, and competing callbacks cannot enter while that lease remains valid.
+- Redis loss or stale queue events cannot cause re-enqueue or refund of a live worker.
+- An expired worker lease enters the existing durable failure-intent flow and refunds the exact
+  charged credits once.
+
+Layers Touched:
+
+- PostgreSQL migration, restricted functions, role ACLs, and live integration coverage
+- Worker configuration, lifecycle repository/service, heartbeat, abort, and retry release
+- API dispatch reconciliation, QueueEvents terminal wake-up, and failure sweeper
+- BullMQ/PostgreSQL/Redis race and recovery tests
+- Architecture, API, database, environment, standards, progress, operational, and handoff docs
+
+Files Changed:
+
+- `packages/db/drizzle/0017_worker_execution_leases.sql`
+- `packages/db/drizzle/meta/_journal.json`
+- `packages/config/src/index.ts`
+- `packages/config/src/index.spec.ts`
+- `apps/worker/src/app.module.ts`
+- `apps/worker/src/services/processing-lifecycle.repository.ts`
+- `apps/worker/src/services/processing-lifecycle.service.ts`
+- `apps/worker/src/services/processing-lifecycle.service.spec.ts`
+- `apps/api/src/modules/processing/analysis-dispatch.repository.ts`
+- `apps/api/src/modules/processing/analysis-dispatcher.service.ts`
+- `apps/api/src/modules/processing/analysis-dispatcher.service.spec.ts`
+- `apps/api/src/modules/processing/analysis-queue-failure.listener.ts`
+- `apps/api/src/modules/processing/analysis-queue-failure.listener.spec.ts`
+- `apps/api/src/modules/processing/processing-execution-lease.repository.ts` (removed)
+- `apps/api/src/modules/processing/processing-failure.repository.ts`
+- `apps/api/src/modules/processing/processing-failure-sweeper.service.ts`
+- `apps/api/src/modules/processing/processing-failure-sweeper.service.spec.ts`
+- `apps/api/src/modules/processing/processing-reliability.postgres.integration.spec.ts`
+- `apps/api/src/modules/processing/processing-recovery.postgres-redis.integration.spec.ts`
+- `apps/api/src/modules/processing/processing.module.ts`
+- `docs/api-contracts.md`
+- `docs/architecture.md`
+- `docs/code-standards.md`
+- `docs/database-schema.md`
+- `docs/env-reference.md`
+- `docs/library-docs.md`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- RED-first focused Vitest suites for worker lifecycle, worker config, QueueEvents ownership,
+  dispatch grace, and active-lease precedence
+- Focused PostgreSQL reliability and PostgreSQL/Redis/BullMQ recovery suites
+- Changed-file Prettier write/check
+- Focused ESLint for all changed TypeScript
+- API/worker typecheck
+- `pnpm test`
+- `pnpm test:db-integration`
+- `pnpm build`
+- `git diff --check`
+
+Verification:
+
+- PASS: 329 unit tests.
+- PASS: 51 live PostgreSQL/Redis integration tests.
+- PASS: real BullMQ `active`-to-callback race proves PostgreSQL is still queued until worker acquire.
+- PASS: exact owner/token fencing, same-owner idempotence, expired takeover, invalid job rejection,
+  active-lease refund deferral, and scoped-role denial.
+- PASS: heartbeat cadence/non-overlap, abort on lost lease, controlled release, and QueueEvents
+  terminal-only behavior.
+- PASS: focused lint, API/worker typecheck, production builds, formatting, and whitespace.
+
+Known Limitations:
+
+- Production BullMQ analysis consumption remains disabled until VS4 provides the first real
+  FFmpeg/Whisper/Gemini handler.
+- A future output writer must require the same lease token before persisting preview/output state.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement the first real analysis handler through `ProcessingLifecycleService`.

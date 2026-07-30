@@ -454,8 +454,8 @@ Recommended global CSS shape:
 @import "tailwindcss";
 
 :root {
-  --rp-primary: #C4522A;
-  --rp-bg: #0B0D12;
+  --rp-primary: #c4522a;
+  --rp-bg: #0b0d12;
 }
 
 @theme inline {
@@ -743,7 +743,15 @@ Before processing, the worker should verify:
 - Project has not expired or been deleted
 - Requested clip IDs belong to the project
 
-### 9.4 External Commands
+### 9.4 Worker Execution Leases
+
+Every BullMQ analysis callback must acquire the PostgreSQL execution lease before protected work.
+Use a unique execution identity per callback, renew the 60-second lease every 15 seconds, and pass
+the exact lease token to progress and later output persistence. Treat `busy` or `rejected` as a
+non-entry result. Abort the handler on lease loss; release only for a controlled BullMQ retry.
+QueueEvents must never create, renew, or mutate execution leases.
+
+### 9.5 External Commands
 
 When calling FFmpeg, Whisper, or Python scripts:
 
@@ -767,7 +775,7 @@ Better:
 spawn("ffmpeg", ["-i", inputPath, outputPath]);
 ```
 
-### 9.5 Temporary Files
+### 9.6 Temporary Files
 
 Temporary files should:
 

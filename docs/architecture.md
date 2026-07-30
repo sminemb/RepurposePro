@@ -226,10 +226,19 @@ Producer clients disable the offline queue and use one command retry so PostgreS
 next attempt quickly. Blocking clients use `maxRetriesPerRequest: null` as BullMQ requires. Both use
 bounded exponential reconnect delay with jitter and are closed once by their owner.
 
-Published dispatches remain reconcilable. A missing queued job is restored with the database UUID;
-a matching waiting, delayed, active, completed, or failed job is never duplicated. Active work uses
-a durable execution lease/heartbeat. Missing active work waits while its lease is valid and enters
-the centralized terminal-failure flow after expiry.
+Published dispatches remain reconcilable. The first observation of a missing queued job records a
+15-second handoff grace; a second observation may restore it with the database UUID. A matching
+waiting, delayed, active, completed, or failed job is never duplicated.
+
+The worker acquires a restricted PostgreSQL execution lease before invoking protected processing
+code. Acquisition validates the job, project, published dispatch, and exact deduction, then moves
+the job from `queued` to `active` at `preparing`/10%. The 60-second lease is renewed every 15
+seconds and all progress writes require its exact owner and token. A competing or stale callback
+cannot enter protected work. QueueEvents never creates or renews execution leases.
+
+A valid database lease takes precedence over missing, failed, or stale Redis state. Missing active
+work waits while its lease is valid and enters the centralized terminal-failure flow only after
+expiry.
 
 ### Why Use Separate Queues?
 
@@ -621,20 +630,20 @@ Deleted
 
 ## 5.3 State Descriptions
 
-| State | Meaning |
-|---|---|
-| Uploaded | Video has been uploaded and stored |
-| Waiting for payment | Credits are required before processing |
-| Queued | Job has been placed in BullMQ |
-| Transcribing | Worker is running Whisper |
-| Analyzing | Worker is using Gemini and generating metadata |
-| Preview ready | User can review clips or summary segments |
+| State                  | Meaning                                         |
+| ---------------------- | ----------------------------------------------- |
+| Uploaded               | Video has been uploaded and stored              |
+| Waiting for payment    | Credits are required before processing          |
+| Queued                 | Job has been placed in BullMQ                   |
+| Transcribing           | Worker is running Whisper                       |
+| Analyzing              | Worker is using Gemini and generating metadata  |
+| Preview ready          | User can review clips or summary segments       |
 | Waiting for user edits | User has preview access and can modify metadata |
-| Rendering | Worker is rendering final MP4 files |
-| Completed | Final outputs are ready |
-| Failed | Job failed |
-| Refunded | Credits were refunded after failure |
-| Deleted | Files were deleted manually or by retention job |
+| Rendering              | Worker is rendering final MP4 files             |
+| Completed              | Final outputs are ready                         |
+| Failed                 | Job failed                                      |
+| Refunded               | Credits were refunded after failure             |
+| Deleted                | Files were deleted manually or by retention job |
 
 ---
 
@@ -1336,7 +1345,7 @@ Queue analysis job
 Processing fails
  |
  v
-Worker, QueueEvents, or stale-job reconciliation persists a failure intent
+Worker terminal handling, QueueEvents, or stale-job reconciliation persists a failure intent
  |
  v
 Leased PostgreSQL sweeper claims the intent
@@ -1357,8 +1366,9 @@ Stripe refunds should only be used when you want to return actual money to the u
 QueueEvents is a wake-up source, not durable truth. Pending intents survive API restarts, marker
 failures, duplicate events, and Redis event loss. Reconciliation detects retained failed jobs when
 an event was missed. The first accepted terminal reason is immutable, and the database operation is
-idempotent under concurrent or repeated delivery. VS9 extends this primitive to later worker stages
-and the complete user-facing failure/refund experience.
+idempotent under concurrent or repeated delivery. A pending intent is deferred while a valid worker
+lease exists. VS9 extends this primitive to later worker stages and the complete user-facing
+failure/refund experience.
 
 ---
 
@@ -1629,7 +1639,6 @@ Examples:
 - Scheduled cleanup first becomes necessary in VS10.
 
 The detailed slice plan is in `build-plan.md`, and the coding agent must maintain execution state in `progress-tracker.md`.
-
 
 ---
 

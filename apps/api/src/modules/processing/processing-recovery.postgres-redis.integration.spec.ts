@@ -9,6 +9,8 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import Redis from "ioredis";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { ProcessingLifecycleRepository } from "../../../../worker/src/services/processing-lifecycle.repository";
+import { ProcessingLifecycleService } from "../../../../worker/src/services/processing-lifecycle.service";
 import { BullMqConnectionFactory } from "../infrastructure/bullmq-connection.factory";
 import { AnalysisDispatchRepository } from "./analysis-dispatch.repository";
 import { AnalysisDispatcherService } from "./analysis-dispatcher.service";
@@ -17,7 +19,6 @@ import {
   createAnalysisQueueEventsClient,
 } from "./analysis-queue-failure.listener";
 import { BullMqAnalysisQueueGateway } from "./analysis-queue.gateway";
-import { ProcessingExecutionLeaseRepository } from "./processing-execution-lease.repository";
 import { ProcessingFailureIntentRepository } from "./processing-failure-intent.repository";
 import { ProcessingFailureIntentService } from "./processing-failure-intent.service";
 import { ProcessingFailureRepository } from "./processing-failure.repository";
@@ -179,7 +180,7 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
     }
   }, 20_000);
 
-  it("restores one stale published queued job while two reconcilers race", async () => {
+  it("waits once, then restores one stale published queued job while two reconcilers race", async () => {
     const started = await startPaidAnalysis("Published stale queue job");
     await migrationClient.pool.query(
       `UPDATE processing_job_dispatches
@@ -204,11 +205,8 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
         secondDispatcher.dispatchPending("reconcile-b"),
       ]);
 
-      expect(results.reduce((sum, count) => sum + count, 0)).toBe(1);
-      await expect(inspectionQueue.getJob(started.jobId)).resolves.toBeDefined();
-      await expect(inspectionQueue.getJobCounts("waiting")).resolves.toMatchObject({
-        waiting: 1,
-      });
+      expect(results.reduce((sum, count) => sum + count, 0)).toBe(0);
+      await expect(inspectionQueue.getJob(started.jobId)).resolves.toBeUndefined();
 
       await migrationClient.pool.query(
         `UPDATE processing_job_dispatches
@@ -216,7 +214,13 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
          WHERE processing_job_id = $1`,
         [started.jobId],
       );
-      await expect(dispatcher.dispatchPending("matching-job")).resolves.toBe(1);
+      const retryResults = await Promise.all([
+        dispatcher.dispatchPending("handoff-retry-a"),
+        secondDispatcher.dispatchPending("handoff-retry-b"),
+      ]);
+
+      expect(retryResults.reduce((sum, count) => sum + count, 0)).toBe(1);
+      await expect(inspectionQueue.getJob(started.jobId)).resolves.toBeDefined();
       await expect(inspectionQueue.getJobCounts("waiting")).resolves.toMatchObject({
         waiting: 1,
       });
@@ -225,6 +229,139 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
       await secondFactory.onModuleDestroy();
     }
   });
+
+  it("persists the worker lease before protected work and fences a callback after Redis loss", async () => {
+    const started = await startPaidAnalysis("Worker lease handoff");
+    const eventConnection = factory.createBlockingConsumer();
+    const queueEvents = createAnalysisQueueEventsClient(eventConnection, prefix, (connection) =>
+      factory.close(connection),
+    );
+    const workerConnection = new Redis(redisUrl!, { maxRetriesPerRequest: null });
+    workerConnection.on("error", () => undefined);
+    const lifecycle = new ProcessingLifecycleService(
+      new ProcessingLifecycleRepository(processingClientA),
+    );
+    const callbackStarted = deferred();
+    const activeEventObserved = deferred();
+    const allowAcquire = deferred();
+    const protectedHandlerStarted = deferred();
+    const allowHandlerCompletion = deferred();
+    let callbackEntryStatus: string | undefined;
+    let protectedHandlerEntries = 0;
+
+    queueEvents.on("active", ({ jobId: activeJobId }) => {
+      if (activeJobId === started.jobId) {
+        activeEventObserved.resolve();
+      }
+    });
+
+    const worker = new Worker<VideoAnalysisJobPayload>(
+      VIDEO_ANALYSIS_QUEUE_NAME,
+      async (job) => {
+        if (job.id !== started.jobId) {
+          return;
+        }
+
+        const entry = await migrationClient.pool.query<{ status: string }>(
+          "SELECT status::text AS status FROM processing_jobs WHERE id = $1",
+          [started.jobId],
+        );
+        callbackEntryStatus = entry.rows[0]?.status;
+        callbackStarted.resolve();
+        await allowAcquire.promise;
+
+        await lifecycle.execute(
+          started.jobId,
+          started.projectId,
+          "worker-real-a",
+          async ({ leaseToken }) => {
+            protectedHandlerEntries += 1;
+            const persisted = await migrationClient.pool.query<{
+              leaseToken: string | null;
+              status: string;
+            }>(
+              `SELECT
+                execution_lease_token AS "leaseToken",
+                status::text AS status
+               FROM processing_jobs
+               WHERE id = $1`,
+              [started.jobId],
+            );
+            expect(persisted.rows[0]).toMatchObject({
+              leaseToken,
+              status: "active",
+            });
+            protectedHandlerStarted.resolve();
+            await allowHandlerCompletion.promise;
+          },
+        );
+      },
+      {
+        connection: workerConnection as unknown as ConnectionOptions,
+        prefix,
+      },
+    );
+    worker.on("error", () => undefined);
+
+    try {
+      await queueEvents.waitUntilReady();
+      await worker.waitUntilReady();
+      await dispatcher.dispatchJob(started.jobId, "worker-lease-handoff");
+      await Promise.all([callbackStarted.promise, activeEventObserved.promise]);
+
+      expect(callbackEntryStatus).toBe("queued");
+      allowAcquire.resolve();
+      await protectedHandlerStarted.promise;
+      expect(protectedHandlerEntries).toBe(1);
+
+      await expect(
+        lifecycle.execute(started.jobId, started.projectId, "worker-real-b", async () => {
+          protectedHandlerEntries += 1;
+        }),
+      ).resolves.toEqual({ outcome: "not_acquired", reason: "busy" });
+      expect(protectedHandlerEntries).toBe(1);
+
+      await inspectionConnection.del(`${prefix}:${VIDEO_ANALYSIS_QUEUE_NAME}:${started.jobId}`);
+      await expect(inspectionQueue.getJob(started.jobId)).resolves.toBeUndefined();
+      await migrationClient.pool.query(
+        `UPDATE processing_job_dispatches
+         SET next_attempt_at = now()
+         WHERE processing_job_id = $1`,
+        [started.jobId],
+      );
+
+      await expect(dispatcher.dispatchPending("valid-worker-lease")).resolves.toBe(1);
+      await expect(inspectionQueue.getJob(started.jobId)).resolves.toBeUndefined();
+      await expect(financialCounts(started.jobId)).resolves.toMatchObject({ refunds: 0 });
+
+      allowHandlerCompletion.resolve();
+      await migrationClient.pool.query(
+        `UPDATE processing_jobs
+         SET execution_lease_expires_at = now() - interval '1 second'
+         WHERE id = $1`,
+        [started.jobId],
+      );
+      await migrationClient.pool.query(
+        `UPDATE processing_job_dispatches
+         SET next_attempt_at = now()
+         WHERE processing_job_id = $1`,
+        [started.jobId],
+      );
+
+      await expect(dispatcher.dispatchPending("expired-worker-lease")).resolves.toBe(1);
+      await waitFor(async () => (await financialCounts(started.jobId)).refunds === 1);
+      await expect(financialCounts(started.jobId)).resolves.toMatchObject({
+        refunds: 1,
+        status: "refunded",
+      });
+    } finally {
+      allowAcquire.resolve();
+      allowHandlerCompletion.resolve();
+      await worker.close(true);
+      await workerConnection.quit();
+      await queueEvents.close();
+    }
+  }, 20_000);
 
   it("waits on a valid active lease, then refunds once after that lease expires", async () => {
     const started = await startPaidAnalysis("Active lease recovery");
@@ -277,13 +414,7 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
       factory.close(connection),
     );
     const bundle = processingFailureBundle(processingClientA, "event-sweeper");
-    const listener = new AnalysisQueueFailureListener(
-      bundle.intentService,
-      new ProcessingExecutionLeaseRepository({
-        database: processingClientA,
-      }),
-      queueEvents,
-    );
+    const listener = new AnalysisQueueFailureListener(bundle.intentService, queueEvents);
     const workerConnection = new Redis(redisUrl!, { maxRetriesPerRequest: null });
     workerConnection.on("error", () => undefined);
     const worker = new Worker<VideoAnalysisJobPayload>(
@@ -464,6 +595,17 @@ describeIntegration("processing recovery across PostgreSQL and Redis", () => {
     return result.rows[0]?.status;
   }
 });
+
+function deferred(): {
+  promise: Promise<void>;
+  resolve(): void;
+} {
+  let resolvePromise!: () => void;
+  const promise = new Promise<void>((resolveDeferred) => {
+    resolvePromise = resolveDeferred;
+  });
+  return { promise, resolve: resolvePromise };
+}
 
 function connectionFactory(targetRedisUrl: string): BullMqConnectionFactory {
   return new BullMqConnectionFactory({

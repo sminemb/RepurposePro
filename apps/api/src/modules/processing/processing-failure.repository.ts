@@ -10,6 +10,7 @@ export type ProcessingFailureOutcome =
   | "failed_no_refund"
   | "invalid_job_state"
   | "job_not_found"
+  | "lease_active"
   | "refunded"
   | "terminal_failure_conflict";
 
@@ -67,6 +68,7 @@ function isProcessingFailureOutcome(outcome: string): outcome is ProcessingFailu
     "failed_no_refund",
     "invalid_job_state",
     "job_not_found",
+    "lease_active",
     "refunded",
     "terminal_failure_conflict",
   ].includes(outcome);

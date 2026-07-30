@@ -39,6 +39,12 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
   const processingClientB = createClient(
     withDatabase(withRole(runtimeUrl, "repurposepro_processing"), database),
   );
+  const checkoutClient = createClient(
+    withDatabase(withRole(runtimeUrl, "repurposepro_checkout"), database),
+  );
+  const webhookClient = createClient(
+    withDatabase(withRole(runtimeUrl, "repurposepro_webhook"), database),
+  );
 
   beforeAll(async () => {
     const runtimePassword = decodeURIComponent(new URL(runtimeUrl ?? skippedDatabaseUrl).password);
@@ -81,7 +87,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     await migrationClient.pool.query(
       `INSERT INTO credit_ledger (user_id, type, amount, description, idempotency_key)
        VALUES
-         ('reliability-user-a', 'manual_adjustment', 100, 'Test credits', 'reliability-credit-a'),
+         ('reliability-user-a', 'manual_adjustment', 500, 'Test credits', 'reliability-credit-a'),
          ('reliability-user-b', 'manual_adjustment', 1, 'Insufficient test credit', 'reliability-credit-b')`,
     );
   }, 30_000);
@@ -90,6 +96,8 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     await closeDatabaseClient(runtimeClient);
     await closeDatabaseClient(processingClientA);
     await closeDatabaseClient(processingClientB);
+    await closeDatabaseClient(checkoutClient);
+    await closeDatabaseClient(webhookClient);
     await closeDatabaseClient(migrationClient);
     await adminClient.pool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
     await closeDatabaseClient(adminClient);
@@ -181,6 +189,228 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
       jobId: started.jobId,
       projectId,
     });
+  });
+
+  it("fences two concurrent workers and keeps same-owner acquisition idempotent", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Worker contention");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await publishDispatch(processingClientA, "dispatcher-lease", started.jobId);
+
+    const acquisitions = await Promise.all([
+      acquireLease(processingClientA, started.jobId, projectId, "worker-a"),
+      acquireLease(processingClientB, started.jobId, projectId, "worker-b"),
+    ]);
+    const acquired = acquisitions.find((result) => result.outcome === "acquired")!;
+    const busy = acquisitions.find((result) => result.outcome === "busy");
+
+    expect(acquisitions.filter((result) => result.outcome === "acquired")).toHaveLength(1);
+    expect(busy).toMatchObject({ expiresAt: null, leaseToken: null });
+
+    const replay = await acquireLease(
+      processingClientA,
+      started.jobId,
+      projectId,
+      acquired === acquisitions[0] ? "worker-a" : "worker-b",
+    );
+    expect(replay).toEqual(acquired);
+    await expect(
+      migrationClient.pool.query(
+        `SELECT attempt_count AS "attemptCount", progress, status::text, step::text
+         FROM processing_jobs
+         WHERE id = $1`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [{ attemptCount: 1, progress: 10, status: "active", step: "preparing" }],
+    });
+  });
+
+  it("requires the exact owner and token for renew, release, and progress", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Lease token fencing");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await publishDispatch(processingClientA, "dispatcher-token", started.jobId);
+    const acquired = await acquireLease(
+      processingClientA,
+      started.jobId,
+      projectId,
+      "worker-token",
+    );
+
+    await expect(
+      processingClientB.pool.query(
+        "SELECT public.renew_analysis_execution_lease($1, $2, $3) AS outcome",
+        [started.jobId, "wrong-worker", acquired.leaseToken],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "lost" }] });
+    await expect(
+      processingClientB.pool.query(
+        "SELECT public.update_analysis_execution_progress($1, $2, $3, $4, $5) AS outcome",
+        [started.jobId, "worker-token", randomUUID(), "transcribing", 45],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "lost" }] });
+    await expect(
+      processingClientB.pool.query(
+        "SELECT public.release_analysis_execution_lease($1, $2, $3) AS outcome",
+        [started.jobId, "wrong-worker", acquired.leaseToken],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "lost" }] });
+    await expect(
+      processingClientA.pool.query(
+        "SELECT public.renew_analysis_execution_lease($1, $2, $3) AS outcome",
+        [started.jobId, "worker-token", acquired.leaseToken],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "renewed" }] });
+    await expect(
+      processingClientA.pool.query(
+        "SELECT public.update_analysis_execution_progress($1, $2, $3, $4, $5) AS outcome",
+        [started.jobId, "worker-token", acquired.leaseToken, "transcribing", 45],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "updated" }] });
+    await expect(
+      processingClientA.pool.query(
+        "SELECT public.release_analysis_execution_lease($1, $2, $3) AS outcome",
+        [started.jobId, "worker-token", acquired.leaseToken],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "released" }] });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT execution_lease_token AS "leaseToken", progress, status::text, step::text
+         FROM processing_jobs WHERE id = $1`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [{ leaseToken: null, progress: 0, status: "queued", step: "queued" }],
+    });
+  });
+
+  it("permits takeover only after execution-lease expiry", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Expired takeover");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await publishDispatch(processingClientA, "dispatcher-takeover", started.jobId);
+    const first = await acquireLease(processingClientA, started.jobId, projectId, "worker-first");
+
+    await migrationClient.pool.query(
+      `UPDATE processing_jobs
+       SET execution_lease_expires_at = now() - interval '1 second'
+       WHERE id = $1`,
+      [started.jobId],
+    );
+    const takeover = await acquireLease(
+      processingClientB,
+      started.jobId,
+      projectId,
+      "worker-takeover",
+    );
+
+    expect(takeover).toMatchObject({ outcome: "acquired" });
+    expect(takeover.leaseToken).not.toBe(first.leaseToken);
+    await expect(
+      migrationClient.pool.query(
+        `SELECT attempt_count AS "attemptCount", execution_lease_owner AS "owner"
+         FROM processing_jobs WHERE id = $1`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ attemptCount: 2, owner: "worker-takeover" }] });
+  });
+
+  it("rejects wrong-project, unpublished, unpaid, and terminal acquisition", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Acquire validation");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+
+    await expect(
+      acquireLease(processingClientA, started.jobId, randomUUID(), "worker-wrong-project"),
+    ).resolves.toMatchObject({ outcome: "rejected" });
+    await expect(
+      acquireLease(processingClientA, started.jobId, projectId, "worker-unpublished"),
+    ).resolves.toMatchObject({ outcome: "rejected" });
+
+    await publishDispatch(processingClientA, "dispatcher-terminal", started.jobId);
+    await finalizeFailure(processingClientA, started.jobId, "USER_CANCELLED");
+    await expect(
+      acquireLease(processingClientA, started.jobId, projectId, "worker-terminal"),
+    ).resolves.toMatchObject({ outcome: "rejected" });
+
+    const unpaidProjectId = await createUploadedProject("reliability-user-a", "Missing deduction");
+    const unpaidJob = await migrationClient.pool.query<{ id: string }>(
+      `INSERT INTO processing_jobs (
+         project_id, user_id, type, status, step, progress, credits_charged, bullmq_job_id
+       )
+       VALUES ($1, 'reliability-user-a', 'analyze_video', 'queued', 'queued', 0, 11, NULL)
+       RETURNING id`,
+      [unpaidProjectId],
+    );
+    const unpaidJobId = unpaidJob.rows[0]!.id;
+    await migrationClient.pool.query(
+      `UPDATE projects SET status = 'queued', current_job_id = $2 WHERE id = $1`,
+      [unpaidProjectId, unpaidJobId],
+    );
+    await migrationClient.pool.query(
+      `UPDATE processing_job_dispatches
+       SET status = 'published',
+           bullmq_job_id = $2,
+           published_at = now()
+       WHERE processing_job_id = $1`,
+      [unpaidJobId, unpaidJobId],
+    );
+    await migrationClient.pool.query(
+      "UPDATE processing_jobs SET bullmq_job_id = $2 WHERE id = $1",
+      [unpaidJobId, unpaidJobId],
+    );
+
+    await expect(
+      acquireLease(processingClientA, unpaidJobId, unpaidProjectId, "worker-unpaid"),
+    ).resolves.toMatchObject({ outcome: "rejected" });
+  });
+
+  it("defers failure finalization while the worker lease is valid, then refunds once", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Lease defers failure");
+    const started = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await publishDispatch(processingClientA, "dispatcher-deferral", started.jobId);
+    await acquireLease(processingClientA, started.jobId, projectId, "worker-deferral");
+
+    await expect(
+      persistFailureIntent(
+        processingClientB,
+        started.jobId,
+        "ANALYSIS_RETRIES_EXHAUSTED",
+        "queue:failed-during-lease",
+      ),
+    ).resolves.toBe("persisted");
+    await expect(
+      claimFailureIntent(processingClientB, "sweeper-deferred", started.jobId),
+    ).resolves.toBeUndefined();
+    await expect(
+      finalizeFailure(processingClientB, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+    ).resolves.toEqual({ outcome: "lease_active", refundedCredits: 0 });
+    await expect(
+      migrationClient.pool.query(
+        `SELECT COUNT(*)::integer AS refunds
+         FROM credit_ledger WHERE processing_job_id = $1 AND type = 'refund'`,
+        [started.jobId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ refunds: 0 }] });
+
+    await migrationClient.pool.query(
+      `UPDATE processing_jobs
+       SET execution_lease_expires_at = now() - interval '1 second'
+       WHERE id = $1`,
+      [started.jobId],
+    );
+    const claim = await claimFailureIntent(
+      processingClientB,
+      "sweeper-after-expiry",
+      started.jobId,
+    );
+    expect(claim).toBeDefined();
+    const refunds = await Promise.all([
+      finalizeFailure(processingClientA, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+      finalizeFailure(processingClientB, started.jobId, "ANALYSIS_RETRIES_EXHAUSTED"),
+    ]);
+
+    expect(refunds.map((result) => result.outcome).sort()).toEqual([
+      "already_refunded",
+      "refunded",
+    ]);
   });
 
   it("restores exact credits once across concurrent eligible refund retries", async () => {
@@ -465,6 +695,27 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     ).rejects.toThrow(/permission denied/i);
   });
 
+  it("grants lifecycle execution only to processing and denies direct lease mutation", async () => {
+    const lifecycleCall = "SELECT * FROM public.acquire_analysis_execution_lease($1, $2, $3)";
+    const parameters = [randomUUID(), randomUUID(), "foreign-worker"];
+
+    for (const client of [runtimeClient, checkoutClient, webhookClient]) {
+      await expect(client.pool.query(lifecycleCall, parameters)).rejects.toThrow(
+        /permission denied/i,
+      );
+    }
+    for (const client of [runtimeClient, checkoutClient, webhookClient, processingClientA]) {
+      await expect(
+        client.pool.query(
+          `UPDATE processing_jobs
+           SET execution_lease_token = gen_random_uuid()
+           WHERE id = $1`,
+          [randomUUID()],
+        ),
+      ).rejects.toThrow(/permission denied/i);
+    }
+  });
+
   async function createUploadedProject(userId: string, name: string): Promise<string> {
     const projectId = randomUUID();
     await migrationClient.pool.query(
@@ -511,13 +762,69 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     client: DatabaseClient,
     dispatcherId: string,
     jobId: string,
-  ): Promise<{ jobId: string; projectId: string } | undefined> {
-    const result = await client.pool.query<{ jobId: string; projectId: string }>(
-      `SELECT job_id AS "jobId", project_id AS "projectId"
+  ): Promise<
+    | {
+        dispatchId: string;
+        jobId: string;
+        leaseToken: string;
+        projectId: string;
+      }
+    | undefined
+  > {
+    const result = await client.pool.query<{
+      dispatchId: string;
+      jobId: string;
+      leaseToken: string;
+      projectId: string;
+    }>(
+      `SELECT
+         dispatch_id AS "dispatchId",
+         job_id AS "jobId",
+         lease_token AS "leaseToken",
+         project_id AS "projectId"
        FROM public.claim_pending_analysis_dispatch($1, $2)`,
       [dispatcherId, jobId],
     );
     return result.rows[0];
+  }
+
+  async function publishDispatch(
+    client: DatabaseClient,
+    dispatcherId: string,
+    jobId: string,
+  ): Promise<void> {
+    const claim = await claimDispatch(client, dispatcherId, jobId);
+    expect(claim).toBeDefined();
+    await client.pool.query("SELECT public.mark_analysis_dispatch_published($1, $2, $3)", [
+      claim!.dispatchId,
+      claim!.leaseToken,
+      jobId,
+    ]);
+  }
+
+  async function acquireLease(
+    client: DatabaseClient,
+    targetJobId: string,
+    targetProjectId: string,
+    targetWorkerId: string,
+  ): Promise<{
+    expiresAt: Date | null;
+    leaseToken: string | null;
+    outcome: string;
+  }> {
+    const result = await client.pool.query<{
+      expiresAt: Date | null;
+      leaseToken: string | null;
+      outcome: string;
+    }>(
+      `SELECT
+         outcome,
+         lease_token AS "leaseToken",
+         expires_at AS "expiresAt"
+       FROM public.acquire_analysis_execution_lease($1, $2, $3)`,
+      [targetJobId, targetProjectId, targetWorkerId],
+    );
+    return result.rows[0]!;
   }
 
   async function finalizeFailure(

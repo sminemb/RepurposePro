@@ -35,60 +35,60 @@ Historical files-changed, command, blocker, decision, and failure logs moved fro
 
 ---
 
-| Date | Task ID | File | Change Summary |
-|---|---|---|---|
-| 2026-07-10 | VS0-T1/T7 | Root workspace and tooling files | Added the pnpm workspace, locked dependencies, strict TypeScript, ESLint, Vitest, Prettier, environment example, and root scripts. |
-| 2026-07-10 | VS0-T2 | apps/web | Added the Next.js 16 App Router app, Tailwind v4 tokens, current shadcn primitives, and branded smoke page. |
-| 2026-07-10 | VS0-T3 | apps/api | Added the NestJS API, Pino request logging, dependency lifecycle services, and health contracts/tests. |
-| 2026-07-10 | VS0-T4 | apps/worker | Added the standalone NestJS worker and structured infrastructure readiness lifecycle. |
-| 2026-07-10 | VS0-T5/T6 | packages/config, packages/db, packages/shared, compose.yaml | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services. |
-| 2026-07-10 | VS0-T7 | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff. |
-| 2026-07-11 | VS1-T1/T5 | apps/web, apps/api, packages/config, packages/db | Added Better Auth, database-backed sessions, protected web/API routes, auth UI, migrations, tests, and runtime verification. |
-| 2026-07-12 | VS1-UI-R1 | apps/web, docs/ui-registry.md, docs/progress-tracker.md | Reworked the landing, auth, and protected dashboard UI; added shared shell components and generated creator media. |
-| 2026-07-12 | VS1-UI-R1-DT | .mcp.json, docs/progress-tracker.md | Configured official Chrome DevTools MCP with isolated profile and usage-statistics opt-out. |
-| 2026-07-12 | VS1-UI-R1-DTG | global Codex config, docs/progress-tracker.md | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode. |
-| 2026-07-12 | VS1-UI-R2 | apps/web auth/dashboard/navigation, docs/progress-tracker.md | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback. |
-| 2026-07-12 | VS2-R1 | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
-| 2026-07-13 | VS2-UI-R3 | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests. |
-| 2026-07-13 | VS2-T3 | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it. |
-| 2026-07-13 | VS2-T3-R1 | apps/web project action/form, docs/progress-tracker.md | Removed the invalid runtime export from the Server Action module and guarded the Next.js export restriction. |
-| 2026-07-13 | DOCS-SKILLS-20260713 | AGENTS.md, docs/progress-tracker.md | Required agents to use relevant installed skills from `addyosmani/agent-skills` and recorded the docs-only update. |
-| 2026-07-13 | VS2-T4 | apps/api projects/storage, packages/config, API docs, tests, lint config | Added private local source storage, protected bounded multipart upload handling, startup configuration, contract/error coverage, and task handoff. |
-| 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md | Moved historical tracker content into focused archive docs and kept the tracker focused on live slice status plus current handoff. |
-| 2026-07-13 | VS2-T6 | apps/api projects, packages/shared, eslint.config.mjs, docs | Added shared minute-rounding rule and authorized source-video metadata API with safe not-found behavior; added regression tests and typed-lint support for shared tests. |
-| 2026-07-13 | VS2-UI-R4 | Global design tokens, landing media, active design docs, docs/progress-tracker.md | Applied the Ember copper visual system, primary-action foregrounds, and landing ambient treatment. |
-| 2026-07-13 | VS2-UI-R5 | apps/web/app/globals.css, landing pricing CTA, docs/ui-tokens.md, docs/progress-tracker.md | Removed the remaining legacy landing CTA gradient and routed the glow through the named Ember ambient token. |
-| 2026-07-13 | VS2-T7 | apps/web upload client/components, docs/progress-tracker.md | Displayed validated source metadata and server-derived rounded credit estimates after upload. |
-| 2026-07-15 | VS3-T1 | packages/db schema/migrations/tests, docs/database-schema.md, docs/progress-tracker.md | Added credit ledger, Stripe payment, webhook, customer, and processing-job foundation schema with integrity constraints. |
-| 2026-07-15 | VS3-T1.1 | packages/db migrations/tests, role provisioning, Compose/configuration, database/environment docs, lint/typecheck wiring, docs/progress-tracker.md | Hardened billing integrity, ownership boundaries, runtime role permissions, and migration/test execution. |
-| 2026-07-15 | VS3-T1.2 | packages/config, database/runtime environment templates, Drizzle/Compose/test scripts, README.md, database/environment docs, docs/progress-tracker.md | Closed runtime credential separation and mandatory live PostgreSQL test wiring. |
-| 2026-07-16 | MAINT-5 | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives | Removed stale duplicate live state, archived referenced completed task narratives, and documented recurring log-maintenance rules. |
-| 2026-07-16 | MAINT-7 | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives | Added mandatory Prettier adherence, changed-file format checks, repository-wide format guidance, and whitespace verification to agent workflow. |
+| Date       | Task ID                     | File                                                                                                                                                      | Change Summary                                                                                                                                                                 |
+| ---------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-07-10 | VS0-T1/T7                   | Root workspace and tooling files                                                                                                                          | Added the pnpm workspace, locked dependencies, strict TypeScript, ESLint, Vitest, Prettier, environment example, and root scripts.                                             |
+| 2026-07-10 | VS0-T2                      | apps/web                                                                                                                                                  | Added the Next.js 16 App Router app, Tailwind v4 tokens, current shadcn primitives, and branded smoke page.                                                                    |
+| 2026-07-10 | VS0-T3                      | apps/api                                                                                                                                                  | Added the NestJS API, Pino request logging, dependency lifecycle services, and health contracts/tests.                                                                         |
+| 2026-07-10 | VS0-T4                      | apps/worker                                                                                                                                               | Added the standalone NestJS worker and structured infrastructure readiness lifecycle.                                                                                          |
+| 2026-07-10 | VS0-T5/T6                   | packages/config, packages/db, packages/shared, compose.yaml                                                                                               | Added typed config, Drizzle client/baseline, shared health types, and local PostgreSQL/Redis services.                                                                         |
+| 2026-07-10 | VS0-T7                      | README.md, scripts/check-infrastructure.ts, docs/progress-tracker.md                                                                                      | Added setup/operations documentation, the direct infrastructure probe, verification evidence, and handoff.                                                                     |
+| 2026-07-11 | VS1-T1/T5                   | apps/web, apps/api, packages/config, packages/db                                                                                                          | Added Better Auth, database-backed sessions, protected web/API routes, auth UI, migrations, tests, and runtime verification.                                                   |
+| 2026-07-12 | VS1-UI-R1                   | apps/web, docs/ui-registry.md, docs/progress-tracker.md                                                                                                   | Reworked the landing, auth, and protected dashboard UI; added shared shell components and generated creator media.                                                             |
+| 2026-07-12 | VS1-UI-R1-DT                | .mcp.json, docs/progress-tracker.md                                                                                                                       | Configured official Chrome DevTools MCP with isolated profile and usage-statistics opt-out.                                                                                    |
+| 2026-07-12 | VS1-UI-R1-DTG               | global Codex config, docs/progress-tracker.md                                                                                                             | Moved Chrome DevTools MCP to global config and removed project `.mcp.json`; removed isolated mode.                                                                             |
+| 2026-07-12 | VS1-UI-R2                   | apps/web auth/dashboard/navigation, docs/progress-tracker.md                                                                                              | Contained the mobile account footer, replaced the overflowing empty-state glyph, and added branded custom auth validation feedback.                                            |
+| 2026-07-12 | VS2-R1                      | apps/api auth/projects, eslint.config.mjs, docs/progress-tracker.md                                                                                       | Exported the authentication service required by the reusable guard, added a module-resolution regression test, and raised the typed-lint default-project ceiling from 8 to 10. |
+| 2026-07-13 | VS2-UI-R3                   | apps/web/components/app/app-sidebar.tsx, apps/web/components/app/app-navigation.ts, apps/web/components/app/app-sidebar.spec.ts, docs/progress-tracker.md | Derived navigation active state from the current pathname and covered project route matching with focused tests.                                                               |
+| 2026-07-13 | VS2-T3                      | apps/web upload route/features, project creation/list flow, docs/progress-tracker.md                                                                      | Added a project-scoped local-video upload screen, browser-native multipart progress client, and the project routing needed to reach it.                                        |
+| 2026-07-13 | VS2-T3-R1                   | apps/web project action/form, docs/progress-tracker.md                                                                                                    | Removed the invalid runtime export from the Server Action module and guarded the Next.js export restriction.                                                                   |
+| 2026-07-13 | DOCS-SKILLS-20260713        | AGENTS.md, docs/progress-tracker.md                                                                                                                       | Required agents to use relevant installed skills from `addyosmani/agent-skills` and recorded the docs-only update.                                                             |
+| 2026-07-13 | VS2-T4                      | apps/api projects/storage, packages/config, API docs, tests, lint config                                                                                  | Added private local source storage, protected bounded multipart upload handling, startup configuration, contract/error coverage, and task handoff.                             |
+| 2026-07-13 | DOCS-TRACKER-SPLIT-20260713 | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md                                      | Moved historical tracker content into focused archive docs and kept the tracker focused on live slice status plus current handoff.                                             |
+| 2026-07-13 | VS2-T6                      | apps/api projects, packages/shared, eslint.config.mjs, docs                                                                                               | Added shared minute-rounding rule and authorized source-video metadata API with safe not-found behavior; added regression tests and typed-lint support for shared tests.       |
+| 2026-07-13 | VS2-UI-R4                   | Global design tokens, landing media, active design docs, docs/progress-tracker.md                                                                         | Applied the Ember copper visual system, primary-action foregrounds, and landing ambient treatment.                                                                             |
+| 2026-07-13 | VS2-UI-R5                   | apps/web/app/globals.css, landing pricing CTA, docs/ui-tokens.md, docs/progress-tracker.md                                                                | Removed the remaining legacy landing CTA gradient and routed the glow through the named Ember ambient token.                                                                   |
+| 2026-07-13 | VS2-T7                      | apps/web upload client/components, docs/progress-tracker.md                                                                                               | Displayed validated source metadata and server-derived rounded credit estimates after upload.                                                                                  |
+| 2026-07-15 | VS3-T1                      | packages/db schema/migrations/tests, docs/database-schema.md, docs/progress-tracker.md                                                                    | Added credit ledger, Stripe payment, webhook, customer, and processing-job foundation schema with integrity constraints.                                                       |
+| 2026-07-15 | VS3-T1.1                    | packages/db migrations/tests, role provisioning, Compose/configuration, database/environment docs, lint/typecheck wiring, docs/progress-tracker.md        | Hardened billing integrity, ownership boundaries, runtime role permissions, and migration/test execution.                                                                      |
+| 2026-07-15 | VS3-T1.2                    | packages/config, database/runtime environment templates, Drizzle/Compose/test scripts, README.md, database/environment docs, docs/progress-tracker.md     | Closed runtime credential separation and mandatory live PostgreSQL test wiring.                                                                                                |
+| 2026-07-16 | MAINT-5                     | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives                                                                           | Removed stale duplicate live state, archived referenced completed task narratives, and documented recurring log-maintenance rules.                                             |
+| 2026-07-16 | MAINT-7                     | AGENTS.md, progress tracker, execution/operational/handoff/maintenance archives                                                                           | Added mandatory Prettier adherence, changed-file format checks, repository-wide format guidance, and whitespace verification to agent workflow.                                |
 
 ---
 
 ## Commands and Verification Log
 
-| Date | Task ID | Command | Result |
-|---|---|---|---|
-| 2026-07-10 | VS0 | pnpm install --frozen-lockfile | PASS — all seven workspace projects installed from the committed lockfile. |
-| 2026-07-10 | VS0 | pnpm ci:check | PASS — formatting, lint, typecheck, 7 tests, and all builds passed. |
-| 2026-07-10 | VS0-T5/T6 | docker compose config/up/status + pnpm infra:check | PASS — PostgreSQL and Redis became healthy and responded to Node probes. |
-| 2026-07-10 | VS0-T5 | pnpm db:migrate twice + PostgreSQL catalog query | PASS — repeat-safe baseline; only Drizzle migration history exists. |
-| 2026-07-10 | VS0-T2/T4 | Production process startup and HTTP/log probes | PASS — web/API returned 200 and worker emitted worker.ready. |
-| 2026-07-10 | VS0-T2 | Headless Chrome screenshot and high-detail inspection | PASS — Tailwind v4 tokens and shadcn primitives render in the documented visual system. |
-| 2026-07-10 | VS0 | pnpm infra:down + git diff --check | PASS — services stopped with volumes preserved and no whitespace errors. |
-| 2026-07-11 | VS1 | pnpm db:migrate + live auth HTTP probes | PASS — migrations applied; signup/login/logout/session persistence and protected API behavior verified. |
-| 2026-07-11 | VS1 | pnpm format:check / lint / typecheck / test / build | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed. |
-| 2026-07-11 | VS1-T4 | Headless Chrome desktop/mobile inspection | PASS — desktop brand treatment verified; mobile overflow found and fixed. |
-| 2026-07-12 | VS1-UI-R1 | pnpm ci:check | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed. |
-| 2026-07-12 | VS1-UI-R1 | Chrome DevTools responsive + auth verification | PASS — landing, login, signup, dashboard, mobile drawer focus return, protected redirect, and sign-out verified; no console errors or horizontal overflow. |
-| 2026-07-12 | VS1-UI-R1 | Lighthouse desktop audit | PASS — accessibility 100, SEO 100, agentic browsing 100; HTTP-only best-practices finding is local-development expected. |
-| 2026-07-12 | VS1-UI-R1 | `git commit` | PASS — verified UI overhaul committed on `main`. |
-| 2026-07-12 | VS1-UI-R1-DT | `.mcp.json` parse + Chrome DevTools MCP CLI help | PASS — workspace config parses; official package and requested flags validated. |
-| 2026-07-12 | VS1-UI-R1-DTG | global config inspection + repo file check | PASS — global server configured without `--isolated`; project `.mcp.json` absent. |
-| 2026-07-12 | VS1-UI-R2 | `pnpm typecheck` / targeted ESLint / `pnpm lint` / `pnpm test` / `pnpm build` | PASS — strict types, ESLint, 11 tests, and all production builds passed. |
-| 2026-07-12 | VS1-UI-R2 | Chrome DevTools 390px auth validation check | PASS — custom inline alert rendered; native validation bubble absent; console clean. |
+| Date       | Task ID       | Command                                                                       | Result                                                                                                                                                     |
+| ---------- | ------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-10 | VS0           | pnpm install --frozen-lockfile                                                | PASS — all seven workspace projects installed from the committed lockfile.                                                                                 |
+| 2026-07-10 | VS0           | pnpm ci:check                                                                 | PASS — formatting, lint, typecheck, 7 tests, and all builds passed.                                                                                        |
+| 2026-07-10 | VS0-T5/T6     | docker compose config/up/status + pnpm infra:check                            | PASS — PostgreSQL and Redis became healthy and responded to Node probes.                                                                                   |
+| 2026-07-10 | VS0-T5        | pnpm db:migrate twice + PostgreSQL catalog query                              | PASS — repeat-safe baseline; only Drizzle migration history exists.                                                                                        |
+| 2026-07-10 | VS0-T2/T4     | Production process startup and HTTP/log probes                                | PASS — web/API returned 200 and worker emitted worker.ready.                                                                                               |
+| 2026-07-10 | VS0-T2        | Headless Chrome screenshot and high-detail inspection                         | PASS — Tailwind v4 tokens and shadcn primitives render in the documented visual system.                                                                    |
+| 2026-07-10 | VS0           | pnpm infra:down + git diff --check                                            | PASS — services stopped with volumes preserved and no whitespace errors.                                                                                   |
+| 2026-07-11 | VS1           | pnpm db:migrate + live auth HTTP probes                                       | PASS — migrations applied; signup/login/logout/session persistence and protected API behavior verified.                                                    |
+| 2026-07-11 | VS1           | pnpm format:check / lint / typecheck / test / build                           | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed.                                                                       |
+| 2026-07-11 | VS1-T4        | Headless Chrome desktop/mobile inspection                                     | PASS — desktop brand treatment verified; mobile overflow found and fixed.                                                                                  |
+| 2026-07-12 | VS1-UI-R1     | pnpm ci:check                                                                 | PASS — formatting, ESLint, strict types, 11 tests, and all production builds passed.                                                                       |
+| 2026-07-12 | VS1-UI-R1     | Chrome DevTools responsive + auth verification                                | PASS — landing, login, signup, dashboard, mobile drawer focus return, protected redirect, and sign-out verified; no console errors or horizontal overflow. |
+| 2026-07-12 | VS1-UI-R1     | Lighthouse desktop audit                                                      | PASS — accessibility 100, SEO 100, agentic browsing 100; HTTP-only best-practices finding is local-development expected.                                   |
+| 2026-07-12 | VS1-UI-R1     | `git commit`                                                                  | PASS — verified UI overhaul committed on `main`.                                                                                                           |
+| 2026-07-12 | VS1-UI-R1-DT  | `.mcp.json` parse + Chrome DevTools MCP CLI help                              | PASS — workspace config parses; official package and requested flags validated.                                                                            |
+| 2026-07-12 | VS1-UI-R1-DTG | global config inspection + repo file check                                    | PASS — global server configured without `--isolated`; project `.mcp.json` absent.                                                                          |
+| 2026-07-12 | VS1-UI-R2     | `pnpm typecheck` / targeted ESLint / `pnpm lint` / `pnpm test` / `pnpm build` | PASS — strict types, ESLint, 11 tests, and all production builds passed.                                                                                   |
+| 2026-07-12 | VS1-UI-R2     | Chrome DevTools 390px auth validation check                                   | PASS — custom inline alert rendered; native validation bubble absent; console clean.                                                                       |
 
 | 2026-07-12 | VS2-R1 | focused module test / API typecheck / `pnpm lint` / `pnpm test` / API liveness probe | PASS — regression test reproduced then passed; API typecheck, lint, 22 tests, and HTTP 200 liveness pass. |
 | 2026-07-12 | VS2-R1 | `pnpm format:check` | KNOWN BASELINE FAILURE — Prettier reports 11 unrelated files; task files are not listed. |
@@ -147,25 +147,25 @@ ffmpeg ...
 
 ## Blocker Log
 
-| Date | Time | Slice | Task ID | Blocker | What Was Tried | Needed to Continue | Status |
-|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — |
-| 2026-07-16 | 19:18 | VS3 | VS3-T2 | Authenticated browser verification cannot complete. | Local Next.js HMR WebSocket resets prevented signup/login from issuing an auth request; `/billing` redirect to `/login` succeeded. | Restore stable local HMR/auth interaction and recheck Billing desktop/mobile authenticated states. | OPEN |
-| 2026-07-16 | 20:26 | VS3 | VS3-T2-R1 | Follow-up to the 19:18 authenticated-browser blocker. | Built and ran an optimized Next.js server outside HMR, created a disposable authenticated session, and verified Billing/dashboard through headless Chrome at desktop/mobile widths. | No further action for T2; six disposable review accounts and temporary browser profiles were removed. | RESOLVED |
+| Date       | Time  | Slice | Task ID   | Blocker                                               | What Was Tried                                                                                                                                                                      | Needed to Continue                                                                                    | Status   |
+| ---------- | ----- | ----- | --------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
+| —          | —     | —     | —         | —                                                     | —                                                                                                                                                                                   | —                                                                                                     | —        |
+| 2026-07-16 | 19:18 | VS3   | VS3-T2    | Authenticated browser verification cannot complete.   | Local Next.js HMR WebSocket resets prevented signup/login from issuing an auth request; `/billing` redirect to `/login` succeeded.                                                  | Restore stable local HMR/auth interaction and recheck Billing desktop/mobile authenticated states.    | OPEN     |
+| 2026-07-16 | 20:26 | VS3   | VS3-T2-R1 | Follow-up to the 19:18 authenticated-browser blocker. | Built and ran an optimized Next.js server outside HMR, created a disposable authenticated session, and verified Billing/dashboard through headless Chrome at desktop/mobile widths. | No further action for T2; six disposable review accounts and temporary browser profiles were removed. | RESOLVED |
 
 ---
 
 ## Decision Log
 
-| Date | Time | Decision | Reason | Affected Slice | Files Affected |
-|---|---|---|---|---|---|
-| 2026-07-10 | 13:24 | Use pnpm workspaces without Turborepo and Docker Compose for local PostgreSQL/Redis. | Matches the approved plan and keeps the VS0 developer path minimal and reproducible. | VS0 | Root workspace files, compose.yaml |
-| 2026-07-10 | 13:30 | Keep the VS0 migration as a no-op baseline. | Product tables must be introduced only by the slice that needs them. | VS0, VS1+ | packages/db/drizzle |
-| 2026-07-10 | 13:36 | Use shadcn's current base-nova preset, then replace generated theme values with canonical RepurposePro tokens. | Preserves current primitive infrastructure without changing the documented visual system. | VS0 UI | apps/web |
-| 2026-07-10 | 13:40 | Pin TypeScript 6.0.3 instead of the newer TypeScript 7 release. | Current typescript-eslint 8 supports TypeScript versions below 6.1; 6.0.3 is the newest compatible release. | VS0 tooling | package manifests, lockfile |
-| 2026-07-13 | 10:07 | Store VS2-T4 uploads privately without an `uploaded_videos` row. | Keeps the task scoped to bounded storage while retaining a private manifest for VS2-T5 probing and VS2-T7 persistence. | VS2 | apps/api storage/projects, docs/api-contracts.md |
-| 2026-07-13 | 15:19 | Split historical progress tracker logs into focused archive docs. | The tracker had grown into a mixed live-status and historical archive; moving completed logs keeps current slice state readable without losing handoff evidence. | Docs | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md |
-| 2026-07-13 | 16:56 | Derive required credits from persisted video duration rather than storing a duplicate. | VS3 must recalculate credits inside its payment transaction; one canonical duration-derived rule prevents preview and charge drift. | VS2, VS3 | packages/shared, apps/api projects, docs/api-contracts.md |
+| Date       | Time  | Decision                                                                                                       | Reason                                                                                                                                                           | Affected Slice | Files Affected                                                                                                       |
+| ---------- | ----- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-10 | 13:24 | Use pnpm workspaces without Turborepo and Docker Compose for local PostgreSQL/Redis.                           | Matches the approved plan and keeps the VS0 developer path minimal and reproducible.                                                                             | VS0            | Root workspace files, compose.yaml                                                                                   |
+| 2026-07-10 | 13:30 | Keep the VS0 migration as a no-op baseline.                                                                    | Product tables must be introduced only by the slice that needs them.                                                                                             | VS0, VS1+      | packages/db/drizzle                                                                                                  |
+| 2026-07-10 | 13:36 | Use shadcn's current base-nova preset, then replace generated theme values with canonical RepurposePro tokens. | Preserves current primitive infrastructure without changing the documented visual system.                                                                        | VS0 UI         | apps/web                                                                                                             |
+| 2026-07-10 | 13:40 | Pin TypeScript 6.0.3 instead of the newer TypeScript 7 release.                                                | Current typescript-eslint 8 supports TypeScript versions below 6.1; 6.0.3 is the newest compatible release.                                                      | VS0 tooling    | package manifests, lockfile                                                                                          |
+| 2026-07-13 | 10:07 | Store VS2-T4 uploads privately without an `uploaded_videos` row.                                               | Keeps the task scoped to bounded storage while retaining a private manifest for VS2-T5 probing and VS2-T7 persistence.                                           | VS2            | apps/api storage/projects, docs/api-contracts.md                                                                     |
+| 2026-07-13 | 15:19 | Split historical progress tracker logs into focused archive docs.                                              | The tracker had grown into a mixed live-status and historical archive; moving completed logs keeps current slice state readable without losing handoff evidence. | Docs           | docs/progress-tracker.md, docs/agent-execution-log.md, docs/agent-operational-logs.md, docs/agent-handoff-history.md |
+| 2026-07-13 | 16:56 | Derive required credits from persisted video duration rather than storing a duplicate.                         | VS3 must recalculate credits inside its payment transaction; one canonical duration-derived rule prevents preview and charge drift.                              | VS2, VS3       | packages/shared, apps/api projects, docs/api-contracts.md                                                            |
 
 | 2026-07-15 | 13:28 | Keep processing charges reconciled to immutable `processing_jobs.credits_charged`; runtime cannot write raw ledger or Stripe source records. | Prevents financial state bypass and leaves VS3-T4/T5 to add narrowly scoped owner-authorized write procedures. | VS3 | packages/db, role boundary migrations, database/environment docs |
 | 2026-07-15 | 15:22 | Restrict API, worker, and auth runtime credentials to `repurposepro_runtime`; isolate bootstrap, migration, provisioning, and live-test credentials. | Ensures application processes cannot escalate into administrative database operations and makes the PostgreSQL integration gate explicit. | VS3 | packages/config, Compose, environment templates, CI/test scripts |
@@ -185,11 +185,11 @@ Record decisions such as:
 
 ## Failure Log
 
-| Date | Time | Slice | Task ID | Failure | Root Cause | Fix | Preventive Action |
-|---|---|---|---|---|---|---|---|
-| 2026-07-10 | 13:34 | VS0 | VS0-T2 | Initial shadcn initialization rejected the web scaffold. | The required `@/*` import alias was not yet declared. | Added the TypeScript paths alias and reran initialization successfully. | Keep the alias in the committed Next.js tsconfig. |
-| 2026-07-10 | 13:38 | VS0 | VS0-T1 | Initial pnpm install stopped on ignored native builds. | pnpm 11 requires explicit per-package build approval. | Added `allowBuilds` for NestJS, esbuild, and sharp and reran the install. | Commit the build policy in pnpm-workspace.yaml. |
-| 2026-07-10 | 13:42 | VS0 | VS0-T7 | Initial compiler/lint passes found TypeScript 6 deprecations and unregistered lint-only files. | Legacy module resolution, inherited declaration maps, and ESLint project-service scope needed current configuration. | Moved to Node16 resolution, corrected app overrides, and registered lint-only files. | Full frozen-lockfile `pnpm ci:check` now covers these configurations. |
+| Date       | Time  | Slice | Task ID | Failure                                                                                        | Root Cause                                                                                                           | Fix                                                                                  | Preventive Action                                                     |
+| ---------- | ----- | ----- | ------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 2026-07-10 | 13:34 | VS0   | VS0-T2  | Initial shadcn initialization rejected the web scaffold.                                       | The required `@/*` import alias was not yet declared.                                                                | Added the TypeScript paths alias and reran initialization successfully.              | Keep the alias in the committed Next.js tsconfig.                     |
+| 2026-07-10 | 13:38 | VS0   | VS0-T1  | Initial pnpm install stopped on ignored native builds.                                         | pnpm 11 requires explicit per-package build approval.                                                                | Added `allowBuilds` for NestJS, esbuild, and sharp and reran the install.            | Commit the build policy in pnpm-workspace.yaml.                       |
+| 2026-07-10 | 13:42 | VS0   | VS0-T7  | Initial compiler/lint passes found TypeScript 6 deprecations and unregistered lint-only files. | Legacy module resolution, inherited declaration maps, and ESLint project-service scope needed current configuration. | Moved to Node16 resolution, corrected app overrides, and registered lint-only files. | Full frozen-lockfile `pnpm ci:check` now covers these configurations. |
 
 | 2026-07-12 | 17:55 | VS2 | VS2-R1 | API exited before binding its port when the protected projects controller was loaded. | `AuthModule` exported `AuthGuard` without its `AuthService` dependency. | Exported `AuthService` and added a module-compilation regression test. | The test now proves all dependencies for the reusable guard resolve in `ProjectsModule`. |
 | 2026-07-16 | 19:18 | VS3 | VS3-T2 | `pnpm ci:check` stopped at formatting verification. | Six pre-existing non-VS3-T2 files do not match Prettier; task files passed targeted formatting checks. | Recorded the baseline and ran lint, typecheck, unit, database-integration, and build checks separately. | Restore repository-wide formatting baseline before treating `ci:check` as a task gate. |
@@ -599,6 +599,7 @@ Record decisions such as:
   and MAINT-20 records.
 - Final source state: no intended MAINT-20 source changes remain uncommitted.
 - Preserved user state: `apps/web/next-env.d.ts` remains modified and outside the commit.
+
 ### OPS-PR-01 CodeRabbit review PR blocked - 2026-07-29 09:45 Asia/Manila
 
 - Scope: Create GitHub pull request for CodeRabbit review.
@@ -609,24 +610,28 @@ Record decisions such as:
 - Decision: Do not create fake code changes. Leave review PR uncreated until GitHub write access is restored.
 - Next action: Reconnect GitHub with repository write access or run `gh auth login -h github.com`, then create a real review ref/PR.
 - Status: BLOCKED.
+
 ### OPS-PR-01 Retry - 2026-07-29 09:53 Asia/Manila
 
 - Rechecked `gh auth status`: active `sminemb` token remains invalid; `gh repo view` returns HTTP 401.
 - Rechecked GitHub connector branch creation: still fails with `403 Resource not accessible by integration`.
 - No remote refs, commits, or pull requests created.
 - Status: BLOCKED pending valid GitHub CLI authentication or GitHub app write access.
+
 ### OPS-PR-01 Credential recheck - 2026-07-29 09:55 Asia/Manila
 
 - `gh auth status` still reports cached `sminemb` token invalid and `gh repo view` returns HTTP 401.
 - HTTPS Git read access works through `origin`; push dry-run does not authenticate successfully.
 - GitHub connector branch creation remains blocked with `403 Resource not accessible by integration`.
 - Status: BLOCKED pending token refresh or GitHub app write access.
+
 ### OPS-PR-01 Retry after user auth refresh - 2026-07-29 10:00 Asia/Manila
 
 - User reports successful `gh auth refresh`.
 - Codex shell still reports cached `sminemb` token invalid; `gh repo view` returns HTTP 401.
 - No branch, commit, push, or PR action executed.
 - Status: BLOCKED by authentication state mismatch between user terminal and Codex shell.
+
 ### OPS-PR-01 Remote review refs created, PR blocked - 2026-07-29 10:12 Asia/Manila
 
 - Scope: Create GitHub pull request for CodeRabbit review with VS3-only code diff.
@@ -763,3 +768,51 @@ Record decisions such as:
 
 - Commit intentionally not created: `git add` failed with `fatal: Unable to create 'D:/Projects/RepurposePro/.git/index.lock': Permission denied`.
 - Re-index metadata and maintenance documentation remain uncommitted; pre-existing `graph.db.zst` deletion and `apps/web/next-env.d.ts` modification remain untouched.
+
+### VS3-R3 Started and RED Evidence — 2026-07-30 16:40 Asia/Manila
+
+- Reopened VS3 for the worker execution-lease handoff race defined in
+  `C:\Users\Andrey\Downloads\PLAN.md`.
+- Confirmed a clean `main` worktree at commit `f340f3e` before the tracker start update.
+- Read current BullMQ Worker, cancellation, shutdown, and QueueEvents guidance through Context7.
+- Added RED-first worker lifecycle, worker config, QueueEvents ownership, handoff-grace, and
+  valid-lease-precedence tests.
+- Expected focused result: 31 passed and 8 failed. Failures prove the lifecycle service is absent,
+  worker config ignores `DATABASE_PROCESSING_URL`, API QueueEvents still renew leases, and
+  reconciliation re-enqueues/refunds without the required grace and lease precedence.
+
+### VS3-R3 Implementation and Repair — 2026-07-30 17:05 Asia/Manila
+
+- Added forward-only migration `0017_worker_execution_leases.sql`; no applied migration was edited.
+- Added processing-role-only acquire, renew, release, and progress functions with exact
+  owner/token fencing, 60-second leases, expired takeover, and active-lease refund deferral.
+- Added the worker lifecycle repository/service, validated processing-role worker configuration,
+  15-second non-overlapping heartbeat, bounded transient renewal retry, abort-on-loss, and
+  controlled retry release.
+- Removed API QueueEvents ownership of `active`/`progress` lease writes. QueueEvents now wakes only
+  durable terminal-failure reconciliation.
+- Added a 15-second first-observation handoff grace and made a valid PostgreSQL lease authoritative
+  over missing, failed, or stale Redis state.
+- A focused formatting invocation initially passed PowerShell's file list as one pattern; the
+  corrected explicit-glob invocation formatted every supported changed source file.
+- Focused ESLint first timed out under concurrent typecheck, then reported test-only unbound-method
+  diagnostics. Reworked mocks to retain bound function references; isolated lint passed.
+- API/worker typecheck first read stale built config declarations. Rebuilt `@repurposepro/config`;
+  the same scoped typecheck then passed.
+
+### VS3-R3 Verification — 2026-07-30 17:12 Asia/Manila
+
+- PASS: focused lifecycle/config/reconciliation/QueueEvents tests — 48 tests.
+- PASS: focused live PostgreSQL lease tests — 19 tests.
+- PASS: focused real PostgreSQL/Redis/BullMQ recovery tests — 6 tests.
+- PASS: `pnpm test` — 66 files passed, 6 skipped; 329 tests passed, 51 skipped.
+- PASS: `pnpm test:db-integration` — 6 files and 51 live tests passed.
+- PASS: API and worker typecheck.
+- PASS: focused ESLint for all changed TypeScript, including repaired isolated reruns.
+- PASS: `pnpm build`; the known non-fatal Next.js NFT tracing warning remains.
+- PASS: changed-file Prettier and `git diff --check`.
+- PASS: five-axis review covered lease/refund races, exact-token fencing, restricted role grants,
+  crash/retry boundaries, queue handoff, input validation, and bounded background work.
+- Decision: production BullMQ analysis activation remains deferred to VS4, but every future handler
+  must enter through `ProcessingLifecycleService`.
+- Status: COMPLETED. Live tracker advances to VS4-T1.

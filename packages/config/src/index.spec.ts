@@ -49,6 +49,24 @@ describe("configuration loaders", () => {
     expect(config.databasePoolMax).toBe(12);
     expect(config.databaseSsl).toBe(false);
     expect(config.logPretty).toBe(true);
+    expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
+  });
+
+  it("requires the processing-role database URL for worker startup", () => {
+    const environment = { ...validServerEnvironment };
+    delete environment.DATABASE_PROCESSING_URL;
+
+    expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("rejects a generic runtime URL as the worker processing credential", () => {
+    expect(() =>
+      loadWorkerConfig({
+        ...validServerEnvironment,
+        DATABASE_PROCESSING_URL:
+          "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
+      }),
+    ).toThrow(ConfigValidationError);
   });
 
   it.each([

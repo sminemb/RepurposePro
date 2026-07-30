@@ -14,23 +14,19 @@ type QueueEventListener = (
 function setup() {
   const eventListeners = new Map<string, QueueEventListener>();
   const close = vi.fn().mockResolvedValue(undefined);
+  const on = vi.fn((event: string, listener: QueueEventListener) => {
+    eventListeners.set(event, listener);
+    return client;
+  });
   const client = {
     close,
-    on: vi.fn((event: string, listener: QueueEventListener) => {
-      eventListeners.set(event, listener);
-      return client;
-    }),
+    on,
     waitUntilReady: vi.fn().mockResolvedValue(undefined),
   } as unknown as AnalysisQueueEventsClient;
   const recordTerminalFailure = vi.fn().mockResolvedValue("persisted");
-  const touch = vi.fn().mockResolvedValue("renewed");
-  const listener = new AnalysisQueueFailureListener(
-    { recordTerminalFailure } as never,
-    { touch },
-    client,
-  );
+  const listener = new AnalysisQueueFailureListener({ recordTerminalFailure } as never, client);
 
-  return { client, close, eventListeners, listener, recordTerminalFailure, touch };
+  return { close, eventListeners, listener, on, recordTerminalFailure };
 }
 
 describe("AnalysisQueueFailureListener", () => {
@@ -69,22 +65,16 @@ describe("AnalysisQueueFailureListener", () => {
     await listener.onModuleDestroy();
   });
 
-  it.each(["active", "progress"] as const)(
-    "renews the durable execution lease on BullMQ %s events",
-    async (eventName) => {
-      const { eventListeners, listener, touch } = setup();
+  it("uses QueueEvents only for errors and terminal retry exhaustion", async () => {
+    const { listener, on } = setup();
 
-      await listener.onModuleInit();
-      await eventListeners.get(eventName)?.(
-        { jobId: "00000000-0000-4000-8000-000000000753" },
-        "1785290000003-0",
-      );
+    await listener.onModuleInit();
 
-      expect(touch).toHaveBeenCalledWith(
-        "00000000-0000-4000-8000-000000000753",
-        "queue-event:1785290000003-0",
-      );
-      await listener.onModuleDestroy();
-    },
-  );
+    expect(on).toHaveBeenCalledTimes(2);
+    expect(on).toHaveBeenCalledWith("error", expect.any(Function));
+    expect(on).toHaveBeenCalledWith("retries-exhausted", expect.any(Function));
+    expect(on).not.toHaveBeenCalledWith("active", expect.any(Function));
+    expect(on).not.toHaveBeenCalledWith("progress", expect.any(Function));
+    await listener.onModuleDestroy();
+  });
 });

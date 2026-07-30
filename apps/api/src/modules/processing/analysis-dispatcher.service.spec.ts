@@ -21,6 +21,7 @@ function dispatchRecord(overrides: Partial<AnalysisDispatchRecord> = {}): Analys
     executionLeaseExpiresAt: null,
     jobId,
     jobStatus: "queued",
+    lastFailureStage: null,
     leaseToken,
     projectId,
     ...overrides,
@@ -158,14 +159,25 @@ describe("AnalysisDispatcherService", () => {
   });
 
   it("restores a missing published queued job with the deterministic database UUID", async () => {
-    const { enqueue, inspect, markPublished, service } = setup([
+    const { enqueue, inspect, markPublished, reschedule, service } = setup([
       dispatchRecord({ dispatchStatus: "published" }),
+      null,
+      dispatchRecord({
+        attemptCount: 2,
+        dispatchStatus: "published",
+        lastFailureStage: "queue_handoff_wait",
+      }),
       null,
     ]);
 
-    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+    await expect(service.dispatchPending("first-observation")).resolves.toBe(0);
 
     expect(inspect).toHaveBeenCalledWith({ jobId, projectId });
+    expect(reschedule).toHaveBeenCalledWith(dispatchId, leaseToken, "queue_handoff_wait", 15);
+    expect(enqueue).not.toHaveBeenCalled();
+
+    await expect(service.dispatchPending("second-observation")).resolves.toBe(1);
+
     expect(enqueue).toHaveBeenCalledOnce();
     expect(enqueue).toHaveBeenCalledWith({ jobId, projectId });
     expect(markPublished).toHaveBeenCalledWith(dispatchId, leaseToken, jobId);
@@ -184,7 +196,7 @@ describe("AnalysisDispatcherService", () => {
   });
 
   it("waits for a missing active job while its durable execution lease remains valid", async () => {
-    const { enqueue, recordTerminalFailure, service } = setup([
+    const { enqueue, inspect, recordTerminalFailure, service } = setup([
       dispatchRecord({
         dispatchStatus: "published",
         executionLeaseExpiresAt: new Date(Date.now() + 60_000),
@@ -192,6 +204,24 @@ describe("AnalysisDispatcherService", () => {
       }),
       null,
     ]);
+
+    await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
+
+    expect(inspect).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(recordTerminalFailure).not.toHaveBeenCalled();
+  });
+
+  it("lets a valid active lease override a retained failed BullMQ state", async () => {
+    const { enqueue, inspect, recordTerminalFailure, service } = setup([
+      dispatchRecord({
+        dispatchStatus: "published",
+        executionLeaseExpiresAt: new Date(Date.now() + 60_000),
+        jobStatus: "active",
+      }),
+      null,
+    ]);
+    inspect.mockResolvedValue("failed");
 
     await expect(service.dispatchPending("reconcile")).resolves.toBe(1);
 

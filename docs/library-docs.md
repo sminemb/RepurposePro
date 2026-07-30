@@ -18,25 +18,25 @@ The app should generate editable preview metadata first, then render final MP4 f
 
 ## 2. Library Overview
 
-| Area | Library / Tool | Purpose in RepurposePro |
-|---|---|---|
-| Frontend | Next.js | Web app, routing, pages, server/client components |
-| Frontend | React | UI composition and state |
-| Frontend | shadcn/ui | Reusable UI components |
-| Frontend | Tailwind CSS v4 | CSS-first styling, layout, and design tokens |
-| Backend | NestJS | API backend and service architecture |
-| Database | PostgreSQL | Durable app data |
-| Database ORM | Drizzle ORM | Type-safe schema, queries, and migrations |
-| Queue | Redis | BullMQ queue backend |
-| Queue | BullMQ | Background jobs for processing and rendering |
-| Auth | Better Auth | User authentication and sessions |
-| Security | Arcjet | Rate limiting and abuse protection |
-| Payments | Stripe | Credit purchases and payment webhooks |
-| AI | Gemini | Transcript analysis, clip selection, summary selection |
-| Transcription | Whisper | Self-hosted speech-to-text |
-| Video | FFmpeg / ffprobe | Probing, trimming, cropping, stitching, rendering |
-| Captions | ASS subtitles | Styled caption burn-in for final MP4s |
-| Validation | Zod or equivalent | Runtime validation for DTOs, AI JSON, and config |
+| Area          | Library / Tool    | Purpose in RepurposePro                                |
+| ------------- | ----------------- | ------------------------------------------------------ |
+| Frontend      | Next.js           | Web app, routing, pages, server/client components      |
+| Frontend      | React             | UI composition and state                               |
+| Frontend      | shadcn/ui         | Reusable UI components                                 |
+| Frontend      | Tailwind CSS v4   | CSS-first styling, layout, and design tokens           |
+| Backend       | NestJS            | API backend and service architecture                   |
+| Database      | PostgreSQL        | Durable app data                                       |
+| Database ORM  | Drizzle ORM       | Type-safe schema, queries, and migrations              |
+| Queue         | Redis             | BullMQ queue backend                                   |
+| Queue         | BullMQ            | Background jobs for processing and rendering           |
+| Auth          | Better Auth       | User authentication and sessions                       |
+| Security      | Arcjet            | Rate limiting and abuse protection                     |
+| Payments      | Stripe            | Credit purchases and payment webhooks                  |
+| AI            | Gemini            | Transcript analysis, clip selection, summary selection |
+| Transcription | Whisper           | Self-hosted speech-to-text                             |
+| Video         | FFmpeg / ffprobe  | Probing, trimming, cropping, stitching, rendering      |
+| Captions      | ASS subtitles     | Styled caption burn-in for final MP4s                  |
+| Validation    | Zod or equivalent | Runtime validation for DTOs, AI JSON, and config       |
 
 ---
 
@@ -350,16 +350,16 @@ With Tailwind v4, expose those semantic variables to utilities through `@theme i
 
 ```css
 :root {
-  --background: #0B0D12;
-  --foreground: #F5F6F8;
+  --background: #0b0d12;
+  --foreground: #f5f6f8;
   --card: #151821;
-  --card-foreground: #F5F6F8;
-  --primary: #C4522A;
-  --primary-foreground: #FFFFFF;
-  --muted: #1A1D25;
-  --muted-foreground: #B9BDCF;
-  --border: #2A3040;
-  --ring: #C4522A;
+  --card-foreground: #f5f6f8;
+  --primary: #c4522a;
+  --primary-foreground: #ffffff;
+  --muted: #1a1d25;
+  --muted-foreground: #b9bdcf;
+  --border: #2a3040;
+  --ring: #c4522a;
 }
 
 @theme inline {
@@ -448,7 +448,7 @@ Use `@theme` when a token should create utility classes:
 
 ```css
 @theme {
-  --color-rp-primary: #C4522A;
+  --color-rp-primary: #c4522a;
   --font-sans: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
   --radius-rp-lg: 1rem;
   --shadow-rp-card: 0 16px 48px rgb(0 0 0 / 0.32);
@@ -470,8 +470,8 @@ When a Tailwind theme variable references another CSS custom property, use `@the
 
 ```css
 :root {
-  --rp-primary: #C4522A;
-  --rp-bg: #0B0D12;
+  --rp-primary: #c4522a;
+  --rp-bg: #0b0d12;
 }
 
 @theme inline {
@@ -903,7 +903,7 @@ If Redis is lost, the system should be able to reconcile important job state fro
 API BullMQ connections use explicit ownership and separate policies:
 
 - Producers: offline queue disabled, one request retry, short command timeout.
-- QueueEvents/blocking consumers: `maxRetriesPerRequest: null`.
+- QueueEvents/blocking consumers: `maxRetriesPerRequest: null`; terminal wake-up events only.
 - Both: bounded exponential reconnect delay with jitter.
 - Queue/BullMQ clients close first; the connection owner then closes each Redis client once.
 
@@ -976,8 +976,10 @@ Create durable dispatch state in the same PostgreSQL transaction as the paid job
 then claim it with leased `SKIP LOCKED` rows. Retain completed and failed BullMQ records so
 publishing the same durable job remains idempotent even after a crash between queue acceptance and
 the PostgreSQL publication marker. Periodically reconcile published queued jobs against Redis and
-restore a missing job with the same UUID. Inspect database-active jobs; never blindly republish
-them. Use a durable execution lease/heartbeat before terminally recovering missing active work.
+wait 15 seconds after the first missing observation before restoring the same UUID. The worker must
+acquire a PostgreSQL execution lease before protected work, renew it every 15 seconds, and require
+the exact token for progress persistence. A 60-second unexpired lease fences competing callbacks
+and takes precedence over Redis state. QueueEvents does not own the lease.
 
 ---
 
@@ -1116,11 +1118,11 @@ RepurposePro should use:
 
 Recommended credit packs:
 
-| Pack | Price | Credits |
-|---|---:|---:|
-| Starter | $10 | 40 |
-| Creator | $25 | 100 |
-| Pro | $50 | 200 |
+| Pack    | Price | Credits |
+| ------- | ----: | ------: |
+| Starter |   $10 |      40 |
+| Creator |   $25 |     100 |
+| Pro     |   $50 |     200 |
 
 Rules:
 
@@ -1183,8 +1185,9 @@ Use the restricted processing-role refund operation for terminal failures. It lo
 owning current project, validates the original charge and exact deduction, inserts at most one
 immutable exact refund, and updates job/project state atomically. Persist a PostgreSQL failure intent
 first, then claim it with a leased `SKIP LOCKED` sweeper. The accepted failure reason is immutable;
-QueueEvents and stale-job reconciliation only provide discovery/wake-up signals. VS9 expands
-coverage to later worker stages.
+QueueEvents and stale-job reconciliation only provide discovery/wake-up signals. Claims and final
+refund operations defer while a valid worker execution lease exists. VS9 expands coverage to later
+worker stages.
 
 ---
 
@@ -1210,13 +1213,13 @@ It should be used for:
 
 Recommended MVP usage:
 
-| Task | Model |
-|---|---|
-| Transcript cleanup | Gemini Flash-Lite |
-| Initial clip candidate scoring | Gemini Flash-Lite |
-| Final clip ranking | Gemini Flash |
-| Summary segment selection | Gemini Flash |
-| Regenerate one clip | Flash-Lite first, Flash fallback |
+| Task                           | Model                            |
+| ------------------------------ | -------------------------------- |
+| Transcript cleanup             | Gemini Flash-Lite                |
+| Initial clip candidate scoring | Gemini Flash-Lite                |
+| Final clip ranking             | Gemini Flash                     |
+| Summary segment selection      | Gemini Flash                     |
+| Regenerate one clip            | Flash-Lite first, Flash fallback |
 
 Use the exact model names from the current Gemini API docs at implementation time.
 
@@ -1828,21 +1831,21 @@ Follow these rules across all library usage:
 
 Libraries should be introduced when a vertical slice first needs them, rather than integrating the entire stack upfront.
 
-| Slice | Libraries / Tools First Activated | Why |
-|---|---|---|
-| VS0 | Next.js, Tailwind CSS v4, shadcn/ui, NestJS, PostgreSQL, Drizzle, Redis | Boot the repository and shared infrastructure |
-| VS1 | Better Auth | Deliver signup, login, logout, sessions, and protected dashboard |
-| VS2 | FFmpeg/ffprobe, local file storage | Validate uploaded video and calculate duration-based credit cost |
-| VS3 | Stripe, BullMQ | Buy credits, safely deduct them, and enqueue processing |
-| VS4 | Self-hosted Whisper, Gemini | Produce transcript and AI-selected clip-preview metadata |
-| VS5 | React browser video preview, CSS caption overlay | Edit preview metadata without rendering MP4s |
-| VS6 | ASS subtitles, FFmpeg rendering | Render one final vertical MP4 and burn styled captions |
-| VS7 | Gemini regeneration fallback, multi-render queue behavior | Replace bad clips and render selected outputs only |
-| VS8 | Gemini summary prompt + FFmpeg concatenation | Produce condensed chronological summary video |
-| VS9 | Existing Drizzle transaction and queue primitives | Make failure refunds idempotent across worker/API boundaries |
-| VS10 | BullMQ cleanup jobs + storage deletion | Enforce 7-day file retention |
-| VS11 | Arcjet | Harden expensive endpoints and abuse-sensitive flows |
-| VS12 | Test tooling and visual/responsive verification | Validate the complete MVP and demo flow |
+| Slice | Libraries / Tools First Activated                                       | Why                                                              |
+| ----- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| VS0   | Next.js, Tailwind CSS v4, shadcn/ui, NestJS, PostgreSQL, Drizzle, Redis | Boot the repository and shared infrastructure                    |
+| VS1   | Better Auth                                                             | Deliver signup, login, logout, sessions, and protected dashboard |
+| VS2   | FFmpeg/ffprobe, local file storage                                      | Validate uploaded video and calculate duration-based credit cost |
+| VS3   | Stripe, BullMQ                                                          | Buy credits, safely deduct them, and enqueue processing          |
+| VS4   | Self-hosted Whisper, Gemini                                             | Produce transcript and AI-selected clip-preview metadata         |
+| VS5   | React browser video preview, CSS caption overlay                        | Edit preview metadata without rendering MP4s                     |
+| VS6   | ASS subtitles, FFmpeg rendering                                         | Render one final vertical MP4 and burn styled captions           |
+| VS7   | Gemini regeneration fallback, multi-render queue behavior               | Replace bad clips and render selected outputs only               |
+| VS8   | Gemini summary prompt + FFmpeg concatenation                            | Produce condensed chronological summary video                    |
+| VS9   | Existing Drizzle transaction and queue primitives                       | Make failure refunds idempotent across worker/API boundaries     |
+| VS10  | BullMQ cleanup jobs + storage deletion                                  | Enforce 7-day file retention                                     |
+| VS11  | Arcjet                                                                  | Harden expensive endpoints and abuse-sensitive flows             |
+| VS12  | Test tooling and visual/responsive verification                         | Validate the complete MVP and demo flow                          |
 
 Rules:
 
@@ -1850,7 +1853,6 @@ Rules:
 - A library should enter the codebase when a current vertical slice requires it.
 - The exception is VS0, which establishes the minimum bootable platform.
 - Keep `build-plan.md` and `progress-tracker.md` aligned with this activation order.
-
 
 ---
 
