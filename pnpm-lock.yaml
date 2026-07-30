@@ -222,6 +222,9 @@ importers:
       '@repurposepro/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      bullmq:
+        specifier: 5.79.3
+        version: 5.79.3
       ioredis:
         specifier: 5.11.1
         version: 5.11.1

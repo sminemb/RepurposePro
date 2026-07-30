@@ -344,19 +344,19 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS4         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-07-30  |
+| Start Time | 19:09       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress   | 13%         |
 | Dependency | VS3         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                              | Layers Touched               | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ---------------------------------------------------------- | ---------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS4-T1  | Implement worker job lifecycle and progress updates        | Worker + Queue + DB          | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T1  | Implement worker job lifecycle and progress updates        | Worker + Queue + DB          | COMPLETED   | 2026-07-30 | 19:09      | 2026-07-30 | 19:34    | 17 focused, 348 unit, 51 integration, build pass |
 | VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -859,19 +859,19 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T1 - Implement worker job lifecycle and progress updates
+Current Task: VS4-T2 - Extract transcription audio with FFmpeg
 Last Maintenance Task: MAINT-22 - Re-index project codebase graph
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: VS1-UI-R4 - Align auth warning/error titles with feedback severity
-Next Recommended Task: VS4-T1 - Implement the first real analysis handler through ProcessingLifecycleService.
-Uncommitted Changes: No intended VS3-UI-R1 or VS1-UI-R4 changes remain after their focused commit. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. Focused billing/auth unit tests, web typecheck/build, focused lint, changed-file formatting, and whitespace checks pass.
-Known Blockers: None.
-Important Context: Apply migration `0017_worker_execution_leases.sql` before starting the updated API/worker. Production BullMQ analysis consumption remains disabled until VS4 adds a real handler. Every future handler must use ProcessingLifecycleService and its abort signal/token-bound persistence.
-Required Commands Before Continuing: Apply migration `0017` in each environment, then begin VS4-T1 with TDD. Keep FFmpeg, Whisper, and Gemini work behind the worker lifecycle boundary.
+Last Completed Task: VS4-T1 - Add gated analysis processor lifecycle boundary
+Next Recommended Task: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind AnalysisPipelineHandler.
+Uncommitted Changes: No intended VS4-T1 changes remain after commit `feat(worker): add gated analysis processor boundary`. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. 348 unit tests and 51 live integration tests pass; full typecheck and production builds pass. `pnpm ci:check` still stops on 37 unchanged repository-wide Prettier failures, and full lint retains the pre-existing `apps/api/src/startup-diagnostics.spec.ts` project-service error.
+Known Blockers: No VS4-T2 product blocker. `pnpm audit --prod` reports five high and four moderate vulnerabilities in existing web/API transitive paths; no finding uses BullMQ. Remediate before release.
+Important Context: VS4-T1 strictly validates BullMQ identity and ID-only payloads, acquires a fresh token-fenced execution lease, forwards abort/progress context, and accepts only an exact `preview_ready` result. AnalysisJobProcessor is intentionally absent from AppModule, so production queue consumption remains disabled until T2-T6 can persist previews and finalize success.
+Required Commands Before Continuing: Begin VS4-T2 with TDD through AnalysisPipelineHandler. Keep AnalysisJobProcessor unregistered until the complete pipeline can finish truthfully.
 Last Updated Date: 2026-07-30
-Last Updated Time: 18:54
+Last Updated Time: 19:34
 Last Updated By: Codex
 ```
