@@ -1346,3 +1346,24 @@ Last Updated Date: 2026-07-30
 Last Updated Time: 19:34
 Last Updated By: Codex
 ```
+
+### MAINT-23 Completion Handoff - 2026-07-30 21:12 Asia/Manila
+
+```text
+Current Slice: VS4 - User receives AI-generated clip previews
+Current Task: VS4-T2 - Extract transcription audio with FFmpeg
+Last Maintenance Task: MAINT-23 - Restore `pnpm ci:check`
+Current Status: NOT_STARTED
+Start Date: —
+Start Time: —
+Last Completed Task: MAINT-23 - Restore `pnpm ci:check`
+Next Recommended Task: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind AnalysisPipelineHandler.
+Uncommitted Changes: Existing user changes in README, API, billing, web, infrastructure, scripts, and tool configuration remain outside MAINT-23. MAINT-23 ESLint configuration and required documentation are committed with `fix(tooling): restore ci check`.
+Known Failing Tests: None. `pnpm ci:check` passes: formatting, lint, typecheck, 348 unit tests plus 51 intentionally skipped integration tests, 51 live database-integration tests, and production builds.
+Known Blockers: No VS4-T2 product blocker. `pnpm audit --prod` reports five high and four moderate vulnerabilities in existing web/API transitive paths; no finding uses BullMQ. Remediate before release.
+Important Context: MAINT-23 adds `apps/api/src/startup-diagnostics.spec.ts` to typed ESLint's exact `allowDefaultProject` patterns. The project service now handles the root-level API test without relaxing type-aware linting.
+Required Commands Before Continuing: Begin VS4-T2 with TDD through AnalysisPipelineHandler. Keep AnalysisJobProcessor unregistered until the complete pipeline can finish truthfully.
+Last Updated Date: 2026-07-30
+Last Updated Time: 21:12
+Last Updated By: Codex
+```

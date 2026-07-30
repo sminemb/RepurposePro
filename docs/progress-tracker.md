@@ -860,18 +860,18 @@ Detailed historical logs moved out of this tracker so the live slice status stay
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T2 - Extract transcription audio with FFmpeg
-Last Maintenance Task: MAINT-22 - Re-index project codebase graph
+Last Maintenance Task: MAINT-23 - Restore `pnpm ci:check`
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: VS4-T1 - Add gated analysis processor lifecycle boundary
+Last Completed Task: MAINT-23 - Restore `pnpm ci:check`
 Next Recommended Task: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind AnalysisPipelineHandler.
-Uncommitted Changes: No intended VS4-T1 changes remain after commit `feat(worker): add gated analysis processor boundary`. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. 348 unit tests and 51 live integration tests pass; full typecheck and production builds pass. `pnpm ci:check` still stops on 37 unchanged repository-wide Prettier failures, and full lint retains the pre-existing `apps/api/src/startup-diagnostics.spec.ts` project-service error.
+Uncommitted Changes: Existing user changes in README, API, billing, web, infrastructure, scripts, and tool configuration remain outside MAINT-23. MAINT-23 ESLint configuration and required documentation are committed with `fix(tooling): restore ci check`.
+Known Failing Tests: None. `pnpm ci:check` passes: formatting, lint, typecheck, 348 unit tests plus 51 intentionally skipped integration tests, 51 live database-integration tests, and production builds.
 Known Blockers: No VS4-T2 product blocker. `pnpm audit --prod` reports five high and four moderate vulnerabilities in existing web/API transitive paths; no finding uses BullMQ. Remediate before release.
 Important Context: VS4-T1 strictly validates BullMQ identity and ID-only payloads, acquires a fresh token-fenced execution lease, forwards abort/progress context, and accepts only an exact `preview_ready` result. AnalysisJobProcessor is intentionally absent from AppModule, so production queue consumption remains disabled until T2-T6 can persist previews and finalize success.
 Required Commands Before Continuing: Begin VS4-T2 with TDD through AnalysisPipelineHandler. Keep AnalysisJobProcessor unregistered until the complete pipeline can finish truthfully.
 Last Updated Date: 2026-07-30
-Last Updated Time: 19:34
+Last Updated Time: 21:12
 Last Updated By: Codex
 ```

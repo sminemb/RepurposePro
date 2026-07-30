@@ -865,3 +865,17 @@ Record decisions such as:
 - Decision: VS4-T1 complete. VS4-T2 next; consumer activation stays deferred through T6.
 - Decision: no billing API or Stripe webhook behavior changed; UI continues to wait for the
   existing confirmed webhook credit grant.
+
+### MAINT-23 Restore CI Check - 2026-07-30 21:12 Asia/Manila
+
+- Reproduced the full CI failure: typed ESLint project service excluded
+  `apps/api/src/startup-diagnostics.spec.ts` from its default project allowlist.
+- Added that exact root API test pattern to `eslint.config.mjs`; no source, dependency, or test
+  behavior changed.
+- PASS: full `pnpm ci:check` in 416.5 seconds: formatting, lint, typecheck, 348 unit tests, 51
+  live database-integration tests, and production builds.
+- Known non-blocking build output: existing Next.js NFT tracing warning.
+- Commit attempt failed before staging: Git could not create `.git/index.lock` because access was
+  denied. MAINT-23 files remain uncommitted; no user changes were staged.
+- Follow-up: scoped Git staging received required permission; MAINT-23 remains isolated from all
+  pre-existing user changes and is ready for commit.

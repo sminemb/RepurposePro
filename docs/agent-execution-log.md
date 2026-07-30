@@ -2710,3 +2710,44 @@ Next Recommended Task:
 
 - VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind
   `AnalysisPipelineHandler`.
+
+---
+
+### MAINT-23 - Restore `pnpm ci:check`
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 20:44
+End Date: 2026-07-30
+End Time: 21:12
+
+User Outcome:
+
+- Repository-wide CI completes without a typed-ESLint parsing error.
+
+Files Changed:
+
+- `eslint.config.mjs`
+- Required tracker and append-only agent logs.
+
+Commands Run:
+
+- `pnpm ci:check`
+- `pnpm exec prettier --check eslint.config.mjs`
+
+Verification:
+
+- RED: `pnpm ci:check` failed because typed ESLint could not associate
+  `apps/api/src/startup-diagnostics.spec.ts` with a TypeScript project.
+- GREEN: Added the existing root API test to `allowDefaultProject`.
+- PASS: full `pnpm ci:check` passed formatting, lint, typecheck, 348 unit tests with 51
+  intentional integration skips, 51 live database-integration tests, and all production builds.
+
+Known Limitations:
+
+- Next.js still emits its existing non-fatal NFT tracing warning during the web production build.
+
+Next Recommended Task:
+
+- VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind
+  `AnalysisPipelineHandler`.
