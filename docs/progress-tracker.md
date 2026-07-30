@@ -201,6 +201,7 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | VS1-UI-R1     | Rework landing, authentication, and protected dashboard UI                         | Web + Design + Docs | COMPLETED | 2026-07-12 | 06:53      | 2026-07-12 | 12:54    | `pnpm ci:check` and browser verification pass across landing, auth, dashboard, responsive navigation, protected redirect, and sign-out.                                    |
 | VS1-UI-R2     | Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback | Web + Design + Docs | COMPLETED | 2026-07-12 | 13:33      | 2026-07-12 | 13:50    | Static checks pass; 390px browser verification confirms custom inline auth feedback and no native validation bubble.                                                       |
 | VS1-UI-R3     | Fix mobile drawer stacking and duplicate-account sign-up feedback                  | Web + Tests + Docs  | COMPLETED | 2026-07-12 | 14:00      | 2026-07-12 | 14:26    | `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; focused browser sign-up check reached the auth error state but local DB infrastructure was unavailable. |
+| VS1-UI-R4     | Align auth warning/error titles with feedback severity                              | Web + Tests + Docs  | COMPLETED | 2026-07-30 | 18:50      | 2026-07-30 | 18:54    | RED-first auth error tests, focused tests, web typecheck/build, focused lint, changed-file Prettier, and whitespace checks pass. Browser runtime unavailable because no dev server was listening. |
 | VS1-UI-R1-DT  | Configure Chrome DevTools MCP for browser verification                             | Tooling + Docs      | COMPLETED | 2026-07-12 | 11:53      | 2026-07-12 | 11:56    | Added workspace `.mcp.json` with official isolated launcher; JSON and CLI flag validation passed.                                                                          |
 | VS1-UI-R1-DTG | Move Chrome DevTools MCP to global Codex config                                    | Tooling + Docs      | COMPLETED | 2026-07-12 | 12:02      | 2026-07-12 | 12:04    | Removed repo config; added global `chrome-devtools` server without `--isolated`.                                                                                           |
 
@@ -312,6 +313,7 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | VS3-R1    | Fix durable analysis dispatch, automatic failure refunds, and Stripe webhook envelope | DB + API + Worker + Queue + Tests + Docs         | COMPLETED | 2026-07-29 | 11:25      | 2026-07-29 | 12:15    | Migration `0015`; 303 unit tests and 31 live PostgreSQL/Redis tests pass; full typecheck, changed-file Prettier, focused lint, and whitespace checks pass.                                                                                                                                             |
 | VS3-R2    | Close remaining VS3 cross-system reliability gaps                                     | DB + API + Redis + Queue + Stripe + Tests + Docs | COMPLETED | 2026-07-29 | 12:55      | 2026-07-29 | 13:33    | Migration `0016`; 320 unit tests, 44 live PostgreSQL/Redis integration tests, typecheck, focused lint, Prettier, production builds, and whitespace checks pass.                                                                                                                                        |
 | VS3-R3    | Fix worker execution-lease handoff race                                               | DB + API + Worker + Redis + Queue + Tests + Docs | COMPLETED | 2026-07-30 | 16:31      | 2026-07-30 | 17:12    | Migration `0017`; worker-owned 60-second leases and 15-second heartbeats; 329 unit tests, 51 live PostgreSQL/Redis tests, focused lint/typecheck, formatting, builds, and whitespace checks pass.                                                                                                      |
+| VS3-UI-R1 | Clear Stripe return notice after payment confirmation; align billing feedback styling | Web + Tests + Docs                               | COMPLETED | 2026-07-30 | 18:41      | 2026-07-30 | 18:45    | New unit tests cover known Checkout return states and URL cleanup; focused test, web typecheck/build, focused lint, changed-file Prettier, and whitespace checks pass. Browser runtime unavailable locally because no dev server was listening.                                                                    |
 
 ## Slice Acceptance Criteria
 
@@ -862,14 +864,14 @@ Last Maintenance Task: MAINT-22 - Re-index project codebase graph
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: VS3-R3 - Fix worker execution-lease handoff race
+Last Completed Task: VS1-UI-R4 - Align auth warning/error titles with feedback severity
 Next Recommended Task: VS4-T1 - Implement the first real analysis handler through ProcessingLifecycleService.
-Uncommitted Changes: No intended VS3-R3 changes remain after its focused commit. Local `.env` and `.env.database` remain ignored and must never be committed.
-Known Failing Tests: None. Full unit and live PostgreSQL/Redis suites, focused lint, API/worker typecheck, production builds, changed-file formatting, and whitespace checks pass.
+Uncommitted Changes: No intended VS3-UI-R1 or VS1-UI-R4 changes remain after their focused commit. Local `.env` and `.env.database` remain ignored and must never be committed.
+Known Failing Tests: None. Focused billing/auth unit tests, web typecheck/build, focused lint, changed-file formatting, and whitespace checks pass.
 Known Blockers: None.
 Important Context: Apply migration `0017_worker_execution_leases.sql` before starting the updated API/worker. Production BullMQ analysis consumption remains disabled until VS4 adds a real handler. Every future handler must use ProcessingLifecycleService and its abort signal/token-bound persistence.
 Required Commands Before Continuing: Apply migration `0017` in each environment, then begin VS4-T1 with TDD. Keep FFmpeg, Whisper, and Gemini work behind the worker lifecycle boundary.
 Last Updated Date: 2026-07-30
-Last Updated Time: 17:12
+Last Updated Time: 18:54
 Last Updated By: Codex
 ```

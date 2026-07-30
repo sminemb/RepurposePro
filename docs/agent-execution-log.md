@@ -2559,3 +2559,89 @@ Known Limitations:
 Next Recommended Task:
 
 - VS4-T1 - Implement the first real analysis handler through `ProcessingLifecycleService`.
+
+---
+
+### VS3-UI-R1 - Clear Stripe Return Notice and Align Billing Feedback
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 18:41
+End Date: 2026-07-30
+End Time: 18:45
+
+User Outcome:
+
+- A successful Stripe Checkout return no longer leaves its pending notice permanently on Billing.
+- Billing feedback now has action-specific warning and error titles, matching semantic warning and
+  danger treatment.
+
+Files Changed:
+
+- `apps/web/features/billing/components/checkout-return-notice.tsx`
+- `apps/web/features/billing/components/checkout-return-notice-state.ts`
+- `apps/web/features/billing/components/checkout-return-notice-state.spec.ts`
+- `apps/web/features/billing/components/credit-balance-error.tsx`
+- `docs/progress-tracker.md`
+- `docs/agent-execution-log.md`
+- `docs/agent-operational-logs.md`
+- `docs/agent-handoff-history.md`
+
+Commands Run:
+
+- Focused RED-first Vitest command for Checkout-return state handling.
+- Focused web typecheck and ESLint.
+- Changed-file Prettier write/check.
+- `pnpm --filter @repurposepro/web run build`.
+- `git diff --check`.
+
+Verification:
+
+- PASS: 7 focused Checkout-return tests.
+- PASS: web typecheck, focused ESLint, changed-file Prettier, and `git diff --check`.
+- PASS: production Next.js build; pre-existing non-fatal NFT tracing warning remains.
+- Browser verification could not start because `http://localhost:3000` refused the connection;
+  no local web dev server was listening.
+
+Known Limitations:
+
+- The notice clears after six seconds or explicit dismissal. The existing return URL does not
+  include a Checkout session identifier, so UI cannot independently observe the exact webhook
+  record.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement the first real analysis handler through `ProcessingLifecycleService`.
+
+---
+
+### VS1-UI-R4 - Align Authentication Warning and Error Titles
+
+Status: COMPLETED
+Start Date: 2026-07-30
+Start Time: 18:50
+End Date: 2026-07-30
+End Time: 18:54
+
+User Outcome:
+
+- Fixable form-input feedback appears as a warning with an amber title and icon.
+- Authentication failures and availability failures appear as errors with a danger title and icon.
+
+Files Changed:
+
+- `apps/web/features/auth/components/auth-form.tsx`
+- `apps/web/features/auth/components/auth-form-errors.ts`
+- `apps/web/features/auth/components/auth-form-errors.spec.ts`
+- Required tracker and append-only agent logs.
+
+Verification:
+
+- PASS: RED-first auth error tests failed before severity metadata existed, then 3 tests passed.
+- PASS: focused billing and auth unit tests, web typecheck/build, focused ESLint, changed-file
+  Prettier, and `git diff --check`.
+- Browser runtime unavailable because no local web development server was listening.
+
+Next Recommended Task:
+
+- VS4-T1 - Implement the first real analysis handler through `ProcessingLifecycleService`.

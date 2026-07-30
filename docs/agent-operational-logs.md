@@ -756,6 +756,20 @@ Record decisions such as:
 - Decision: verified Stripe receipt persistence commits before any downstream API or financial work.
 - Status: COMPLETED. Live tracker advances to VS4-T1.
 
+### VS3-UI-R1 Checkout Return Feedback â€” 2026-07-30 18:45 Asia/Manila
+
+- Added typed Checkout-return state and URL-cleanup helpers with RED-first coverage.
+- Successful Checkout notice now clears itself after six seconds and has an explicit accessible
+  dismiss button; only the temporary `checkout` query value is removed.
+- Updated messages with explicit `Payment confirmation pending`, `Checkout cancelled`, and
+  `Could not load billing information` titles; warning and error colors/icons now match intent.
+- PASS: 7 focused unit tests, web typecheck/build, focused ESLint, changed-file Prettier, and
+  `git diff --check`.
+- Browser runtime unavailable: `http://localhost:3000` returned `ERR_CONNECTION_REFUSED` because
+  no local development server was listening.
+- Decision: no billing API or Stripe webhook behavior changed; UI continues to wait for the
+  existing confirmed webhook credit grant.
+
 ### MAINT-22 Re-index Project Codebase Graph — 2026-07-30 13:23 Asia/Manila
 
 - Full codebase-memory index completed with status `indexed`.
@@ -816,3 +830,21 @@ Record decisions such as:
 - Decision: production BullMQ analysis activation remains deferred to VS4, but every future handler
   must enter through `ProcessingLifecycleService`.
 - Status: COMPLETED. Live tracker advances to VS4-T1.
+
+### VS3-UI-R1 Log Placement Correction â€” 2026-07-30 18:45 Asia/Manila
+
+- The VS3-UI-R1 completion entry above is the task evidence. This append-only marker records the
+  latest billing-feedback outcome after the previous historical VS3-R3 records.
+- Result unchanged: warning/error copy and semantic styling updated; focused tests, typecheck,
+  lint, formatting, build, and whitespace checks pass.
+
+### VS1-UI-R4 Authentication Feedback â€” 2026-07-30 18:54 Asia/Manila
+
+- Added explicit `warning` or `error` feedback variant to auth form errors.
+- Input corrections render amber warning title/icon; failed sign-in, failed account creation, and
+  unavailable authentication render danger title/icon.
+- RED-first auth error tests: 3 failures before variant metadata, then 3 passing tests.
+- PASS: focused billing/auth tests, web typecheck/build, focused ESLint, changed-file Prettier,
+  and `git diff --check`.
+- Browser runtime unavailable: `http://localhost:3000` returned `ERR_CONNECTION_REFUSED` because
+  no local development server was listening.

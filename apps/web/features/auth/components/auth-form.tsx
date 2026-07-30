@@ -16,6 +16,19 @@ interface AuthFormProps {
   readonly mode: "login" | "signup";
 }
 
+const feedbackStyles = {
+  error: {
+    icon: "border-rp-danger/30 bg-rp-danger/10 text-rp-danger",
+    surface: "border-rp-danger/35 bg-rp-danger-soft/45",
+    title: "text-rp-danger",
+  },
+  warning: {
+    icon: "border-rp-warning/30 bg-rp-warning/10 text-rp-warning",
+    surface: "border-rp-warning/40 bg-rp-warning-soft/55",
+    title: "text-rp-warning",
+  },
+} as const;
+
 function formValue(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value : "";
@@ -26,6 +39,7 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     return {
       title: "Your name is missing",
       message: "Add your name so we know what to call you.",
+      variant: "warning",
     };
   }
 
@@ -34,6 +48,7 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     return {
       title: "Your email is missing",
       message: "Add the email you use for your RepurposePro account.",
+      variant: "warning",
     };
   }
 
@@ -41,6 +56,7 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     return {
       title: "Check your email",
       message: "Use a valid email address to continue.",
+      variant: "warning",
     };
   }
 
@@ -49,6 +65,7 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     return {
       title: "Your password is missing",
       message: "Enter your password to continue.",
+      variant: "warning",
     };
   }
 
@@ -56,6 +73,7 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     return {
       title: "Your password is too short",
       message: "Use at least 8 characters for your password.",
+      variant: "warning",
     };
   }
 
@@ -68,6 +86,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isSignUp = mode === "signup";
+  const feedbackStyle = error ? feedbackStyles[error.variant] : null;
 
   async function submit(formData: FormData) {
     setError(null);
@@ -89,6 +108,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       setError({
         title: "RepurposePro is unreachable",
         message: "Check your connection and try again.",
+        variant: "error",
       });
       setIsPending(false);
       return;
@@ -170,15 +190,17 @@ export function AuthForm({ mode }: AuthFormProps) {
       {error ? (
         <div
           aria-live="assertive"
-          className="flex items-start gap-3 rounded-rp-md border border-rp-danger/35 bg-rp-danger-soft/45 px-4 py-3.5"
+          className={`flex items-start gap-3 rounded-rp-md border px-4 py-3.5 ${feedbackStyle?.surface}`}
           id="auth-error"
           role="alert"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-rp-sm border border-rp-danger/30 bg-rp-danger/10 text-rp-danger">
+          <span
+            className={`grid size-9 shrink-0 place-items-center rounded-rp-sm border ${feedbackStyle?.icon}`}
+          >
             <CircleAlert aria-hidden="true" className="size-5" />
           </span>
           <div className="min-w-0 pt-0.5">
-            <p className="text-sm font-semibold text-rp-text">{error.title}</p>
+            <p className={`text-sm font-semibold ${feedbackStyle?.title}`}>{error.title}</p>
             <p className="mt-1 text-sm leading-5 text-rp-text-muted">{error.message}</p>
           </div>
         </div>
