@@ -24,3 +24,6 @@ Thumbs.db
 
 # Visual verification artifacts
 .artifacts/
+
+# Codebase indexing artifacts
+.codebase-memory/
