@@ -25,6 +25,7 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   REDIS_URL: "redis://:redis-test-secret@localhost:6379",
   LOG_LEVEL: "debug",
   LOG_PRETTY: "true",
+  FFMPEG_PATH: "ffmpeg",
   STORAGE_DRIVER: "local",
   STORAGE_ROOT: "./storage",
   FFPROBE_PATH: "ffprobe",
@@ -48,6 +49,7 @@ describe("configuration loaders", () => {
 
     expect(config.databasePoolMax).toBe(12);
     expect(config.databaseSsl).toBe(false);
+    expect(config.ffmpegPath).toBe("ffmpeg");
     expect(config.logPretty).toBe(true);
     expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
   });
@@ -55,6 +57,13 @@ describe("configuration loaders", () => {
   it("requires the processing-role database URL for worker startup", () => {
     const environment = { ...validServerEnvironment };
     delete environment.DATABASE_PROCESSING_URL;
+
+    expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("requires the FFmpeg binary path for worker startup", () => {
+    const environment = { ...validServerEnvironment };
+    delete environment.FFMPEG_PATH;
 
     expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
   });

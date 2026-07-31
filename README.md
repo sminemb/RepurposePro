@@ -8,6 +8,7 @@ summary videos. This repository currently contains the VS0 bootable platform fou
 - Node.js 22.18.x
 - pnpm 11.10.x
 - Docker Desktop with Docker Compose
+- FFmpeg and ffprobe available on `PATH`
 - Stripe CLI authenticated to the test account when testing local billing
 
 PostgreSQL and Redis run in Docker for local development, so native `psql` and `redis-cli`

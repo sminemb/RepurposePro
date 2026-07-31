@@ -25,6 +25,7 @@ export default defineConfig({
         "postgresql://repurposepro_runtime:vitest-runtime-secret@localhost:5432/repurposepro",
       DATABASE_WEBHOOK_URL:
         "postgresql://repurposepro_webhook:vitest-webhook-secret@localhost:5432/repurposepro",
+      FFMPEG_PATH: "ffmpeg",
       FFPROBE_PATH: "ffprobe",
       FILE_RETENTION_DAYS: "7",
       LOG_LEVEL: "error",

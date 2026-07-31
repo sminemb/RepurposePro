@@ -109,7 +109,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | —            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T2       |      13% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T3       |      25% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -350,7 +350,7 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Start Time | 19:09       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 13%         |
+| Progress   | 25%         |
 | Dependency | VS3         |
 
 ## Tasks
@@ -358,13 +358,30 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Task ID | Vertical Task                                              | Layers Touched               | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ---------------------------------------------------------- | ---------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
 | VS4-T1  | Implement worker job lifecycle and progress updates        | Worker + Queue + DB          | COMPLETED   | 2026-07-30 | 19:09      | 2026-07-30 | 19:34    | 17 focused, 348 unit, 51 integration, build pass |
-| VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | COMPLETED   | 2026-07-31 | 11:47      | 2026-07-31 | 12:13    | 37 focused, 358 unit, 51 integration, real FFmpeg smoke, build pass |
 | VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T7  | Show live processing step state in UI                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
+
+### VS4-T2 Completion Record
+
+- Files changed: `.env.example`, `README.md`, `apps/worker/src/app.module.ts`,
+  `apps/worker/src/services/transcription-audio-extractor.service.ts`,
+  `apps/worker/src/services/transcription-audio-extractor.service.spec.ts`,
+  `packages/config/src/index.ts`, `packages/config/src/index.spec.ts`, `vitest.config.ts`, and
+  this tracker.
+- Commands run: focused Vitest tests, package build, worker/config typechecks, scoped Prettier
+  and ESLint checks, a real FFmpeg/ffprobe smoke test, `pnpm infra:up`, `git diff --check`, and
+  `pnpm ci:check`.
+- Verification: 37 focused tests passed; the smoke output was PCM signed 16-bit, mono, and
+  16 kHz; the full quality gate passed with 358 unit tests and 51 database/Redis integration
+  tests.
+- Known limitations: this task implements only the extraction stage. Source lookup, Whisper
+  orchestration, transcript persistence, and the complete `AnalysisPipelineHandler` remain
+  deferred to VS4-T3; `AnalysisJobProcessor` remains intentionally unregistered.
 
 ## Slice Acceptance Criteria
 
@@ -787,19 +804,19 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T2 - Extract transcription audio with FFmpeg
+Current Task: VS4-T3 - Run self-hosted Whisper and persist timestamped transcript
 Last Maintenance Task: MAINT-23 - Restore `pnpm ci:check`
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: MAINT-24 - Untrack agent instruction and log files
-Next Recommended Task: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind AnalysisPipelineHandler.
-Uncommitted Changes: None. Latest maintenance commit contains the ignore rules, tracker update, and five Git index removals. `AGENTS.md` and four agent logs remain local and ignored.
-Known Failing Tests: None introduced; `git diff --check` passed.
-Known Blockers: None.
-Important Context: User-requested untracking preserves all five files on disk. Exact root-relative ignore rules prevent accidental re-tracking. VS4-T1 strictly validates BullMQ identity and ID-only payloads, acquires a fresh token-fenced execution lease, forwards abort/progress context, and accepts only an exact `preview_ready` result.
-Required Commands Before Continuing: Begin VS4-T2 with TDD through AnalysisPipelineHandler. Keep AnalysisJobProcessor unregistered until the complete pipeline can finish truthfully.
+Last Completed Task: VS4-T2 - Extract transcription audio with FFmpeg
+Next Recommended Task: VS4-T3 - Compose source lookup, audio extraction, self-hosted Whisper, and timestamped transcript persistence behind AnalysisPipelineHandler.
+Uncommitted Changes: The verified VS4-T2 implementation and tracker completion remain unstaged because Git index write approval was unavailable.
+Known Failing Tests: None. `pnpm ci:check` passed with 358 unit tests, 51 database/Redis integration tests, lint, typecheck, formatting, and all builds.
+Known Blockers: The requested VS4-T2 commit remains blocked until Git index writes are available; the implementation itself has no known blockers.
+Important Context: VS4-T2 adds the required `FFMPEG_PATH` worker configuration and registers only `TranscriptionAudioExtractor`. The extractor accepts trusted absolute paths, selects the first audio stream, writes mono 16 kHz PCM WAV through a same-directory temporary file, validates nonempty output, atomically promotes it, bounds diagnostics, and preserves original abort reasons. Source lookup, database access, Whisper behavior, transcript persistence, and a concrete full-pipeline handler are intentionally absent. `AnalysisJobProcessor` remains unregistered so BullMQ cannot falsely report `preview_ready`.
+Required Commands Before Continuing: Stage and commit VS4-T2 as `feat(worker): extract transcription audio with ffmpeg`, then begin VS4-T3 with TDD. Add least-privilege source lookup for the restricted processing role, compose `TranscriptionAudioExtractor`, and implement self-hosted Whisper orchestration plus timestamped transcript persistence. Keep `AnalysisJobProcessor` unregistered until the complete pipeline can return exact `preview_ready`.
 Last Updated Date: 2026-07-31
-Last Updated Time: 10:07
+Last Updated Time: 12:13
 Last Updated By: Codex
 ```

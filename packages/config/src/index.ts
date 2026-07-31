@@ -117,6 +117,7 @@ const serverEnvironmentSchema = z.object({
 const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
+  FFMPEG_PATH: z.string().trim().min(1),
 });
 
 const apiEnvironmentSchema = serverEnvironmentSchema
@@ -231,6 +232,7 @@ export interface AuthConfig {
 
 export interface WorkerConfig extends ServerConfig {
   readonly bullmqPrefix: string;
+  readonly ffmpegPath: string;
   readonly processingDatabaseUrl: string;
 }
 
@@ -376,6 +378,7 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
+    ffmpegPath: parsed.FFMPEG_PATH,
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
     nodeEnv: parsed.NODE_ENV,
