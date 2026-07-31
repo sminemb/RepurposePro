@@ -4,6 +4,7 @@ import { createDatabaseClient } from "@repurposepro/db";
 import { LoggerModule } from "nestjs-pino";
 
 import { createLoggingConfig } from "./logging.config";
+import { TranscriptionAudioExtractor } from "./services/transcription-audio-extractor.service";
 import {
   PROCESSING_LIFECYCLE_REPOSITORY,
   ProcessingLifecycleRepository,
@@ -18,6 +19,13 @@ const config = loadWorkerConfig();
   providers: [
     WorkerInfrastructureService,
     ProcessingLifecycleService,
+    {
+      provide: TranscriptionAudioExtractor,
+      useFactory: () =>
+        new TranscriptionAudioExtractor({
+          ffmpegPath: config.ffmpegPath,
+        }),
+    },
     {
       provide: PROCESSING_LIFECYCLE_REPOSITORY,
       useFactory: () =>
