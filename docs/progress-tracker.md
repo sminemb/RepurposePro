@@ -55,15 +55,12 @@ Before starting any slice or task, the coding agent must:
 After completing a task, the coding agent must:
 
 1. Record end date and time.
-2. Record files changed.
-3. Record commands run.
-4. Record tests and verification.
-5. Record known limitations.
-6. Update vertical slice summary.
-7. Update slice progress.
-8. Update current handoff state.
-9. Commit finished task changes with a clear git message after verification passes.
-10. If any tracked changes remain intentionally uncommitted, document them in the handoff state with a reason.
+2. Update vertical slice summary.
+3. Update slice progress.
+4. Update slice metadata.
+4. Update current handoff state.
+5. Commit finished task changes with a clear git message after verification passes.
+6. If any tracked changes remain intentionally uncommitted, document them in the handoff state with a reason.
 
 Timezone:
 
@@ -108,7 +105,7 @@ FAILED
 | VS0   | Repo boots and core infrastructure is ready                       | COMPLETED   | 2026-07-10 | 13:24      | 2026-07-10 | 13:55    | None         |     100% | —       |
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
-| VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | —            |     100% | —       |
+| VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
 | VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T3       |      25% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -136,7 +133,7 @@ This slice is foundational and is the only intentionally infrastructure-heavy sl
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS0         |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-07-10  |
 | Start Time | 13:24       |
 | End Date   | 2026-07-10  |
@@ -182,7 +179,7 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS1         |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-07-11  |
 | Start Time | 10:53       |
 | End Date   | 2026-07-11  |
@@ -192,19 +189,13 @@ This slice crosses auth UI, auth backend/session handling, protected routes, and
 
 ## Tasks
 
-| Task ID       | Vertical Task                                                                      | Layers Touched      | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                                                                               |
-| ------------- | ---------------------------------------------------------------------------------- | ------------------- | --------- | ---------- | ---------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VS1-T1        | Configure Better Auth end to end                                                   | Web + API + DB      | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Better Auth migrations applied to PostgreSQL; web/API booted with healthy dependencies.                                                                                    |
-| VS1-T2        | Build signup flow and persist user session                                         | Web + API + DB      | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Signup returned 200 and the persisted user rendered on a subsequent dashboard request.                                                                                     |
-| VS1-T3        | Build login/logout flow                                                            | Web + API           | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Login and logout returned 200; logout redirected protected dashboard access to `/login`.                                                                                   |
-| VS1-T4        | Build protected dashboard shell                                                    | Web                 | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Dashboard protection and brand-aligned login UI verified at runtime; mobile overflow fixed.                                                                                |
-| VS1-T5        | Enforce protected API access and test unauthorized requests                        | API + Tests         | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass.                                                                                   |
-| VS1-UI-R1     | Rework landing, authentication, and protected dashboard UI                         | Web + Design + Docs | COMPLETED | 2026-07-12 | 06:53      | 2026-07-12 | 12:54    | `pnpm ci:check` and browser verification pass across landing, auth, dashboard, responsive navigation, protected redirect, and sign-out.                                    |
-| VS1-UI-R2     | Fix mobile sign-out surface, dashboard icon overflow, and auth validation feedback | Web + Design + Docs | COMPLETED | 2026-07-12 | 13:33      | 2026-07-12 | 13:50    | Static checks pass; 390px browser verification confirms custom inline auth feedback and no native validation bubble.                                                       |
-| VS1-UI-R3     | Fix mobile drawer stacking and duplicate-account sign-up feedback                  | Web + Tests + Docs  | COMPLETED | 2026-07-12 | 14:00      | 2026-07-12 | 14:26    | `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass; focused browser sign-up check reached the auth error state but local DB infrastructure was unavailable. |
-| VS1-UI-R4     | Align auth warning/error titles with feedback severity                              | Web + Tests + Docs  | COMPLETED | 2026-07-30 | 18:50      | 2026-07-30 | 18:54    | RED-first auth error tests, focused tests, web typecheck/build, focused lint, changed-file Prettier, and whitespace checks pass. Browser runtime unavailable because no dev server was listening. |
-| VS1-UI-R1-DT  | Configure Chrome DevTools MCP for browser verification                             | Tooling + Docs      | COMPLETED | 2026-07-12 | 11:53      | 2026-07-12 | 11:56    | Added workspace `.mcp.json` with official isolated launcher; JSON and CLI flag validation passed.                                                                          |
-| VS1-UI-R1-DTG | Move Chrome DevTools MCP to global Codex config                                    | Tooling + Docs      | COMPLETED | 2026-07-12 | 12:02      | 2026-07-12 | 12:04    | Removed repo config; added global `chrome-devtools` server without `--isolated`.                                                                                           |
+| Task ID | Vertical Task                                       | Layers Touched | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                     |
+| ------- | --------------------------------------------------- | -------------- | --------- | ---------- | ---------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| VS1-T1  | Configure Better Auth end to end                    | Web + API + DB | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Better Auth migrations applied to PostgreSQL; web/API booted with healthy dependencies.                          |
+| VS1-T2  | Build signup flow and persist user session          | Web + API + DB | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Signup returned 200 and the persisted user rendered on a subsequent dashboard request.                           |
+| VS1-T3  | Build login/logout flow                             | Web + API      | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Login and logout returned 200; logout redirected protected dashboard access to `/login`.                     |
+| VS1-T4  | Build protected dashboard shell                     | Web            | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Dashboard protection and brand-aligned login UI verified at runtime; mobile overflow fixed.                      |
+| VS1-T5  | Enforce protected API access and test unauthorized requests | API + Tests | COMPLETED | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | Session endpoint returned 200 with the cookie and 401 without it; guard unit tests pass.                     |
 
 ## Slice Acceptance Criteria
 
@@ -230,7 +221,7 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS2         |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-07-12  |
 | Start Time | 17:06       |
 | End Date   | 2026-07-13  |
@@ -240,22 +231,15 @@ This slice crosses project UI, upload UI, API, storage, database, and ffprobe.
 
 ## Tasks
 
-| Task ID     | Vertical Task                                                                    | Layers Touched              | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                                              |
-| ----------- | -------------------------------------------------------------------------------- | --------------------------- | --------- | ---------- | ---------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| VS2-T1      | Create project schema and create/list API with ownership checks (narrowed scope) | DB + API + Tests            | COMPLETED | 2026-07-12 | 17:06      | 2026-07-12 | 17:31    | Migration applied; API typecheck and focused contract/controller tests pass.                                                              |
-| VS2-T2      | Build new project UI for clips or summary                                        | Web + API                   | COMPLETED | 2026-07-12 | 17:06      | 2026-07-12 | 17:31    | Workspace typecheck, lint, focused tests, and production build pass.                                                                      |
-| VS2-R1      | Restore API startup after protected-project dependency-injection regression      | API + Tests                 | COMPLETED | 2026-07-12 | 17:54      | 2026-07-12 | 18:03    | Exported `AuthService`, added a module-compilation regression test, and verified API liveness returns HTTP 200.                           |
-| VS2-UI-R3   | Fix active project navigation state                                              | Web + Tests                 | COMPLETED | 2026-07-13 | 07:19      | 2026-07-13 | 07:29    | Route matcher tests pass; desktop and 390px mobile browser checks show New Project active on `/projects/new`.                             |
-| VS2-T3-R1   | Fix Create Project Server Action export error                                    | Web + Tests                 | COMPLETED | 2026-07-13 | 09:08      | 2026-07-13 | 09:11    | Server Action module now exports only its async action; regression test and dev loader check pass.                                        |
-| VS2-T3      | Build local upload UI with progress                                              | Web                         | COMPLETED | 2026-07-13 | 08:44      | 2026-07-13 | 08:55    | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass.                                       |
-| VS2-T4      | Implement secure upload endpoint and storage pathing                             | API + Storage               | COMPLETED | 2026-07-13 | 09:40      | 2026-07-13 | 10:07    | Private storage, ownership, multipart limits, and focused API/storage tests pass.                                                         |
-| VS2-T5      | Probe duration, resolution, audio presence, and format with ffprobe              | API/Worker + FFmpeg         | COMPLETED | 2026-07-13 | 10:28      | 2026-07-13 | 10:54    | Metadata persistence, focused tests, typecheck, build, and ffprobe availability verified.                                                 |
-| VS2-DEBUG-1 | Apply the pending uploaded_videos database migration                             | Database + API verification | COMPLETED | 2026-07-13 | 14:31      | 2026-07-13 | 14:37    | Migration applied; API readiness, 35 focused tests, and API typecheck pass.                                                               |
-| VS2-DOCS-1  | Reconcile completed VS2 tasks with their execution logs                          | Documentation               | COMPLETED | 2026-07-13 | 14:46      | 2026-07-13 | 14:46    | VS2 task table, slice summary, and handoff reflect the completed upload and diagnostic work.                                              |
-| VS2-T6      | Calculate required credits from validated duration                               | API + Tests                 | COMPLETED | 2026-07-13 | 16:47      | 2026-07-13 | 16:56    | Shared round-up rule, authorized source-video metadata endpoint, API contract, 66 tests, typecheck, lint, and production build pass.      |
-| VS2-T7      | Display validated video metadata and required credits estimate                   | Web + API                   | COMPLETED | 2026-07-13 | 18:39      | 2026-07-13 | 19:01    | Client/API contract tests, 73-test suite, typecheck, lint, production build, and authenticated desktop/mobile browser upload checks pass. |
-| VS2-UI-R4   | Apply Ember copper visual system                                                 | Web + Design + Docs         | COMPLETED | 2026-07-13 | 17:34      | 2026-07-13 | 18:13    | Ember tokens, copper studio image, docs, static checks, and browser checks pass.                                                          |
-| VS2-UI-R5   | Remove missed legacy landing CTA gradient                                        | Web + Design + Docs         | COMPLETED | 2026-07-13 | 18:25      | 2026-07-13 | 18:31    | FinalCta now uses a named Ember ambient token; static and browser checks pass.                                                            |
+| Task ID | Vertical Task                                                    | Layers Touched      | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                                              |
+| ------- | ---------------------------------------------------------------- | ------------------- | --------- | ---------- | ---------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| VS2-T1  | Create project schema and create/list API with ownership checks (narrowed scope) | DB + API + Tests | COMPLETED | 2026-07-12 | 17:06      | 2026-07-12 | 17:31    | Migration applied; API typecheck and focused contract/controller tests pass.                                                              |
+| VS2-T2  | Build new project UI for clips or summary                        | Web + API           | COMPLETED | 2026-07-12 | 17:06      | 2026-07-12 | 17:31    | Workspace typecheck, lint, focused tests, and production build pass.                                                                      |
+| VS2-T3  | Build local upload UI with progress                              | Web                 | COMPLETED | 2026-07-13 | 08:44      | 2026-07-13 | 08:55    | Multipart upload UI, real byte-progress client, project-scoped upload route, and helper tests pass.                                       |
+| VS2-T4  | Implement secure upload endpoint and storage pathing             | API + Storage       | COMPLETED | 2026-07-13 | 09:40      | 2026-07-13 | 10:07    | Private storage, ownership, multipart limits, and focused API/storage tests pass.                                                         |
+| VS2-T5  | Probe duration, resolution, audio presence, and format with ffprobe | API/Worker + FFmpeg | COMPLETED | 2026-07-13 | 10:28      | 2026-07-13 | 10:54    | Metadata persistence, focused tests, typecheck, build, and ffprobe availability verified.                                                 |
+| VS2-T6  | Calculate required credits from validated duration               | API + Tests         | COMPLETED | 2026-07-13 | 16:47      | 2026-07-13 | 16:56    | Shared round-up rule, authorized source-video metadata endpoint, API contract, 66 tests, typecheck, lint, and production build pass.      |
+| VS2-T7  | Display validated video metadata and required credits estimate   | Web + API           | COMPLETED | 2026-07-13 | 18:39      | 2026-07-13 | 19:01    | Client/API contract tests, 73-test suite, typecheck, lint, production build, and authenticated desktop/mobile browser upload checks pass. |
 
 ## Slice Acceptance Criteria
 
@@ -285,36 +269,22 @@ This slice crosses billing UI, Stripe, API, database ledger, transaction safety,
 | Start Date | 2026-07-15 |
 | Start Time | 10:52      |
 | End Date   | 2026-07-30 |
-| End Time   | 17:12      |
+| End Time   | 18:45      |
 | Progress   | 100%       |
 | Dependency | VS2        |
 
 ## Tasks
 
-| Task ID   | Vertical Task                                                                         | Layers Touched                                   | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                                                                                                                                                                                                           |
-| --------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ | --------- | ---------- | ---------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| VS3-T1    | Create credit ledger and Stripe payment schemas                                       | DB                                               | COMPLETED | 2026-07-15 | 10:52      | 2026-07-15 | 11:56    | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass.                                                                                                                                                                                                                     |
-| VS3-T1.1  | Harden payment, job-charge, runtime-role, and integration-test integrity              | DB + Infra + Tests                               | COMPLETED | 2026-07-15 | 12:31      | 2026-07-15 | 13:28    | 13 live PostgreSQL integration tests; migrations rerun as the non-superuser owner; lint/typecheck/test/build pass.                                                                                                                                                                                     |
-| VS3-T1.2  | Close runtime credential and mandatory PostgreSQL test gaps                           | Config + DB + Infra + Tests                      | COMPLETED | 2026-07-15 | 15:04      | 2026-07-15 | 15:22    | Runtime roles fail closed; admin secrets are isolated; 3 required live PostgreSQL tests pass.                                                                                                                                                                                                          |
-| VS3-T2    | Build credit balance API and credit-pack UI                                           | API + Web + Shared + Tests                       | COMPLETED | 2026-07-16 | 18:14      | 2026-07-16 | 19:32    | 123 unit tests and 4 live PostgreSQL integration tests pass; lint, typecheck, and build pass.                                                                                                                                                                                                          |
-| VS3-T2-R1 | Fail closed on malformed balance rows and close tenant/UI verification gaps           | API + DB + Web Verification + Tests              | COMPLETED | 2026-07-16 | 20:00      | 2026-07-16 | 20:26    | Missing/malformed aggregate rows return `BILLING_BALANCE_INVALID`; 124 unit tests, 6 live PostgreSQL tests, authenticated production Chrome, lint, typecheck, and build pass.                                                                                                                          |
-| MAINT-6   | Repair repository-wide `pnpm ci:check` gate                                           | Tooling + Formatting + Verification              | COMPLETED | 2026-07-16 | 20:36      | 2026-07-16 | 20:53    | Reformatted the reported files, enforced LF for generated Next types, and passed the complete CI gate.                                                                                                                                                                                                 |
-| MAINT-7   | Add mandatory Prettier adherence rule to AGENTS.md                                    | Documentation + Tooling                          | COMPLETED | 2026-07-16 | 21:02      | 2026-07-16 | 21:04    | Added mandatory Prettier workflow and verified changed Markdown.                                                                                                                                                                                                                                       |
-| MAINT-8   | Remove landing-page ambient glow                                                      | Web + Visual Verification                        | COMPLETED | 2026-07-16 | 21:20      | 2026-07-16 | 21:31    | Removed hero and final-CTA radial gradients; Chrome confirms both sections have no ambient spots and console is clean.                                                                                                                                                                                 |
-| MAINT-9   | Alternate landing navigation surface from hero                                        | Web + Visual Verification                        | COMPLETED | 2026-07-16 | 21:33      | 2026-07-16 | 21:36    | Navigation uses the elevated slate surface while the hero keeps the charcoal background; Chrome screenshot and console check pass.                                                                                                                                                                     |
-| MAINT-10  | Alternate landing footer surface from final CTA                                       | Web + Visual Verification                        | COMPLETED | 2026-07-18 | 11:21      | 2026-07-18 | 11:28    | Footer now uses charcoal while the final CTA remains elevated; desktop and 390px Chrome checks, Prettier, web typecheck, and focused ESLint pass.                                                                                                                                                      |
-| MAINT-11  | Tighten landing hero vertical spacing                                                 | Web + Visual Verification                        | COMPLETED | 2026-07-18 | 11:56      | 2026-07-18 | 12:08    | Replaced full-viewport height constraints with content-led spacing; 1440px desktop exposes 272px of the workflow section while mobile media remains fully visible.                                                                                                                                     |
-| VS3-T3    | Create Stripe Checkout session and redirect flow                                      | Web + API + Stripe + Arcjet + Tests              | COMPLETED | 2026-07-17 | 10:31      | 2026-07-17 | 11:38    | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked.                                                                                                                                    |
-| VS3-T4    | Verify Stripe webhook signature and idempotently grant credits                        | API + DB + Stripe + Tests                        | COMPLETED | 2026-07-18 | 16:14      | 2026-07-18 | 18:21    | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes.                                                                |
-| VS3-T4.1  | Expose credit ledger history and transaction-history UI                               | API + Web + Tests                                | COMPLETED | 2026-07-19 | 08:10      | 2026-07-19 | 08:49    | Authenticated users now see their immutable purchase history with opaque cursor pagination; API/web/integration tests, typecheck, build, focused lint, responsive browser checks, and changed-file formatting pass. Root CI's ESLint stage did not finish within 5 minutes; no diagnostic was emitted. |
-| VS3-T5    | Deduct credits and create processing job in one DB transaction                        | API + DB                                         | COMPLETED | 2026-07-19 | 11:02      | 2026-07-19 | 12:59    | Forward migration `0013` restricts retries to `analyze_video`; queued/active render-job regressions, 208 unit tests, 15 PostgreSQL integration tests, lint, typecheck, formatting, and production builds pass.                                                                                         |
-| VS3-T6    | Enqueue analysis job in BullMQ                                                        | API + Redis + Queue                              | COMPLETED | 2026-07-19 | 13:25      | 2026-07-19 | 13:58    | 222 unit tests; 16 live PostgreSQL/Redis integration tests; full CI, infrastructure, and whitespace checks pass.                                                                                                                                                                                       |
-| VS3-T7    | Show queued processing state in UI                                                    | Web + API                                        | COMPLETED | 2026-07-19 | 16:43      | 2026-07-25 | 14:55    | Persisted status API, credit confirmation/start UI, refresh-safe processing page, dashboard routing, 264 unit tests, 16 live integration tests, and production builds pass.                                                                                                                            |
-| VS3-T8    | Remediate adversarial VS3 security review                                             | DB + API + Web + Infra + Tests + Docs            | COMPLETED | 2026-07-26 | 15:11      | 2026-07-26 | 16:47    | Scoped financial roles, persisted card-only Checkout correlation, authoritative webhook retrieval, production/Compose/Next hardening, and adversarial HTTP/PostgreSQL/Redis tests pass full CI.                                                                                                        |
-| VS3-R1    | Fix durable analysis dispatch, automatic failure refunds, and Stripe webhook envelope | DB + API + Worker + Queue + Tests + Docs         | COMPLETED | 2026-07-29 | 11:25      | 2026-07-29 | 12:15    | Migration `0015`; 303 unit tests and 31 live PostgreSQL/Redis tests pass; full typecheck, changed-file Prettier, focused lint, and whitespace checks pass.                                                                                                                                             |
-| VS3-R2    | Close remaining VS3 cross-system reliability gaps                                     | DB + API + Redis + Queue + Stripe + Tests + Docs | COMPLETED | 2026-07-29 | 12:55      | 2026-07-29 | 13:33    | Migration `0016`; 320 unit tests, 44 live PostgreSQL/Redis integration tests, typecheck, focused lint, Prettier, production builds, and whitespace checks pass.                                                                                                                                        |
-| VS3-R3    | Fix worker execution-lease handoff race                                               | DB + API + Worker + Redis + Queue + Tests + Docs | COMPLETED | 2026-07-30 | 16:31      | 2026-07-30 | 17:12    | Migration `0017`; worker-owned 60-second leases and 15-second heartbeats; 329 unit tests, 51 live PostgreSQL/Redis tests, focused lint/typecheck, formatting, builds, and whitespace checks pass.                                                                                                      |
-| VS3-UI-R1 | Clear Stripe return notice after payment confirmation; align billing feedback styling | Web + Tests + Docs                               | COMPLETED | 2026-07-30 | 18:41      | 2026-07-30 | 18:45    | New unit tests cover known Checkout return states and URL cleanup; focused test, web typecheck/build, focused lint, changed-file Prettier, and whitespace checks pass. Browser runtime unavailable locally because no dev server was listening.                                                                    |
+| Task ID | Vertical Task                                                                         | Layers Touched               | Status    | Start Date | Start Time | End Date   | End Time | Verification                                                                                                                                                                                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------- | ---------------------------- | --------- | ---------- | ---------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| VS3-T1  | Create credit ledger and Stripe payment schemas                                       | DB                           | COMPLETED | 2026-07-15 | 10:52      | 2026-07-15 | 11:56    | 81 tests; live PostgreSQL ownership, ledger, trigger, and idempotency checks pass.                                                                                                                                                                                                                     |
+| VS3-T2  | Build credit balance API and credit-pack UI                                           | API + Web + Shared + Tests   | COMPLETED | 2026-07-16 | 18:14      | 2026-07-16 | 19:32    | 123 unit tests and 4 live PostgreSQL integration tests pass; lint, typecheck, and build pass.                                                                                                                                                                                                          |
+| VS3-T3  | Create Stripe Checkout session and redirect flow                                      | Web + API + Stripe + Arcjet + Tests | COMPLETED | 2026-07-17 | 10:31      | 2026-07-17 | 11:38    | `pnpm ci:check` passes: 169 unit tests (6 skipped), 6 PostgreSQL integration tests, lint, typecheck, Prettier, and production builds; Stripe and Arcjet are mocked.                                                                                                                                    |
+| VS3-T4  | Verify Stripe webhook signature and idempotently grant credits                        | API + DB + Stripe + Tests    | COMPLETED | 2026-07-18 | 16:14      | 2026-07-18 | 18:21    | Starter test Checkout returned the user to Billing with 40 credits; signed webhook and exact-event replay both returned HTTP 200; one paid payment, processed event, purchase ledger row, and 40-credit balance remain; full CI passes.                                                                |
+| VS3-T5  | Deduct credits and create processing job in one DB transaction                        | API + DB                     | COMPLETED | 2026-07-19 | 11:02      | 2026-07-19 | 12:59    | Forward migration `0013` restricts retries to `analyze_video`; queued/active render-job regressions, 208 unit tests, 15 PostgreSQL integration tests, lint, typecheck, formatting, and production builds pass.                                                                                         |
+| VS3-T6  | Enqueue analysis job in BullMQ                                                        | API + Redis + Queue          | COMPLETED | 2026-07-19 | 13:25      | 2026-07-19 | 13:58    | 222 unit tests; 16 live PostgreSQL/Redis integration tests; full CI, infrastructure, and whitespace checks pass.                                                                                                                                                                                       |
+| VS3-T7  | Show queued processing state in UI                                                    | Web + API                    | COMPLETED | 2026-07-19 | 16:43      | 2026-07-25 | 14:55    | Persisted status API, credit confirmation/start UI, refresh-safe processing page, dashboard routing, 264 unit tests, 16 live integration tests, and production builds pass.                                                                                                                            |
+| VS3-T8  | Remediate adversarial VS3 security review                                             | DB + API + Web + Infra + Tests + Docs | COMPLETED | 2026-07-26 | 15:11      | 2026-07-26 | 16:47    | Scoped financial roles, persisted card-only Checkout correlation, authoritative webhook retrieval, production/Compose/Next hardening, and adversarial HTTP/PostgreSQL/Redis tests pass full CI.                                                                                                        |
 
 ## Slice Acceptance Criteria
 
@@ -365,23 +335,6 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T7  | Show live processing step state in UI                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
-
-### VS4-T2 Completion Record
-
-- Files changed: `.env.example`, `README.md`, `apps/worker/src/app.module.ts`,
-  `apps/worker/src/services/transcription-audio-extractor.service.ts`,
-  `apps/worker/src/services/transcription-audio-extractor.service.spec.ts`,
-  `packages/config/src/index.ts`, `packages/config/src/index.spec.ts`, `vitest.config.ts`, and
-  this tracker.
-- Commands run: focused Vitest tests, package build, worker/config typechecks, scoped Prettier
-  and ESLint checks, a real FFmpeg/ffprobe smoke test, `pnpm infra:up`, `git diff --check`, and
-  `pnpm ci:check`.
-- Verification: 37 focused tests passed; the smoke output was PCM signed 16-bit, mono, and
-  16 kHz; the full quality gate passed with 358 unit tests and 51 database/Redis integration
-  tests.
-- Known limitations: this task implements only the extraction stage. Source lookup, Whisper
-  orchestration, transcript persistence, and the complete `AnalysisPipelineHandler` remain
-  deferred to VS4-T3; `AnalysisJobProcessor` remains intentionally unregistered.
 
 ## Slice Acceptance Criteria
 
@@ -805,10 +758,7 @@ Do not mark a slice complete because only one technical layer is finished.
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: VS4-T3 - Run self-hosted Whisper and persist timestamped transcript
-Last Maintenance Task: MAINT-23 - Restore `pnpm ci:check`
 Current Status: NOT_STARTED
-Start Date: —
-Start Time: —
 Last Completed Task: VS4-T2 - Extract transcription audio with FFmpeg
 Next Recommended Task: VS4-T3 - Compose source lookup, audio extraction, self-hosted Whisper, and timestamped transcript persistence behind AnalysisPipelineHandler.
 Uncommitted Changes: The verified VS4-T2 implementation and tracker completion remain unstaged because Git index write approval was unavailable.
