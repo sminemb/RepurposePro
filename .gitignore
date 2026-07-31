@@ -24,3 +24,10 @@ Thumbs.db
 
 # Visual verification artifacts
 .artifacts/
+
+# Local agent instructions and append-only logs
+/AGENTS.md
+/docs/agent-execution-log.md
+/docs/agent-handoff-history.md
+/docs/agent-maintenance-log.md
+/docs/agent-operational-logs.md

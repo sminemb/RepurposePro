@@ -864,14 +864,14 @@ Last Maintenance Task: MAINT-23 - Restore `pnpm ci:check`
 Current Status: NOT_STARTED
 Start Date: —
 Start Time: —
-Last Completed Task: MAINT-23 - Restore `pnpm ci:check`
+Last Completed Task: MAINT-24 - Untrack agent instruction and log files
 Next Recommended Task: VS4-T2 - Extract mono 16 kHz transcription audio with FFmpeg behind AnalysisPipelineHandler.
-Uncommitted Changes: Existing user changes in README, API, billing, web, infrastructure, scripts, and tool configuration remain outside MAINT-23. MAINT-23 ESLint configuration and required documentation are committed with `fix(tooling): restore ci check`.
-Known Failing Tests: None. `pnpm ci:check` passes: formatting, lint, typecheck, 348 unit tests plus 51 intentionally skipped integration tests, 51 live database-integration tests, and production builds.
-Known Blockers: No VS4-T2 product blocker. `pnpm audit --prod` reports five high and four moderate vulnerabilities in existing web/API transitive paths; no finding uses BullMQ. Remediate before release.
-Important Context: VS4-T1 strictly validates BullMQ identity and ID-only payloads, acquires a fresh token-fenced execution lease, forwards abort/progress context, and accepts only an exact `preview_ready` result. AnalysisJobProcessor is intentionally absent from AppModule, so production queue consumption remains disabled until T2-T6 can persist previews and finalize success.
+Uncommitted Changes: None. Latest maintenance commit contains the ignore rules, tracker update, and five Git index removals. `AGENTS.md` and four agent logs remain local and ignored.
+Known Failing Tests: None introduced; `git diff --check` passed.
+Known Blockers: None.
+Important Context: User-requested untracking preserves all five files on disk. Exact root-relative ignore rules prevent accidental re-tracking. VS4-T1 strictly validates BullMQ identity and ID-only payloads, acquires a fresh token-fenced execution lease, forwards abort/progress context, and accepts only an exact `preview_ready` result.
 Required Commands Before Continuing: Begin VS4-T2 with TDD through AnalysisPipelineHandler. Keep AnalysisJobProcessor unregistered until the complete pipeline can finish truthfully.
-Last Updated Date: 2026-07-30
-Last Updated Time: 21:12
+Last Updated Date: 2026-07-31
+Last Updated Time: 10:07
 Last Updated By: Codex
 ```
