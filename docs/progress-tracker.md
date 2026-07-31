@@ -59,10 +59,11 @@ After completing a task, the coding agent must:
 3. Record commands run.
 4. Record tests and verification.
 5. Record known limitations.
-6. Update slice progress.
-7. Update handoff state.
-8. Commit finished task changes with a clear git message after verification passes.
-9. If any tracked changes remain intentionally uncommitted, document them in the handoff state with a reason.
+6. Update vertical slice summary.
+7. Update slice progress.
+8. Update current handoff state.
+9. Commit finished task changes with a clear git message after verification passes.
+10. If any tracked changes remain intentionally uncommitted, document them in the handoff state with a reason.
 
 Timezone:
 
@@ -107,8 +108,8 @@ FAILED
 | VS0   | Repo boots and core infrastructure is ready                       | COMPLETED   | 2026-07-10 | 13:24      | 2026-07-10 | 13:55    | None         |     100% | —       |
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
-| VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 17:12    | —            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | —            |     100% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T2       |      13% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -782,80 +783,7 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ---
 
-## 8. Task Execution Log Template
-
-Append one entry for every meaningful completed task.
-
-Use this template when appending to `agent-execution-log.md`; do not add completed task narratives to the live tracker.
-
-```md
-### <TASK_ID> — <Task Name>
-
-Status: COMPLETED
-Start Date: YYYY-MM-DD
-Start Time: HH:mm
-End Date: YYYY-MM-DD
-End Time: HH:mm
-
-User Outcome:
-
-- What changed for the user?
-
-Layers Touched:
-
-- Web
-- API
-- DB
-- Worker
-- Queue
-- Storage
-- Tests
-
-Files Changed:
-
-- path/to/file
-- path/to/file
-
-Commands Run:
-
-- command
-- command
-
-Verification:
-
-- PASS: description
-- PASS: description
-
-Tests:
-
-- command
-- result
-
-Assumptions:
-
-- assumption
-
-Known Limitations:
-
-- limitation
-
-Notes:
-
-- note
-```
-
-## 9. Archived Agent Logs
-
-Detailed historical logs moved out of this tracker so the live slice status stays readable.
-
-- [Agent Execution Log](agent-execution-log.md) — completed task narratives and detailed verification notes.
-- [Agent Operational Logs](agent-operational-logs.md) — files changed, commands, blockers, decisions, and failures.
-- [Agent Handoff History](agent-handoff-history.md) — superseded handoff snapshots.
-- [Agent Maintenance Log](agent-maintenance-log.md) — completed maintenance task records.
-
----
-
-## 10. Current Handoff State
+## 8. Current Handoff State
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
