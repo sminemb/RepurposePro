@@ -16,6 +16,9 @@ coverage/
 tmp/
 *.log
 
+# Local task notes
+tasks/
+
 # Editor and operating-system files
 .idea/
 .vscode/
