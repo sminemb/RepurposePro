@@ -4,6 +4,8 @@
 
 RepurposePro is a pnpm TypeScript monorepo:
 
+Read the relevant material in [`docs/`](docs/) before making changes, especially architectural decisions in `docs/adr`.
+
 - `apps/api` contains the NestJS HTTP API, organized by domain under `src/modules`.
 - `apps/web` contains the Next.js UI; keep routes in `app`, reusable UI in `components`, and domain behavior in `features`.
 - `apps/worker` runs background processing; `apps/stripe-listener` forwards local Stripe events.
