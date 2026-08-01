@@ -60,6 +60,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "attempt-1",
       ffmpegPath: "C:/tools/ffmpeg.exe",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(extractor.extract({ destinationPath, signal, sourcePath })).resolves.toEqual({
@@ -121,6 +122,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "retry",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await extractor.extract({
@@ -154,6 +156,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "failed-retry",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(
@@ -185,6 +188,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "empty-output",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(
@@ -217,6 +221,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "bounded-error",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     const error = await extractor
@@ -248,6 +253,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "spawn-error",
       ffmpegPath: "C:/private/ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(
@@ -285,6 +291,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "lease-loss",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     const extraction = extractor.extract({
@@ -319,6 +326,7 @@ describe("TranscriptionAudioExtractor", () => {
       createTemporaryId: () => "late-lease-loss",
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(
@@ -328,10 +336,12 @@ describe("TranscriptionAudioExtractor", () => {
   });
 
   it("rejects non-absolute storage paths with a safe storage failure", async () => {
+    const root = await temporaryRoot();
     const spawnProcess = vi.fn<FfmpegSpawn>();
     const extractor = new TranscriptionAudioExtractor({
       ffmpegPath: "ffmpeg",
       spawnProcess,
+      storageRoot: root,
     });
 
     await expect(
@@ -346,4 +356,37 @@ describe("TranscriptionAudioExtractor", () => {
     });
     expect(spawnProcess).not.toHaveBeenCalled();
   });
+
+  it.each(["sourcePath", "destinationPath"] as const)(
+    "rejects an absolute %s outside the storage root before file access",
+    async (pathName) => {
+      const root = await temporaryRoot();
+      const sourcePath = join(root, "source-video");
+      const destinationPath = join(root, "audio", "audio.wav");
+      await writeFile(sourcePath, "source-video");
+      const spawnProcess = vi.fn<FfmpegSpawn>();
+      const extractor = new TranscriptionAudioExtractor({
+        ffmpegPath: "ffmpeg",
+        spawnProcess,
+        storageRoot: root,
+      });
+
+      await expect(
+        extractor.extract({
+          destinationPath:
+            pathName === "destinationPath"
+              ? join(root, "..", "outside-audio.wav")
+              : destinationPath,
+          signal: new AbortController().signal,
+          sourcePath: pathName === "sourcePath" ? join(root, "..", "outside-video") : sourcePath,
+        }),
+      ).rejects.toMatchObject({
+        message: "Transcription audio extraction failed.",
+        reason: "storage_failed",
+      });
+
+      expect(spawnProcess).not.toHaveBeenCalled();
+      await expect(readdir(root)).resolves.toEqual(["source-video"]);
+    },
+  );
 });

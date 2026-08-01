@@ -52,6 +52,7 @@ describe("configuration loaders", () => {
     expect(config.ffmpegPath).toBe("ffmpeg");
     expect(config.logPretty).toBe(true);
     expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
+    expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
   });
 
   it("requires the processing-role database URL for worker startup", () => {

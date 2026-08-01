@@ -118,6 +118,7 @@ const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
   FFMPEG_PATH: z.string().trim().min(1),
+  STORAGE_ROOT: z.string().trim().min(1),
 });
 
 const apiEnvironmentSchema = serverEnvironmentSchema
@@ -234,6 +235,7 @@ export interface WorkerConfig extends ServerConfig {
   readonly bullmqPrefix: string;
   readonly ffmpegPath: string;
   readonly processingDatabaseUrl: string;
+  readonly storageRoot: string;
 }
 
 export class ConfigValidationError extends Error {
@@ -384,5 +386,6 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     nodeEnv: parsed.NODE_ENV,
     processingDatabaseUrl: parsed.DATABASE_PROCESSING_URL,
     redisUrl: parsed.REDIS_URL,
+    storageRoot: resolveStorageRoot(parsed.STORAGE_ROOT),
   };
 }

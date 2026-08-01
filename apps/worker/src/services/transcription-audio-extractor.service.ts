@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const MAX_FFMPEG_DIAGNOSTIC_BYTES = 65_536;
 
@@ -28,6 +28,7 @@ export interface TranscriptionAudioExtractorOptions {
   readonly createTemporaryId?: () => string;
   readonly ffmpegPath: string;
   readonly spawnProcess?: FfmpegSpawn;
+  readonly storageRoot: string;
 }
 
 export class TranscriptionAudioExtractionError extends Error {
@@ -63,11 +64,13 @@ export class TranscriptionAudioExtractor {
   private readonly createTemporaryId: () => string;
   private readonly ffmpegPath: string;
   private readonly spawnProcess: FfmpegSpawn;
+  private readonly storageRoot: string;
 
   public constructor(options: TranscriptionAudioExtractorOptions) {
     this.createTemporaryId = options.createTemporaryId ?? randomUUID;
     this.ffmpegPath = options.ffmpegPath;
     this.spawnProcess = options.spawnProcess ?? defaultSpawn;
+    this.storageRoot = resolve(options.storageRoot);
   }
 
   public async extract(
@@ -76,6 +79,13 @@ export class TranscriptionAudioExtractor {
     throwIfAborted(input.signal);
 
     if (!isAbsolute(input.sourcePath) || !isAbsolute(input.destinationPath)) {
+      throw new TranscriptionAudioExtractionError("storage_failed");
+    }
+
+    if (
+      !isWithinRoot(this.storageRoot, input.sourcePath) ||
+      !isWithinRoot(this.storageRoot, input.destinationPath)
+    ) {
       throw new TranscriptionAudioExtractionError("storage_failed");
     }
 
@@ -252,4 +262,14 @@ function throwIfAborted(signal: AbortSignal): void {
 
 function throwAbortReason(signal: AbortSignal): never {
   throw signal.reason ?? new DOMException("The operation was aborted.", "AbortError");
+}
+
+function isWithinRoot(storageRoot: string, path: string): boolean {
+  const rootRelativePath = relative(storageRoot, resolve(path));
+
+  return (
+    rootRelativePath !== ".." &&
+    !rootRelativePath.startsWith(`..${sep}`) &&
+    !isAbsolute(rootRelativePath)
+  );
 }

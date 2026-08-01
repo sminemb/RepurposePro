@@ -24,6 +24,7 @@ const config = loadWorkerConfig();
       useFactory: () =>
         new TranscriptionAudioExtractor({
           ffmpegPath: config.ffmpegPath,
+          storageRoot: config.storageRoot,
         }),
     },
     {
