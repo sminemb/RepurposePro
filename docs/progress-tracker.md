@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T4       |      38% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T5       |      50% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -320,7 +320,7 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Start Time | 19:09       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 38%         |
+| Progress   | 50%         |
 | Dependency | VS3         |
 
 ## Tasks
@@ -330,8 +330,8 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | VS4-T1  | Implement worker job lifecycle and progress updates        | Worker + Queue + DB          | COMPLETED   | 2026-07-30 | 19:09      | 2026-07-30 | 19:34    | 17 focused, 348 unit, 51 integration, build pass |
 | VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | COMPLETED   | 2026-07-31 | 11:47      | 2026-07-31 | 12:13    | 37 focused, 358 unit, 51 integration, real FFmpeg smoke, build pass |
 | VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | COMPLETED   | 2026-08-01 | 18:10      | 2026-08-01 | 18:37    | 43 focused unit tests, 2 PostgreSQL integration tests, Python 3.13.14/faster-whisper 1.2.1 CPU-int8 smoke, typecheck and lint pass |
-| VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | IN_PROGRESS | 2026-08-01 | 18:37      | —        | —        | —            |
-| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | COMPLETED   | 2026-08-01 | 18:37      | 2026-08-01 | 18:40    | 4 prompt-contract tests, shared typecheck and lint pass |
+| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | IN_PROGRESS | 2026-08-01 | 18:40      | —        | —        | —            |
 | VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T7  | Show live processing step state in UI                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -757,16 +757,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T4 - Create versioned Gemini clip-selection prompt
+Current Task: VS4-T5 - Send transcript to Gemini and validate structured JSON
 Current Status: IN_PROGRESS
-Last Completed Task: VS4-T3 - Run self-hosted Whisper and persist timestamped transcript
-Next Recommended Task: VS4-T4 - Define and test the versioned `clips-v1` Gemini prompt contract using timestamped transcript data only.
-Uncommitted Changes: VS4-T3 is verified and ready to commit; VS4-T4 is the active tracker task.
+Last Completed Task: VS4-T4 - Create versioned Gemini clip-selection prompt
+Next Recommended Task: VS4-T5 - Add the pinned Gemini SDK, structured JSON request, independent Zod validation, deduplication, backup promotion, and repair retries.
+Uncommitted Changes: VS4-T4 is verified and ready to commit; VS4-T5 is the active tracker task.
 Known Failing Tests: None. `pnpm ci:check` passed with 358 unit tests, 51 database/Redis integration tests, lint, typecheck, formatting, and all builds.
 Known Blockers: None.
-Important Context: VS4-T3 adds lease-scoped source lookup, isolated Python 3.13/faster-whisper orchestration, bounded/cancellable subprocess handling, idempotent timestamped transcript persistence, and temporary WAV cleanup. The real CPU/int8 smoke passed. `AnalysisJobProcessor` remains unregistered until the complete preview pipeline can return exact `preview_ready`.
-Required Commands Before Continuing: Commit VS4-T3, then implement the shared `clips-v1` prompt contract with source duration and timestamped transcript segments only.
+Important Context: VS4-T4 adds the shared versioned `clips-v1` prompt contract. It serializes source duration and timestamped transcript segments only, treats transcript text as untrusted data, derives short-source duration bounds, and bounds repair diagnostics. `AnalysisJobProcessor` remains unregistered until the complete preview pipeline can return exact `preview_ready`.
+Required Commands Before Continuing: Commit VS4-T4, then implement VS4-T5 with deterministic Gemini fakes; leave the live Gemini smoke pending because no local key is configured.
 Last Updated Date: 2026-08-01
-Last Updated Time: 18:37
+Last Updated Time: 18:40
 Last Updated By: Codex
 ```

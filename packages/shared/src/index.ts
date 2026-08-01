@@ -35,5 +35,6 @@ export interface ApiError<TDetails = null> {
 }
 
 export * from "./billing";
+export * from "./clip-selection";
 export * from "./processing";
 export * from "./projects";
