@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/coverage/**",
       "**/dist/**",
       "**/node_modules/**",
+      "**/.venv/**",
       "**/next-env.d.ts",
       "packages/db/drizzle/**",
     ],
@@ -54,6 +55,7 @@ export default tseslint.config(
       "apps/api/src/modules/billing/*.spec.ts",
       "apps/api/src/modules/infrastructure/*.spec.ts",
       "apps/api/src/modules/processing/*.spec.ts",
+      "apps/api/src/modules/projects/*.spec.ts",
       "apps/api/src/modules/storage/*.spec.ts",
     ],
     languageOptions: {

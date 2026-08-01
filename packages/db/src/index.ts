@@ -37,3 +37,11 @@ export async function checkDatabaseConnection(client: DatabaseClient): Promise<v
 export async function closeDatabaseClient(client: DatabaseClient): Promise<void> {
   await client.pool.end();
 }
+
+export async function migrateDatabaseForTests(
+  client: DatabaseClient,
+  migrationsFolder: string,
+): Promise<void> {
+  const { migrate } = await import("drizzle-orm/node-postgres/migrator");
+  await migrate(client.db as never, { migrationsFolder });
+}

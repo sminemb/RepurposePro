@@ -36,6 +36,7 @@ describeIntegration("analysis transcript persistence", () => {
   const processing = client(
     withDatabase(withRole(runtimeUrl, "repurposepro_processing"), database),
   );
+  const runtime = client(withDatabase(runtimeUrl, database));
   const projectId = randomUUID();
   const videoId = randomUUID();
   const jobId = randomUUID();
@@ -96,6 +97,7 @@ describeIntegration("analysis transcript persistence", () => {
   }, 30_000);
 
   afterAll(async () => {
+    await closeDatabaseClient(runtime);
     await closeDatabaseClient(processing);
     await closeDatabaseClient(owner);
     await admin.pool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
@@ -257,6 +259,55 @@ describeIntegration("analysis transcript persistence", () => {
     });
     await expect(
       processing.pool.query("SELECT id FROM clip_candidates LIMIT 1"),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("exposes only owner-scoped primary preview JSON to the API role", async () => {
+    const owned = await runtime.pool.query<{
+      clips: Array<Record<string, unknown>>;
+      project_id: string;
+      source_duration_seconds: string;
+    }>("SELECT * FROM list_owned_project_clip_candidates($1, $2)", ["transcript-user", projectId]);
+    expect(owned.rows).toHaveLength(1);
+    expect(owned.rows[0]?.clips).toHaveLength(1);
+    expect(owned.rows[0]?.clips[0]).toMatchObject({ rank: 0, title: "Opening" });
+    expect(owned.rows[0]?.clips[0]).not.toHaveProperty("kind");
+    expect(owned.rows[0]?.clips[0]).not.toHaveProperty("reason");
+    expect(owned.rows[0]?.clips[0]).not.toHaveProperty("storagePath");
+    await expect(
+      runtime.pool.query("SELECT * FROM list_owned_project_clip_candidates($1, $2)", [
+        "other-user",
+        projectId,
+      ]),
+    ).resolves.toMatchObject({ rows: [] });
+    await expect(
+      runtime.pool.query("SELECT * FROM get_owned_source_video_content($1, $2)", [
+        "transcript-user",
+        projectId,
+      ]),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          file_size_bytes: "1000",
+          mime_type: "video/mp4",
+          storage_path: "D:/storage/source.mp4",
+        },
+      ],
+    });
+    await expect(
+      runtime.pool.query("SELECT * FROM get_owned_source_video_content($1, $2)", [
+        "other-user",
+        projectId,
+      ]),
+    ).resolves.toMatchObject({ rows: [] });
+    await expect(
+      runtime.pool.query("SELECT id FROM clip_candidates LIMIT 1"),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      processing.pool.query("SELECT * FROM list_owned_project_clip_candidates($1, $2)", [
+        "transcript-user",
+        projectId,
+      ]),
     ).rejects.toMatchObject({ code: "42501" });
   });
 

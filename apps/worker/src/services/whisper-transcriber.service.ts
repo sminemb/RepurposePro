@@ -205,7 +205,7 @@ function runPython(
     const stdout: Buffer[] = [];
     const diagnostics: Buffer[] = [];
 
-    const finish = (error?: unknown): void => {
+    const finish = (error?: Error): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
@@ -225,7 +225,7 @@ function runPython(
       settled = true;
       clearTimeout(timeout);
       signal.removeEventListener("abort", onAbort);
-      rejectOutput(signal.reason ?? new WhisperTranscriptionError("aborted"));
+      rejectOutput(abortError(signal));
     };
     const timeout = setTimeout(() => stop("timeout"), timeoutMs);
 
@@ -274,5 +274,11 @@ function isWithinRoot(storageRoot: string, path: string): boolean {
 }
 
 function throwAbortReason(signal: AbortSignal): never {
-  throw signal.reason ?? new WhisperTranscriptionError("aborted");
+  throw abortError(signal);
+}
+
+function abortError(signal: AbortSignal): Error {
+  return signal.reason instanceof Error
+    ? signal.reason
+    : new WhisperTranscriptionError("aborted", { cause: signal.reason });
 }

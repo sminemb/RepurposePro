@@ -302,8 +302,9 @@ dispatch/failure state, and call the token-fenced execution-lease functions. The
 identity cannot call these restricted functions or mutate lease columns directly.
 
 The worker also requires `DATABASE_PROCESSING_URL`; startup rejects another database role. It uses
-this identity to acquire, renew, release, and persist lease-bound progress. Production BullMQ
-analysis consumption remains disabled until VS4 supplies a real protected handler.
+this identity to acquire, renew, release, persist lease-bound progress, and atomically finalize
+durable preview candidates. The VS4 BullMQ analysis consumer uses its own blocking Redis connection,
+the shared prefix, and concurrency one.
 
 These identities reduce the impact of a leaked generic runtime credential. The API holds its scoped
 secrets, while the worker receives only the database credentials required by its process.
@@ -782,7 +783,7 @@ Authenticate Gemini API requests.
 Required:
 
 ```text
-Yes for AI analysis
+Yes for live AI analysis; optional at worker startup
 ```
 
 Used by:
@@ -811,15 +812,11 @@ Purpose:
 
 Model used for clip selection.
 
-Recommended initial value:
+Default:
 
 ```env
-GEMINI_CLIP_MODEL=gemini-2.5-flash-lite
+GEMINI_CLIP_MODEL=gemini-3.5-flash-lite
 ```
-
-Implementation note:
-
-Exact model names should be verified against current Gemini documentation when wiring the integration.
 
 ---
 
@@ -860,7 +857,7 @@ AI request timeout.
 Example:
 
 ```env
-GEMINI_TIMEOUT_MS=120000
+GEMINI_TIMEOUT_MS=60000
 ```
 
 ---
@@ -882,6 +879,28 @@ Retries must not duplicate financial actions.
 ---
 
 # 10. Whisper Variables
+
+## `WHISPER_PYTHON_PATH`
+
+Purpose:
+
+Path to the isolated Python 3.13 executable containing `faster-whisper==1.2.1`.
+
+Required:
+
+```text
+Yes for the worker
+```
+
+Windows example:
+
+```env
+WHISPER_PYTHON_PATH=.venv/whisper/Scripts/python.exe
+```
+
+Use an absolute path in deployed environments.
+
+---
 
 ## `WHISPER_MODEL`
 
@@ -922,7 +941,7 @@ auto
 Example:
 
 ```env
-WHISPER_DEVICE=auto
+WHISPER_DEVICE=cpu
 ```
 
 ---
@@ -975,6 +994,22 @@ Recommended:
 
 ```env
 WHISPER_LANGUAGE=en
+```
+
+The VS4 clips pipeline currently accepts only `en`.
+
+---
+
+## `WHISPER_TIMEOUT_MS`
+
+Purpose:
+
+Maximum lifetime of one isolated transcription subprocess.
+
+Default:
+
+```env
+WHISPER_TIMEOUT_MS=900000
 ```
 
 ---
@@ -1599,18 +1634,20 @@ STRIPE_CANCEL_URL=http://localhost:3000/billing?checkout=cancelled
 
 # Gemini
 GEMINI_API_KEY=replace-me
-GEMINI_CLIP_MODEL=gemini-2.5-flash-lite
+GEMINI_CLIP_MODEL=gemini-3.5-flash-lite
 GEMINI_FINAL_RANKING_MODEL=gemini-2.5-flash
 GEMINI_SUMMARY_MODEL=gemini-2.5-flash
-GEMINI_TIMEOUT_MS=120000
+GEMINI_TIMEOUT_MS=60000
 GEMINI_MAX_RETRIES=2
 
 # Whisper
+WHISPER_PYTHON_PATH=.venv/whisper/Scripts/python.exe
 WHISPER_MODEL=small.en
-WHISPER_DEVICE=auto
+WHISPER_DEVICE=cpu
 WHISPER_COMPUTE_TYPE=int8
-WHISPER_ENABLE_WORD_TIMESTAMPS=true
+WHISPER_ENABLE_WORD_TIMESTAMPS=false
 WHISPER_LANGUAGE=en
+WHISPER_TIMEOUT_MS=900000
 
 # FFmpeg
 FFMPEG_PATH=ffmpeg

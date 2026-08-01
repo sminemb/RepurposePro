@@ -3,19 +3,22 @@ import { EventEmitter } from "node:events";
 import { join, resolve } from "node:path";
 import { PassThrough } from "node:stream";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { WhisperTranscriber, type WhisperSpawn } from "./whisper-transcriber.service";
 
 interface FakeChild extends ChildProcess {
+  readonly killMock: Mock<(signal?: number | NodeJS.Signals) => boolean>;
   readonly stderr: PassThrough;
   readonly stdout: PassThrough;
 }
 
 function fakeChild(): FakeChild {
   const child = new EventEmitter() as FakeChild;
+  const killMock = vi.fn<(signal?: number | NodeJS.Signals) => boolean>(() => true);
   Object.defineProperties(child, {
-    kill: { value: vi.fn(() => true) },
+    kill: { value: killMock },
+    killMock: { value: killMock },
     stderr: { value: new PassThrough() },
     stdout: { value: new PassThrough() },
   });
@@ -127,7 +130,24 @@ describe("WhisperTranscriber", () => {
     controller.abort(leaseLoss);
 
     await expect(transcription).rejects.toBe(leaseLoss);
-    expect(child.kill).toHaveBeenCalledOnce();
+    expect(child.killMock).toHaveBeenCalledOnce();
+  });
+
+  it("wraps non-error abort reasons in a transcription error", async () => {
+    const child = fakeChild();
+    const controller = new AbortController();
+    const transcription = createTranscriber(() => child).transcribe({
+      audioPath: join(resolve("storage"), "audio.wav"),
+      signal: controller.signal,
+    });
+
+    controller.abort("cancelled");
+
+    await expect(transcription).rejects.toMatchObject({
+      cause: "cancelled",
+      reason: "aborted",
+    });
+    expect(child.killMock).toHaveBeenCalledOnce();
   });
 
   it("times out and kills a stalled Python process", async () => {
@@ -142,7 +162,7 @@ describe("WhisperTranscriber", () => {
     await vi.advanceTimersByTimeAsync(500);
 
     await rejection;
-    expect(child.kill).toHaveBeenCalledOnce();
+    expect(child.killMock).toHaveBeenCalledOnce();
   });
 
   it("bounds subprocess output and rejects paths outside storage", async () => {
@@ -159,7 +179,7 @@ describe("WhisperTranscriber", () => {
         signal: new AbortController().signal,
       }),
     ).rejects.toMatchObject({ reason: "output_too_large" });
-    expect(child.kill).toHaveBeenCalledOnce();
+    expect(child.killMock).toHaveBeenCalledOnce();
 
     await expect(
       transcriber.transcribe({
