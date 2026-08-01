@@ -47,7 +47,8 @@ function setup() {
     await context.updateProgress(ProcessingJobStep.Transcribing, 45);
     return { outcome: "preview_ready" };
   });
-  const handler: AnalysisPipelineHandler = { handle };
+  const isDurablePreviewReady = vi.fn().mockResolvedValue(false);
+  const handler: AnalysisPipelineHandler = { handle, isDurablePreviewReady };
   const createExecutionId = vi
     .fn<() => string>()
     .mockReturnValueOnce("worker-callback-1")
@@ -58,6 +59,7 @@ function setup() {
     acquire,
     createExecutionId,
     handle,
+    isDurablePreviewReady,
     processor,
     release,
     updateProgress,
@@ -73,6 +75,16 @@ function validJob() {
 }
 
 describe("AnalysisJobProcessor", () => {
+  it("treats a previously finalized durable preview as retry success", async () => {
+    const { acquire, handle, isDurablePreviewReady, processor } = setup();
+    isDurablePreviewReady.mockResolvedValue(true);
+
+    await expect(processor.process(validJob())).resolves.toEqual({ outcome: "preview_ready" });
+
+    expect(isDurablePreviewReady).toHaveBeenCalledWith({ jobId, projectId });
+    expect(acquire).not.toHaveBeenCalled();
+    expect(handle).not.toHaveBeenCalled();
+  });
   it("validates the job, acquires a fresh execution lease, and forwards token-bound progress", async () => {
     const { acquire, createExecutionId, handle, processor, updateProgress } = setup();
 

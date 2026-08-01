@@ -114,6 +114,40 @@ describe("ProcessingLifecycleService", () => {
     await expect(execution).resolves.toMatchObject({ outcome: "completed" });
   });
 
+  it("stops and drains the heartbeat before entering an atomic finalizer", async () => {
+    const { renew, service } = setup();
+    let beginFinalize: (() => void) | undefined;
+    let finishRenewal: (() => void) | undefined;
+    let finalizerStarted = false;
+    renew.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishRenewal = () => resolve("renewed");
+        }),
+    );
+    const execution = service.execute(jobId, projectId, workerId, async (context) => {
+      await new Promise<void>((resolve) => {
+        beginFinalize = resolve;
+      });
+      await context.finalize(async () => {
+        finalizerStarted = true;
+      });
+      return "done";
+    });
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(renew).toHaveBeenCalledOnce();
+    beginFinalize?.();
+    await Promise.resolve();
+    expect(finalizerStarted).toBe(false);
+
+    finishRenewal?.();
+    await expect(execution).resolves.toEqual({ outcome: "completed", value: "done" });
+    expect(finalizerStarted).toBe(true);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(renew).toHaveBeenCalledOnce();
+  });
+
   it("aborts protected work immediately when renewal loses the token", async () => {
     const { renew, service } = setup();
     renew.mockResolvedValue("lost");

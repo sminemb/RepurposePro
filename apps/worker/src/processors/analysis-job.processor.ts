@@ -29,6 +29,7 @@ export interface AnalysisPipelineHandler {
     payload: VideoAnalysisJobPayload,
     context: ProcessingLeaseContext,
   ): Promise<AnalysisPipelineResult>;
+  isDurablePreviewReady?(payload: VideoAnalysisJobPayload): Promise<boolean>;
 }
 
 export interface AnalysisJobProcessorOptions {
@@ -88,6 +89,18 @@ export class AnalysisJobProcessor {
     });
 
     try {
+      if (await this.handler.isDurablePreviewReady?.(payload)) {
+        this.logger.log({
+          event: "analysis_job_completed",
+          executionId,
+          jobId: payload.jobId,
+          outcome: "preview_ready",
+          projectId: payload.projectId,
+          resumed: true,
+        });
+        return { outcome: "preview_ready" };
+      }
+
       const execution = await this.lifecycle.execute(
         payload.jobId,
         payload.projectId,

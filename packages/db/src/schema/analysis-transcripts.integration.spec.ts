@@ -40,6 +40,10 @@ describeIntegration("analysis transcript persistence", () => {
   const videoId = randomUUID();
   const jobId = randomUUID();
   const leaseToken = randomUUID();
+  const rejectedJobId = randomUUID();
+  const rejectedLeaseToken = randomUUID();
+  const rejectedProjectId = randomUUID();
+  const rejectedVideoId = randomUUID();
 
   beforeAll(async () => {
     const runtimePassword = decodeURIComponent(new URL(runtimeUrl ?? skippedDatabaseUrl).password);
@@ -167,6 +171,192 @@ describeIntegration("analysis transcript persistence", () => {
     expect(context.rows[0]).toMatchObject({
       outcome: "transcript_ready",
       transcript: { segments, text: "A useful opening." },
+    });
+  });
+
+  it("atomically finalizes durable primary and backup candidates", async () => {
+    const candidates = [
+      {
+        captionLines: [{ endTime: 15, startTime: 0, text: "A useful opening." }],
+        captionPosition: { x: 0.5, y: 0.72 },
+        captionStyle: "hormozi",
+        captionsEnabled: true,
+        crop: null,
+        endTime: 15,
+        kind: "primary",
+        previewFontSize: 48,
+        rank: 0,
+        reason: "Clear hook.",
+        score: 0.9,
+        startTime: 0,
+        title: "Opening",
+      },
+      {
+        captionLines: [{ endTime: 30, startTime: 15, text: "A useful ending." }],
+        captionPosition: { x: 0.5, y: 0.72 },
+        captionStyle: "hormozi",
+        captionsEnabled: true,
+        crop: null,
+        endTime: 30,
+        kind: "backup",
+        previewFontSize: 48,
+        rank: 0,
+        reason: "Complete takeaway.",
+        score: 0.8,
+        startTime: 15,
+        title: "Ending",
+      },
+    ];
+    const finalize = (token = leaseToken) =>
+      processing.pool.query<{ outcome: string }>(
+        "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', $3::jsonb) AS outcome",
+        [jobId, token, JSON.stringify(candidates)],
+      );
+
+    await expect(finalize()).resolves.toMatchObject({ rows: [{ outcome: "created" }] });
+    await expect(finalize(randomUUID())).resolves.toMatchObject({
+      rows: [{ outcome: "existing" }],
+    });
+    await expect(
+      processing.pool.query("SELECT is_analysis_preview_ready($1, $2) AS ready", [
+        jobId,
+        projectId,
+      ]),
+    ).resolves.toMatchObject({ rows: [{ ready: true }] });
+    await expect(
+      owner.pool.query(
+        `SELECT
+          job.status,
+          job.step,
+          job.progress,
+          job.analysis_prompt_version AS "promptVersion",
+          job.execution_lease_token AS "leaseToken",
+          project.status AS "projectStatus",
+          count(candidate.id)::integer AS candidates,
+          count(candidate.id) FILTER (WHERE candidate.kind = 'backup')::integer AS backups
+         FROM processing_jobs AS job
+         JOIN projects AS project ON project.id = job.project_id
+         JOIN clip_candidates AS candidate ON candidate.processing_job_id = job.id
+         WHERE job.id = $1
+         GROUP BY job.id, project.id`,
+        [jobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          backups: 1,
+          candidates: 2,
+          leaseToken: null,
+          progress: 100,
+          projectStatus: "preview_ready",
+          promptVersion: "clips-v1",
+          status: "completed",
+          step: "preview_ready",
+        },
+      ],
+    });
+    await expect(
+      processing.pool.query("SELECT id FROM clip_candidates LIMIT 1"),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("fences invalid preview finalization without partially changing state", async () => {
+    await owner.pool.query(
+      `INSERT INTO projects (id, user_id, name, output_type, status)
+       VALUES ($1, 'transcript-user', 'Rejected Preview', 'clips', 'transcribing')`,
+      [rejectedProjectId],
+    );
+    await owner.pool.query(
+      `INSERT INTO uploaded_videos (
+         id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
+         duration_seconds, width, height, has_audio, expires_at
+       ) VALUES ($2, $1, 'rejected.mp4', 'D:/storage/rejected.mp4', 'video/mp4', 1000,
+         30, 1920, 1080, true, now() + interval '1 day')`,
+      [rejectedProjectId, rejectedVideoId],
+    );
+    await owner.pool.query(
+      `INSERT INTO processing_jobs (
+         id, project_id, user_id, type, status, step, progress, credits_charged,
+         execution_lease_token, execution_lease_owner, execution_lease_expires_at,
+         execution_heartbeat_at
+       ) VALUES ($2, $1, 'transcript-user', 'analyze_video', 'active', 'transcribing', 45, 1,
+         $3, 'worker-test', now() + interval '1 hour', now())`,
+      [rejectedProjectId, rejectedJobId, rejectedLeaseToken],
+    );
+    await owner.pool.query("UPDATE projects SET current_job_id = $2 WHERE id = $1", [
+      rejectedProjectId,
+      rejectedJobId,
+    ]);
+    const segments = [
+      {
+        endSeconds: 15,
+        sequence: 0,
+        startSeconds: 0,
+        text: "A rejected candidate source.",
+        words: null,
+      },
+    ];
+    await processing.pool.query(
+      `SELECT outcome
+       FROM persist_analysis_transcript(
+         $1, 'worker-test', $2, 'en', 'small.en', 30, 'A rejected candidate source.', $3::jsonb
+       )`,
+      [rejectedJobId, rejectedLeaseToken, JSON.stringify(segments)],
+    );
+    const invalidCandidates = [
+      {
+        captionLines: [{ endTime: 31, startTime: 0, text: "Outside the source." }],
+        captionPosition: { x: 0.5, y: 0.72 },
+        captionStyle: "hormozi",
+        captionsEnabled: true,
+        crop: null,
+        endTime: 31,
+        kind: "primary",
+        previewFontSize: 48,
+        rank: 0,
+        reason: "Invalid range.",
+        score: 0.9,
+        startTime: 0,
+        title: "Invalid",
+      },
+    ];
+
+    await expect(
+      processing.pool.query(
+        "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', $3::jsonb)",
+        [rejectedJobId, rejectedLeaseToken, JSON.stringify(invalidCandidates)],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      processing.pool.query(
+        "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', '[]'::jsonb) AS outcome",
+        [rejectedJobId, randomUUID()],
+      ),
+    ).resolves.toMatchObject({ rows: [{ outcome: "lost" }] });
+    await expect(
+      owner.pool.query(
+        `SELECT
+          job.status,
+          job.step,
+          job.progress,
+          job.analysis_prompt_version AS "promptVersion",
+          count(candidate.id)::integer AS candidates
+         FROM processing_jobs AS job
+         LEFT JOIN clip_candidates AS candidate ON candidate.processing_job_id = job.id
+         WHERE job.id = $1
+         GROUP BY job.id`,
+        [rejectedJobId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        {
+          candidates: 0,
+          progress: 45,
+          promptVersion: null,
+          status: "active",
+          step: "transcribing",
+        },
+      ],
     });
   });
 });

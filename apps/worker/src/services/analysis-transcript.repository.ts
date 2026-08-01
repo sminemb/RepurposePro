@@ -10,6 +10,7 @@ import {
   timestampedTranscriptSchema,
   type TimestampedTranscript,
 } from "./whisper-transcriber.service";
+import type { CaptionLine, CaptionPosition, ClipCrop } from "@repurposepro/shared";
 
 export const ANALYSIS_TRANSCRIPT_REPOSITORY = Symbol("ANALYSIS_TRANSCRIPT_REPOSITORY");
 
@@ -42,6 +43,14 @@ export type PersistTranscriptOutcome =
   | { readonly outcome: "rejected"; readonly transcriptId: null };
 
 export interface AnalysisTranscriptRepositoryContract {
+  finalizePreview(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    promptVersion: "clips-v1",
+    candidates: readonly AnalysisPreviewCandidateRecord[],
+  ): Promise<"created" | "existing" | "lost" | "rejected">;
+  isPreviewReady(jobId: string, projectId: string): Promise<boolean>;
   loadContext(
     jobId: string,
     workerId: string,
@@ -54,6 +63,22 @@ export interface AnalysisTranscriptRepositoryContract {
     model: string,
     transcript: TimestampedTranscript,
   ): Promise<PersistTranscriptOutcome>;
+}
+
+export interface AnalysisPreviewCandidateRecord {
+  readonly captionLines: readonly CaptionLine[];
+  readonly captionPosition: CaptionPosition;
+  readonly captionStyle: "hormozi";
+  readonly captionsEnabled: true;
+  readonly crop: ClipCrop | null;
+  readonly endTime: number;
+  readonly kind: "backup" | "primary";
+  readonly previewFontSize: number;
+  readonly rank: number;
+  readonly reason: string;
+  readonly score: number;
+  readonly startTime: number;
+  readonly title: string;
 }
 
 interface ContextRow {
@@ -132,6 +157,39 @@ export class AnalysisTranscriptRepository
 
     const transcript = parsePersistedTranscript(row.transcript);
     return { ...context.data, outcome: "transcript_ready", transcript };
+  }
+
+  public async isPreviewReady(jobId: string, projectId: string): Promise<boolean> {
+    const result = await this.database.pool.query<{ readonly ready: unknown }>(
+      "SELECT public.is_analysis_preview_ready($1, $2) AS ready",
+      [jobId, projectId],
+    );
+    const ready = result.rows[0]?.ready;
+    if (result.rows.length !== 1 || typeof ready !== "boolean") {
+      throw new Error("Analysis preview state returned an invalid result.");
+    }
+    return ready;
+  }
+
+  public async finalizePreview(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    promptVersion: "clips-v1",
+    candidates: readonly AnalysisPreviewCandidateRecord[],
+  ): Promise<"created" | "existing" | "lost" | "rejected"> {
+    const result = await this.database.pool.query<{ readonly outcome: unknown }>(
+      "SELECT public.finalize_analysis_preview($1, $2, $3, $4, $5::jsonb) AS outcome",
+      [jobId, workerId, leaseToken, promptVersion, JSON.stringify(candidates)],
+    );
+    const outcome = result.rows[0]?.outcome;
+    if (
+      result.rows.length !== 1 ||
+      !["created", "existing", "lost", "rejected"].includes(String(outcome))
+    ) {
+      throw new Error("Analysis preview finalization returned an invalid result.");
+    }
+    return outcome as "created" | "existing" | "lost" | "rejected";
   }
 
   public async persist(

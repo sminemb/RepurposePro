@@ -78,6 +78,8 @@ export const processingFailureIntentStatusEnum = pgEnum("processing_failure_inte
   "finalized",
 ]);
 
+export const clipCandidateKindEnum = pgEnum("clip_candidate_kind", ["primary", "backup"]);
+
 export const ledgerTypeEnum = pgEnum("ledger_type", [
   "purchase",
   "processing_deduction",
@@ -260,6 +262,7 @@ export const processingJobs = pgTable(
     executionLeaseOwner: text("execution_lease_owner"),
     executionLeaseExpiresAt: timestamp("execution_lease_expires_at", { withTimezone: true }),
     executionHeartbeatAt: timestamp("execution_heartbeat_at", { withTimezone: true }),
+    analysisPromptVersion: text("analysis_prompt_version"),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -369,6 +372,73 @@ export const transcriptSegments = pgTable(
     check(
       "transcript_segments_words_check",
       sql`${table.words} IS NULL OR jsonb_typeof(${table.words}) = 'array'`,
+    ),
+  ],
+);
+
+export const clipCandidates = pgTable(
+  "clip_candidates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    processingJobId: uuid("processing_job_id")
+      .notNull()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    transcriptId: uuid("transcript_id")
+      .notNull()
+      .references(() => transcripts.id, { onDelete: "cascade" }),
+    kind: clipCandidateKindEnum("kind").notNull(),
+    rank: integer("rank").notNull(),
+    title: varchar("title", { length: 120 }).notNull(),
+    reason: varchar("reason", { length: 500 }).notNull(),
+    startTime: numeric("start_time", { precision: 12, scale: 3 }).notNull(),
+    endTime: numeric("end_time", { precision: 12, scale: 3 }).notNull(),
+    score: numeric("score", { precision: 5, scale: 4 }).notNull(),
+    captionsEnabled: boolean("captions_enabled").default(true).notNull(),
+    captionStyle: varchar("caption_style", { length: 32 }).default("hormozi").notNull(),
+    captionLines: jsonb("caption_lines").notNull(),
+    captionPosition: jsonb("caption_position").notNull(),
+    previewFontSize: integer("preview_font_size").default(48).notNull(),
+    crop: jsonb("crop"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("clip_candidates_job_kind_rank_unique").on(
+      table.processingJobId,
+      table.kind,
+      table.rank,
+    ),
+    index("clip_candidates_project_primary_order_idx")
+      .on(table.projectId, table.rank, table.id)
+      .where(sql`${table.kind} = 'primary' AND ${table.deletedAt} IS NULL`),
+    check("clip_candidates_rank_check", sql`${table.rank} >= 0 AND ${table.rank} < 10`),
+    check(
+      "clip_candidates_range_check",
+      sql`${table.startTime} >= 0 AND ${table.endTime} > ${table.startTime}`,
+    ),
+    check("clip_candidates_score_check", sql`${table.score} >= 0 AND ${table.score} <= 1`),
+    check(
+      "clip_candidates_caption_lines_check",
+      sql`jsonb_typeof(${table.captionLines}) = 'array'`,
+    ),
+    check(
+      "clip_candidates_caption_position_check",
+      sql`jsonb_typeof(${table.captionPosition}) = 'object'`,
+    ),
+    check(
+      "clip_candidates_font_size_check",
+      sql`${table.previewFontSize} >= 12 AND ${table.previewFontSize} <= 96`,
+    ),
+    check(
+      "clip_candidates_crop_check",
+      sql`${table.crop} IS NULL OR jsonb_typeof(${table.crop}) = 'object'`,
     ),
   ],
 );

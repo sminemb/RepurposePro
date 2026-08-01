@@ -135,6 +135,7 @@ function leaseContext(
   updateProgress = vi.fn().mockResolvedValue(undefined),
 ): ProcessingLeaseContext {
   return {
+    finalize: (operation) => operation(),
     leaseToken: "00000000-0000-4000-8000-000000000904",
     signal: new AbortController().signal,
     updateProgress,
@@ -146,5 +147,5 @@ function repositoryWith(
   loadContext: AnalysisTranscriptRepositoryContract["loadContext"],
   persist: AnalysisTranscriptRepositoryContract["persist"] = vi.fn(),
 ): AnalysisTranscriptRepositoryContract {
-  return { loadContext, persist };
+  return { finalizePreview: vi.fn(), isPreviewReady: vi.fn(), loadContext, persist };
 }

@@ -134,6 +134,13 @@
       "when": 1785579429051,
       "tag": "0018_talented_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785581780935,
+      "tag": "0019_neat_lockjaw",
+      "breakpoints": true
     }
   ]
 }

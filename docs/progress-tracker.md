@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T6       |      63% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T7       |      75% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -320,7 +320,7 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Start Time | 19:09       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 63%         |
+| Progress   | 75%         |
 | Dependency | VS3         |
 
 ## Tasks
@@ -332,17 +332,17 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | COMPLETED   | 2026-08-01 | 18:10      | 2026-08-01 | 18:37    | 43 focused unit tests, 2 PostgreSQL integration tests, Python 3.13.14/faster-whisper 1.2.1 CPU-int8 smoke, typecheck and lint pass |
 | VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | COMPLETED   | 2026-08-01 | 18:37      | 2026-08-01 | 18:40    | 4 prompt-contract tests, shared typecheck and lint pass |
 | VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | IN_REVIEW   | 2026-08-01 | 18:40      | —        | —        | 37 focused tests, config/worker typecheck and lint pass; live Gemini smoke pending |
-| VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | IN_PROGRESS | 2026-08-01 | 18:51      | —        | —        | —            |
-| VS4-T7  | Show live processing step state in UI                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | COMPLETED   | 2026-08-01 | 18:51      | 2026-08-01 | 19:18    | 26 focused unit tests, 4 PostgreSQL integration tests, worker typecheck and lint pass |
+| VS4-T7  | Show live processing step state in UI                      | Web + API                    | IN_PROGRESS | 2026-08-01 | 19:18      | —        | —        | —            |
 | VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
 
 ## Slice Acceptance Criteria
 
-- [ ] Processing continues in background.
+- [x] Processing continues in background.
 - [x] Whisper produces timestamps.
 - [x] Gemini receives transcript, not raw video.
 - [ ] 5–10 candidates are generated when possible.
-- [ ] Backup candidates are stored.
+- [x] Backup candidates are stored.
 - [ ] User can preview clip segments before final render.
 - [ ] No final MP4 render has occurred yet.
 
@@ -757,16 +757,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T6 - Persist 5–10 primary clip candidates and backups
+Current Task: VS4-T7 - Show live processing step state in UI
 Current Status: IN_PROGRESS
-Last Completed Task: VS4-T4 - Create versioned Gemini clip-selection prompt
-Next Recommended Task: VS4-T6 - Add candidate persistence, the complete lease-fenced analysis handler, atomic preview finalization, and the BullMQ consumer lifecycle.
-Uncommitted Changes: VS4-T5 is automated and ready to commit in `IN_REVIEW`; VS4-T6 is the active tracker task.
+Last Completed Task: VS4-T6 - Persist 5–10 primary clip candidates and backups
+Next Recommended Task: VS4-T7 - Replace the static processing panel with visibility-aware live polling and preview-ready navigation.
+Uncommitted Changes: VS4-T6 is verified and ready to commit; VS4-T7 is the active tracker task.
 Known Failing Tests: None. `pnpm ci:check` passed with 358 unit tests, 51 database/Redis integration tests, lint, typecheck, formatting, and all builds.
 Known Blockers: None.
-Important Context: VS4-T5 pins `@google/genai@2.13.0`, requests `application/json` with JSON Schema, independently validates with Zod, enforces timestamp/duration bounds, deduplicates at 80% overlap, promotes backups, and performs up to two repair attempts. Deterministic fakes pass; the live Gemini smoke remains the final handoff item because no key is configured. `AnalysisJobProcessor` remains unregistered until VS4-T6 can atomically persist exact `preview_ready`.
-Required Commands Before Continuing: Commit VS4-T5, then implement VS4-T6 and register the BullMQ consumer only after the full pipeline handler is wired.
+Important Context: VS4-T6 stores normalized primary and backup metadata, atomically finalizes project/job/candidates under the active lease, recognizes durable retries, and registers the BullMQ worker with a dedicated blocking Redis connection. The live Gemini smoke remains the final handoff item because no key is configured.
+Required Commands Before Continuing: Commit VS4-T6, then implement and verify VS4-T7.
 Last Updated Date: 2026-08-01
-Last Updated Time: 18:51
+Last Updated Time: 19:18
 Last Updated By: Codex
 ```
