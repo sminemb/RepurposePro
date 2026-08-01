@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T7       |      75% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T8       |      88% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -320,7 +320,7 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Start Time | 19:09       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 75%         |
+| Progress   | 88%         |
 | Dependency | VS3         |
 
 ## Tasks
@@ -333,8 +333,8 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | COMPLETED   | 2026-08-01 | 18:37      | 2026-08-01 | 18:40    | 4 prompt-contract tests, shared typecheck and lint pass |
 | VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | IN_REVIEW   | 2026-08-01 | 18:40      | —        | —        | 37 focused tests, config/worker typecheck and lint pass; live Gemini smoke pending |
 | VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | COMPLETED   | 2026-08-01 | 18:51      | 2026-08-01 | 19:18    | 26 focused unit tests, 4 PostgreSQL integration tests, worker typecheck and lint pass |
-| VS4-T7  | Show live processing step state in UI                      | Web + API                    | IN_PROGRESS | 2026-08-01 | 19:18      | —        | —        | —            |
-| VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T7  | Show live processing step state in UI                      | Web + API                    | COMPLETED   | 2026-08-01 | 19:18      | 2026-08-01 | 19:40    | 18 focused tests, web typecheck, lint, and production build pass |
+| VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | IN_PROGRESS | 2026-08-01 | 19:40      | —        | —        | —            |
 
 ## Slice Acceptance Criteria
 
@@ -757,16 +757,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T7 - Show live processing step state in UI
+Current Task: VS4-T8 - Show generated clip list and browser-based source previews
 Current Status: IN_PROGRESS
-Last Completed Task: VS4-T6 - Persist 5–10 primary clip candidates and backups
-Next Recommended Task: VS4-T7 - Replace the static processing panel with visibility-aware live polling and preview-ready navigation.
-Uncommitted Changes: VS4-T6 is verified and ready to commit; VS4-T7 is the active tracker task.
+Last Completed Task: VS4-T7 - Show live processing step state in UI
+Next Recommended Task: VS4-T8 - Add ownership-scoped clip reads, source streaming, and the browser preview page.
+Uncommitted Changes: VS4-T7 is verified and ready to commit; VS4-T8 is the active tracker task.
 Known Failing Tests: None. `pnpm ci:check` passed with 358 unit tests, 51 database/Redis integration tests, lint, typecheck, formatting, and all builds.
 Known Blockers: None.
-Important Context: VS4-T6 stores normalized primary and backup metadata, atomically finalizes project/job/candidates under the active lease, recognizes durable retries, and registers the BullMQ worker with a dedicated blocking Redis connection. The live Gemini smoke remains the final handoff item because no key is configured.
-Required Commands Before Continuing: Commit VS4-T6, then implement and verify VS4-T7.
+Important Context: VS4-T7 polls at three-second intervals without overlap, pauses and aborts while hidden, stops at terminal states, announces changes accessibly, and redirects once when previews are ready. The live Gemini smoke remains the final handoff item because no key is configured.
+Required Commands Before Continuing: Commit VS4-T7, then implement and verify VS4-T8.
 Last Updated Date: 2026-08-01
-Last Updated Time: 19:18
+Last Updated Time: 19:40
 Last Updated By: Codex
 ```
