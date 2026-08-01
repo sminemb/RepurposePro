@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@google/genai": "2.13.0",
     "@nestjs/common": "11.1.28",
     "@nestjs/core": "11.1.28",
     "@repurposepro/config": "workspace:*",

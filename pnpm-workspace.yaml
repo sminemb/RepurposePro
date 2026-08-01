@@ -3,9 +3,11 @@ packages:
   - packages/*
 
 allowBuilds:
+  "@google/genai": false
   "@nestjs/core": true
   esbuild: true
   msgpackr-extract: false
+  protobufjs: false
   sharp: true
 
 minimumReleaseAgeExclude:

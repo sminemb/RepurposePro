@@ -26,6 +26,9 @@ export default defineConfig({
       DATABASE_WEBHOOK_URL:
         "postgresql://repurposepro_webhook:vitest-webhook-secret@localhost:5432/repurposepro",
       FFMPEG_PATH: "ffmpeg",
+      GEMINI_CLIP_MODEL: "gemini-3.5-flash-lite",
+      GEMINI_MAX_RETRIES: "2",
+      GEMINI_TIMEOUT_MS: "60000",
       FFPROBE_PATH: "ffprobe",
       FILE_RETENTION_DAYS: "7",
       LOG_LEVEL: "error",

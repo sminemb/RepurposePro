@@ -26,6 +26,9 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   LOG_LEVEL: "debug",
   LOG_PRETTY: "true",
   FFMPEG_PATH: "ffmpeg",
+  GEMINI_CLIP_MODEL: "gemini-3.5-flash-lite",
+  GEMINI_MAX_RETRIES: "2",
+  GEMINI_TIMEOUT_MS: "60000",
   STORAGE_DRIVER: "local",
   STORAGE_ROOT: "./storage",
   FFPROBE_PATH: "ffprobe",
@@ -57,6 +60,12 @@ describe("configuration loaders", () => {
     expect(config.databasePoolMax).toBe(12);
     expect(config.databaseSsl).toBe(false);
     expect(config.ffmpegPath).toBe("ffmpeg");
+    expect(config.gemini).toEqual({
+      apiKey: undefined,
+      maxRetries: 2,
+      model: "gemini-3.5-flash-lite",
+      timeoutMs: 60_000,
+    });
     expect(config.logPretty).toBe(true);
     expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
@@ -100,6 +109,17 @@ describe("configuration loaders", () => {
         WHISPER_TIMEOUT_MS: "999",
       }),
     ).toThrow(ConfigValidationError);
+  });
+
+  it("accepts an optional Gemini key without requiring it for deterministic tests", () => {
+    const config = loadWorkerConfig({
+      ...validServerEnvironment,
+      GEMINI_API_KEY: "local-test-key",
+      GEMINI_MAX_RETRIES: "1",
+    });
+
+    expect(config.gemini.apiKey).toBe("local-test-key");
+    expect(config.gemini.maxRetries).toBe(1);
   });
 
   it("rejects a generic runtime URL as the worker processing credential", () => {

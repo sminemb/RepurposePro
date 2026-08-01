@@ -118,6 +118,10 @@ const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
   FFMPEG_PATH: z.string().trim().min(1),
+  GEMINI_API_KEY: z.string().trim().min(1).optional(),
+  GEMINI_CLIP_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
+  GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(2),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   STORAGE_ROOT: z.string().trim().min(1),
   WHISPER_COMPUTE_TYPE: z.string().trim().min(1).default("int8"),
   WHISPER_DEVICE: z.enum(["auto", "cpu", "cuda"]).default("cpu"),
@@ -241,6 +245,12 @@ export interface AuthConfig {
 export interface WorkerConfig extends ServerConfig {
   readonly bullmqPrefix: string;
   readonly ffmpegPath: string;
+  readonly gemini: {
+    readonly apiKey: string | undefined;
+    readonly maxRetries: number;
+    readonly model: string;
+    readonly timeoutMs: number;
+  };
   readonly processingDatabaseUrl: string;
   readonly storageRoot: string;
   readonly whisper: {
@@ -397,6 +407,12 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
     ffmpegPath: parsed.FFMPEG_PATH,
+    gemini: {
+      apiKey: parsed.GEMINI_API_KEY,
+      maxRetries: parsed.GEMINI_MAX_RETRIES,
+      model: parsed.GEMINI_CLIP_MODEL,
+      timeoutMs: parsed.GEMINI_TIMEOUT_MS,
+    },
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
     nodeEnv: parsed.NODE_ENV,
