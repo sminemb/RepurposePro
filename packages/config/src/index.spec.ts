@@ -41,6 +41,13 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   STRIPE_PRO_PRICE_ID: "price_protests",
   STRIPE_SUCCESS_URL: "http://localhost:3000/billing?checkout=success",
   STRIPE_CANCEL_URL: "http://localhost:3000/billing?checkout=cancelled",
+  WHISPER_COMPUTE_TYPE: "int8",
+  WHISPER_DEVICE: "cpu",
+  WHISPER_ENABLE_WORD_TIMESTAMPS: "true",
+  WHISPER_LANGUAGE: "en",
+  WHISPER_MODEL: "small.en",
+  WHISPER_PYTHON_PATH: "python3.13",
+  WHISPER_TIMEOUT_MS: "900000",
 };
 
 describe("configuration loaders", () => {
@@ -53,6 +60,15 @@ describe("configuration loaders", () => {
     expect(config.logPretty).toBe(true);
     expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
+    expect(config.whisper).toEqual({
+      computeType: "int8",
+      device: "cpu",
+      enableWordTimestamps: true,
+      language: "en",
+      model: "small.en",
+      pythonPath: "python3.13",
+      timeoutMs: 900_000,
+    });
   });
 
   it("requires the processing-role database URL for worker startup", () => {
@@ -67,6 +83,23 @@ describe("configuration loaders", () => {
     delete environment.FFMPEG_PATH;
 
     expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("requires an explicit isolated Python runtime for worker startup", () => {
+    const environment = { ...validServerEnvironment };
+    delete environment.WHISPER_PYTHON_PATH;
+
+    expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("rejects unsafe Whisper timeout and device configuration", () => {
+    expect(() =>
+      loadWorkerConfig({
+        ...validServerEnvironment,
+        WHISPER_DEVICE: "remote",
+        WHISPER_TIMEOUT_MS: "999",
+      }),
+    ).toThrow(ConfigValidationError);
   });
 
   it("rejects a generic runtime URL as the worker processing credential", () => {

@@ -60,6 +60,7 @@ describe("ProcessingLifecycleService", () => {
     const { acquire, service, updateProgress } = setup();
     const handler = vi.fn(async (context: ProcessingLeaseContext) => {
       expect(acquire).toHaveBeenCalledOnce();
+      expect(context.workerId).toBe(workerId);
       await context.updateProgress(ProcessingJobStep.Transcribing, 45);
       return "done";
     });

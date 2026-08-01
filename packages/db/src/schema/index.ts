@@ -6,6 +6,7 @@ import {
   foreignKey,
   integer,
   index,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -304,6 +305,70 @@ export const processingJobs = pgTable(
           AND ${table.executionHeartbeatAt} IS NOT NULL
         )
       )`,
+    ),
+  ],
+);
+
+export const transcripts = pgTable(
+  "transcripts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    processingJobId: uuid("processing_job_id")
+      .notNull()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    uploadedVideoId: uuid("uploaded_video_id")
+      .notNull()
+      .references(() => uploadedVideos.id, { onDelete: "cascade" }),
+    language: varchar("language", { length: 16 }).notNull(),
+    model: text("model").notNull(),
+    durationSeconds: numeric("duration_seconds", { precision: 12, scale: 3 }).notNull(),
+    text: text("text").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("transcripts_processing_job_id_unique").on(table.processingJobId),
+    index("transcripts_project_created_at_idx").on(table.projectId, table.createdAt),
+    check("transcripts_duration_check", sql`${table.durationSeconds} > 0`),
+    check("transcripts_language_check", sql`length(btrim(${table.language})) > 0`),
+    check("transcripts_model_check", sql`length(btrim(${table.model})) > 0`),
+    check("transcripts_text_check", sql`length(btrim(${table.text})) > 0`),
+  ],
+);
+
+export const transcriptSegments = pgTable(
+  "transcript_segments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    transcriptId: uuid("transcript_id")
+      .notNull()
+      .references(() => transcripts.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    startSeconds: numeric("start_seconds", { precision: 12, scale: 3 }).notNull(),
+    endSeconds: numeric("end_seconds", { precision: 12, scale: 3 }).notNull(),
+    text: text("text").notNull(),
+    words: jsonb("words"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("transcript_segments_transcript_sequence_unique").on(
+      table.transcriptId,
+      table.sequence,
+    ),
+    index("transcript_segments_transcript_start_idx").on(table.transcriptId, table.startSeconds),
+    check("transcript_segments_sequence_check", sql`${table.sequence} >= 0`),
+    check("transcript_segments_start_check", sql`${table.startSeconds} >= 0`),
+    check("transcript_segments_range_check", sql`${table.endSeconds} > ${table.startSeconds}`),
+    check("transcript_segments_text_check", sql`length(btrim(${table.text})) > 0`),
+    check(
+      "transcript_segments_words_check",
+      sql`${table.words} IS NULL OR jsonb_typeof(${table.words}) = 'array'`,
     ),
   ],
 );
