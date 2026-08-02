@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | —          | —        | None         |     100% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
