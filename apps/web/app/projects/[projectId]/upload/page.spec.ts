@@ -127,4 +127,24 @@ describe("UploadPage", () => {
     expect(page).not.toContain('data-testid="saved-video"');
     expect(page).not.toContain('data-testid="processing-start-panel"');
   });
+
+  it("redirects to login when the credit balance is unauthenticated", async () => {
+    getCreditBalanceMock.mockResolvedValue({ kind: "unauthenticated" });
+    getSavedSourceVideoMock.mockResolvedValue({ kind: "missing" });
+
+    await renderUploadPage();
+
+    expect(redirectMock).toHaveBeenCalledWith("/login");
+  });
+
+  it("redirects to login when the saved video request is unauthenticated", async () => {
+    getSavedSourceVideoMock.mockResolvedValue({ kind: "unauthenticated" });
+    redirectMock.mockImplementation((path: string) => {
+      throw new Error(`redirected to ${path}`);
+    });
+
+    await expect(renderUploadPage()).rejects.toThrow("redirected to /login");
+
+    expect(redirectMock).toHaveBeenCalledWith("/login");
+  });
 });

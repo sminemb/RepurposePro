@@ -9,12 +9,14 @@ const unavailableMessage = "We could not verify your saved video. Refresh the pa
 export type SavedSourceVideoResult =
   | { readonly kind: "success"; readonly metadata: SourceVideoMetadata }
   | { readonly kind: "missing" }
+  | { readonly kind: "unauthenticated" }
   | { readonly kind: "unavailable"; readonly message: string };
 
 export async function getSavedSourceVideo(projectId: string): Promise<SavedSourceVideoResult> {
   try {
     const response = await requestApi(`/projects/${encodeURIComponent(projectId)}/video`);
 
+    if (response.status === 401) return { kind: "unauthenticated" };
     if (response.status === 404) return { kind: "missing" };
     if (!response.ok) return { kind: "unavailable", message: unavailableMessage };
 

@@ -41,6 +41,14 @@ describe("getSavedSourceVideo", () => {
     await expect(getSavedSourceVideo("project-1")).resolves.toEqual({ kind: "missing" });
   });
 
+  it("separates expired authentication from source video availability failures", async () => {
+    requestApiMock.mockResolvedValue(Response.json({ error: {} }, { status: 401 }));
+
+    await expect(getSavedSourceVideo("project-1")).resolves.toEqual({
+      kind: "unauthenticated",
+    });
+  });
+
   it.each([
     ["a malformed success payload", Response.json({ data: { fileName: "episode.mp4" } })],
     ["an unavailable API response", Response.json({ error: {} }, { status: 503 })],

@@ -28,8 +28,36 @@ export default async function UploadPage({ params }: UploadPageProps) {
     getSavedSourceVideo(projectId),
   ]);
   if (balanceResult.kind === "unauthenticated") redirect("/login");
+  if (sourceVideoResult.kind === "unauthenticated") redirect("/login");
 
   const apiUrl = loadWebConfig().apiUrl;
+  const balance = balanceResult.kind === "success" ? balanceResult.balance : null;
+  const balanceError = balanceResult.kind === "unavailable" ? balanceResult.message : null;
+  const sourceVideoView = (() => {
+    switch (sourceVideoResult.kind) {
+      case "success":
+        return {
+          content: "saved" as const,
+          description: "Your original video is saved to this project and ready for processing.",
+          metadata: sourceVideoResult.metadata,
+          title: "Your source video",
+        };
+      case "missing":
+        return {
+          content: "upload" as const,
+          description:
+            "Start with your original local video. We will validate the file before you see the credit estimate.",
+          title: "Upload your source video",
+        };
+      case "unavailable":
+        return {
+          content: "unavailable" as const,
+          description: "We need to verify your saved video before you can continue.",
+          message: sourceVideoResult.message,
+          title: "Source video unavailable",
+        };
+    }
+  })();
 
   return (
     <div className="flex min-h-dvh bg-rp-bg">
@@ -48,50 +76,32 @@ export default async function UploadPage({ params }: UploadPageProps) {
             <ArrowLeft aria-hidden="true" className="size-4" /> Back to workspace
           </Link>
           <div className="mt-7 rounded-rp-lg border border-rp-border bg-rp-surface/55 p-5 sm:p-7">
-            <PageHeader
-              description={
-                sourceVideoResult.kind === "success"
-                  ? "Your original video is saved to this project and ready for processing."
-                  : sourceVideoResult.kind === "unavailable"
-                    ? "We need to verify your saved video before you can continue."
-                    : "Start with your original local video. We will validate the file before you see the credit estimate."
-              }
-              title={
-                sourceVideoResult.kind === "success"
-                  ? "Your source video"
-                  : sourceVideoResult.kind === "unavailable"
-                    ? "Source video unavailable"
-                    : "Upload your source video"
-              }
-            />
+            <PageHeader description={sourceVideoView.description} title={sourceVideoView.title} />
             <div className="mt-8 border-t border-rp-border pt-8">
-              {sourceVideoResult.kind === "success" ? (
+              {sourceVideoView.content === "saved" ? (
                 <>
-                  <VideoMetadataCard metadata={sourceVideoResult.metadata} />
+                  <VideoMetadataCard metadata={sourceVideoView.metadata} />
                   <ProcessingStartPanel
                     apiUrl={apiUrl}
-                    balance={balanceResult.kind === "success" ? balanceResult.balance : null}
-                    balanceError={
-                      balanceResult.kind === "unavailable" ? balanceResult.message : null
-                    }
-                    metadata={sourceVideoResult.metadata}
+                    balance={balance}
+                    balanceError={balanceError}
+                    metadata={sourceVideoView.metadata}
                     projectId={projectId}
                   />
                 </>
-              ) : sourceVideoResult.kind === "missing" ? (
+              ) : sourceVideoView.content === "upload" ? (
                 <UploadDropzone
                   apiUrl={apiUrl}
-                  balance={balanceResult.kind === "success" ? balanceResult.balance : null}
-                  balanceError={balanceResult.kind === "unavailable" ? balanceResult.message : null}
+                  balance={balance}
+                  balanceError={balanceError}
                   projectId={projectId}
                 />
               ) : (
                 <div
-                  aria-live="polite"
                   className="rounded-rp-md border border-rp-warning/35 bg-rp-warning-soft/35 px-4 py-3 text-sm leading-6 text-rp-text"
                   role="alert"
                 >
-                  {sourceVideoResult.message}
+                  {sourceVideoView.message}
                 </div>
               )}
             </div>
