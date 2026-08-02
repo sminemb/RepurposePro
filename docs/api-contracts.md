@@ -766,36 +766,79 @@ Rules:
 
 ## GET `/projects/:projectId/clips`
 
+Authenticated and ownership-scoped. The endpoint returns at most ten ordered, non-deleted primary
+candidates for the current analysis job. This fixed MVP bound is intentional; there is no pagination.
+Backup candidates, selection reasons, and filesystem paths are never returned.
+
 ### Response — 200
 
 ```json
 {
-  "data": [
-    {
-      "id": "clip_...",
-      "title": "Why Most Creators Burn Out",
-      "startTime": 412.5,
-      "endTime": 486.2,
-      "durationSeconds": 73.7,
-      "score": 92,
-      "reason": "Strong hook, useful insight, and clear emotional delivery.",
-      "selected": true,
-      "deleted": false,
-      "isBackup": false,
-      "captions": {
-        "enabled": true,
-        "style": "hormozi",
-        "fontSize": 64,
-        "position": {
+  "data": {
+    "projectId": "7af64afb-b191-49d5-8141-e523a3ca2ab1",
+    "sourceDurationSeconds": 900,
+    "clips": [
+      {
+        "id": "5a3f86e2-4a61-49ba-a7d8-11fc495bde11",
+        "rank": 0,
+        "title": "Why Most Creators Burn Out",
+        "startTime": 412.5,
+        "endTime": 486.2,
+        "score": 0.92,
+        "captionsEnabled": true,
+        "captionStyle": "hormozi",
+        "previewFontSize": 48,
+        "captionPosition": {
           "x": 0.5,
           "y": 0.72
         },
-        "lines": []
+        "captionLines": [
+          {
+            "startTime": 412.5,
+            "endTime": 415.1,
+            "text": "Most creators burn out because they lack systems."
+          }
+        ],
+        "crop": null
       }
-    }
-  ]
+    ]
+  }
 }
 ```
+
+### Errors
+
+| Status | Code              | Meaning                                                        |
+| -----: | ----------------- | -------------------------------------------------------------- |
+|    400 | `VALIDATION_ERROR` | `projectId` is not a UUID.                                     |
+|    401 | `UNAUTHORIZED`     | No authenticated session is available.                         |
+|    404 | `CLIPS_NOT_FOUND`  | The owned project/source does not exist or is not accessible.   |
+
+---
+
+## GET `/projects/:projectId/source-video/content`
+
+Authenticated inline streaming for the browser preview. Ownership is checked before local storage
+is resolved, and a raw path is never serialized.
+
+### Media responses
+
+- No `Range`: full-file `200`.
+- One complete, open-ended, or suffix byte range: `206`.
+- Malformed, multiple, reversed, or unsatisfiable range: `416` with
+  `Content-Range: bytes */<file-size>`.
+
+Successful responses include accurate `Content-Type`, `Content-Length`, `Accept-Ranges: bytes`,
+`Content-Disposition: inline`, `Cache-Control: private, no-store`, and `Content-Range` for `206`.
+
+### Errors
+
+| Status | Code                     | Meaning                                            |
+| -----: | ------------------------ | -------------------------------------------------- |
+|    400 | `VALIDATION_ERROR`        | `projectId` is not a UUID.                         |
+|    401 | `UNAUTHORIZED`            | No authenticated session is available.             |
+|    404 | `SOURCE_VIDEO_NOT_FOUND`  | Project ownership, metadata, or local file failed.  |
+|    410 | `SOURCE_VIDEO_EXPIRED`    | The owned source has passed its retention deadline. |
 
 ---
 

@@ -13,6 +13,7 @@ import {
 const validServerEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: "development",
   APP_ENV: "local",
+  NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1",
   DATABASE_URL: "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
   DATABASE_CHECKOUT_URL:
     "postgresql://repurposepro_checkout:secret-password@localhost:5432/repurposepro",
@@ -26,6 +27,9 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   LOG_LEVEL: "debug",
   LOG_PRETTY: "true",
   FFMPEG_PATH: "ffmpeg",
+  GEMINI_CLIP_MODEL: "gemini-3.5-flash-lite",
+  GEMINI_MAX_RETRIES: "2",
+  GEMINI_TIMEOUT_MS: "60000",
   STORAGE_DRIVER: "local",
   STORAGE_ROOT: "./storage",
   FFPROBE_PATH: "ffprobe",
@@ -41,6 +45,13 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
   STRIPE_PRO_PRICE_ID: "price_protests",
   STRIPE_SUCCESS_URL: "http://localhost:3000/billing?checkout=success",
   STRIPE_CANCEL_URL: "http://localhost:3000/billing?checkout=cancelled",
+  WHISPER_COMPUTE_TYPE: "int8",
+  WHISPER_DEVICE: "cpu",
+  WHISPER_ENABLE_WORD_TIMESTAMPS: "true",
+  WHISPER_LANGUAGE: "en",
+  WHISPER_MODEL: "small.en",
+  WHISPER_PYTHON_PATH: "python3.13",
+  WHISPER_TIMEOUT_MS: "900000",
 };
 
 describe("configuration loaders", () => {
@@ -50,9 +61,24 @@ describe("configuration loaders", () => {
     expect(config.databasePoolMax).toBe(12);
     expect(config.databaseSsl).toBe(false);
     expect(config.ffmpegPath).toBe("ffmpeg");
+    expect(config.gemini).toEqual({
+      apiKey: undefined,
+      maxRetries: 2,
+      model: "gemini-3.5-flash-lite",
+      timeoutMs: 60_000,
+    });
     expect(config.logPretty).toBe(true);
     expect(config.processingDatabaseUrl).toContain("repurposepro_processing");
     expect(config.storageRoot).toBe(resolve(process.cwd(), "storage"));
+    expect(config.whisper).toEqual({
+      computeType: "int8",
+      device: "cpu",
+      enableWordTimestamps: true,
+      language: "en",
+      model: "small.en",
+      pythonPath: "python3.13",
+      timeoutMs: 900_000,
+    });
   });
 
   it("requires the processing-role database URL for worker startup", () => {
@@ -67,6 +93,34 @@ describe("configuration loaders", () => {
     delete environment.FFMPEG_PATH;
 
     expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("requires an explicit isolated Python runtime for worker startup", () => {
+    const environment = { ...validServerEnvironment };
+    delete environment.WHISPER_PYTHON_PATH;
+
+    expect(() => loadWorkerConfig(environment)).toThrow(ConfigValidationError);
+  });
+
+  it("rejects unsafe Whisper timeout and device configuration", () => {
+    expect(() =>
+      loadWorkerConfig({
+        ...validServerEnvironment,
+        WHISPER_DEVICE: "remote",
+        WHISPER_TIMEOUT_MS: "999",
+      }),
+    ).toThrow(ConfigValidationError);
+  });
+
+  it("accepts an optional Gemini key without requiring it for deterministic tests", () => {
+    const config = loadWorkerConfig({
+      ...validServerEnvironment,
+      GEMINI_API_KEY: "local-test-key",
+      GEMINI_MAX_RETRIES: "1",
+    });
+
+    expect(config.gemini.apiKey).toBe("local-test-key");
+    expect(config.gemini.maxRetries).toBe(1);
   });
 
   it("rejects a generic runtime URL as the worker processing credential", () => {
@@ -260,6 +314,7 @@ describe("configuration loaders", () => {
     });
 
     expect(config.trustedOrigins).toEqual(["http://localhost:3000", "https://app.example.com"]);
+    expect(config.apiUrl).toBe("http://localhost:4000/api/v1");
     expect(config.url).toBe("http://localhost:3000");
   });
 

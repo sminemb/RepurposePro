@@ -19,6 +19,8 @@ export interface ProcessingLifecycleOptions {
 export interface ProcessingLeaseContext {
   readonly leaseToken: string;
   readonly signal: AbortSignal;
+  readonly workerId: string;
+  finalize<TValue>(operation: () => Promise<TValue>): Promise<TValue>;
   updateProgress(step: ProcessingJobStep, progress: number): Promise<void>;
 }
 
@@ -151,8 +153,16 @@ export class ProcessingLifecycleService {
     };
 
     const context: ProcessingLeaseContext = {
+      finalize: async (operation) => {
+        await stopHeartbeat();
+        if (abortController.signal.aborted) {
+          throw abortController.signal.reason ?? new ProcessingLeaseLostError();
+        }
+        return operation();
+      },
       leaseToken,
       signal: abortController.signal,
+      workerId,
       updateProgress: async (step, progress) => {
         try {
           const outcome = await this.repository.updateProgress(

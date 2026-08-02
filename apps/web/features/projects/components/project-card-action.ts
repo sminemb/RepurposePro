@@ -9,7 +9,6 @@ const processingStatuses = new Set<ProjectStatus>([
   "queued",
   "transcribing",
   "analyzing",
-  "preview_ready",
   "waiting_for_user_edits",
   "rendering",
   "completed",
@@ -19,6 +18,13 @@ const processingStatuses = new Set<ProjectStatus>([
 
 export function getProjectCardAction(projectId: string, status: ProjectStatus): ProjectCardAction {
   const encodedProjectId = encodeURIComponent(projectId);
+
+  if (status === "preview_ready") {
+    return {
+      href: `/projects/${encodedProjectId}/clips`,
+      label: "Review clips",
+    };
+  }
 
   if (processingStatuses.has(status)) {
     return {

@@ -235,6 +235,7 @@ Durable record of analysis, render, regeneration, and cleanup work.
 | `bullmq_job_id`              | text nullable        | Queue reference                   |
 | `error_code`                 | text nullable        | Stable code                       |
 | `error_message`              | text nullable        | Sanitized message                 |
+| `analysis_prompt_version`    | text nullable        | Durable AI contract, `clips-v1`   |
 | `execution_lease_token`      | uuid nullable        | Durable active-execution identity |
 | `execution_lease_owner`      | text nullable        | Unique worker execution identity  |
 | `execution_lease_expires_at` | timestamptz nullable | Stale-active recovery boundary    |
@@ -436,46 +437,47 @@ Example `words_json`:
 
 # 10. `clip_candidates`
 
-Stores primary and backup clip candidates plus editable preview metadata.
+Stores validated primary and backup clip candidates plus browser-preview metadata. VS4 creates no
+rendered output row or MP4.
 
-| Column                    | Type                 | Rules                         |
-| ------------------------- | -------------------- | ----------------------------- |
-| `id`                      | uuid                 | PK                            |
-| `project_id`              | uuid                 | FK projects                   |
-| `source_job_id`           | uuid                 | FK processing_jobs            |
-| `title`                   | text                 | Required                      |
-| `start_time`              | numeric              | Seconds                       |
-| `end_time`                | numeric              | Seconds                       |
-| `score`                   | integer nullable     | 0–100                         |
-| `reason`                  | text                 | Required                      |
-| `transcript_excerpt`      | text nullable        | Optional                      |
-| `is_backup`               | boolean              | Default false                 |
-| `selected`                | boolean              | Default true for primary      |
-| `deleted`                 | boolean              | Default false                 |
-| `replacement_for_clip_id` | uuid nullable        | Self FK                       |
-| `caption_enabled`         | boolean              | Default true                  |
-| `caption_style`           | text                 | Default `hormozi`             |
-| `caption_font_size`       | integer              | Default from UI tokens        |
-| `caption_position_json`   | jsonb                | Required                      |
-| `caption_lines_json`      | jsonb                | Required                      |
-| `crop_metadata_json`      | jsonb nullable       | Face-aware crop metadata      |
-| `version`                 | integer              | Optimistic locking, default 1 |
-| `created_at`              | timestamptz          | Required                      |
-| `updated_at`              | timestamptz          | Required                      |
-| `deleted_at`              | timestamptz nullable | Optional                      |
+| Column                  | Type                 | Rules                                      |
+| ----------------------- | -------------------- | ------------------------------------------ |
+| `id`                    | uuid                 | PK                                         |
+| `project_id`            | uuid                 | FK projects, cascade delete                |
+| `processing_job_id`     | uuid                 | FK processing_jobs, cascade delete         |
+| `transcript_id`         | uuid                 | FK transcripts, cascade delete             |
+| `kind`                  | enum                 | `primary` or `backup`                      |
+| `rank`                  | integer              | Contiguous per kind, 0–9                    |
+| `title`                 | varchar(120)         | Required                                   |
+| `reason`                | varchar(500)         | Internal selection explanation             |
+| `start_time`            | numeric(12,3)        | Source seconds, nonnegative                 |
+| `end_time`              | numeric(12,3)        | Source seconds, greater than start          |
+| `score`                 | numeric(5,4)         | Normalized 0–1                             |
+| `captions_enabled`      | boolean              | Required true in `clips-v1`                 |
+| `caption_style`         | varchar(32)          | Required `hormozi` in `clips-v1`            |
+| `caption_lines`         | jsonb                | Timestamped non-empty browser caption data  |
+| `caption_position`      | jsonb                | Normalized `{ x, y }`                       |
+| `preview_font_size`     | integer              | 12–96, default 48                           |
+| `crop`                  | jsonb nullable       | Normalized crop or centered fallback        |
+| `deleted_at`            | timestamptz nullable | Soft-delete boundary                        |
+| `created_at`            | timestamptz          | Required                                   |
+| `updated_at`            | timestamptz          | Required                                   |
 
 Constraints:
 
 ```text
 end_time > start_time
-score between 0 and 100 when not null
+score between 0 and 1
+rank between 0 and 9
+unique (processing_job_id, kind, rank)
+caption and crop JSON have the expected top-level type
 ```
 
 Recommended indexes:
 
 ```text
-(project_id, is_backup, selected)
-(project_id, created_at)
+(processing_job_id, kind, rank) unique
+(project_id, rank, id) partial index for non-deleted primaries
 ```
 
 Example caption position:
@@ -492,10 +494,9 @@ Example caption lines:
 ```json
 [
   {
-    "start": 0,
-    "end": 2.5,
-    "text": "Most creators burn out because they lack systems.",
-    "highlights": ["burn out", "systems"]
+    "startTime": 0,
+    "endTime": 2.5,
+    "text": "Most creators burn out because they lack systems."
   }
 ]
 ```
@@ -504,18 +505,22 @@ Example crop metadata:
 
 ```json
 {
-  "strategy": "face_aware",
-  "sourceWidth": 1920,
-  "sourceHeight": 1080,
-  "targetAspectRatio": "9:16",
-  "cropX": 620,
-  "cropY": 0,
-  "cropWidth": 608,
-  "cropHeight": 1080,
-  "confidence": 0.88,
-  "fallbackUsed": false
+  "x": 0.32,
+  "y": 0,
+  "width": 0.36,
+  "height": 1
 }
 ```
+
+`finalize_analysis_preview` inserts all candidates and updates the current project/job to exact
+`preview_ready` in one lease-fenced transaction. It clears lease columns and records
+`analysis_prompt_version = 'clips-v1'`. Retries first call `is_analysis_preview_ready` and treat an
+already durable preview as success.
+
+The processing role can call only the lease-fenced finalization/readiness functions and cannot read
+`clip_candidates` directly. The runtime API role can call owner-scoped preview/source functions;
+the clip function returns at most ten ordered, non-deleted primaries and omits backups, reasons, and
+filesystem paths.
 
 ---
 
@@ -1139,19 +1144,24 @@ Use separate credentials:
 ```text
 repurposepro         Compose/bootstrap superuser; role provisioning only
 repurposepro_owner   migration owner; never used by API or worker runtime
-repurposepro_runtime restricted API and worker role
+repurposepro_runtime restricted general API role
+repurposepro_checkout restricted Checkout-entry role
+repurposepro_webhook restricted Stripe-webhook role
+repurposepro_processing restricted processing API and worker role
 ```
 
 The PostgreSQL Docker image requires its initial `POSTGRES_USER` to be a superuser. Compose
-therefore creates `repurposepro` only as a bootstrap role, then its initialization script creates
-the fixed non-superuser `repurposepro_owner` and `repurposepro_runtime` roles and transfers
-database and `public` schema ownership to `repurposepro_owner`. Do not use the bootstrap role
-for migrations after initialization.
+therefore creates `repurposepro` only as a bootstrap role. Fresh-volume initialization creates all
+five fixed non-superuser roles: `repurposepro_owner`, `repurposepro_runtime`,
+`repurposepro_checkout`, `repurposepro_webhook`, and `repurposepro_processing`; it also transfers
+database and `public` schema ownership to `repurposepro_owner`. Do not use the bootstrap role for
+migrations after initialization.
 
-The runtime role has no superuser, DDL, replication, or row-security-bypass capability.
-It cannot mutate or truncate the ledger, or insert financial source records directly. Billing
-procedures added in later VS3 tasks must run with narrowly scoped owner authority after they
-validate trusted Stripe/webhook input.
+Runtime roles have no superuser, DDL, replication, or row-security-bypass capability. The generic
+runtime role cannot mutate or truncate the ledger, insert financial source records, or read clip
+candidate tables directly. Owner-scoped security-definer functions expose only the primary preview
+JSON and internal source metadata needed by the authenticated API. Checkout, webhook, and processing
+operations use separate narrowly scoped roles and functions.
 
 Ledger protection triggers use `ENABLE ALWAYS`, so a privileged replication-mode session cannot
 bypass them accidentally. Runtime processes load only `.env`; Compose and database administration
@@ -1159,9 +1169,9 @@ load only `.env.database`. Provision a new local volume through Compose. For an 
 
 ```text
 1. Set DATABASE_BOOTSTRAP_URL in .env.database to the existing elevated owner and run pnpm db:migrate:bootstrap.
-2. Set DATABASE_MIGRATION_URL and DATABASE_RUNTIME_URL in .env.database to the fixed owner/runtime roles.
-3. Run pnpm db:provision-roles to remove stale memberships and transfer database, schema, and Drizzle tracking ownership.
-4. Run pnpm db:migrate as repurposepro_owner. Set only repurposepro_runtime DATABASE_URL in runtime .env.
+2. Configure DATABASE_MIGRATION_URL and DATABASE_RUNTIME_URL plus all three scoped URLs: DATABASE_CHECKOUT_URL, DATABASE_WEBHOOK_URL, and DATABASE_PROCESSING_URL.
+3. Run pnpm db:provision-roles. It creates missing fixed roles, resets their configured passwords and stale memberships, and transfers database, schema, and Drizzle tracking ownership.
+4. Run pnpm db:migrate as repurposepro_owner to apply the scoped runtime grants. Set only the restricted role URLs in runtime .env.
 ```
 
 Avoid schema drift between environments.

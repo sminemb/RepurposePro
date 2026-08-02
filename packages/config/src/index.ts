@@ -118,7 +118,18 @@ const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
   FFMPEG_PATH: z.string().trim().min(1),
+  GEMINI_API_KEY: z.string().trim().min(1).optional(),
+  GEMINI_CLIP_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
+  GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(2),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   STORAGE_ROOT: z.string().trim().min(1),
+  WHISPER_COMPUTE_TYPE: z.string().trim().min(1).default("int8"),
+  WHISPER_DEVICE: z.enum(["auto", "cpu", "cuda"]).default("cpu"),
+  WHISPER_ENABLE_WORD_TIMESTAMPS: booleanFromEnvironment.default(false),
+  WHISPER_LANGUAGE: z.literal("en").default("en"),
+  WHISPER_MODEL: z.string().trim().min(1).default("small.en"),
+  WHISPER_PYTHON_PATH: z.string().trim().min(1),
+  WHISPER_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(900_000),
 });
 
 const apiEnvironmentSchema = serverEnvironmentSchema
@@ -167,6 +178,7 @@ const authEnvironmentSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
   DATABASE_SSL: booleanFromEnvironment,
   DATABASE_URL: runtimeDatabaseUrlSchema,
+  NEXT_PUBLIC_API_URL: z.string().url(),
   NODE_ENV: nodeEnvironmentSchema,
 });
 
@@ -220,6 +232,7 @@ export interface ApiConfig extends ServerConfig {
 }
 
 export interface AuthConfig {
+  readonly apiUrl: string;
   readonly appEnv: z.infer<typeof appEnvironmentSchema>;
   readonly appUrl: string;
   readonly databasePoolMax: number;
@@ -234,8 +247,23 @@ export interface AuthConfig {
 export interface WorkerConfig extends ServerConfig {
   readonly bullmqPrefix: string;
   readonly ffmpegPath: string;
+  readonly gemini: {
+    readonly apiKey: string | undefined;
+    readonly maxRetries: number;
+    readonly model: string;
+    readonly timeoutMs: number;
+  };
   readonly processingDatabaseUrl: string;
   readonly storageRoot: string;
+  readonly whisper: {
+    readonly computeType: string;
+    readonly device: "auto" | "cpu" | "cuda";
+    readonly enableWordTimestamps: boolean;
+    readonly language: string;
+    readonly model: string;
+    readonly pythonPath: string;
+    readonly timeoutMs: number;
+  };
 }
 
 export class ConfigValidationError extends Error {
@@ -359,6 +387,7 @@ export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
     .filter((origin) => origin.length > 0) ?? [parsed.APP_URL];
 
   return {
+    apiUrl: parsed.NEXT_PUBLIC_API_URL,
     appEnv: parsed.APP_ENV,
     appUrl: parsed.APP_URL,
     databasePoolMax: parsed.DATABASE_POOL_MAX,
@@ -381,11 +410,26 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
     ffmpegPath: parsed.FFMPEG_PATH,
+    gemini: {
+      apiKey: parsed.GEMINI_API_KEY,
+      maxRetries: parsed.GEMINI_MAX_RETRIES,
+      model: parsed.GEMINI_CLIP_MODEL,
+      timeoutMs: parsed.GEMINI_TIMEOUT_MS,
+    },
     logLevel: parsed.LOG_LEVEL,
     logPretty: parsed.LOG_PRETTY,
     nodeEnv: parsed.NODE_ENV,
     processingDatabaseUrl: parsed.DATABASE_PROCESSING_URL,
     redisUrl: parsed.REDIS_URL,
     storageRoot: resolveStorageRoot(parsed.STORAGE_ROOT),
+    whisper: {
+      computeType: parsed.WHISPER_COMPUTE_TYPE,
+      device: parsed.WHISPER_DEVICE,
+      enableWordTimestamps: parsed.WHISPER_ENABLE_WORD_TIMESTAMPS,
+      language: parsed.WHISPER_LANGUAGE,
+      model: parsed.WHISPER_MODEL,
+      pythonPath: parsed.WHISPER_PYTHON_PATH,
+      timeoutMs: parsed.WHISPER_TIMEOUT_MS,
+    },
   };
 }

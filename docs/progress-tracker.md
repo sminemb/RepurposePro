@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T3       |      25% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -315,12 +315,12 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS4         |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-07-30  |
 | Start Time | 19:09       |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 25%         |
+| End Date   | 2026-08-02  |
+| End Time   | 09:16       |
+| Progress   | 100%        |
 | Dependency | VS3         |
 
 ## Tasks
@@ -329,22 +329,22 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | ------- | ---------------------------------------------------------- | ---------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
 | VS4-T1  | Implement worker job lifecycle and progress updates        | Worker + Queue + DB          | COMPLETED   | 2026-07-30 | 19:09      | 2026-07-30 | 19:34    | 17 focused, 348 unit, 51 integration, build pass |
 | VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | COMPLETED   | 2026-07-31 | 11:47      | 2026-07-31 | 12:13    | 37 focused, 358 unit, 51 integration, real FFmpeg smoke, build pass |
-| VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS4-T7  | Show live processing step state in UI                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | COMPLETED   | 2026-08-01 | 18:10      | 2026-08-01 | 18:37    | 43 focused unit tests, 2 PostgreSQL integration tests, Python 3.13.14/faster-whisper 1.2.1 CPU-int8 smoke, typecheck and lint pass |
+| VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | COMPLETED   | 2026-08-01 | 18:37      | 2026-08-01 | 18:40    | 4 prompt-contract tests, shared typecheck and lint pass |
+| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | COMPLETED   | 2026-08-01 | 18:40      | 2026-08-02 | 09:16    | 37 focused tests plus a live `gemini-3.5-flash-lite`/`clips-v1` structured-output smoke: 5 validated primaries, 2 backups, 2.8 seconds |
+| VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | COMPLETED   | 2026-08-01 | 18:51      | 2026-08-01 | 19:18    | 26 focused unit tests, 4 PostgreSQL integration tests, worker typecheck and lint pass |
+| VS4-T7  | Show live processing step state in UI                      | Web + API                    | COMPLETED   | 2026-08-01 | 19:18      | 2026-08-01 | 19:40    | 18 focused tests, web typecheck, lint, and production build pass |
+| VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | COMPLETED   | 2026-08-01 | 19:40      | 2026-08-01 | 20:58    | 42 focused API/web tests, authenticated browser verification at 320/768/1024/1440, 432 unit tests, 57 PostgreSQL/Redis integration tests, and production builds pass |
 
 ## Slice Acceptance Criteria
 
-- [ ] Processing continues in background.
-- [ ] Whisper produces timestamps.
-- [ ] Gemini receives transcript, not raw video.
-- [ ] 5–10 candidates are generated when possible.
-- [ ] Backup candidates are stored.
-- [ ] User can preview clip segments before final render.
-- [ ] No final MP4 render has occurred yet.
+- [x] Processing continues in background.
+- [x] Whisper produces timestamps.
+- [x] Gemini receives transcript, not raw video.
+- [x] 5–10 candidates are generated when possible.
+- [x] Backup candidates are stored.
+- [x] User can preview clip segments before final render.
+- [x] No final MP4 render has occurred yet.
 
 ---
 
@@ -757,16 +757,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T3 - Run self-hosted Whisper and persist timestamped transcript
-Current Status: NOT_STARTED
-Last Completed Task: VS4-T2 - Extract transcription audio with FFmpeg
-Next Recommended Task: VS4-T3 - Compose source lookup, audio extraction, self-hosted Whisper, and timestamped transcript persistence behind AnalysisPipelineHandler.
-Uncommitted Changes: The verified VS4-T2 implementation and tracker completion remain unstaged because Git index write approval was unavailable.
-Known Failing Tests: None. `pnpm ci:check` passed with 358 unit tests, 51 database/Redis integration tests, lint, typecheck, formatting, and all builds.
-Known Blockers: The requested VS4-T2 commit remains blocked until Git index writes are available; the implementation itself has no known blockers.
-Important Context: VS4-T2 adds the required `FFMPEG_PATH` worker configuration and registers only `TranscriptionAudioExtractor`. The extractor requires absolute paths for `sourcePath` and `destinationPath` (validated via `isAbsolute()`) but does not validate them against approved storage roots; approved-root validation will be the responsibility of the upstream pipeline handler (VS4-T3+) that composes the extractor with source lookup. The extractor selects the first audio stream, writes mono 16 kHz PCM WAV through a same-directory temporary file, validates nonempty output, atomically promotes it, bounds diagnostics, and preserves original abort reasons. Source lookup, database access, Whisper behavior, transcript persistence, and a concrete full-pipeline handler are intentionally absent. `AnalysisJobProcessor` remains unregistered so BullMQ cannot falsely report `preview_ready`.
-Required Commands Before Continuing: Stage and commit VS4-T2 as `feat(worker): extract transcription audio with ffmpeg`, then begin VS4-T3 with TDD. Add least-privilege source lookup for the restricted processing role, compose `TranscriptionAudioExtractor`, and implement self-hosted Whisper orchestration plus timestamped transcript persistence. Keep `AnalysisJobProcessor` unregistered until the complete pipeline can return exact `preview_ready`.
-Last Updated Date: 2026-07-31
-Last Updated Time: 12:13
+Current Task: None - VS4 is complete
+Current Status: COMPLETED
+Last Completed Task: VS4-T8 - Show generated clip list and browser-based source previews
+Next Recommended Task: Start VS5-T1 - Add editable clip metadata fields.
+Uncommitted Changes: None. VS4-T3 through VS4-T8 and the final verification handoff are committed on `codex/vs4-ai-preview`.
+Known Failing Tests: None. `pnpm ci:check` passed with 432 unit tests, 57 database/Redis integration tests, lint, typecheck, formatting, and all production builds.
+Known Blockers: None.
+Important Context: Python 3.13.14/faster-whisper 1.2.1 passed a real CPU-int8 smoke. A live `gemini-3.5-flash-lite` request using the production selector returned 5 validated primaries and 2 backups under `clips-v1` in 2.8 seconds. Deterministic Gemini tests cover schema repair and candidate selection. A real Redis/BullMQ/PostgreSQL mock-AI job reached `preview_ready`. Authenticated browser verification covered polling, redirect, source seeking, escaped caption overlays, hidden backups, accessibility semantics, a clean console, and 320/768/1024/1440 layouts. No final MP4 was rendered.
+Required Commands Before Continuing: Read the VS5 specification, mark VS5-T1 `IN_PROGRESS`, and record an Asia/Manila start timestamp before implementation.
+Last Updated Date: 2026-08-02
+Last Updated Time: 09:16
 Last Updated By: Codex
 ```

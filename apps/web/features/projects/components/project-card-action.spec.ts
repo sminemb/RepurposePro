@@ -19,4 +19,11 @@ describe("getProjectCardAction", () => {
       });
     },
   );
+
+  it("routes preview-ready projects to browser clips", () => {
+    expect(getProjectCardAction("project/1", "preview_ready")).toEqual({
+      href: "/projects/project%2F1/clips",
+      label: "Review clips",
+    });
+  });
 });

@@ -1,33 +1,19 @@
-import type { ProcessingJobStep } from "@repurposepro/shared";
-import { ArrowLeft, Clock3, Sparkles } from "lucide-react";
+import { loadWebConfig } from "@repurposepro/config";
+import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { AppTopbar } from "@/components/app/app-topbar";
-import { PageHeader } from "@/components/app/page-header";
-import { StatusBadge } from "@/components/app/status-badge";
+import { LiveProcessingPanel } from "@/features/processing/components/live-processing-panel";
+import { isPreviewReady } from "@/features/processing/processing-status";
 import { getProjectProcessingStatus } from "@/features/processing/server/processing-api";
 import { auth } from "@/lib/auth";
 
 interface ProcessingPageProps {
   readonly params: Promise<{ projectId: string }>;
 }
-
-const stepLabels: Record<ProcessingJobStep, string> = {
-  analyzing: "Analyzing your transcript",
-  completed: "Completed",
-  extracting_audio: "Extracting audio",
-  failed: "Processing stopped",
-  generating_preview: "Generating previews",
-  preparing: "Preparing your video",
-  preview_ready: "Preview ready",
-  queued: "Queued for analysis",
-  rendering: "Rendering video",
-  saving_output: "Saving output",
-  transcribing: "Transcribing audio",
-};
 
 export default async function ProcessingPage({ params }: ProcessingPageProps) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -47,6 +33,9 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
     redirect(`/projects/${encodeURIComponent(projectId)}/upload`);
   }
 
+  if (isPreviewReady(snapshot)) {
+    redirect(`/projects/${encodeURIComponent(projectId)}/clips`);
+  }
   if (!snapshot.currentJob) {
     return (
       <ProcessingPageError
@@ -55,9 +44,7 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
       />
     );
   }
-
-  const job = snapshot.currentJob;
-  const queued = snapshot.status === "queued";
+  const { apiUrl } = loadWebConfig();
 
   return (
     <ProcessingShell title="Processing video" user={session.user}>
@@ -68,60 +55,8 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
         <ArrowLeft aria-hidden="true" className="size-4" /> Back to workspace
       </Link>
       <div className="mt-7">
-        <PageHeader
-          description="Your saved processing state is available whenever you return."
-          title={queued ? "Your video is queued" : "Your video is processing"}
-        />
+        <LiveProcessingPanel apiUrl={apiUrl} initialSnapshot={snapshot} projectId={projectId} />
       </div>
-
-      <section
-        aria-labelledby="processing-state-title"
-        aria-live="polite"
-        className="mt-8 overflow-hidden rounded-rp-lg border border-rp-border bg-rp-surface/70 shadow-rp-card"
-      >
-        <div className="border-b border-rp-border bg-rp-primary-soft/30 p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-rp-md border border-rp-primary/30 bg-rp-primary-soft text-rp-primary shadow-rp-glow">
-                {queued ? (
-                  <Clock3 aria-hidden="true" className="size-6" />
-                ) : (
-                  <Sparkles aria-hidden="true" className="size-6" />
-                )}
-              </span>
-              <div>
-                <h2 id="processing-state-title" className="text-lg font-semibold text-rp-text">
-                  {queued ? "Waiting to begin analysis" : "Analysis is underway"}
-                </h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-rp-text-muted">
-                  Processing continues in the background. You can leave this page and return from
-                  your dashboard.
-                </p>
-              </div>
-            </div>
-            <StatusBadge status={snapshot.status} />
-          </div>
-        </div>
-
-        <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
-          <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
-              Current step
-            </p>
-            <p className="mt-2 text-base font-semibold text-rp-text">
-              {job.step ? stepLabels[job.step] : "Waiting for the next step"}
-            </p>
-          </div>
-          <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
-              Progress
-            </p>
-            <p className="mt-2 text-base font-semibold text-rp-text">
-              {job.progress === null ? "No progress estimate yet" : `${job.progress}% complete`}
-            </p>
-          </div>
-        </div>
-      </section>
     </ProcessingShell>
   );
 }

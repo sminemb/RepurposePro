@@ -35,7 +35,9 @@ export default defineConfig({
       "apps/api/src/modules/processing/processing.postgres.integration.spec.ts",
       "apps/api/src/modules/processing/processing-recovery.postgres-redis.integration.spec.ts",
       "apps/api/src/modules/processing/processing-reliability.postgres.integration.spec.ts",
+      "apps/worker/src/services/analysis-pipeline.postgres-redis.integration.spec.ts",
       "packages/db/src/schema/billing-integrity.integration.spec.ts",
+      "packages/db/src/schema/analysis-transcripts.integration.spec.ts",
     ],
     env: {
       APP_ENV: "test",
