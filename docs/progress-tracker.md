@@ -315,12 +315,12 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS4         |
-| Status     | IN_REVIEW   |
+| Status     | COMPLETED   |
 | Start Date | 2026-07-30  |
 | Start Time | 19:09       |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 88%         |
+| End Date   | 2026-08-02  |
+| End Time   | 09:16       |
+| Progress   | 100%        |
 | Dependency | VS3         |
 
 ## Tasks
@@ -331,7 +331,7 @@ This slice crosses queue processing, local worker, FFmpeg audio extraction, Whis
 | VS4-T2  | Extract transcription audio with FFmpeg                    | Worker + FFmpeg              | COMPLETED   | 2026-07-31 | 11:47      | 2026-07-31 | 12:13    | 37 focused, 358 unit, 51 integration, real FFmpeg smoke, build pass |
 | VS4-T3  | Run self-hosted Whisper and persist timestamped transcript | Worker + Whisper + DB        | COMPLETED   | 2026-08-01 | 18:10      | 2026-08-01 | 18:37    | 43 focused unit tests, 2 PostgreSQL integration tests, Python 3.13.14/faster-whisper 1.2.1 CPU-int8 smoke, typecheck and lint pass |
 | VS4-T4  | Create versioned Gemini clip-selection prompt              | Shared + AI                  | COMPLETED   | 2026-08-01 | 18:37      | 2026-08-01 | 18:40    | 4 prompt-contract tests, shared typecheck and lint pass |
-| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | IN_REVIEW   | 2026-08-01 | 18:40      | —        | —        | 37 focused tests, config/worker typecheck and lint pass; live Gemini smoke pending |
+| VS4-T5  | Send transcript to Gemini and validate structured JSON     | Worker + Gemini + Validation | COMPLETED   | 2026-08-01 | 18:40      | 2026-08-02 | 09:16    | 37 focused tests plus a live `gemini-3.5-flash-lite`/`clips-v1` structured-output smoke: 5 validated primaries, 2 backups, 2.8 seconds |
 | VS4-T6  | Persist 5–10 primary clip candidates and backups           | DB + Worker                  | COMPLETED   | 2026-08-01 | 18:51      | 2026-08-01 | 19:18    | 26 focused unit tests, 4 PostgreSQL integration tests, worker typecheck and lint pass |
 | VS4-T7  | Show live processing step state in UI                      | Web + API                    | COMPLETED   | 2026-08-01 | 19:18      | 2026-08-01 | 19:40    | 18 focused tests, web typecheck, lint, and production build pass |
 | VS4-T8  | Show generated clip list and browser-based source previews | Web + API                    | COMPLETED   | 2026-08-01 | 19:40      | 2026-08-01 | 20:58    | 42 focused API/web tests, authenticated browser verification at 320/768/1024/1440, 432 unit tests, 57 PostgreSQL/Redis integration tests, and production builds pass |
@@ -757,16 +757,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: VS4-T5 - Run one live Gemini structured-output smoke
-Current Status: IN_REVIEW
-Last Completed Task: VS4-T8 - Show generated clip list and browser-based source previews
-Next Recommended Task: Add `GEMINI_API_KEY` to the ignored local `.env`, process one clips project through the normal queue, confirm durable preview candidates, then mark VS4-T5 and VS4 complete.
-Uncommitted Changes: None. VS4-T3 through VS4-T8 are committed on `codex/vs4-ai-preview`.
+Current Task: None - VS4 is complete
+Current Status: COMPLETED
+Last Completed Task: VS4-T5 - Live Gemini structured-output smoke
+Next Recommended Task: Start VS5-T1 - Add editable clip metadata fields.
+Uncommitted Changes: None. VS4-T3 through VS4-T8 and the final verification handoff are committed on `codex/vs4-ai-preview`.
 Known Failing Tests: None. `pnpm ci:check` passed with 432 unit tests, 57 database/Redis integration tests, lint, typecheck, formatting, and all production builds.
-Known Blockers: The live Gemini request is the sole review item because `GEMINI_API_KEY` is not configured. No secret is committed or requested in chat.
-Important Context: Python 3.13.14/faster-whisper 1.2.1 passed a real CPU-int8 smoke. Deterministic Gemini tests cover schema repair and candidate selection. A real Redis/BullMQ/PostgreSQL mock-AI job reached `preview_ready`. Authenticated browser verification covered polling, redirect, source seeking, escaped caption overlays, hidden backups, accessibility semantics, a clean console, and 320/768/1024/1440 layouts. No final MP4 was rendered.
-Required Commands Before Continuing: Add the key only to ignored `.env`, run `pnpm dev:apps`, submit one clips project, and verify the live Gemini result before closing VS4 review.
-Last Updated Date: 2026-08-01
-Last Updated Time: 20:58
+Known Blockers: None.
+Important Context: Python 3.13.14/faster-whisper 1.2.1 passed a real CPU-int8 smoke. A live `gemini-3.5-flash-lite` request using the production selector returned 5 validated primaries and 2 backups under `clips-v1` in 2.8 seconds. Deterministic Gemini tests cover schema repair and candidate selection. A real Redis/BullMQ/PostgreSQL mock-AI job reached `preview_ready`. Authenticated browser verification covered polling, redirect, source seeking, escaped caption overlays, hidden backups, accessibility semantics, a clean console, and 320/768/1024/1440 layouts. No final MP4 was rendered.
+Required Commands Before Continuing: Read the VS5 specification, mark VS5-T1 `IN_PROGRESS`, and record an Asia/Manila start timestamp before implementation.
+Last Updated Date: 2026-08-02
+Last Updated Time: 09:16
 Last Updated By: Codex
 ```
