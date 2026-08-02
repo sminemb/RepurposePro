@@ -1,5 +1,3 @@
-import { resolve } from "node:path";
-
 import { Module } from "@nestjs/common";
 import { loadWorkerConfig } from "@repurposepro/config";
 import { createDatabaseClient } from "@repurposepro/db";
@@ -32,6 +30,7 @@ import { ProcessingLifecycleService } from "./services/processing-lifecycle.serv
 import { TranscriptionAudioExtractor } from "./services/transcription-audio-extractor.service";
 import { WorkerInfrastructureService } from "./services/worker-infrastructure.service";
 import { WhisperTranscriber } from "./services/whisper-transcriber.service";
+import { resolveWhisperScriptPath } from "./whisper-script-path";
 
 const config = loadWorkerConfig();
 
@@ -47,7 +46,7 @@ const config = loadWorkerConfig();
         new WhisperTranscriber({
           ...config.whisper,
           language: "en",
-          scriptPath: resolve(__dirname, "../../python/transcribe.py"),
+          scriptPath: resolveWhisperScriptPath(__dirname),
           storageRoot: config.storageRoot,
         }),
     },
