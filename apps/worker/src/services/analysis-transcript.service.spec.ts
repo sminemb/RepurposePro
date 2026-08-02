@@ -129,6 +129,67 @@ describe("AnalysisTranscriptService", () => {
     );
     await expect(readdir(join(root, "project", ".analysis"))).resolves.toEqual([]);
   });
+
+  it("accepts normal duration drift introduced while extracting audio", async () => {
+    const root = await temporaryRoot();
+    const sourcePath = join(root, "project", "source.mp4");
+    await mkdir(dirname(sourcePath), { recursive: true });
+    await writeFile(sourcePath, "video");
+    const loadContext = vi
+      .fn<AnalysisTranscriptRepositoryContract["loadContext"]>()
+      .mockResolvedValue({
+        outcome: "ready",
+        projectId,
+        sourceDurationSeconds: 30,
+        sourcePath,
+        transcript: null,
+      });
+    const persist = vi
+      .fn<AnalysisTranscriptRepositoryContract["persist"]>()
+      .mockResolvedValue({ outcome: "created", transcriptId });
+    const repository = repositoryWith(loadContext, persist);
+    const extract = vi.fn(async ({ destinationPath }: { destinationPath: string }) => {
+      await mkdir(dirname(destinationPath), { recursive: true });
+      await writeFile(destinationPath, "wave");
+      return { outputPath: destinationPath };
+    });
+    const transcriptWithTrailingAudioPadding: TimestampedTranscript = {
+      ...transcript,
+      durationSeconds: 30.075,
+      segments: [
+        {
+          ...transcript.segments[0]!,
+          endSeconds: 30.075,
+          startSeconds: 29,
+        },
+      ],
+    };
+    const transcribe = vi.fn().mockResolvedValue(transcriptWithTrailingAudioPadding);
+    const service = new AnalysisTranscriptService(
+      repository,
+      { extract } as unknown as TranscriptionAudioExtractor,
+      { transcribe } as unknown as WhisperTranscriber,
+      "small.en",
+    );
+
+    await expect(service.getOrCreate(jobId, leaseContext())).resolves.toEqual({
+      sourceDurationSeconds: 30,
+      transcript: {
+        ...persistedTranscript,
+        segments: [{ ...persistedTranscript.segments[0]!, endSeconds: 30, startSeconds: 29 }],
+      },
+    });
+    expect(persist).toHaveBeenCalledWith(
+      jobId,
+      "worker-test",
+      "00000000-0000-4000-8000-000000000904",
+      "small.en",
+      {
+        ...transcript,
+        segments: [{ ...transcript.segments[0]!, endSeconds: 30, startSeconds: 29 }],
+      },
+    );
+  });
 });
 
 function leaseContext(

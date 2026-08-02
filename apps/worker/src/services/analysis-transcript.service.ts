@@ -11,7 +11,9 @@ import {
   type PersistedTranscript,
 } from "./analysis-transcript.repository";
 import { TranscriptionAudioExtractor } from "./transcription-audio-extractor.service";
-import { WhisperTranscriber } from "./whisper-transcriber.service";
+import { type TimestampedTranscript, WhisperTranscriber } from "./whisper-transcriber.service";
+
+const durationToleranceSeconds = 0.25;
 
 export interface AnalysisTranscriptResult {
   readonly sourceDurationSeconds: number;
@@ -69,15 +71,22 @@ export class AnalysisTranscriptService {
         audioPath,
         signal: context.signal,
       });
-      if (transcript.durationSeconds > transcriptionContext.sourceDurationSeconds + 0.001) {
+      if (
+        transcript.durationSeconds >
+        transcriptionContext.sourceDurationSeconds + durationToleranceSeconds
+      ) {
         throw new AnalysisTranscriptUnavailableError();
       }
+      const normalizedTranscript = normalizeTranscriptDuration(
+        transcript,
+        transcriptionContext.sourceDurationSeconds,
+      );
       const persisted = await this.repository.persist(
         jobId,
         context.workerId,
         context.leaseToken,
         this.model,
-        transcript,
+        normalizedTranscript,
       );
       if (persisted.outcome === "lost") {
         throw new ProcessingLeaseLostError();
@@ -101,10 +110,29 @@ export class AnalysisTranscriptService {
       }
       return {
         sourceDurationSeconds: transcriptionContext.sourceDurationSeconds,
-        transcript: { ...transcript, id: persisted.transcriptId, model: this.model },
+        transcript: { ...normalizedTranscript, id: persisted.transcriptId, model: this.model },
       };
     } finally {
       await rm(audioPath, { force: true }).catch(() => undefined);
     }
   }
+}
+
+function normalizeTranscriptDuration(
+  transcript: TimestampedTranscript,
+  sourceDurationSeconds: number,
+): TimestampedTranscript {
+  if (transcript.durationSeconds <= sourceDurationSeconds) return transcript;
+
+  return {
+    ...transcript,
+    durationSeconds: sourceDurationSeconds,
+    segments: transcript.segments
+      .filter((segment) => segment.startSeconds < sourceDurationSeconds)
+      .map((segment, sequence) => ({
+        ...segment,
+        endSeconds: Math.min(segment.endSeconds, sourceDurationSeconds),
+        sequence,
+      })),
+  };
 }
