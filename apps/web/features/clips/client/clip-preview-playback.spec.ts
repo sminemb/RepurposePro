@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CLIP_END_TOLERANCE_SECONDS,
+  CLIP_SEEK_TOLERANCE_SECONDS,
   captionAtTime,
   clipPlaybackBoundaryAction,
   createSourceVideoContentUrl,
@@ -12,7 +14,12 @@ describe("clip preview playback", () => {
     expect(clipPlaybackBoundaryAction(4, clip, true)).toBe("seek_start");
     expect(clipPlaybackBoundaryAction(12, clip, true)).toBe("continue");
     expect(clipPlaybackBoundaryAction(20, clip, true)).toBe("loop");
+    expect(clipPlaybackBoundaryAction(20, clip, true, "seeking")).toBe("stop");
     expect(clipPlaybackBoundaryAction(20, clip, false)).toBe("stop");
+    expect(clipPlaybackBoundaryAction(5 - CLIP_SEEK_TOLERANCE_SECONDS, clip, true)).toBe(
+      "continue",
+    );
+    expect(clipPlaybackBoundaryAction(20 - CLIP_END_TOLERANCE_SECONDS, clip, true)).toBe("loop");
   });
 
   it("returns caption text as data for the active timestamp", () => {

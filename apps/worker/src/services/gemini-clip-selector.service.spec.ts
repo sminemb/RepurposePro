@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   GeminiClipSelector,
+  GeminiClipSelectionError,
   type GeminiGenerateContentParameters,
   type GeminiModelClient,
+  targetPrimaryCount,
 } from "./gemini-clip-selector.service";
 
 const input = {
@@ -60,7 +62,7 @@ describe("GeminiClipSelector", () => {
     const request = generateContent.mock.calls[0]?.[0] as GeminiGenerateContentParameters;
     expect(request.model).toBe("gemini-3.5-flash-lite");
     expect(request.config).toMatchObject({
-      httpOptions: { retryOptions: { attempts: 3 }, timeout: 60_000 },
+      httpOptions: { retryOptions: { attempts: 1 }, timeout: 60_000 },
       responseMimeType: "application/json",
       temperature: 0.2,
     });
@@ -133,6 +135,34 @@ describe("GeminiClipSelector", () => {
       message: "Gemini clip selection failed.",
       reason: "no_usable_candidates",
     });
+  });
+
+  it("wraps request failures and preserves their cause", async () => {
+    const failure = new Error("transport failed");
+    const generateContent = vi.fn().mockRejectedValue(failure);
+    const service = new GeminiClipSelector(
+      { generateContent },
+      {
+        maxRetries: 2,
+        model: "gemini-3.5-flash-lite",
+        timeoutMs: 60_000,
+      },
+    );
+
+    const error = await service
+      .select(input, new AbortController().signal)
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(GeminiClipSelectionError);
+    expect(error).toMatchObject({ cause: failure, reason: "request_failed" });
+    expect(generateContent).toHaveBeenCalledOnce();
+  });
+
+  it("returns a numeric bounded primary target for zero and positive durations", () => {
+    expect(targetPrimaryCount(0)).toBe(1);
+    expect(targetPrimaryCount(15)).toBe(1);
+    expect(targetPrimaryCount(60)).toBe(4);
+    expect(targetPrimaryCount(600)).toBe(5);
   });
 
   it("independently rejects oversized arrays and preserves abort reasons", async () => {

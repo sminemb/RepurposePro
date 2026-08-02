@@ -33,7 +33,7 @@ export function createClipSelectionPrompt(
   const transcriptData = JSON.stringify({
     sourceDurationSeconds: input.sourceDurationSeconds,
     transcriptSegments: input.transcriptSegments,
-  });
+  }).replaceAll("<", "\\u003C");
 
   return {
     contents: `Select clips using this contract:

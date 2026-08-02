@@ -13,6 +13,7 @@ import {
 const validServerEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: "development",
   APP_ENV: "local",
+  NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1",
   DATABASE_URL: "postgresql://repurposepro_runtime:secret-password@localhost:5432/repurposepro",
   DATABASE_CHECKOUT_URL:
     "postgresql://repurposepro_checkout:secret-password@localhost:5432/repurposepro",
@@ -313,6 +314,7 @@ describe("configuration loaders", () => {
     });
 
     expect(config.trustedOrigins).toEqual(["http://localhost:3000", "https://app.example.com"]);
+    expect(config.apiUrl).toBe("http://localhost:4000/api/v1");
     expect(config.url).toBe("http://localhost:3000");
   });
 

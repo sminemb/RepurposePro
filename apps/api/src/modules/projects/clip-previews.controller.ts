@@ -18,7 +18,11 @@ import {
 } from "@nestjs/common";
 
 import { AuthGuard, type AuthenticatedRequest } from "../auth/auth.guard";
-import { ClipPreviewAccessError, ClipPreviewsService } from "./clip-previews.service";
+import {
+  ClipPreviewAccessError,
+  ClipPreviewsService,
+  type SourceVideoContent,
+} from "./clip-previews.service";
 import { parseProjectId, ProjectContractValidationError } from "./projects.contracts";
 import { createSourceVideoResponsePlan } from "./source-video-range";
 
@@ -51,7 +55,7 @@ export class ClipPreviewsController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile | undefined> {
     const parsedProjectId = this.projectId(projectId, request);
-    let source;
+    let source: SourceVideoContent;
     try {
       source = await this.clipPreviews.getSourceVideoContent(this.userId(request), parsedProjectId);
     } catch (error: unknown) {

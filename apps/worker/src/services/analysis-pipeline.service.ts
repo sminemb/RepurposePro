@@ -19,12 +19,13 @@ import type {
 } from "./gemini-clip-selector.service";
 import {
   ProcessingLeaseLostError,
+  RetryableProcessingError,
   type ProcessingLeaseContext,
 } from "./processing-lifecycle.service";
 
 const PROMPT_VERSION = "clips-v1" as const;
 
-export class AnalysisPreviewFinalizationError extends Error {
+export class AnalysisPreviewFinalizationError extends RetryableProcessingError {
   public constructor() {
     super("Analysis preview could not be finalized.");
     this.name = "AnalysisPreviewFinalizationError";
@@ -89,9 +90,11 @@ function createPreviewCandidates(
   transcriptResult: AnalysisTranscriptResult,
 ): AnalysisPreviewCandidateRecord[] {
   return [
-    ...selection.primary.map((candidate, rank) =>
-      createPreviewCandidate("primary", rank, candidate, transcriptResult),
-    ),
+    ...[...selection.primary]
+      .sort((left, right) => right.score - left.score)
+      .map((candidate, rank) =>
+        createPreviewCandidate("primary", rank, candidate, transcriptResult),
+      ),
     ...selection.backup.map((candidate, rank) =>
       createPreviewCandidate("backup", rank, candidate, transcriptResult),
     ),

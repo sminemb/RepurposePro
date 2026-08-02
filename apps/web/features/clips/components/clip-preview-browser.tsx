@@ -5,8 +5,10 @@ import { Check, Play, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  CLIP_END_TOLERANCE_SECONDS,
   captionAtTime,
   clipPlaybackBoundaryAction,
+  type ClipPlaybackBoundaryEvent,
   createSourceVideoContentUrl,
 } from "../client/clip-preview-playback";
 
@@ -53,15 +55,15 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
       }
     : { x: 50, y: 50 };
 
-  const enforceBoundary = (video: HTMLVideoElement): void => {
-    const action = clipPlaybackBoundaryAction(video.currentTime, activeClip, loopClip);
+  const enforceBoundary = (video: HTMLVideoElement, event: ClipPlaybackBoundaryEvent): void => {
+    const action = clipPlaybackBoundaryAction(video.currentTime, activeClip, loopClip, event);
     if (action === "seek_start" || action === "loop") {
       video.currentTime = activeClip.startTime;
       setCurrentTime(activeClip.startTime);
       if (action === "loop") void video.play().catch(() => undefined);
     } else if (action === "stop") {
       video.pause();
-      if (Math.abs(video.currentTime - activeClip.endTime) > 0.02) {
+      if (Math.abs(video.currentTime - activeClip.endTime) > CLIP_END_TOLERANCE_SECONDS) {
         video.currentTime = activeClip.endTime;
       }
       setCurrentTime(activeClip.endTime);
@@ -146,7 +148,7 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
         </div>
 
         <div className="mx-auto mt-5 w-full max-w-sm overflow-hidden rounded-[1.5rem] border border-rp-border bg-black shadow-rp-card">
-          <div className="relative aspect-[9/16] overflow-hidden bg-black">
+          <div className="@container relative aspect-[9/16] overflow-hidden bg-black">
             <video
               className="h-full w-full object-cover"
               controls
@@ -155,9 +157,9 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
                 event.currentTarget.currentTime = activeClip.startTime;
                 setCurrentTime(activeClip.startTime);
               }}
-              onPlay={(event) => enforceBoundary(event.currentTarget)}
-              onSeeking={(event) => enforceBoundary(event.currentTarget)}
-              onTimeUpdate={(event) => enforceBoundary(event.currentTarget)}
+              onPlay={(event) => enforceBoundary(event.currentTarget, "play")}
+              onSeeking={(event) => enforceBoundary(event.currentTarget, "seeking")}
+              onTimeUpdate={(event) => enforceBoundary(event.currentTarget, "timeupdate")}
               playsInline
               preload="metadata"
               ref={videoRef}
@@ -170,7 +172,7 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
               <p
                 className="pointer-events-none absolute z-10 max-w-[88%] rounded-md bg-black/80 px-3 py-2 text-center font-black uppercase leading-tight text-white shadow-lg"
                 style={{
-                  fontSize: `clamp(1rem, ${activeClip.previewFontSize / 16}vw, ${activeClip.previewFontSize}px)`,
+                  fontSize: `clamp(1rem, ${activeClip.previewFontSize / 16}cqw, ${activeClip.previewFontSize}px)`,
                   left: `${activeClip.captionPosition.x * 100}%`,
                   top: `${activeClip.captionPosition.y * 100}%`,
                   transform: "translate(-50%, -50%)",

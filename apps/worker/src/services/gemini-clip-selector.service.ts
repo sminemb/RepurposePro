@@ -9,6 +9,7 @@ import { z } from "zod";
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const OVERLAP_DEDUPLICATION_RATIO = 0.8;
 const TIMESTAMP_TOLERANCE_SECONDS = 0.001;
+const TRANSPORT_ATTEMPTS = 1;
 
 const rawCandidateSchema = z
   .object({
@@ -97,7 +98,7 @@ export class GeminiClipSelector {
           config: {
             abortSignal: signal,
             httpOptions: {
-              retryOptions: { attempts: this.options.maxRetries + 1 },
+              retryOptions: { attempts: TRANSPORT_ATTEMPTS },
               timeout: this.options.timeoutMs,
             },
             maxOutputTokens: 8192,
@@ -271,7 +272,8 @@ function stripClassification(candidate: ClassifiedCandidate): GeneratedClipCandi
   };
 }
 
-function targetPrimaryCount(sourceDuration: number): number {
+export function targetPrimaryCount(sourceDuration: number): number {
+  if (!(sourceDuration > 0)) return 1;
   const minimumDuration = Math.min(15, sourceDuration);
   return Math.min(5, Math.max(1, Math.floor(sourceDuration / minimumDuration)));
 }

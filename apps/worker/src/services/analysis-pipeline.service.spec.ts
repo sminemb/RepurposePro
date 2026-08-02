@@ -5,9 +5,18 @@ import type {
   AnalysisTranscriptRepositoryContract,
   PersistedTranscript,
 } from "./analysis-transcript.repository";
-import { AnalysisPipelineService, deriveCaptionLines } from "./analysis-pipeline.service";
+import {
+  AnalysisPipelineService,
+  AnalysisPreviewFinalizationError,
+  deriveCaptionLines,
+} from "./analysis-pipeline.service";
 import type { AnalysisTranscriptService } from "./analysis-transcript.service";
 import type { GeminiClipSelector } from "./gemini-clip-selector.service";
+import type { ProcessingLifecycleRepositoryContract } from "./processing-lifecycle.repository";
+import {
+  ProcessingLeaseLostError,
+  ProcessingLifecycleService,
+} from "./processing-lifecycle.service";
 
 const jobId = "00000000-0000-4000-8000-000000001001";
 const projectId = "00000000-0000-4000-8000-000000001002";
@@ -122,6 +131,55 @@ describe("AnalysisPipelineService", () => {
     expect(isPreviewReady).toHaveBeenCalledWith(jobId, projectId);
   });
 
+  it("surfaces a lost finalization as lease loss", async () => {
+    const service = pipelineWithFinalization("lost");
+
+    await expect(
+      service.handle({ jobId, projectId }, leaseContext(vi.fn().mockResolvedValue(undefined))),
+    ).rejects.toBeInstanceOf(ProcessingLeaseLostError);
+  });
+
+  it("classifies a rejected finalization as retryable so the lifecycle releases the lease", async () => {
+    const service = pipelineWithFinalization("rejected");
+    const release = vi
+      .fn<ProcessingLifecycleRepositoryContract["release"]>()
+      .mockResolvedValue("released");
+    const lifecycle = new ProcessingLifecycleService({
+      acquire: vi.fn().mockResolvedValue({
+        expiresAt: new Date(Date.now() + 60_000),
+        leaseToken,
+        outcome: "acquired",
+      }),
+      release,
+      renew: vi.fn().mockResolvedValue("renewed"),
+      updateProgress: vi.fn().mockResolvedValue("updated"),
+    });
+
+    await expect(
+      lifecycle.execute(jobId, projectId, "worker-test", (context) =>
+        service.handle({ jobId, projectId }, context),
+      ),
+    ).rejects.toBeInstanceOf(AnalysisPreviewFinalizationError);
+    expect(release).toHaveBeenCalledWith(jobId, "worker-test", leaseToken);
+  });
+
+  it("ranks primary preview candidates by descending score", async () => {
+    const finalizePreview = vi
+      .fn<AnalysisTranscriptRepositoryContract["finalizePreview"]>()
+      .mockResolvedValue("created");
+    const service = pipelineWithFinalization("created", finalizePreview, [
+      { endTime: 15, reason: "Lower score.", score: 0.6, startTime: 0, title: "Lower" },
+      { endTime: 30, reason: "Higher score.", score: 0.9, startTime: 15, title: "Higher" },
+    ]);
+
+    await service.handle({ jobId, projectId }, leaseContext(vi.fn().mockResolvedValue(undefined)));
+
+    expect(finalizePreview.mock.calls[0]?.[4]).toEqual([
+      expect.objectContaining({ rank: 0, title: "Higher" }),
+      expect.objectContaining({ rank: 1, title: "Lower" }),
+    ]);
+  });
+
   it("derives escaped-data caption lines within clip bounds", () => {
     const lines = deriveCaptionLines(0, 15, [
       {
@@ -137,6 +195,28 @@ describe("AnalysisPipelineService", () => {
     expect(lines.every((line) => line.startTime >= 0 && line.endTime <= 15)).toBe(true);
   });
 });
+
+function pipelineWithFinalization(
+  outcome: "created" | "lost" | "rejected",
+  finalizePreview: AnalysisTranscriptRepositoryContract["finalizePreview"] = vi
+    .fn<AnalysisTranscriptRepositoryContract["finalizePreview"]>()
+    .mockResolvedValue(outcome),
+  primary = [{ endTime: 15, reason: "Strong hook.", score: 0.9, startTime: 0, title: "Opening" }],
+): AnalysisPipelineService {
+  return new AnalysisPipelineService(
+    repositoryWith(finalizePreview),
+    {
+      getOrCreate: vi.fn().mockResolvedValue({ sourceDurationSeconds: 30, transcript }),
+    } as unknown as AnalysisTranscriptService,
+    {
+      select: vi.fn().mockResolvedValue({
+        backup: [],
+        primary,
+        promptVersion: "clips-v1",
+      }),
+    } as unknown as GeminiClipSelector,
+  );
+}
 
 function leaseContext(
   updateProgress: ProcessingLeaseContext["updateProgress"],

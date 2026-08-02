@@ -63,4 +63,16 @@ describe("processing status client", () => {
       loadProcessingStatus("http://localhost:3001/api/v1", projectId, new AbortController().signal),
     ).rejects.toBeInstanceOf(ProcessingStatusRequestError);
   });
+
+  it("preserves the exact abort reason when fetch rejects after cancellation", async () => {
+    const fetch = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetch);
+    const controller = new AbortController();
+    const reason = new Error("poll deadline elapsed");
+    controller.abort(reason);
+
+    await expect(
+      loadProcessingStatus("http://localhost:3001/api/v1", projectId, controller.signal),
+    ).rejects.toBe(reason);
+  });
 });

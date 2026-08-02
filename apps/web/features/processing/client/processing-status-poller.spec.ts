@@ -25,16 +25,65 @@ describe("processing status poller", () => {
   afterEach(() => vi.useRealTimers());
 
   it("polls immediately and then every three seconds without overlapping", async () => {
-    const harness = setupPoller();
+    let resolveLoad: ((snapshot: ProjectProcessingStatus) => void) | undefined;
+    const harness = setupPoller([active], {
+      load: vi.fn(
+        () =>
+          new Promise<ProjectProcessingStatus>((resolve) => {
+            resolveLoad = resolve;
+          }),
+      ),
+    });
     harness.poller.start();
     await settle();
     expect(harness.load).toHaveBeenCalledOnce();
 
-    await vi.advanceTimersByTimeAsync(2_999);
+    await vi.advanceTimersByTimeAsync(3_000);
     expect(harness.load).toHaveBeenCalledOnce();
-    await vi.advanceTimersByTimeAsync(1);
+
+    resolveLoad?.(active);
+    await settle();
+    await vi.advanceTimersByTimeAsync(3_000);
     expect(harness.load).toHaveBeenCalledTimes(2);
     harness.poller.stop();
+  });
+
+  it("aborts a hung load at the deadline, reports failure, and resumes polling", async () => {
+    let firstSignal: AbortSignal | undefined;
+    const load = vi.fn((signal: AbortSignal) => {
+      firstSignal ??= signal;
+      return new Promise<ProjectProcessingStatus>(() => undefined);
+    });
+    const harness = setupPoller([active], { load, timeoutMs: 1_000 });
+    harness.poller.start();
+    await settle();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(harness.onFailure).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(load).toHaveBeenCalledTimes(2);
+    harness.poller.stop();
+  });
+
+  it("does not report ordinary cancellation as a deadline failure", async () => {
+    let signal: AbortSignal | undefined;
+    const harness = setupPoller([active], {
+      load: vi.fn((currentSignal: AbortSignal) => {
+        signal = currentSignal;
+        return new Promise<ProjectProcessingStatus>(() => undefined);
+      }),
+      timeoutMs: 1_000,
+    });
+    harness.poller.start();
+    await settle();
+
+    harness.poller.stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(signal?.aborted).toBe(true);
+    expect(harness.onFailure).not.toHaveBeenCalled();
   });
 
   it("pauses while hidden and refreshes immediately when visible again", async () => {
@@ -79,18 +128,26 @@ describe("processing status poller", () => {
   });
 });
 
-function setupPoller(responses: readonly ProjectProcessingStatus[] = [active]) {
+function setupPoller(
+  responses: readonly ProjectProcessingStatus[] = [active],
+  options: {
+    readonly load?: (signal: AbortSignal) => Promise<ProjectProcessingStatus>;
+    readonly timeoutMs?: number;
+  } = {},
+) {
   let visibility: DocumentVisibilityState = "visible";
   let visibilityListener: (() => void) | undefined;
-  const load = vi.fn();
   let responseIndex = 0;
-  load.mockImplementation(async () => responses[responseIndex++] ?? responses.at(-1) ?? active);
+  const load = vi.fn(
+    options.load ?? (async () => responses[responseIndex++] ?? responses.at(-1) ?? active),
+  );
   const onPreviewReady = vi.fn();
+  const onFailure = vi.fn();
   const onSnapshot = vi.fn();
   const poller = createProcessingStatusPoller({
     getVisibilityState: () => visibility,
     load,
-    onFailure: vi.fn(),
+    onFailure,
     onPreviewReady,
     onSnapshot,
     subscribeVisibility: (listener) => {
@@ -99,10 +156,12 @@ function setupPoller(responses: readonly ProjectProcessingStatus[] = [active]) {
         visibilityListener = undefined;
       };
     },
+    timeoutMs: options.timeoutMs,
   });
 
   return {
     load,
+    onFailure,
     onPreviewReady,
     onSnapshot,
     poller,

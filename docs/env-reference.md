@@ -898,6 +898,14 @@ Windows example:
 WHISPER_PYTHON_PATH=.venv/whisper/Scripts/python.exe
 ```
 
+Install the isolated worker environment from the generated transitive lock:
+
+```text
+python -m pip install -r apps/worker/python/requirements-whisper.lock.txt
+```
+
+`requirements-whisper.txt` remains the direct dependency input used to regenerate that lock.
+
 Use an absolute path in deployed environments.
 
 ---
@@ -1641,7 +1649,7 @@ GEMINI_TIMEOUT_MS=60000
 GEMINI_MAX_RETRIES=2
 
 # Whisper
-WHISPER_PYTHON_PATH=.venv/whisper/Scripts/python.exe
+WHISPER_PYTHON_PATH=<python-3.13-executable>
 WHISPER_MODEL=small.en
 WHISPER_DEVICE=cpu
 WHISPER_COMPUTE_TYPE=int8

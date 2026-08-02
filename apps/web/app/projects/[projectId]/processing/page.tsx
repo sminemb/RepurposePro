@@ -33,6 +33,9 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
     redirect(`/projects/${encodeURIComponent(projectId)}/upload`);
   }
 
+  if (isPreviewReady(snapshot)) {
+    redirect(`/projects/${encodeURIComponent(projectId)}/clips`);
+  }
   if (!snapshot.currentJob) {
     return (
       <ProcessingPageError
@@ -40,9 +43,6 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
         session={session.user}
       />
     );
-  }
-  if (isPreviewReady(snapshot)) {
-    redirect(`/projects/${encodeURIComponent(projectId)}/clips`);
   }
   const { apiUrl } = loadWebConfig();
 

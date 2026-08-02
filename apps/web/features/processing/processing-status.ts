@@ -57,13 +57,14 @@ function isProcessingJobSnapshot(value: unknown): value is ProcessingJobSnapshot
   if (typeof value !== "object" || value === null) return false;
 
   const job = value as Partial<ProcessingJobSnapshot>;
+  const progress = job.progress;
   return (
     typeof job.id === "string" &&
     job.id.length > 0 &&
     typeof job.status === "string" &&
     processingStatuses.has(job.status) &&
     (job.step === null || (typeof job.step === "string" && processingSteps.has(job.step))) &&
-    (job.progress === null ||
-      (Number.isInteger(job.progress) && (job.progress ?? -1) >= 0 && (job.progress ?? 101) <= 100))
+    (progress === null ||
+      (progress !== undefined && Number.isInteger(progress) && progress >= 0 && progress <= 100))
   );
 }

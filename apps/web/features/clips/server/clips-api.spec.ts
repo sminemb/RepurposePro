@@ -24,7 +24,10 @@ const validClip = {
 } as const;
 
 describe("getProjectClips", () => {
-  beforeEach(() => requestApiMock.mockReset());
+  beforeEach(() => {
+    requestApiMock.mockReset();
+    vi.restoreAllMocks();
+  });
 
   it("returns validated primary preview metadata from the encoded endpoint", async () => {
     requestApiMock.mockResolvedValue(
@@ -46,7 +49,7 @@ describe("getProjectClips", () => {
 
   it("rejects malformed or oversized API results", async () => {
     requestApiMock.mockResolvedValueOnce(
-      Response.json({ data: { clips: [], projectId, sourceDurationSeconds: "30" } }),
+      Response.json({ data: { clips: [], projectId, sourceDurationSeconds: "not-a-number" } }),
     );
     await expect(getProjectClips(projectId)).resolves.toEqual({ kind: "unavailable" });
 
@@ -88,5 +91,17 @@ describe("getProjectClips", () => {
   ])("maps API status %s to %s", async (status, kind) => {
     requestApiMock.mockResolvedValue(Response.json({}, { status }));
     await expect(getProjectClips(projectId)).resolves.toMatchObject({ kind });
+  });
+
+  it("logs request failures with the project identifier", async () => {
+    const failure = new Error("request failed");
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    requestApiMock.mockRejectedValue(failure);
+
+    await expect(getProjectClips(projectId)).resolves.toEqual({ kind: "unavailable" });
+    expect(error).toHaveBeenCalledWith("Project clips request failed.", {
+      error: failure,
+      projectId,
+    });
   });
 });

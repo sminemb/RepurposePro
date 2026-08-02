@@ -6,6 +6,7 @@ import { z } from "zod";
 const MAX_STDOUT_BYTES = 16 * 1024 * 1024;
 const MAX_DIAGNOSTIC_BYTES = 65_536;
 const TIMESTAMP_TOLERANCE_SECONDS = 0.001;
+const TERMINATION_GRACE_MS = 5_000;
 
 const transcriptWordSchema = z
   .object({
@@ -202,39 +203,48 @@ function runPython(
     let settled = false;
     let stdoutBytes = 0;
     let diagnosticBytes = 0;
+    let escalationTimer: ReturnType<typeof setTimeout> | undefined;
     const stdout: Buffer[] = [];
     const diagnostics: Buffer[] = [];
 
-    const finish = (error?: Error): void => {
+    const clearEscalation = (): void => {
+      if (escalationTimer !== undefined) {
+        clearTimeout(escalationTimer);
+        escalationTimer = undefined;
+      }
+    };
+    const finish = (error?: Error, waitForProcessExit = false): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
       signal.removeEventListener("abort", onAbort);
+      if (!waitForProcessExit) clearEscalation();
       if (error) {
         rejectOutput(error);
       } else {
         resolveOutput(Buffer.concat(stdout, stdoutBytes).toString("utf8"));
       }
     };
-    const stop = (reason: WhisperFailureReason): void => {
+    const stop = (error: Error): void => {
       child.kill();
-      finish(new WhisperTranscriptionError(reason));
+      escalationTimer = setTimeout(() => {
+        escalationTimer = undefined;
+        child.kill("SIGKILL");
+      }, TERMINATION_GRACE_MS);
+      escalationTimer.unref?.();
+      finish(error, true);
     };
     const onAbort = (): void => {
-      child.kill();
-      settled = true;
-      clearTimeout(timeout);
-      signal.removeEventListener("abort", onAbort);
-      rejectOutput(abortError(signal));
+      stop(abortError(signal));
     };
-    const timeout = setTimeout(() => stop("timeout"), timeoutMs);
+    const timeout = setTimeout(() => stop(new WhisperTranscriptionError("timeout")), timeoutMs);
 
     signal.addEventListener("abort", onAbort, { once: true });
     child.stdout?.on("data", (chunk: Buffer | string) => {
       if (settled) return;
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       if (stdoutBytes + buffer.length > MAX_STDOUT_BYTES) {
-        stop("output_too_large");
+        stop(new WhisperTranscriptionError("output_too_large"));
         return;
       }
       stdout.push(buffer);
@@ -248,9 +258,12 @@ function runPython(
       diagnosticBytes += bounded.length;
     });
     child.once("error", (error) => {
+      clearEscalation();
       finish(new WhisperTranscriptionError("spawn_failed", { cause: error }));
     });
     child.once("close", (code) => {
+      clearEscalation();
+      if (settled) return;
       if (code !== 0) {
         finish(
           new WhisperTranscriptionError("process_failed", {

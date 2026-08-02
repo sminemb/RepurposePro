@@ -61,6 +61,7 @@ const config = loadWorkerConfig();
     },
     {
       provide: PROCESSING_LIFECYCLE_REPOSITORY,
+      // Keep this pool separate: each repository owns its client's init/destroy lifecycle.
       useFactory: () =>
         new ProcessingLifecycleRepository(
           createDatabaseClient({
@@ -72,6 +73,7 @@ const config = loadWorkerConfig();
     },
     {
       provide: ANALYSIS_TRANSCRIPT_REPOSITORY,
+      // Sharing the lifecycle pool would make both repositories close the same client at shutdown.
       useFactory: () =>
         new AnalysisTranscriptRepository(
           createDatabaseClient({

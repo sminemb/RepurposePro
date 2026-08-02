@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { Logger } from "@nestjs/common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DatabaseService } from "../infrastructure/database.service";
@@ -14,6 +15,7 @@ const userId = "preview-user";
 const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(
     temporaryDirectories
       .splice(0)
@@ -109,6 +111,34 @@ describe("ClipPreviewsService", () => {
     query.mockResolvedValueOnce({ rows: [] });
     await expect(service.getSourceVideoContent(userId, projectId)).rejects.toMatchObject({
       code: "SOURCE_VIDEO_NOT_FOUND",
+    });
+  });
+
+  it("logs unexpected source validation failures before mapping them to not found", async () => {
+    const failure = new Error("storage read failed");
+    const loggerError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    const { query, readSourceUpload, service } = setup();
+    query.mockResolvedValue({
+      rows: [
+        {
+          expiresAt: new Date(Date.now() + 60_000),
+          fileSizeBytes: "10",
+          mimeType: "video/mp4",
+          originalFileName: "source.mp4",
+          storagePath: "storage/source.mp4",
+        },
+      ],
+    });
+    readSourceUpload.mockRejectedValue(failure);
+
+    await expect(service.getSourceVideoContent(userId, projectId)).rejects.toMatchObject({
+      code: "SOURCE_VIDEO_NOT_FOUND",
+    });
+    expect(loggerError).toHaveBeenCalledWith({
+      error: failure,
+      event: "clip_preview_source_validation_failed",
+      projectId,
+      userId,
     });
   });
 });

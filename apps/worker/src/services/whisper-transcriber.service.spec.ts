@@ -163,6 +163,9 @@ describe("WhisperTranscriber", () => {
 
     await rejection;
     expect(child.killMock).toHaveBeenCalledOnce();
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(child.killMock).toHaveBeenLastCalledWith("SIGKILL");
   });
 
   it("bounds subprocess output and rejects paths outside storage", async () => {

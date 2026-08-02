@@ -86,4 +86,66 @@ describe("AnalysisQueueConsumerService", () => {
     expect(quit).toHaveBeenCalledOnce();
     expect(close.mock.invocationCallOrder[0]).toBeLessThan(quit.mock.invocationCallOrder[0]!);
   });
+
+  it.each([
+    ["wait", 1, 0],
+    ["end", 0, 0],
+  ])(
+    "uses the safe Redis shutdown path for a %s connection",
+    async (status, expectedDisconnects, expectedQuits) => {
+      const disconnect = vi.fn();
+      const quit = vi.fn().mockResolvedValue("OK");
+      const service = new AnalysisQueueConsumerService(
+        { process: vi.fn() } as unknown as AnalysisJobProcessor,
+        {
+          createRedis: () => ({ disconnect, on: vi.fn(), quit, status }),
+          createWorker: () => ({
+            close: vi.fn().mockResolvedValue(undefined),
+            on: vi.fn(),
+            waitUntilReady: vi.fn().mockResolvedValue(undefined),
+          }),
+          prefix: "repurposepro-test",
+          redisUrl: "redis://:secret@localhost:6379",
+        },
+      );
+      await service.onModuleInit();
+
+      await service.onModuleDestroy();
+
+      expect(disconnect).toHaveBeenCalledTimes(expectedDisconnects);
+      expect(quit).toHaveBeenCalledTimes(expectedQuits);
+    },
+  );
+
+  it.each(["worker creation", "worker readiness"])(
+    "closes and clears the Redis connection after %s fails",
+    async (failurePoint) => {
+      const failure = new Error(`${failurePoint} failed`);
+      const quit = vi.fn().mockResolvedValue("OK");
+      const close = vi.fn().mockResolvedValue(undefined);
+      const service = new AnalysisQueueConsumerService(
+        { process: vi.fn() } as unknown as AnalysisJobProcessor,
+        {
+          createRedis: () => ({ disconnect: vi.fn(), on: vi.fn(), quit, status: "ready" }),
+          createWorker: () => {
+            if (failurePoint === "worker creation") throw failure;
+            return {
+              close,
+              on: vi.fn(),
+              waitUntilReady: vi.fn().mockRejectedValue(failure),
+            };
+          },
+          prefix: "repurposepro-test",
+          redisUrl: "redis://:secret@localhost:6379",
+        },
+      );
+
+      await expect(service.onModuleInit()).rejects.toBe(failure);
+      expect(quit).toHaveBeenCalledOnce();
+      if (failurePoint === "worker readiness") expect(close).toHaveBeenCalledOnce();
+
+      await service.onModuleDestroy();
+      expect(quit).toHaveBeenCalledOnce();
+    },
+  );
 });

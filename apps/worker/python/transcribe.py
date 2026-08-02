@@ -38,13 +38,18 @@ def main() -> None:
         word_timestamps=args.word_timestamps,
     )
 
+    retained_segments = (
+        (segment, text)
+        for segment in generated_segments
+        if (text := segment.text.strip())
+    )
     segments: list[dict[str, Any]] = []
-    for sequence, segment in enumerate(generated_segments):
+    for sequence, (segment, text) in enumerate(retained_segments):
         contract: dict[str, Any] = {
             "sequence": sequence,
             "startSeconds": segment.start,
             "endSeconds": segment.end,
-            "text": segment.text.strip(),
+            "text": text,
             "words": None,
         }
         if args.word_timestamps and segment.words is not None:

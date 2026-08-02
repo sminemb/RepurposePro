@@ -1,78 +1,13 @@
 import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { Injectable } from "@nestjs/common";
-import type { ProjectClipList } from "@repurposepro/shared";
+import { Injectable, Logger } from "@nestjs/common";
+import { projectClipListSchema, type ProjectClipList } from "@repurposepro/shared";
 import { z } from "zod";
 
 import { DatabaseService } from "../infrastructure/database.service";
 import { LocalStorageService } from "../storage/local-storage.service";
 
-const captionLineSchema = z
-  .object({
-    endTime: z.number().finite().positive(),
-    startTime: z.number().finite().nonnegative(),
-    text: z.string().min(1).max(160),
-  })
-  .strict();
-const candidateSchema = z
-  .object({
-    captionLines: z.array(captionLineSchema).min(1).max(200),
-    captionPosition: z
-      .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) })
-      .strict(),
-    captionStyle: z.literal("hormozi"),
-    captionsEnabled: z.literal(true),
-    crop: z
-      .object({
-        height: z.number().positive().max(1),
-        width: z.number().positive().max(1),
-        x: z.number().min(0).max(1),
-        y: z.number().min(0).max(1),
-      })
-      .strict()
-      .nullable(),
-    endTime: z.number().finite().positive(),
-    id: z.string().uuid(),
-    previewFontSize: z.number().int().min(12).max(96),
-    rank: z.number().int().min(0).max(9),
-    score: z.number().min(0).max(1),
-    startTime: z.number().finite().nonnegative(),
-    title: z.string().min(1).max(120),
-  })
-  .strict()
-  .superRefine((candidate, context) => {
-    if (candidate.endTime <= candidate.startTime) {
-      context.addIssue({ code: "custom", message: "Clip timestamps are invalid." });
-    }
-    for (const line of candidate.captionLines) {
-      if (
-        line.startTime < candidate.startTime - 0.001 ||
-        line.endTime <= line.startTime ||
-        line.endTime > candidate.endTime + 0.001
-      ) {
-        context.addIssue({ code: "custom", message: "Caption timestamps are invalid." });
-        break;
-      }
-    }
-    if (
-      candidate.crop &&
-      (candidate.crop.x + candidate.crop.width > 1 || candidate.crop.y + candidate.crop.height > 1)
-    ) {
-      context.addIssue({ code: "custom", message: "Clip crop is invalid." });
-    }
-  });
-const clipListRowSchema = z
-  .object({
-    clips: z.array(candidateSchema).max(10),
-    projectId: z.string().uuid(),
-    sourceDurationSeconds: z.coerce.number().finite().positive(),
-  })
-  .superRefine((row, context) => {
-    if (row.clips.some((clip) => clip.endTime > row.sourceDurationSeconds + 0.001)) {
-      context.addIssue({ code: "custom", message: "Clip exceeds source duration." });
-    }
-  });
 const sourceRowSchema = z.object({
   expiresAt: z.coerce.date(),
   fileSizeBytes: z.coerce.number().int().positive(),
@@ -119,6 +54,8 @@ interface SourceContentRow {
 
 @Injectable()
 export class ClipPreviewsService {
+  private readonly logger = new Logger(ClipPreviewsService.name);
+
   public constructor(
     private readonly databaseService: DatabaseService,
     private readonly localStorageService: LocalStorageService,
@@ -134,7 +71,7 @@ export class ClipPreviewsService {
       [userId, projectId],
     );
     if (result.rows.length === 0) throw new ClipPreviewAccessError("CLIPS_NOT_FOUND");
-    const parsed = clipListRowSchema.safeParse(result.rows[0]);
+    const parsed = projectClipListSchema.safeParse(result.rows[0]);
     if (!parsed.success) throw new Error("Clip preview persistence returned an invalid result.");
     return parsed.data;
   }
@@ -181,6 +118,12 @@ export class ClipPreviewsService {
       };
     } catch (error: unknown) {
       if (error instanceof ClipPreviewAccessError) throw error;
+      this.logger.error({
+        error,
+        event: "clip_preview_source_validation_failed",
+        projectId,
+        userId,
+      });
       throw new ClipPreviewAccessError("SOURCE_VIDEO_NOT_FOUND");
     }
   }

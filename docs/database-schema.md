@@ -1151,10 +1151,11 @@ repurposepro_processing restricted processing API and worker role
 ```
 
 The PostgreSQL Docker image requires its initial `POSTGRES_USER` to be a superuser. Compose
-therefore creates `repurposepro` only as a bootstrap role, then its initialization script creates
-the fixed non-superuser `repurposepro_owner` and `repurposepro_runtime` roles and transfers
-database and `public` schema ownership to `repurposepro_owner`. Do not use the bootstrap role
-for migrations after initialization.
+therefore creates `repurposepro` only as a bootstrap role. Fresh-volume initialization creates all
+five fixed non-superuser roles: `repurposepro_owner`, `repurposepro_runtime`,
+`repurposepro_checkout`, `repurposepro_webhook`, and `repurposepro_processing`; it also transfers
+database and `public` schema ownership to `repurposepro_owner`. Do not use the bootstrap role for
+migrations after initialization.
 
 Runtime roles have no superuser, DDL, replication, or row-security-bypass capability. The generic
 runtime role cannot mutate or truncate the ledger, insert financial source records, or read clip
@@ -1168,9 +1169,9 @@ load only `.env.database`. Provision a new local volume through Compose. For an 
 
 ```text
 1. Set DATABASE_BOOTSTRAP_URL in .env.database to the existing elevated owner and run pnpm db:migrate:bootstrap.
-2. Set DATABASE_MIGRATION_URL and DATABASE_RUNTIME_URL in .env.database to the fixed owner/runtime roles.
-3. Run pnpm db:provision-roles to remove stale memberships and transfer database, schema, and Drizzle tracking ownership.
-4. Run pnpm db:migrate as repurposepro_owner. Set only repurposepro_runtime DATABASE_URL in runtime .env.
+2. Configure DATABASE_MIGRATION_URL and DATABASE_RUNTIME_URL plus all three scoped URLs: DATABASE_CHECKOUT_URL, DATABASE_WEBHOOK_URL, and DATABASE_PROCESSING_URL.
+3. Run pnpm db:provision-roles. It creates missing fixed roles, resets their configured passwords and stale memberships, and transfers database, schema, and Drizzle tracking ownership.
+4. Run pnpm db:migrate as repurposepro_owner to apply the scoped runtime grants. Set only the restricted role URLs in runtime .env.
 ```
 
 Avoid schema drift between environments.

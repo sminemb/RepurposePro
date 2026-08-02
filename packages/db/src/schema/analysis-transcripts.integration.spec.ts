@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { closeDatabaseClient, createDatabaseClient, type DatabaseClient } from "../index";
+import {
+  closeDatabaseClient,
+  createDatabaseClient,
+  migrateDatabaseForTests,
+  type DatabaseClient,
+} from "../index";
 
 const bootstrapUrl = process.env.TEST_DATABASE_BOOTSTRAP_URL;
 const migrationUrl = process.env.TEST_DATABASE_MIGRATION_URL;
@@ -27,6 +31,18 @@ function withRole(url: string | undefined, role: string): string {
 
 function client(connectionString: string): DatabaseClient {
   return createDatabaseClient({ connectionString, poolMax: 2, ssl: false });
+}
+
+async function formatDatabaseStatement(
+  admin: DatabaseClient,
+  template: string,
+  database: string,
+): Promise<string> {
+  const result = await admin.pool.query<{ sql: string }>(
+    "SELECT format($1::text, $2::text) AS sql",
+    [template, database],
+  );
+  return result.rows[0]!.sql;
 }
 
 describeIntegration("analysis transcript persistence", () => {
@@ -62,8 +78,10 @@ describeIntegration("analysis transcript persistence", () => {
       ["repurposepro_processing", runtimePassword],
     );
     await admin.pool.query(passwordStatement.rows[0]!.sql);
-    await admin.pool.query(`CREATE DATABASE ${database} OWNER repurposepro_owner`);
-    await migrate(owner.db, { migrationsFolder: resolve(process.cwd(), "packages/db/drizzle") });
+    await admin.pool.query(
+      await formatDatabaseStatement(admin, "CREATE DATABASE %I OWNER repurposepro_owner", database),
+    );
+    await migrateDatabaseForTests(owner, resolve(process.cwd(), "packages/db/drizzle"));
     await owner.pool.query(
       `INSERT INTO users (id, name, email)
        VALUES ('transcript-user', 'Transcript User', 'transcript@example.test')`,
@@ -100,7 +118,9 @@ describeIntegration("analysis transcript persistence", () => {
     await closeDatabaseClient(runtime);
     await closeDatabaseClient(processing);
     await closeDatabaseClient(owner);
-    await admin.pool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
+    await admin.pool.query(
+      await formatDatabaseStatement(admin, "DROP DATABASE IF EXISTS %I WITH (FORCE)", database),
+    );
     await closeDatabaseClient(admin);
   });
 
@@ -354,30 +374,50 @@ describeIntegration("analysis transcript persistence", () => {
        )`,
       [rejectedJobId, rejectedLeaseToken, JSON.stringify(segments)],
     );
-    const invalidCandidates = [
-      {
-        captionLines: [{ endTime: 31, startTime: 0, text: "Outside the source." }],
-        captionPosition: { x: 0.5, y: 0.72 },
-        captionStyle: "hormozi",
-        captionsEnabled: true,
-        crop: null,
-        endTime: 31,
-        kind: "primary",
-        previewFontSize: 48,
-        rank: 0,
-        reason: "Invalid range.",
-        score: 0.9,
-        startTime: 0,
-        title: "Invalid",
-      },
+    const candidate = {
+      captionLines: [{ endTime: 15, startTime: 0, text: "Candidate caption." }],
+      captionPosition: { x: 0.5, y: 0.72 },
+      captionStyle: "hormozi",
+      captionsEnabled: true,
+      crop: null,
+      endTime: 15,
+      kind: "primary",
+      previewFontSize: 48,
+      rank: 0,
+      reason: "Candidate reason.",
+      score: 0.9,
+      startTime: 0,
+      title: "Candidate",
+    };
+    const invalidCandidateSets = [
+      [
+        {
+          ...candidate,
+          captionLines: [{ endTime: 31, startTime: 0, text: "Outside the source." }],
+          endTime: 31,
+        },
+      ],
+      [{ ...candidate, captionLines: null }],
+      [{ ...candidate, captionPosition: null }],
+      [{ ...candidate, captionPosition: { x: "0.5", y: 0.72 } }],
+      [{ ...candidate, crop: { height: 1, width: 1, x: "0", y: 0 } }],
     ];
 
-    await expect(
-      processing.pool.query(
-        "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', $3::jsonb)",
-        [rejectedJobId, rejectedLeaseToken, JSON.stringify(invalidCandidates)],
-      ),
-    ).rejects.toMatchObject({ code: "23514" });
+    for (const invalidCandidates of invalidCandidateSets) {
+      const session = await processing.pool.connect();
+      try {
+        await session.query("BEGIN");
+        await expect(
+          session.query(
+            "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', $3::jsonb)",
+            [rejectedJobId, rejectedLeaseToken, JSON.stringify(invalidCandidates)],
+          ),
+        ).rejects.toMatchObject({ code: "23514" });
+      } finally {
+        await session.query("ROLLBACK");
+        session.release();
+      }
+    }
     await expect(
       processing.pool.query(
         "SELECT finalize_analysis_preview($1, 'worker-test', $2, 'clips-v1', '[]'::jsonb) AS outcome",

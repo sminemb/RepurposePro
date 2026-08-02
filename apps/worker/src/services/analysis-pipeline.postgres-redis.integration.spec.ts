@@ -89,7 +89,7 @@ describeIntegration("analysis PostgreSQL/Redis mock-AI flow", () => {
       `INSERT INTO uploaded_videos (
          id, project_id, original_file_name, storage_path, mime_type, file_size_bytes,
          duration_seconds, width, height, has_audio, expires_at
-       ) VALUES ($2, $1, 'source.mp4', 'D:/storage/mock-ai.mp4', 'video/mp4', 1000,
+       ) VALUES ($2, $1, 'source.mp4', 'storage/mock-ai.mp4', 'video/mp4', 1000,
          30, 1920, 1080, true, now() + interval '1 day')`,
       [projectId, videoId],
     );

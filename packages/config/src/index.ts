@@ -178,6 +178,7 @@ const authEnvironmentSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100),
   DATABASE_SSL: booleanFromEnvironment,
   DATABASE_URL: runtimeDatabaseUrlSchema,
+  NEXT_PUBLIC_API_URL: z.string().url(),
   NODE_ENV: nodeEnvironmentSchema,
 });
 
@@ -231,6 +232,7 @@ export interface ApiConfig extends ServerConfig {
 }
 
 export interface AuthConfig {
+  readonly apiUrl: string;
   readonly appEnv: z.infer<typeof appEnvironmentSchema>;
   readonly appUrl: string;
   readonly databasePoolMax: number;
@@ -385,6 +387,7 @@ export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
     .filter((origin) => origin.length > 0) ?? [parsed.APP_URL];
 
   return {
+    apiUrl: parsed.NEXT_PUBLIC_API_URL,
     appEnv: parsed.APP_ENV,
     appUrl: parsed.APP_URL,
     databasePoolMax: parsed.DATABASE_POOL_MAX,

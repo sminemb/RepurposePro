@@ -10,6 +10,7 @@ export interface ProcessingStatusPollerOptions {
   readonly onPreviewReady: (snapshot: ProjectProcessingStatus) => void;
   readonly onSnapshot: (snapshot: ProjectProcessingStatus) => void;
   readonly subscribeVisibility: (listener: () => void) => () => void;
+  readonly timeoutMs?: number;
 }
 
 export interface ProcessingStatusPoller {
@@ -21,6 +22,7 @@ export function createProcessingStatusPoller(
   options: ProcessingStatusPollerOptions,
 ): ProcessingStatusPoller {
   const intervalMs = options.intervalMs ?? 3_000;
+  const timeoutMs = options.timeoutMs ?? 10_000;
   let abortController: AbortController | undefined;
   let generation = 0;
   let running = false;
@@ -61,9 +63,33 @@ export function createProcessingStatusPoller(
     const currentGeneration = generation;
     const currentAbortController = new AbortController();
     abortController = currentAbortController;
+    let deadlineTriggered = false;
+    let onAbort: (() => void) | undefined;
+    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
 
     try {
-      const snapshot = await options.load(currentAbortController.signal);
+      const timeoutError = new Error("Processing status request timed out.");
+      const deadline = new Promise<never>((_resolve, reject) => {
+        deadlineTimer = setTimeout(() => {
+          deadlineTriggered = true;
+          currentAbortController.abort(timeoutError);
+          reject(timeoutError);
+        }, timeoutMs);
+      });
+      const cancellation = new Promise<never>((_resolve, reject) => {
+        onAbort = () => {
+          const reason = currentAbortController.signal.reason as unknown;
+          reject(
+            reason instanceof Error ? reason : new Error("Polling stopped.", { cause: reason }),
+          );
+        };
+        currentAbortController.signal.addEventListener("abort", onAbort, { once: true });
+      });
+      const snapshot = await Promise.race([
+        options.load(currentAbortController.signal),
+        deadline,
+        cancellation,
+      ]);
       if (!running || generation !== currentGeneration || currentAbortController.signal.aborted) {
         return;
       }
@@ -78,10 +104,16 @@ export function createProcessingStatusPoller(
         return;
       }
     } catch {
-      if (running && generation === currentGeneration && !currentAbortController.signal.aborted) {
+      if (
+        running &&
+        generation === currentGeneration &&
+        (deadlineTriggered || !currentAbortController.signal.aborted)
+      ) {
         options.onFailure();
       }
     } finally {
+      if (deadlineTimer !== undefined) clearTimeout(deadlineTimer);
+      if (onAbort) currentAbortController.signal.removeEventListener("abort", onAbort);
       if (abortController === currentAbortController) abortController = undefined;
       schedule(currentGeneration);
     }

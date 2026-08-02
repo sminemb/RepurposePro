@@ -90,7 +90,7 @@ interface ContextRow {
 }
 
 const readyContextSchema = z.object({
-  projectId: z.string().uuid(),
+  projectId: z.uuid(),
   sourceDurationSeconds: z.coerce.number().finite().positive(),
   sourcePath: z.string().min(1),
 });
@@ -228,7 +228,7 @@ export class AnalysisTranscriptRepository
     }
     if (
       (row.outcome !== "created" && row.outcome !== "reused") ||
-      !z.string().uuid().safeParse(row.transcriptId).success
+      !z.uuid().safeParse(row.transcriptId).success
     ) {
       throw new Error("Analysis transcript persistence returned an invalid result.");
     }
@@ -241,7 +241,7 @@ function parsePersistedTranscript(value: unknown): PersistedTranscript {
     throw new Error("Persisted analysis transcript returned an invalid result.");
   }
   const identity = z
-    .object({ id: z.string().uuid(), model: z.string().trim().min(1).max(200) })
+    .object({ id: z.uuid(), model: z.string().trim().min(1).max(200) })
     .safeParse(value);
   const transcript = timestampedTranscriptSchema.safeParse({
     durationSeconds: value.durationSeconds,

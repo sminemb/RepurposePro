@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { VIDEO_ANALYSIS_QUEUE_NAME } from "@repurposepro/shared";
-import { Worker, type Job } from "bullmq";
+import { Worker, type Job, type WorkerOptions } from "bullmq";
 import Redis from "ioredis";
 
 import { AnalysisJobProcessor } from "../processors/analysis-job.processor";
@@ -35,7 +35,7 @@ export interface AnalysisQueueConsumerOptions {
 const defaultRedisFactory: AnalysisQueueRedisFactory = (url) =>
   new Redis(url, { maxRetriesPerRequest: null });
 const defaultWorkerFactory: AnalysisQueueWorkerFactory = (queueName, processor, options) =>
-  new Worker(queueName, processor, options as never);
+  new Worker(queueName, processor, options as unknown as WorkerOptions);
 
 @Injectable()
 export class AnalysisQueueConsumerService implements OnModuleInit, OnModuleDestroy {
@@ -52,23 +52,36 @@ export class AnalysisQueueConsumerService implements OnModuleInit, OnModuleDestr
     const connection = (this.connection = (this.options.createRedis ?? defaultRedisFactory)(
       this.options.redisUrl,
     ));
-    connection.on("error", (error) => {
-      this.logger.error({ event: "analysis_queue_redis_error", error: error.message });
-    });
-    const worker = (this.worker = (this.options.createWorker ?? defaultWorkerFactory)(
-      VIDEO_ANALYSIS_QUEUE_NAME,
-      (job) =>
-        this.processor.process({
-          data: job.data,
-          id: job.id,
-          name: job.name,
-        }),
-      { concurrency: 1, connection, prefix: this.options.prefix },
-    ));
-    worker.on("error", (error) => {
-      this.logger.error({ event: "analysis_queue_worker_error", error: error.message });
-    });
-    await worker.waitUntilReady();
+    try {
+      connection.on("error", (error) => {
+        this.logger.error({ event: "analysis_queue_redis_error", error: error.message });
+      });
+      const worker = (this.worker = (this.options.createWorker ?? defaultWorkerFactory)(
+        VIDEO_ANALYSIS_QUEUE_NAME,
+        (job) =>
+          this.processor.process({
+            data: job.data,
+            id: job.id,
+            name: job.name,
+          }),
+        { concurrency: 1, connection, prefix: this.options.prefix },
+      ));
+      worker.on("error", (error) => {
+        this.logger.error({ event: "analysis_queue_worker_error", error: error.message });
+      });
+      await worker.waitUntilReady();
+    } catch (error: unknown) {
+      const worker = this.worker;
+      this.worker = undefined;
+      await worker?.close().catch((cleanupError: unknown) => {
+        this.logger.error({ cleanupError, event: "analysis_queue_worker_cleanup_failed" });
+      });
+      if (this.connection === connection) this.connection = undefined;
+      await this.closeConnection(connection).catch((cleanupError: unknown) => {
+        this.logger.error({ cleanupError, event: "analysis_queue_redis_cleanup_failed" });
+      });
+      throw error;
+    }
   }
 
   public async onModuleDestroy(): Promise<void> {
@@ -77,7 +90,12 @@ export class AnalysisQueueConsumerService implements OnModuleInit, OnModuleDestr
 
     const connection = this.connection;
     this.connection = undefined;
-    if (!connection || connection.status === "end") return;
+    if (!connection) return;
+    await this.closeConnection(connection);
+  }
+
+  private async closeConnection(connection: AnalysisQueueRedisConnection): Promise<void> {
+    if (connection.status === "end") return;
     if (connection.status === "wait") {
       connection.disconnect();
       return;

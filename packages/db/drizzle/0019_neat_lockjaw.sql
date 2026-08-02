@@ -206,28 +206,71 @@ BEGIN
       OR candidate.score > 1
       OR candidate."captionsEnabled" IS DISTINCT FROM true
       OR candidate."captionStyle" IS DISTINCT FROM 'hormozi'
-      OR jsonb_typeof(candidate."captionLines") <> 'array'
-      OR jsonb_array_length(candidate."captionLines") < 1
-      OR jsonb_typeof(candidate."captionPosition") <> 'object'
-      OR NOT candidate."captionPosition" ?& ARRAY['x', 'y']
-      OR (candidate."captionPosition" ->> 'x')::numeric < 0
-      OR (candidate."captionPosition" ->> 'x')::numeric > 1
-      OR (candidate."captionPosition" ->> 'y')::numeric < 0
-      OR (candidate."captionPosition" ->> 'y')::numeric > 1
+      OR candidate."captionLines" IS NULL
+      OR CASE
+        WHEN jsonb_typeof(candidate."captionLines") = 'array'
+          THEN jsonb_array_length(candidate."captionLines") < 1
+        ELSE true
+      END
+      OR candidate."captionPosition" IS NULL
+      OR CASE
+        WHEN jsonb_typeof(candidate."captionPosition") = 'object'
+          THEN NOT candidate."captionPosition" ?& ARRAY['x', 'y']
+        ELSE true
+      END
+      OR CASE
+        WHEN jsonb_typeof(candidate."captionPosition" -> 'x') = 'number'
+          THEN (candidate."captionPosition" ->> 'x')::numeric NOT BETWEEN 0 AND 1
+        ELSE true
+      END
+      OR CASE
+        WHEN jsonb_typeof(candidate."captionPosition" -> 'y') = 'number'
+          THEN (candidate."captionPosition" ->> 'y')::numeric NOT BETWEEN 0 AND 1
+        ELSE true
+      END
       OR candidate."previewFontSize" IS NULL
       OR candidate."previewFontSize" < 12
       OR candidate."previewFontSize" > 96
       OR (
         candidate.crop IS NOT NULL
         AND (
-          jsonb_typeof(candidate.crop) <> 'object'
-          OR NOT candidate.crop ?& ARRAY['x', 'y', 'width', 'height']
-          OR (candidate.crop ->> 'x')::numeric < 0
-          OR (candidate.crop ->> 'y')::numeric < 0
-          OR (candidate.crop ->> 'width')::numeric <= 0
-          OR (candidate.crop ->> 'height')::numeric <= 0
-          OR (candidate.crop ->> 'x')::numeric + (candidate.crop ->> 'width')::numeric > 1
-          OR (candidate.crop ->> 'y')::numeric + (candidate.crop ->> 'height')::numeric > 1
+          CASE
+            WHEN jsonb_typeof(candidate.crop) = 'object'
+              THEN NOT candidate.crop ?& ARRAY['x', 'y', 'width', 'height']
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'x') = 'number'
+              THEN (candidate.crop ->> 'x')::numeric < 0
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'y') = 'number'
+              THEN (candidate.crop ->> 'y')::numeric < 0
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'width') = 'number'
+              THEN (candidate.crop ->> 'width')::numeric <= 0
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'height') = 'number'
+              THEN (candidate.crop ->> 'height')::numeric <= 0
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'x') = 'number'
+              AND jsonb_typeof(candidate.crop -> 'width') = 'number'
+              THEN (candidate.crop ->> 'x')::numeric + (candidate.crop ->> 'width')::numeric > 1
+            ELSE true
+          END
+          OR CASE
+            WHEN jsonb_typeof(candidate.crop -> 'y') = 'number'
+              AND jsonb_typeof(candidate.crop -> 'height') = 'number'
+              THEN (candidate.crop ->> 'y')::numeric + (candidate.crop ->> 'height')::numeric > 1
+            ELSE true
+          END
         )
       )
   ) THEN

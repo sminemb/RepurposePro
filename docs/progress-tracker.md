@@ -106,7 +106,7 @@ FAILED
 | VS1   | User can sign up, log in, and see protected dashboard             | COMPLETED   | 2026-07-11 | 10:53      | 2026-07-11 | 21:34    | None         |     100% | —       |
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
-| VS4   | User receives AI-generated clip previews from an uploaded video   | IN_PROGRESS | 2026-07-30 | 19:09      | —          | —        | VS4-T8       |      88% | —       |
+| VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | —          | —        | None         |     100% | —       |
 | VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -759,7 +759,7 @@ Do not mark a slice complete because only one technical layer is finished.
 Current Slice: VS4 - User receives AI-generated clip previews
 Current Task: None - VS4 is complete
 Current Status: COMPLETED
-Last Completed Task: VS4-T5 - Live Gemini structured-output smoke
+Last Completed Task: VS4-T8 - Show generated clip list and browser-based source previews
 Next Recommended Task: Start VS5-T1 - Add editable clip metadata fields.
 Uncommitted Changes: None. VS4-T3 through VS4-T8 and the final verification handoff are committed on `codex/vs4-ai-preview`.
 Known Failing Tests: None. `pnpm ci:check` passed with 432 unit tests, 57 database/Redis integration tests, lint, typecheck, formatting, and all production builds.
