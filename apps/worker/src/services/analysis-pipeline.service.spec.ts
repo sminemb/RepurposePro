@@ -194,6 +194,23 @@ describe("AnalysisPipelineService", () => {
     expect(lines.map((line) => line.text).join(" ")).toContain("<script>");
     expect(lines.every((line) => line.startTime >= 0 && line.endTime <= 15)).toBe(true);
   });
+
+  it("omits zero-duration caption lines from microscopic boundary overlaps", () => {
+    const clipStart = 1_000;
+    const words = Array.from({ length: 70 }, (_, index) => `word-${index}`).join(" ");
+    const lines = deriveCaptionLines(clipStart, clipStart + 15, [
+      {
+        endSeconds: clipStart + 1e-12,
+        sequence: 0,
+        startSeconds: clipStart - 1,
+        text: words,
+        words: null,
+      },
+    ]);
+
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.every((line) => line.endTime > line.startTime)).toBe(true);
+  });
 });
 
 function pipelineWithFinalization(

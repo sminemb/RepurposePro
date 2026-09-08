@@ -152,9 +152,12 @@ export function deriveCaptionLines(
     chunks.forEach((chunk, index) => {
       const startTime = safeStart + (duration * index) / chunks.length;
       const endTime = safeStart + (duration * (index + 1)) / chunks.length;
+      const clampedStartTime = Math.max(clipStart, startTime);
+      const clampedEndTime = Math.min(clipEnd, endTime);
+      if (clampedEndTime <= clampedStartTime) return;
       lines.push({
-        endTime: Math.min(clipEnd, endTime),
-        startTime: Math.max(clipStart, startTime),
+        endTime: clampedEndTime,
+        startTime: clampedStartTime,
         text: chunk.join(" ").slice(0, 160),
       });
     });
