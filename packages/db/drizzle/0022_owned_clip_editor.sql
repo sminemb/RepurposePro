@@ -21,9 +21,13 @@ AS $$
         start_seconds + (end_seconds - start_seconds) * (chunk + 1) / total AS end_time
       FROM chunks
     ), lines AS (
-      SELECT 'generated-' || ordinal AS id, (line->>'startTime')::numeric AS start_time,
-        (line->>'endTime')::numeric AS end_time, line->>'text' AS text
+      SELECT 'generated-' || ordinal || '-' || speech.sequence AS id,
+        GREATEST((line->>'startTime')::numeric, speech.start_seconds) AS start_time,
+        LEAST((line->>'endTime')::numeric, speech.end_seconds) AS end_time, line->>'text' AS text
       FROM jsonb_array_elements(p_candidate.caption_lines) WITH ORDINALITY AS generated(line, ordinal)
+      JOIN public.transcript_segments AS speech ON speech.transcript_id = p_candidate.transcript_id
+        AND speech.end_seconds > (line->>'startTime')::numeric
+        AND speech.start_seconds < (line->>'endTime')::numeric
       UNION ALL
       SELECT 'source-' || sequence || '-' || chunk || '-before', start_time,
         LEAST(end_time, p_candidate.start_time), text FROM timed WHERE start_time < p_candidate.start_time

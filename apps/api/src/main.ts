@@ -18,6 +18,7 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
     rawBody: true,
   });
+  // Bound long caption edit batches while retaining raw Stripe webhook bodies.
   app.useBodyParser("json", { limit: "2mb" });
 
   app.useLogger(app.get(Logger));

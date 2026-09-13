@@ -348,6 +348,7 @@ describeIntegration("analysis transcript persistence", () => {
       ).rows[0]!.editor;
     const editor = (await read())!;
     expect(editor.clip.revision).toBe(0);
+    expect(editor.baseline).toEqual([expect.objectContaining({ startTime: 1.25, endTime: 4.5 })]);
     expect(await read("someone-else")).toBeNull();
     const input = {
       expectedRevision: 0,
