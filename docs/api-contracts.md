@@ -844,66 +844,64 @@ Successful responses include accurate `Content-Type`, `Content-Length`, `Accept-
 
 ## GET `/projects/:projectId/clips/:clipId`
 
-Returns one clip candidate.
+Returns the authenticated owner's current primary clip and editing context inside `{ data }`:
 
-### Response — 200
+- `clip`: the existing candidate shape, plus integer `revision` (zero for existing VS4 clips).
+- `baseline`: stable caption lines with `id`, `startTime`, `endTime`, and `text`.
+- `captionEdits`: saved `{ id, text, highlights }` overrides, including lines outside the current trim.
+- `sourceDurationSeconds`: the source duration used for trim validation.
 
-Same shape as one item above.
+All times are absolute source-video seconds. The baseline and its line IDs/times are read-only.
+Backup, deleted, superseded-job, and another user's clips return `404 CLIP_NOT_FOUND`.
 
 ---
 
 ## PATCH `/projects/:projectId/clips/:clipId`
 
-Updates preview metadata.
+Explicitly saves a complete editable metadata snapshot. Partial snapshots and non-editable fields
+(such as title, selection, crop, or caption timing) are rejected in VS5.
 
-### Request Example
+### Request example
 
 ```json
 {
-  "title": "Why Creators Burn Out",
+  "expectedRevision": 0,
   "startTime": 414.2,
   "endTime": 484.7,
-  "selected": true,
-  "captions": {
-    "enabled": true,
-    "fontSize": 72,
-    "position": {
-      "x": 0.5,
-      "y": 0.74
-    },
-    "lines": [
-      {
-        "start": 0,
-        "end": 2.5,
-        "text": "Most creators burn out because they lack systems.",
-        "highlights": ["burn out", "systems"]
-      }
-    ]
-  }
+  "captionsEnabled": true,
+  "previewFontSize": 64,
+  "captionPosition": { "x": 0.5, "y": 0.72 },
+  "captionEdits": [
+    { "id": "generated-1-0", "text": "Most creators need better systems.", "highlights": ["systems"] }
+  ]
 }
 ```
 
-### Validation
+### Validation and persistence
 
-- `endTime > startTime`
-- `startTime >= 0`
-- `endTime <= sourceDuration`
-- Caption position normalized to `0..1`
-- Caption lines remain inside clip duration
-- Font size within allowed UI/render range
-
-### Response — 200
-
-Returns updated clip.
+- Finite `0 <= startTime < endTime <= sourceDurationSeconds`; stored trim precision is milliseconds.
+- Normalized caption position in `0..1`; integer font size in `12..96`.
+- At most 2,000 overrides, each with a unique known baseline ID, 1–160 nonblank text characters,
+  and up to 10 nonblank highlights of 1–64 characters. The JSON body limit is 2 MiB.
+- Visible caption lines are the baseline/override projection intersected with the selected trim.
+  Overrides outside the trim remain saved for later extension. Empty speech regions have no overlay.
+- The database checks ownership, current job, and expected revision atomically. Successful saves
+  increment the revision, update metadata, and return `{ data: ClipEditor }` with canonical values.
+- Edits never enqueue analysis/render work or charge credits.
 
 ### Errors
 
-```text
-CLIP_NOT_FOUND
-CLIP_INVALID_TIME_RANGE
-CLIP_OUTSIDE_SOURCE_DURATION
-CLIP_INVALID_CAPTION_METADATA
-```
+| Status | Code | Meaning |
+| ---: | --- | --- |
+| 400 | `VALIDATION_ERROR` | Invalid project/clip UUID. |
+| 400 | `CLIP_INVALID_TIME_RANGE` | Invalid trim ordering or sub-millisecond range. |
+| 400 | `CLIP_OUTSIDE_SOURCE_DURATION` | Trim exceeds source duration. |
+| 400 | `CLIP_INVALID_CAPTION_METADATA` | Invalid body, settings, or caption overrides. |
+| 401 | `UNAUTHORIZED` | Authentication required. |
+| 404 | `CLIP_NOT_FOUND` | Owned current primary clip is unavailable. |
+| 409 | `CLIP_EDIT_CONFLICT` | Another save changed the revision; preserve the draft and reload. |
+
+See [ADR 0002](adr/0002-source-timed-clip-edits.md) for compatibility and rendering implications.
 
 ---
 

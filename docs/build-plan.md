@@ -396,14 +396,14 @@ Browser preview -> Metadata editor -> API validation -> Database persistence -> 
 
 ## Acceptance Criteria
 
-- [ ] User can trim clip.
-- [ ] User can toggle captions.
-- [ ] User can edit caption text.
-- [ ] User can adjust caption position.
-- [ ] User can adjust font size.
-- [ ] User can edit highlighted words.
-- [ ] Refresh restores saved metadata.
-- [ ] No render occurs during normal edits.
+- [x] User can trim clip.
+- [x] User can toggle captions.
+- [x] User can edit caption text.
+- [x] User can adjust caption position.
+- [x] User can adjust font size.
+- [x] User can edit highlighted words.
+- [x] Refresh restores saved metadata.
+- [x] No render occurs during normal edits.
 
 ---
 

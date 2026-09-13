@@ -1281,6 +1281,12 @@ warning
 
 ## 11.1 ClipPreviewEditor
 
+VS5 implementation: explicit Save/Discard with unsaved-state feedback, source-timed caption edits,
+revision conflicts, session draft recovery, and Save / Discard / Cancel navigation protection.
+The existing clips route mounts this editor. Mobile shows a saved preview and larger-screen guidance;
+tablet switches clip/settings panels; desktop uses three columns. See [ADR 0002](adr/0002-source-timed-clip-edits.md).
+
+
 Location:
 
 ```text

@@ -107,7 +107,7 @@ FAILED
 | VS2   | User can create a project and upload a validated video            | COMPLETED   | 2026-07-12 | 17:06      | 2026-07-13 | 19:01    | None         |     100% | —       |
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
 | VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
-| VS5   | User can edit one clip preview before rendering                   | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -361,37 +361,37 @@ This slice crosses browser preview behavior, metadata schema, API persistence, v
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS5         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 0%          |
+| Status     | COMPLETED |
+| Start Date | 2026-09-14  |
+| Start Time | 00:21       |
+| End Date   | 2026-09-14 |
+| End Time   | 01:06 |
+| Progress   | 100%        |
 | Dependency | VS4         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                        | Layers Touched         | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ---------------------------------------------------- | ---------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS5-T1  | Add editable clip metadata fields                    | DB + Shared            | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T2  | Build ClipPreviewEditor shell                        | Web                    | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T3  | Build trim controls and validate boundaries          | Web + API + Tests      | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T4  | Build CSS caption overlay preview                    | Web                    | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T5  | Add caption toggle, text, size, and position editing | Web + API + DB         | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T6  | Add keyword highlight editing                        | Web + API + DB         | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T7  | Persist edits and restore after reload               | Web + API + DB + Tests | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS5-T8  | Add unsaved-change protection                        | Web                    | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS5-T1 | Add editable clip metadata fields | DB + Shared | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | Shared + migration + PostgreSQL checks |
+| VS5-T2 | Build ClipPreviewEditor shell | Web | COMPLETED | 2026-09-14 | 00:31 | 2026-09-14 | 01:06 | Authenticated desktop/tablet/mobile browser checks |
+| VS5-T3 | Build trim controls and validate boundaries | Web + API + Tests | COMPLETED | 2026-09-14 | 00:27 | 2026-09-14 | 01:06 | Shared + PostgreSQL bounds; browser millisecond trim |
+| VS5-T4 | Build CSS caption overlay preview | Web | COMPLETED | 2026-09-14 | 00:33 | 2026-09-14 | 01:06 | Browser timing, speech gaps, safe text rendering |
+| VS5-T5 | Add caption toggle, text, size, and position editing | Web + API + DB | COMPLETED | 2026-09-14 | 00:29 | 2026-09-14 | 01:06 | Browser edit/save/reload and caption toggle |
+| VS5-T6 | Add keyword highlight editing | Web + API + DB | COMPLETED | 2026-09-14 | 00:33 | 2026-09-14 | 01:06 | Highlight unit tests; browser phrase add + styling |
+| VS5-T7 | Persist edits and restore after reload | Web + API + DB + Tests | COMPLETED | 2026-09-14 | 00:27 | 2026-09-14 | 01:06 | Atomic/revision DB tests; reload + in-flight browser checks |
+| VS5-T8 | Add unsaved-change protection | Web | COMPLETED | 2026-09-14 | 00:34 | 2026-09-14 | 01:06 | Browser modal, Back/Forward, recovery, sign-out checks |
 
 ## Slice Acceptance Criteria
 
-- [ ] User can trim clip.
-- [ ] User can toggle captions.
-- [ ] User can edit caption text.
-- [ ] User can adjust caption position.
-- [ ] User can adjust font size.
-- [ ] User can edit highlighted words.
-- [ ] Refreshing restores saved metadata.
-- [ ] No render occurs during normal edits.
+- [x] User can trim clip.
+- [x] User can toggle captions.
+- [x] User can edit caption text.
+- [x] User can adjust caption position.
+- [x] User can adjust font size.
+- [x] User can edit highlighted words.
+- [x] Refreshing restores saved metadata.
+- [x] No render occurs during normal edits.
 
 ---
 
@@ -756,17 +756,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS4 - User receives AI-generated clip previews
-Current Task: None - VS4 is complete
+Current Slice: VS5 - Editable clip previews
+Current Task: None - VS5 is complete
 Current Status: COMPLETED
-Last Completed Task: VS4-T8 - Show generated clip list and browser-based source previews
-Next Recommended Task: Start VS5-T1 - Add editable clip metadata fields.
-Uncommitted Changes: None. VS4-T3 through VS4-T8 and the final verification handoff are committed on `codex/vs4-ai-preview`.
-Known Failing Tests: None. `pnpm ci:check` passed with 432 unit tests, 57 database/Redis integration tests, lint, typecheck, formatting, and all production builds.
-Known Blockers: None.
-Important Context: Python 3.13.14/faster-whisper 1.2.1 passed a real CPU-int8 smoke. A live `gemini-3.5-flash-lite` request using the production selector returned 5 validated primaries and 2 backups under `clips-v1` in 2.8 seconds. Deterministic Gemini tests cover schema repair and candidate selection. A real Redis/BullMQ/PostgreSQL mock-AI job reached `preview_ready`. Authenticated browser verification covered polling, redirect, source seeking, escaped caption overlays, hidden backups, accessibility semantics, a clean console, and 320/768/1024/1440 layouts. No final MP4 was rendered.
-Required Commands Before Continuing: Read the VS5 specification, mark VS5-T1 `IN_PROGRESS`, and record an Asia/Manila start timestamp before implementation.
-Last Updated Date: 2026-08-02
-Last Updated Time: 09:16
+Last Completed Task: VS5-T8 - Unsaved-change protection
+Next Recommended Task: Start VS6-T1 - Create the one-clip render endpoint.
+Uncommitted Changes: None after the VS5 implementation and verification commits on codex/vs5-clip-editor.
+Known Failing Tests: None. pnpm ci:check passed: 489 unit tests, 58 PostgreSQL/Redis integration tests, formatting, lint, typecheck, and production builds.
+Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
+Important Context: Explicit Save; full-source trim; stable source-timed captions and persistent per-line overrides; optimistic revisions; no edit-triggered rendering or credit charges. Apply migrations 0021/0022 before deploying. See ADR 0002 and docs/verification/vs5.md for contracts, screenshots, and browser evidence. Local synthetic verification data lives under ignored storage/vs5-smoke and its synthetic account.
+Required Commands Before Continuing: Read the VS6 specification and ADR 0002, mark VS6-T1 IN_PROGRESS, and record an Asia/Manila start timestamp. Final render must use saved source timestamps and the same 1080px caption reference.
+Last Updated Date: 2026-09-14
+Last Updated Time: 01:06
 Last Updated By: Codex
 ```
