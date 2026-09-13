@@ -145,8 +145,14 @@ Running `pnpm db:migrate` more than once is safe; already-applied migrations are
 - If readiness returns HTTP 503, run `pnpm infra:status` and then `pnpm infra:check`.
 - If paid test credits remain pending, keep `pnpm dev` running, verify the listener preflight passes,
   then resend the original completed event as described above.
-- If ports 5432 or 6379 are already occupied, stop the conflicting local service or override the
-  Compose port mapping before starting the stack.
+- If PostgreSQL cannot bind port 5432, set `POSTGRES_PORT=15432` (or another available port) in
+  `.env.database` and update the port in all local PostgreSQL URLs in both `.env` and
+  `.env.database`, including the integration-test URLs. Then run `pnpm infra:up` and
+  `pnpm infra:check` again. Existing database volumes are preserved. On Windows, a port can be
+  reserved even without a listener; inspect reservations with
+  `netsh interface ipv4 show excludedportrange protocol=tcp`.
+- If Redis port 6379 is occupied, stop the conflicting local service or override its Compose port
+  mapping and update the local Redis URLs before starting the stack.
 - If a native dependency was installed without its approved build, rerun `pnpm install`; the
   repository explicitly allows the required NestJS, esbuild, and sharp builds.
 
