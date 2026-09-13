@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export interface CaptionLine {
+  readonly id?: string;
+  readonly highlights?: readonly string[];
   readonly endTime: number;
   readonly startTime: number;
   readonly text: string;
@@ -22,7 +24,8 @@ export interface ClipPreviewCandidate {
   readonly captionLines: readonly CaptionLine[];
   readonly captionPosition: CaptionPosition;
   readonly captionStyle: "hormozi";
-  readonly captionsEnabled: true;
+  readonly captionsEnabled: boolean;
+  readonly revision?: number;
   readonly crop: ClipCrop | null;
   readonly endTime: number;
   readonly id: string;
@@ -41,6 +44,8 @@ export interface ProjectClipList {
 
 export const captionLineSchema = z
   .object({
+    id: z.string().max(100).optional(),
+    highlights: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
     endTime: z.number().finite().positive(),
     startTime: z.number().finite().nonnegative(),
     text: z.string().min(1).max(160),
@@ -65,10 +70,11 @@ export const clipCropSchema = z
 
 export const clipPreviewCandidateSchema = z
   .object({
-    captionLines: z.array(captionLineSchema).min(1).max(200),
+    captionLines: z.array(captionLineSchema).max(100_000),
     captionPosition: captionPositionSchema,
     captionStyle: z.literal("hormozi"),
-    captionsEnabled: z.literal(true),
+    captionsEnabled: z.boolean(),
+    revision: z.number().int().nonnegative().optional(),
     crop: clipCropSchema.nullable(),
     endTime: z.number().finite().positive(),
     id: z.uuid(),

@@ -331,6 +331,91 @@ describeIntegration("analysis transcript persistence", () => {
     ).rejects.toMatchObject({ code: "42501" });
   });
 
+  it("saves owned edits atomically, preserves the baseline and rejects stale revisions", async () => {
+    const ids = await owner.pool.query<{ id: string }>(
+      "SELECT id FROM clip_candidates WHERE project_id = $1 AND kind = 'primary'",
+      [projectId],
+    );
+    const clipId = ids.rows[0]!.id;
+    const read = async (user = "transcript-user") =>
+      (
+        await runtime.pool.query<{
+          editor: {
+            baseline: Array<{ id: string }>;
+            clip: { revision: number; captionLines: Array<{ text: string; highlights: string[] }> };
+          } | null;
+        }>("SELECT get_owned_clip_editor($1, $2, $3) AS editor", [user, projectId, clipId])
+      ).rows[0]!.editor;
+    const editor = (await read())!;
+    expect(editor.clip.revision).toBe(0);
+    expect(await read("someone-else")).toBeNull();
+    const input = {
+      expectedRevision: 0,
+      startTime: 1,
+      endTime: 29,
+      captionsEnabled: false,
+      captionPosition: { x: 0.5, y: 0.5 },
+      previewFontSize: 64,
+      captionEdits: [
+        { id: editor.baseline[0]!.id, text: "Edited opening", highlights: ["opening"] },
+      ],
+    };
+    const save = async (patch = input, user = "transcript-user") =>
+      (
+        await runtime.pool.query<{ result: { outcome: string; editor?: unknown } }>(
+          "SELECT save_owned_clip_editor($1, $2, $3, $4::jsonb) AS result",
+          [user, projectId, clipId, JSON.stringify(patch)],
+        )
+      ).rows[0]!.result;
+    expect(await save(input, "someone-else")).toMatchObject({ outcome: "CLIP_NOT_FOUND" });
+    expect(await save({ ...input, endTime: 31 })).toMatchObject({
+      outcome: "CLIP_OUTSIDE_SOURCE_DURATION",
+    });
+    expect(
+      await save({ ...input, captionEdits: [{ id: "forged", text: "x", highlights: [] }] }),
+    ).toMatchObject({ outcome: "CLIP_INVALID_CAPTION_METADATA" });
+    expect((await read())!.clip.revision).toBe(0);
+    expect(await save()).toMatchObject({
+      outcome: "saved",
+      editor: { clip: { revision: 1, captionsEnabled: false, previewFontSize: 64 } },
+    });
+    expect(await save()).toMatchObject({ outcome: "CLIP_EDIT_CONFLICT" });
+    expect(await save({ ...input, expectedRevision: 1, startTime: 20 })).toMatchObject({
+      outcome: "saved",
+    });
+    expect(await save({ ...input, expectedRevision: 2, startTime: 0, endTime: 30 })).toMatchObject({
+      outcome: "saved",
+    });
+    const restored = (await read())!;
+    expect(restored.baseline).toEqual(editor.baseline);
+    expect(restored.clip.captionLines[0]).toMatchObject({
+      text: "Edited opening",
+      highlights: ["opening"],
+    });
+    const results = await Promise.all([
+      save({ ...input, expectedRevision: 3 }),
+      save({ ...input, expectedRevision: 3 }),
+    ]);
+    expect(results.map((result) => result.outcome).sort()).toEqual(["CLIP_EDIT_CONFLICT", "saved"]);
+    await expect(
+      runtime.pool.query("UPDATE clip_candidates SET edit_revision = 99 WHERE id = $1", [clipId]),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      processing.pool.query("SELECT get_owned_clip_editor($1, $2, $3)", [
+        "transcript-user",
+        projectId,
+        clipId,
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+    await owner.pool.query("UPDATE projects SET current_job_id = NULL WHERE id = $1", [projectId]);
+    expect(await read()).toBeNull();
+    expect(await save()).toMatchObject({ outcome: "CLIP_NOT_FOUND" });
+    await owner.pool.query("UPDATE projects SET current_job_id = $2 WHERE id = $1", [
+      projectId,
+      jobId,
+    ]);
+  });
+
   it("fences invalid preview finalization without partially changing state", async () => {
     await owner.pool.query(
       `INSERT INTO projects (id, user_id, name, output_type, status)
