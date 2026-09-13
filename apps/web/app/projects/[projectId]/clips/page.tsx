@@ -7,7 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { AppTopbar } from "@/components/app/app-topbar";
 import { PageHeader } from "@/components/app/page-header";
-import { ClipPreviewBrowser } from "@/features/clips/components/clip-preview-browser";
+import { ClipPreviewEditor } from "@/features/clips/components/clip-preview-editor";
 import { getProjectClips } from "@/features/clips/server/clips-api";
 import { auth } from "@/lib/auth";
 
@@ -57,12 +57,17 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
       </Link>
       <div className="mt-7">
         <PageHeader
-          description="Review timestamped browser previews before choosing anything to edit or render."
-          title="Your clip previews"
+          description="Fine-tune your trim and captions, then save your clip."
+          title="Your clip editor"
         />
       </div>
       <div className="mt-8">
-        <ClipPreviewBrowser apiUrl={apiUrl} clips={result.clips.clips} projectId={projectId} />
+        <ClipPreviewEditor
+          apiUrl={apiUrl}
+          clips={result.clips.clips}
+          projectId={projectId}
+          userId={session.user.id}
+        />
       </div>
     </ClipsShell>
   );
@@ -80,7 +85,9 @@ function ClipsShell({
       <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
       <div className="min-w-0 flex-1 lg:pl-66">
         <AppTopbar title="Clip previews" userEmail={user.email} userName={user.name} />
-        <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">{children}</main>
+        <main className="mx-auto max-w-[100rem] px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+          {children}
+        </main>
       </div>
     </div>
   );
