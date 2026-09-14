@@ -4,7 +4,13 @@ import { clipEditorInput, validateClipEdit, type ClipEditor } from "@repurposepr
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { requestClipEditor } from "./clip-editor-api";
-import { draftInput, editorDraft, rebaseSavedDraft, type EditorDraft } from "./clip-editor-state";
+import {
+  draftInput,
+  editorDraft,
+  rebaseSavedDraft,
+  trimValidation,
+  type EditorDraft,
+} from "./clip-editor-state";
 
 export function useClipEditor(
   initial: ClipEditor,
@@ -23,19 +29,7 @@ export function useClipEditor(
   const savingRef = useRef(false);
   const storageKey = `rp:clip-draft:${userId}:${projectId}:${initial.clip.id}`;
   const input = draftInput(draft);
-  const start = Number(draft.startText),
-    end = Number(draft.endText);
-  const trimError =
-    !draft.startText.trim() ||
-    !draft.endText.trim() ||
-    !Number.isFinite(start) ||
-    !Number.isFinite(end)
-      ? "Enter a start and end time."
-      : start < 0 || end - start < 0.001
-        ? "End time must be at least 0.001 seconds after start time."
-        : end > saved.sourceDurationSeconds
-          ? "Keep the trim within the source video."
-          : "";
+  const trimError = trimValidation(draft, saved.sourceDurationSeconds);
   const contractError = input
     ? validateClipEdit(input, saved.baseline, saved.sourceDurationSeconds)
     : null;
@@ -104,7 +98,11 @@ export function useClipEditor(
     if (savingRef.current) return false;
     const submitted = draftRef.current;
     const parsed = draftInput(submitted);
-    if (!parsed || validateClipEdit(parsed, saved.baseline, saved.sourceDurationSeconds)) {
+    if (
+      !parsed ||
+      trimValidation(submitted, saved.sourceDurationSeconds) ||
+      validateClipEdit(parsed, saved.baseline, saved.sourceDurationSeconds)
+    ) {
       setError("Correct the highlighted fields before saving.");
       return false;
     }

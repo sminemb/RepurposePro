@@ -14,7 +14,7 @@ import { useEditorNavigation } from "../client/use-editor-navigation";
 import { CaptionEditor } from "./caption-editor";
 import { ClipPreviewPlayer } from "./clip-preview-player";
 import { EditorLeaveDialog } from "./editor-leave-dialog";
-import { TrimControls } from "./trim-controls";
+import { editorFieldClass, TrimControls } from "./trim-controls";
 
 interface Props {
   apiUrl: string;
@@ -167,6 +167,23 @@ function EditorSession({
         </div>
       ) : null}
       <div inert={Boolean(state.recovery)}>
+        <label className="mb-5 block space-y-2 text-sm text-rp-text md:hidden">
+          <span>Choose a clip ({props.clips.length})</span>
+          <select
+            className={editorFieldClass}
+            value={initial.clip.id}
+            onChange={(event) => {
+              const clipId = event.target.value;
+              if (clipId !== initial.clip.id) navigation.request(() => onSelect(clipId));
+            }}
+          >
+            {props.clips.map((clip) => (
+              <option key={clip.id} value={clip.id}>
+                {clip.title}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="sticky top-16 z-30 mb-5 hidden items-center justify-between gap-4 border-b border-rp-border bg-rp-bg py-4 md:flex">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-rp-primary">

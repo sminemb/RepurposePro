@@ -13,7 +13,9 @@ export function clipPlaybackBoundaryAction(
   event: ClipPlaybackBoundaryEvent = "timeupdate",
 ): ClipPlaybackBoundaryAction {
   if (currentTime < clip.startTime - CLIP_SEEK_TOLERANCE_SECONDS) return "seek_start";
-  if (currentTime >= clip.endTime - CLIP_END_TOLERANCE_SECONDS) {
+  const endTolerance = Math.min(CLIP_END_TOLERANCE_SECONDS, (clip.endTime - clip.startTime) / 2);
+  if (currentTime >= clip.endTime - endTolerance) {
+    if (event === "play") return "seek_start";
     return loop && event === "timeupdate" ? "loop" : "stop";
   }
   return "continue";
