@@ -961,6 +961,12 @@ The style should feel energetic but still premium.
 
 ## 18.2 Caption Metadata Tokens
 
+VS5 stores font sizes on a 1080-pixel reference width and scales the CSS overlay with the video
+container. Presets are 32 / 48 / 64 / 80; position presets are `(0.5, 0.5)`, `(0.5, 0.72)`,
+and `(0.5, 0.84)`. These implemented presets supersede the earlier suggested preview/render size
+conversion and 80% maximum below; future rendering should follow ADR 0002.
+
+
 ```ts
 export const CaptionDefaults = {
   enabled: true,

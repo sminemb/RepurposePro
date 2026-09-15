@@ -1,6 +1,7 @@
 import "reflect-metadata";
 
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { loadApiConfig } from "@repurposepro/config";
 import { Logger } from "nestjs-pino";
 
@@ -13,7 +14,12 @@ async function bootstrap(): Promise<void> {
   const config = loadApiConfig();
   apiPort = config.apiPort;
   process.stdout.write(`API startup: initializing application on port ${apiPort}.\n`);
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
+  // Bound long caption edit batches while retaining raw Stripe webhook bodies.
+  app.useBodyParser("json", { limit: "2mb" });
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api/v1");

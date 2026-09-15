@@ -148,6 +148,20 @@
       "when": 1785584731613,
       "tag": "0020_owned_clip_previews",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789316684102,
+      "tag": "0021_editable_clip_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789316811679,
+      "tag": "0022_owned_clip_editor",
+      "breakpoints": true
     }
   ]
 }

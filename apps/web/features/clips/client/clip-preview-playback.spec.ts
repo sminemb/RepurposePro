@@ -22,6 +22,19 @@ describe("clip preview playback", () => {
     expect(clipPlaybackBoundaryAction(20 - CLIP_END_TOLERANCE_SECONDS, clip, true)).toBe("loop");
   });
 
+  it.each([0.001, 0.01, 0.02])("can start and finish a %ss trim", (duration) => {
+    const clip = { startTime: 2, endTime: 2 + duration };
+    expect(clipPlaybackBoundaryAction(clip.startTime, clip, true, "play")).toBe("continue");
+    expect(clipPlaybackBoundaryAction(clip.startTime, clip, true)).toBe("continue");
+    expect(clipPlaybackBoundaryAction(clip.endTime, clip, false)).toBe("stop");
+    expect(clipPlaybackBoundaryAction(clip.endTime, clip, true)).toBe("loop");
+  });
+
+  it("replays a finished clip when the user presses play", () => {
+    const clip = { startTime: 5, endTime: 20 };
+    expect(clipPlaybackBoundaryAction(20, clip, false, "play")).toBe("seek_start");
+  });
+
   it("returns caption text as data for the active timestamp", () => {
     const lines = [
       { endTime: 10, startTime: 5, text: "<script>plain text</script>" },
