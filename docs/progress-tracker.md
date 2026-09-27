@@ -118,6 +118,8 @@ FAILED
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
 edge cases were fixed; both slices remain at 100%. See [audit evidence](verification/vs45-acceptance-audit.md).
+VS5 settings-panel overflow was fixed and verified on 2026-09-27 at 13:13;
+see [small-screen verification](verification/vs5-settings-scroll.md).
 
 ---
 
@@ -376,6 +378,7 @@ This slice crosses browser preview behavior, metadata schema, API persistence, v
 | Progress   | 100%        |
 | Dependency | VS4         |
 | Last Acceptance Audit | 2026-09-14 11:12 — COMPLETED |
+| Last UI Fix | 2026-09-27 13:01–13:13 — Settings scrolling COMPLETED |
 
 ## Tasks
 
@@ -389,6 +392,7 @@ This slice crosses browser preview behavior, metadata schema, API persistence, v
 | VS5-T6 | Add keyword highlight editing | Web + API + DB | COMPLETED | 2026-09-14 | 00:33 | 2026-09-14 | 01:06 | Highlight unit tests; browser phrase add + styling |
 | VS5-T7 | Persist edits and restore after reload | Web + API + DB + Tests | COMPLETED | 2026-09-14 | 00:27 | 2026-09-14 | 01:06 | Atomic/revision DB tests; reload + in-flight browser checks |
 | VS5-T8 | Add unsaved-change protection | Web | COMPLETED | 2026-09-14 | 00:34 | 2026-09-14 | 01:06 | Browser modal, Back/Forward, recovery, sign-out checks |
+| VS5-F1 | Keep settings controls reachable on short screens | Web + Browser | COMPLETED | 2026-09-27 | 13:01 | 2026-09-27 | 13:13 | [Browser checks and quality gates](verification/vs5-settings-scroll.md) |
 
 ## Slice Acceptance Criteria
 
@@ -768,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS4/VS5 - Acceptance audit and remediation
-Current Task: None - VS4 and VS5 acceptance criteria verified
+Current Slice: VS5 - Settings-panel overflow fix
+Current Task: VS5-F1 completed (2026-09-27 13:01–13:13 Asia/Manila)
 Current Status: COMPLETED
-Last Completed Task: VS4/VS5 acceptance re-audit (2026-09-14 10:54–11:12 Asia/Manila)
+Last Completed Task: VS5-F1 - Settings controls scroll within short viewports; keyboard and responsive checks passed.
 Next Recommended Task: Start VS6-T1 - Create the one-clip render endpoint.
-Uncommitted Changes: None after the acceptance-audit fix commit on codex/vs5-clip-editor. Synthetic fixtures and logs under ignored storage/vs45-audit are intentionally not committed.
-Known Failing Tests: None. pnpm ci:check passed: 497 unit tests, 58 PostgreSQL/Redis integration tests, formatting, lint, typecheck, and production builds.
+Uncommitted Changes: None after the settings-scroll fix commit on codex/fix-clip-settings-scroll. Synthetic fixtures and logs under ignored storage/vs45-audit are intentionally not committed.
+Known Failing Tests: None on final checks. Formatting, lint, typecheck, 497 unit tests, 58 PostgreSQL/Redis integration tests, and production builds passed. Integration rerun cleared transient database cleanup errors; see docs/verification/vs5-settings-scroll.md.
 Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
 Important Context: Explicit Save; full-source trim; stable source-timed captions and persistent per-line overrides; optimistic revisions; no edit-triggered rendering or credit charges. Apply migrations 0021/0022 before deploying. Audit fixes mobile candidate selection, millisecond trim validation, short-trim playback, and replay after completion. See ADR 0002, docs/verification/vs5.md, and docs/verification/vs45-acceptance-audit.md. No new migrations or dependencies. The audit used synthetic browser data and prior recorded live AI evidence.
 Required Commands Before Continuing: Read the VS6 specification and ADR 0002, mark VS6-T1 IN_PROGRESS, and record an Asia/Manila start timestamp. Final render must use saved source timestamps and the same 1080px caption reference.
-Last Updated Date: 2026-09-14
-Last Updated Time: 11:12
+Last Updated Date: 2026-09-27
+Last Updated Time: 13:13
 Last Updated By: Codex
 ```
