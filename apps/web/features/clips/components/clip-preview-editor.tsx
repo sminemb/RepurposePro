@@ -277,7 +277,7 @@ function EditorSession({
           </div>
           <aside
             aria-label="Clip settings"
-            className={`hidden min-w-0 rounded-rp-lg border border-rp-border bg-rp-surface p-4 md:order-2 xl:order-3 xl:block ${panel === "settings" ? "md:block" : ""}`}
+            className={`hidden min-h-0 min-w-0 self-start overflow-y-auto rounded-rp-lg border border-rp-border bg-rp-surface p-4 [scrollbar-gutter:stable] md:sticky md:top-44 md:order-2 md:max-h-[max(12rem,calc(100dvh-12rem))] xl:order-3 xl:block ${panel === "settings" ? "md:block" : ""}`}
           >
             <TrimControls
               draft={state.draft}

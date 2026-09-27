@@ -107,7 +107,7 @@ export function CaptionEditor({
       <p className="text-xs leading-5 text-rp-text-muted">
         Edit each phrase below. Add a few words to highlight in ember.
       </p>
-      <div className="max-h-[30rem] space-y-4 overflow-y-auto pr-1">
+      <div className="space-y-4">
         {lines.slice(activePage * 20, (activePage + 1) * 20).map((line) => {
           const edit = draft.captionEdits.find((item) => item.id === line.id);
           const active = currentTime >= line.startTime && currentTime < line.endTime;
