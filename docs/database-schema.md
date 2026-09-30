@@ -564,6 +564,16 @@ Recommended index:
 
 # 12. `rendered_outputs`
 
+VS6 migration 0025 implements clip outputs with one row per `(render_job_id,
+clip_candidate_id)`, fixed 1080×1920 H.264/AAC constraints, an attempt-specific
+private path and publication-relative expiration. `render_requests` stores each
+job's immutable clip revision, source identity, projected captions and effective
+framing snapshot. `render_request_keys` binds every accepted retry key to that
+request, including aliases which reuse matching active work. Runtime and processing
+roles have no direct access to these tables; ownership and lease-fenced functions
+provide their boundaries. `projects.current_analysis_job_id` remains stable while
+`current_job_id` switches to a render, preserving editor and source preview access.
+
 Stores final downloadable clip and summary files.
 
 | Column              | Type                 | Rules               |

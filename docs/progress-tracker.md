@@ -108,7 +108,7 @@ FAILED
 | VS3   | User can buy credits and start a paid processing job              | COMPLETED   | 2026-07-15 | 10:52      | 2026-07-30 | 18:45    | None            |     100% | —       |
 | VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
-| VS6   | User can render and download one final vertical MP4 clip          | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
 | VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -424,36 +424,36 @@ This slice crosses render request UI, queue, worker, FFmpeg, ASS subtitles, outp
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS6         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 0%          |
+| Status     | COMPLETED |
+| Start Date | 2026-09-30 |
+| Start Time | 21:20 |
+| End Date   | 2026-09-30 |
+| End Time   | 23:33 |
+| Progress   | 100% |
 | Dependency | VS5         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                        | Layers Touched             | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ---------------------------------------------------- | -------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS6-T1  | Create render endpoint for one selected clip         | Web + API                  | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T2  | Enqueue render job                                   | API + Queue                | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T3  | Generate ASS subtitles from saved caption metadata   | Worker + ASS               | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T4  | Render 9:16 MP4 with trim, crop, captions, H.264/AAC | Worker + FFmpeg            | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T5  | Persist output metadata and expiration               | DB + Storage               | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T6  | Show render progress                                 | Web + API                  | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T7  | Authorize and serve MP4 download                     | API + Storage + Security   | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS6-T8  | Verify preview-to-render visual parity               | Web + Worker + Manual Test | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS6-T1 | Create render endpoint for one selected clip | Web + API | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Strict one-clip/revision API; save revision 7 observed before render; conflicts prevent work |
+| VS6-T2 | Enqueue render job | API + Queue | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Durable dispatch, concurrent idempotency, Redis outage, retry and lease fencing integration tests |
+| VS6-T3 | Generate ASS subtitles from saved caption metadata | Worker + ASS | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Frozen projection, escaping, source timing, wrapped Unicode highlights and per-highlight colors verified |
+| VS6-T4 | Render 9:16 MP4 with trim, crop, captions, H.264/AAC | Worker + FFmpeg | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Six playable 1080x1920 H.264/AAC fixtures: manual/follow, rotation, SAR, fractional trim and captions disabled |
+| VS6-T5 | Persist output metadata and expiration | DB + Storage | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Immutable snapshots, unique fenced publication, expiration and previous-output preservation; migration 0025 applied locally |
+| VS6-T6 | Show render progress | Web + API | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Queued/preparing/rendering/saving/completed/failed views; 100 only after publication; screenshots recorded |
+| VS6-T7 | Authorize and serve MP4 download | API + Storage + Security | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Ownership, expired/foreign files, containment, private headers, safe attachment and public metadata verified |
+| VS6-T8 | Verify preview-to-render visual parity | Web + Worker + Manual Test | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | Crop differences 0-2 output pixels, caption boundaries and tracking gap match; pinned font; docs/verification/vs6.md |
 
 ## Slice Acceptance Criteria
 
-- [ ] User explicitly starts render.
-- [ ] Saved metadata drives render.
-- [ ] Final video is 9:16.
-- [ ] Caption styling is burned in.
-- [ ] Output is stored.
-- [ ] User can download MP4.
-- [ ] Unauthorized users cannot download another user's output.
+- [x] User explicitly starts render.
+- [x] Saved metadata drives render.
+- [x] Final video is 9:16.
+- [x] Caption styling is burned in.
+- [x] Output is stored.
+- [x] User can download MP4.
+- [x] Unauthorized users cannot download another user's output.
 
 ---
 
@@ -772,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS5 - Settings-panel overflow fix
-Current Task: VS5-F1 completed (2026-09-27 13:01–13:13 Asia/Manila)
+Current Slice: VS6 - Render and download one vertical clip
+Current Task: None - VS6-T1 through VS6-T8 completed.
 Current Status: COMPLETED
-Last Completed Task: VS5-F1 - Settings controls scroll within short viewports; keyboard and responsive checks passed.
-Next Recommended Task: Start VS6-T1 - Create the one-clip render endpoint.
-Uncommitted Changes: None after the settings-scroll fix commit on codex/fix-clip-settings-scroll. Synthetic fixtures and logs under ignored storage/vs45-audit are intentionally not committed.
-Known Failing Tests: None on final checks. Formatting, lint, typecheck, 497 unit tests, 58 PostgreSQL/Redis integration tests, and production builds passed. Integration rerun cleared transient database cleanup errors; see docs/verification/vs5-settings-scroll.md.
+Last Completed Task: VS6-T8 - Preview/export parity verified; all VS6 tasks passed the final quality gate at 23:33 Asia/Manila.
+Next Recommended Task: VS7-T1 - Start the editable-summary slice after reading its specification.
+Uncommitted Changes: None after the VS6 commits on codex/vs6-render-download. Media fixtures, browser screenshots and logs under ignored storage/vs6-verification are intentionally not committed.
+Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 547 unit tests, 68 PostgreSQL/Redis integration tests and production builds. The final rerun cleared transient forced test-database cleanup errors; evidence is recorded in docs/verification/vs6.md.
 Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
-Important Context: Explicit Save; full-source trim; stable source-timed captions and persistent per-line overrides; optimistic revisions; no edit-triggered rendering or credit charges. Apply migrations 0021/0022 before deploying. Audit fixes mobile candidate selection, millisecond trim validation, short-trim playback, and replay after completion. See ADR 0002, docs/verification/vs5.md, and docs/verification/vs45-acceptance-audit.md. No new migrations or dependencies. The audit used synthetic browser data and prior recorded live AI evidence.
-Required Commands Before Continuing: Read the VS6 specification and ADR 0002, mark VS6-T1 IN_PROGRESS, and record an Asia/Manila start timestamp. Final render must use saved source timestamps and the same 1080px caption reference.
-Last Updated Date: 2026-09-27
-Last Updated Time: 13:13
+Important Context: Explicit one-clip export saves unsaved edits first and uses the returned revision. Free re-renders preserve previous outputs until expiration; failed renders retain editing/previews. Migration 0025 separates current analysis from current render work and adds immutable requests, retry-key aliases and fenced outputs; it was applied locally and is required before deployment. New worker dependency @napi-rs/canvas 1.0.9 and licensed pinned Inter Black assets. Shared caption/framing geometry follows ADRs 0002/0003/0004. Defaults: medium, CRF 20, 60-minute timeout, seven-day publication retention. Scheduled deletion remains VS10. Browser verification uses synthetic responses and real rendered fixture media.
+Required Commands Before Continuing: Read VS7 requirements, ADRs 0002/0003/0004 and docs/verification/vs6.md. Record an Asia/Manila start timestamp when VS7 begins. Preserve immutable render snapshots, the saved-revision contract and current-analysis preview access.
+Last Updated Date: 2026-09-30
+Last Updated Time: 23:33
 Last Updated By: Codex
 ```
