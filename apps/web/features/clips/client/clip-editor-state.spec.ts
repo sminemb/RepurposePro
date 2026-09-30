@@ -61,4 +61,18 @@ describe("editor draft state", () => {
     ]);
     expect(parts.map((part) => part.text).join("")).toBe("BURN OUT, burnout <script>");
   });
+  it("uses separate phrase colors without reading inherited properties", () => {
+    const parts = captionHighlightParts(
+      "BURN OUT, constructor",
+      ["burn", "burn out", "constructor"],
+      {
+        "burn out": "#22c55e",
+        burn: "#ff0000",
+      },
+    );
+    expect(parts.filter((part) => part.highlighted)).toEqual([
+      { text: "BURN OUT", highlighted: true, color: "#22c55e" },
+      { text: "constructor", highlighted: true },
+    ]);
+  });
 });

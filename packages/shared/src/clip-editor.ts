@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { captionLineSchema, captionPositionSchema, clipPreviewCandidateSchema } from "./clips";
+import {
+  captionLineSchema,
+  captionPositionSchema,
+  clipPreviewCandidateSchema,
+  captionColorSchema,
+  highlightColorsSchema,
+} from "./clips";
+import { framingSchema } from "./framing";
 
 export const captionBaselineLineSchema = captionLineSchema.extend({
   id: z.string().min(1).max(100),
@@ -12,8 +19,18 @@ export const captionEditSchema = z
     id: z.string().min(1).max(100),
     text: z.string().trim().min(1).max(160),
     highlights: z.array(z.string().trim().min(1).max(64)).max(10),
+    highlightColors: highlightColorsSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (edit) =>
+      Object.keys(edit.highlightColors ?? {}).every(
+        (key) =>
+          key === key.toLowerCase().trim() &&
+          edit.highlights.some((word) => word.toLowerCase() === key),
+      ),
+    { message: "Colors must belong to a highlighted phrase." },
+  );
 export const clipEditInputSchema = z
   .object({
     expectedRevision: z.number().int().nonnegative(),
@@ -23,6 +40,8 @@ export const clipEditInputSchema = z
     captionPosition: captionPositionSchema,
     previewFontSize: z.number().int().min(12).max(96),
     captionEdits: z.array(captionEditSchema).max(2000),
+    captionTextColor: captionColorSchema.optional(),
+    framing: framingSchema.optional(),
   })
   .strict()
   .superRefine((input, context) => {
@@ -71,6 +90,8 @@ export function clipEditorInput(editor: ClipEditor): ClipEditInput {
     captionPosition: clip.captionPosition,
     previewFontSize: clip.previewFontSize,
     captionEdits: editor.captionEdits,
+    ...(clip.captionTextColor ? { captionTextColor: clip.captionTextColor } : {}),
+    ...(clip.framing ? { framing: clip.framing } : {}),
   };
 }
 
@@ -85,6 +106,9 @@ export function projectCaptionLines(
       ...line,
       text: edits.get(line.id)?.text ?? line.text,
       highlights: edits.get(line.id)?.highlights ?? [],
+      ...(edits.get(line.id)?.highlightColors
+        ? { highlightColors: edits.get(line.id)!.highlightColors }
+        : {}),
       startTime: Math.max(line.startTime, input.startTime),
       endTime: Math.min(line.endTime, input.endTime),
     }));

@@ -1,3 +1,4 @@
+import { FramingController } from "./framing.controller";
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "../auth/auth.module";
@@ -13,7 +14,12 @@ import { UploadFileInterceptor } from "./upload-file.interceptor";
 
 @Module({
   imports: [AuthModule, InfrastructureModule, StorageModule],
-  controllers: [ProjectsController, ClipPreviewsController, ClipEditorController],
+  controllers: [
+    FramingController,
+    ProjectsController,
+    ClipPreviewsController,
+    ClipEditorController,
+  ],
   providers: [ProjectsService, ClipPreviewsService, ClipEditorService, UploadFileInterceptor],
 })
 export class ProjectsModule {}

@@ -1780,6 +1780,18 @@ ARCJET_KEY
 
 ---
 
+## Face tracking worker
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FACE_PYTHON_PATH` | `WHISPER_PYTHON_PATH` | Python executable with the pinned framing dependencies installed. Relative paths resolve from the repository root; a bare command uses PATH. |
+| `FACE_MODEL_PATH` | `<STORAGE_ROOT>/models/blaze_face_short_range.tflite` | Checksum-pinned MediaPipe model installed by `scripts/setup-framing.py`. |
+| `FACE_TIMEOUT_MS` | `900000` | Detector execution timeout, between 1000 and 900000 milliseconds. |
+
+Tracking also uses `FFMPEG_PATH` and `FFPROBE_PATH`. Install the pinned Python requirements
+and model, then apply migrations 0023/0024 before starting the updated services. See
+[the deployment steps](adr/0003-person-tracking-and-caption-colors.md#setup-and-deployment).
+
 ## 24. Final Rule
 
 An environment variable should exist only when it controls deployment-specific behavior or secrets.

@@ -162,6 +162,20 @@
       "when": 1789316811679,
       "tag": "0022_owned_clip_editor",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790460000000,
+      "tag": "0023_caption_colors_framing",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790460000001,
+      "tag": "0024_source_framing",
+      "breakpoints": true
     }
   ]
 }

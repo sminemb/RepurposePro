@@ -1,6 +1,11 @@
 "use client";
 
-import { clipEditorInput, validateClipEdit, type ClipEditor } from "@repurposepro/shared";
+import {
+  clipEditorInput,
+  validateClipEdit,
+  captionEditSchema,
+  type ClipEditor,
+} from "@repurposepro/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { requestClipEditor } from "./clip-editor-api";
@@ -75,7 +80,9 @@ export function useClipEditor(
               initial.baseline.some((line) => line.id === edit.id),
           )
         ) {
-          setRecovery(recovered);
+          if (recovered.captionEdits.every((edit) => captionEditSchema.safeParse(edit).success)) {
+            setRecovery({ ...editorDraft(clipEditorInput(initial)), ...recovered });
+          } else clearRecovery();
         } else clearRecovery();
       }
     } catch {

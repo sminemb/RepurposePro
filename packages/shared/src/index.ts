@@ -38,5 +38,6 @@ export * from "./billing";
 export * from "./clip-selection";
 export * from "./clips";
 export * from "./clip-editor";
+export * from "./framing";
 export * from "./processing";
 export * from "./projects";

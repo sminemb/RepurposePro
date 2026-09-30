@@ -46,19 +46,26 @@ export function rebaseSavedDraft(
 export function captionHighlightParts(
   text: string,
   highlights: readonly string[],
-): Array<{ text: string; highlighted: boolean }> {
+  colors: Readonly<Record<string, string>> = {},
+): Array<{ text: string; highlighted: boolean; color?: string }> {
   const words = [...new Set(highlights.map((word) => word.trim()).filter(Boolean))].sort(
     (a, b) => b.length - a.length,
   );
   if (!words.length) return [{ text, highlighted: false }];
   const pattern = words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("|");
   const expression = new RegExp(`(?<![\\p{L}\\p{N}_])(?:${pattern})(?![\\p{L}\\p{N}_])`, "giu");
-  const parts: Array<{ text: string; highlighted: boolean }> = [];
+  const parts: Array<{ text: string; highlighted: boolean; color?: string }> = [];
   let cursor = 0;
   for (const match of text.matchAll(expression)) {
     if (match.index > cursor)
       parts.push({ text: text.slice(cursor, match.index), highlighted: false });
-    parts.push({ text: match[0], highlighted: true });
+    parts.push({
+      text: match[0],
+      highlighted: true,
+      ...(Object.hasOwn(colors, match[0].toLowerCase())
+        ? { color: colors[match[0].toLowerCase()] }
+        : {}),
+    });
     cursor = match.index + match[0].length;
   }
   if (cursor < text.length) parts.push({ text: text.slice(cursor), highlighted: false });

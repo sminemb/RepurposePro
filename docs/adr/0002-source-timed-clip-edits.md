@@ -52,6 +52,8 @@ newer revision requires the user's explicit Restore action and a reminder to rev
   an output-relative subtitle timeline. They must not rewrite the stored baseline or overrides.
 - VS5 keeps the current crop and Hormozi style. Font sizes use a 1080-pixel reference width; the browser
   scales them with its video container. The later render slice must use the same reference.
+  Moving crops and individually colored highlights are subsequently defined by
+  [ADR 0003](0003-person-tracking-and-caption-colors.md).
 
 ## Verification
 

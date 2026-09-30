@@ -4,6 +4,7 @@ import type { CaptionBaselineLine, CaptionEdit } from "@repurposepro/shared";
 import { useState } from "react";
 
 import type { EditorDraft } from "../client/clip-editor-state";
+import { CaptionColorPicker } from "./caption-color-picker";
 import { editorFieldClass } from "./trim-controls";
 
 const positions = [
@@ -38,8 +39,14 @@ export function CaptionEditor({
       id: line.id,
       text: existing?.text ?? line.text,
       highlights: existing?.highlights ?? [...(line.highlights ?? [])],
+      highlightColors: existing?.highlightColors ?? line.highlightColors ?? {},
       ...patch,
     };
+    edit.highlightColors = Object.fromEntries(
+      Object.entries(edit.highlightColors ?? {}).filter(([key]) =>
+        edit.highlights.some((word) => word.toLowerCase() === key),
+      ),
+    );
     onChange({
       ...draft,
       captionEdits: [...draft.captionEdits.filter((item) => item.id !== line.id), edit].sort(
@@ -59,6 +66,11 @@ export function CaptionEditor({
           onChange={(event) => onChange({ ...draft, captionsEnabled: event.target.checked })}
         />
       </label>
+      <CaptionColorPicker
+        label="Caption text color"
+        value={draft.captionTextColor ?? "#FFFFFF"}
+        onChange={(captionTextColor) => onChange({ ...draft, captionTextColor })}
+      />
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-2 text-xs text-rp-text-muted">
           <span>Position</span>
@@ -105,7 +117,7 @@ export function CaptionEditor({
         </label>
       </div>
       <p className="text-xs leading-5 text-rp-text-muted">
-        Edit each phrase below. Add a few words to highlight in ember.
+        Edit each phrase below. Choose a color for each highlighted word or phrase.
       </p>
       <div className="space-y-4">
         {lines.slice(activePage * 20, (activePage + 1) * 20).map((line) => {
@@ -132,6 +144,15 @@ export function CaptionEditor({
               <KeywordHighlightEditor
                 key={line.id}
                 words={edit?.highlights ?? [...(line.highlights ?? [])]}
+                colors={edit?.highlightColors ?? line.highlightColors ?? {}}
+                onColor={(word, color) =>
+                  updateLine(line, {
+                    highlightColors: {
+                      ...(edit?.highlightColors ?? line.highlightColors ?? {}),
+                      [word.toLowerCase()]: color,
+                    },
+                  })
+                }
                 onChange={(highlights) => updateLine(line, { highlights })}
               />
             </div>
@@ -170,9 +191,13 @@ export function CaptionEditor({
 
 function KeywordHighlightEditor({
   words,
+  colors,
+  onColor,
   onChange,
 }: {
   words: readonly string[];
+  colors: Readonly<Record<string, string>>;
+  onColor: (word: string, color: string) => void;
   onChange: (words: string[]) => void;
 }) {
   const [word, setWord] = useState("");
@@ -202,6 +227,14 @@ function KeywordHighlightEditor({
           </button>
         ))}
       </div>
+      {words.map((value) => (
+        <CaptionColorPicker
+          key={value}
+          label={`Color for ${value}`}
+          value={colors[value.toLowerCase()] ?? "#c4522a"}
+          onChange={(color) => onColor(value, color)}
+        />
+      ))}
       <div className="mt-2 flex gap-2">
         <input
           aria-label="Word or phrase to highlight"
