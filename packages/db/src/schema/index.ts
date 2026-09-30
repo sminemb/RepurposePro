@@ -401,6 +401,13 @@ export const clipCandidates = pgTable(
     captionLines: jsonb("caption_lines").notNull(),
     captionBaseline: jsonb("caption_baseline"),
     captionEdits: jsonb("caption_edits").default([]).notNull(),
+    captionTextColor: varchar("caption_text_color", { length: 7 }).default("#FFFFFF").notNull(),
+    framing: jsonb("framing").default({
+      mode: "follow",
+      trackId: null,
+      offset: { x: 0, y: 0 },
+      manualCenter: { x: 0.5, y: 0.5 },
+    }),
     editRevision: integer("edit_revision").default(0).notNull(),
     captionPosition: jsonb("caption_position").notNull(),
     previewFontSize: integer("preview_font_size").default(48).notNull(),
@@ -771,6 +778,29 @@ export const creditLedger = pgTable(
         )
         OR ${table.type} IN ('manual_adjustment', 'expiration_adjustment')
       )`,
+    ),
+  ],
+);
+
+export const videoFraming = pgTable(
+  "video_framing",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    uploadedVideoId: uuid("uploaded_video_id")
+      .notNull()
+      .references(() => uploadedVideos.id, { onDelete: "cascade" }),
+    version: text("version").notNull(),
+    status: text("status").default("queued").notNull(),
+    data: jsonb("data"),
+    leaseToken: uuid("lease_token"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("video_framing_uploaded_video_id_version_key").on(table.uploadedVideoId, table.version),
+    check(
+      "video_framing_status_check",
+      sql`${table.status} IN ('queued','active','completed','failed')`,
     ),
   ],
 );

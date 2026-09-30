@@ -12,6 +12,8 @@ import { requestClipEditor } from "../client/clip-editor-api";
 import { useClipEditor } from "../client/use-clip-editor";
 import { useEditorNavigation } from "../client/use-editor-navigation";
 import { CaptionEditor } from "./caption-editor";
+import { useFramingAnalysis } from "../client/use-framing-analysis";
+import { FramingControls } from "./framing-controls";
 import { ClipPreviewPlayer } from "./clip-preview-player";
 import { EditorLeaveDialog } from "./editor-leave-dialog";
 import { editorFieldClass, TrimControls } from "./trim-controls";
@@ -94,6 +96,7 @@ function EditorSession({
   onSaved: (editor: ClipEditor) => void;
 }) {
   const state = useClipEditor(initial, props.apiUrl, props.projectId, props.userId, onSaved);
+  const tracking = useFramingAnalysis(props.apiUrl, props.projectId);
   const navigation = useEditorNavigation(
     state.dirty,
     state.saving,
@@ -122,6 +125,8 @@ function EditorSession({
     captionPosition: state.draft.captionPosition,
     previewFontSize: state.draft.previewFontSize,
     captionEdits: state.draft.captionEdits,
+    captionTextColor: state.draft.captionTextColor,
+    framing: state.draft.framing,
   };
   const lines = useMemo(
     () =>
@@ -273,6 +278,8 @@ function EditorSession({
               apiUrl={props.apiUrl}
               projectId={props.projectId}
               onTimeChange={setTime}
+              tracks={tracking.status.data}
+              onFramingChange={(framing) => state.update({ ...state.draft, framing })}
             />
           </div>
           <aside
@@ -290,6 +297,15 @@ function EditorSession({
                 {state.validation}
               </p>
             ) : null}
+            <FramingControls
+              value={state.draft.framing}
+              status={tracking.status}
+              busy={tracking.busy}
+              error={tracking.error}
+              onAnalyze={() => void tracking.start()}
+              onChange={(framing) => state.update({ ...state.draft, framing })}
+              range={validTrim}
+            />
             <CaptionEditor
               draft={state.draft}
               lines={lines}

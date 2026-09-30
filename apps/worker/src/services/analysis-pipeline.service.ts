@@ -37,6 +37,7 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
     private readonly repository: AnalysisTranscriptRepositoryContract,
     private readonly transcripts: AnalysisTranscriptService,
     private readonly selector: GeminiClipSelector,
+    private readonly framing?: { forJob(jobId: string, signal: AbortSignal): Promise<void> },
   ) {}
 
   public isDurablePreviewReady(payload: VideoAnalysisJobPayload): Promise<boolean> {
@@ -64,6 +65,7 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
     );
 
     await context.updateProgress("generating_preview", 80);
+    await this.framing?.forJob(payload.jobId, context.signal);
     const candidates = createPreviewCandidates(selection, transcriptResult);
     await context.updateProgress("generating_preview", 95);
     const outcome = await context.finalize(() =>

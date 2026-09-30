@@ -417,6 +417,254 @@ describeIntegration("analysis transcript persistence", () => {
     ]);
   });
 
+  async function coloredEditorFixture() {
+    type Editor = {
+      baseline: Array<{ id: string }>;
+      captionEdits: Array<{
+        id: string;
+        text: string;
+        highlights: string[];
+        highlightColors: Record<string, string>;
+      }>;
+      clip: {
+        revision: number;
+        captionTextColor: string;
+        framing: unknown;
+        captionLines: Array<{
+          text: string;
+          highlights: string[];
+          highlightColors: Record<string, string>;
+        }>;
+      };
+    };
+    const ids = await owner.pool.query<{ id: string }>(
+      "SELECT id FROM clip_candidates WHERE project_id = $1 AND kind = 'primary'",
+      [projectId],
+    );
+    const clipId = ids.rows[0]!.id;
+    const read = async (user = "transcript-user") =>
+      (
+        await runtime.pool.query<{ editor: Editor | null }>(
+          "SELECT get_owned_clip_editor($1, $2, $3) AS editor",
+          [user, projectId, clipId],
+        )
+      ).rows[0]!.editor;
+    const save = async (input: Record<string, unknown>, user = "transcript-user") =>
+      (
+        await runtime.pool.query<{ result: { outcome: string; editor?: Editor } }>(
+          "SELECT save_owned_clip_editor($1, $2, $3, $4::jsonb) AS result",
+          [user, projectId, clipId, JSON.stringify(input)],
+        )
+      ).rows[0]!.result;
+    const editor = (await read())!;
+    const input = {
+      expectedRevision: editor.clip.revision,
+      startTime: 0,
+      endTime: 30,
+      captionsEnabled: true,
+      captionPosition: { x: 0.5, y: 0.72 },
+      previewFontSize: 48,
+      captionTextColor: "#AABBCC",
+      framing: {
+        mode: "manual",
+        trackId: "person-2",
+        offset: { x: -0.1, y: 0.2 },
+        manualCenter: { x: 0.7, y: 0.4 },
+      },
+      captionEdits: [
+        {
+          id: editor.baseline[0]!.id,
+          text: "A useful opening.",
+          highlights: ["useful", "opening"],
+          highlightColors: { useful: "#12ABEF", opening: "#CC3366" },
+        },
+      ],
+    };
+    return { clipId, editor, input, read, save };
+  }
+
+  it("persists caption colors and framing in editor and project preview reads", async () => {
+    const { clipId, editor, input, read, save } = await coloredEditorFixture();
+    const saved = await save(input);
+    expect(saved).toMatchObject({
+      outcome: "saved",
+      editor: {
+        baseline: editor.baseline,
+        clip: {
+          revision: input.expectedRevision + 1,
+          captionTextColor: input.captionTextColor,
+          framing: input.framing,
+          captionLines: [
+            {
+              highlights: input.captionEdits[0]!.highlights,
+              highlightColors: input.captionEdits[0]!.highlightColors,
+            },
+          ],
+        },
+        captionEdits: input.captionEdits,
+      },
+    });
+    expect(await read()).toEqual(saved.editor);
+    const listed = await runtime.pool.query<{ clips: Array<Record<string, unknown>> }>(
+      "SELECT clips FROM list_owned_project_clip_candidates($1, $2)",
+      ["transcript-user", projectId],
+    );
+    expect(listed.rows[0]!.clips.find((clip) => clip.id === clipId)).toMatchObject({
+      captionTextColor: input.captionTextColor,
+      framing: input.framing,
+      captionLines: [{ highlightColors: input.captionEdits[0]!.highlightColors }],
+    });
+  });
+
+  it("preserves omitted settings and remaining phrase colors when an older client saves", async () => {
+    const { input, read, save } = await coloredEditorFixture();
+    expect(await save(input)).toMatchObject({ outcome: "saved" });
+    const legacyInput = {
+      expectedRevision: input.expectedRevision + 1,
+      startTime: 0,
+      endTime: 30,
+      captionsEnabled: true,
+      captionPosition: { x: 0.5, y: 0.72 },
+      previewFontSize: 52,
+      captionEdits: [
+        {
+          id: input.captionEdits[0]!.id,
+          text: "A USEFUL opening.",
+          highlights: ["USEFUL"],
+        },
+      ],
+    };
+    expect(await save(legacyInput)).toMatchObject({ outcome: "saved" });
+    expect(await read()).toMatchObject({
+      clip: {
+        captionTextColor: input.captionTextColor,
+        framing: input.framing,
+        revision: input.expectedRevision + 2,
+        captionLines: [{ text: "A USEFUL opening.", highlightColors: { useful: "#12ABEF" } }],
+      },
+      captionEdits: [{ highlightColors: { useful: "#12ABEF" } }],
+    });
+    expect((await read())!.captionEdits[0]!.highlightColors).not.toHaveProperty("opening");
+    const cleared = await save({
+      ...legacyInput,
+      expectedRevision: input.expectedRevision + 2,
+      captionEdits: [{ ...legacyInput.captionEdits[0]!, highlightColors: {} }],
+    });
+    expect(cleared).toMatchObject({
+      outcome: "saved",
+      editor: { captionEdits: [{ highlightColors: {} }] },
+    });
+    expect(cleared.editor!.captionEdits[0]!.highlightColors).toEqual({});
+  });
+
+  it("rejects invalid colors and framing without saving any other editor changes", async () => {
+    const { input, read, save } = await coloredEditorFixture();
+    expect(await save(input)).toMatchObject({ outcome: "saved" });
+    const before = await read();
+    const next = { ...input, expectedRevision: input.expectedRevision + 1, previewFontSize: 60 };
+    const invalidPatches: Array<Record<string, unknown>> = [
+      { captionTextColor: "red" },
+      { captionTextColor: "#FFF" },
+      { captionTextColor: "#GG0000" },
+      { captionTextColor: null },
+      { framing: null },
+      { framing: { ...input.framing, mode: "speaker" } },
+      { framing: { ...input.framing, offset: { x: 1.1, y: 0 } } },
+      { framing: { ...input.framing, manualCenter: { x: 0.5, y: -0.1 } } },
+      { framing: { ...input.framing, trackId: "" } },
+      { framing: { ...input.framing, manualCenter: { x: "0.5", y: 0.5 } } },
+      {
+        captionEdits: [{ ...input.captionEdits[0]!, highlightColors: { useful: "#FFF" } }],
+      },
+      {
+        captionEdits: [{ ...input.captionEdits[0]!, highlightColors: { missing: "#12ABEF" } }],
+      },
+      {
+        captionEdits: [{ ...input.captionEdits[0]!, highlightColors: null }],
+      },
+    ];
+    for (const patch of invalidPatches) {
+      expect(await save({ ...next, ...patch })).toMatchObject({
+        outcome: "CLIP_INVALID_CAPTION_METADATA",
+      });
+      expect(await read()).toEqual(before);
+    }
+  });
+
+  it("protects saved colors and framing against other owners and stale revisions", async () => {
+    const { input, read, save } = await coloredEditorFixture();
+    expect(await save(input)).toMatchObject({ outcome: "saved" });
+    const before = await read();
+    const overwrite = {
+      ...input,
+      captionTextColor: "#000000",
+      framing: { ...input.framing, mode: "follow", trackId: "person-9" },
+      captionEdits: [{ ...input.captionEdits[0]!, highlightColors: { useful: "#00FF00" } }],
+    };
+    expect(await save(overwrite)).toMatchObject({ outcome: "CLIP_EDIT_CONFLICT" });
+    expect(
+      await save({ ...overwrite, expectedRevision: input.expectedRevision + 1 }, "someone-else"),
+    ).toMatchObject({ outcome: "CLIP_NOT_FOUND" });
+    expect(await read("someone-else")).toBeNull();
+    expect(await read()).toEqual(before);
+  });
+
+  it("deduplicates owned framing requests and fences competing worker completions", async () => {
+    const request = async (user: string, start: boolean) =>
+      (
+        await runtime.pool.query<{ result: { status: string; data: unknown } | null }>(
+          "SELECT owned_video_framing($1,$2,$3) AS result",
+          [user, projectId, start],
+        )
+      ).rows[0]!.result;
+    expect(await request("someone-else", true)).toBeNull();
+    expect(await request("transcript-user", false)).toEqual({ status: "missing", data: null });
+    expect(await request("transcript-user", true)).toEqual({ status: "queued", data: null });
+    await request("transcript-user", true);
+    const rows = await owner.pool.query<{ id: string }>(
+      "SELECT id FROM video_framing WHERE uploaded_video_id=$1",
+      [videoId],
+    );
+    expect(rows.rows).toHaveLength(1);
+    const id = rows.rows[0]!.id;
+    const token = randomUUID();
+    expect(
+      (await processing.pool.query("SELECT * FROM claim_video_framing($1,$2)", [id, token])).rows,
+    ).toHaveLength(1);
+    expect(
+      (await processing.pool.query("SELECT * FROM claim_video_framing($1,$2)", [id, randomUUID()]))
+        .rows,
+    ).toHaveLength(0);
+    const data = { version: "mediapipe-v1", width: 1920, height: 1080, tracks: [] };
+    expect(
+      (
+        await processing.pool.query("SELECT finish_video_framing($1,$2,$3) AS saved", [
+          id,
+          randomUUID(),
+          data,
+        ])
+      ).rows[0],
+    ).toEqual({ saved: false });
+    expect(
+      (
+        await processing.pool.query("SELECT finish_video_framing($1,$2,$3) AS saved", [
+          id,
+          token,
+          data,
+        ])
+      ).rows[0],
+    ).toEqual({ saved: true });
+    expect(await request("transcript-user", false)).toEqual({ status: "completed", data });
+    await expect(
+      runtime.pool.query("UPDATE video_framing SET status='queued'"),
+    ).rejects.toMatchObject({ code: "42501" });
+    const jobResult = await processing.pool.query<{ id: string }>(
+      "SELECT request_job_framing($1) AS id",
+      [jobId],
+    );
+    expect(jobResult.rows[0]?.id).toBe(id);
+  });
+
   it("fences invalid preview finalization without partially changing state", async () => {
     await owner.pool.query(
       `INSERT INTO projects (id, user_id, name, output_type, status)

@@ -1,8 +1,15 @@
 "use client";
 
-import type { ClipPreviewCandidate } from "@repurposepro/shared";
+import {
+  cropAtTime,
+  cropObjectPosition,
+  selectPrimaryTrack,
+  type ClipPreviewCandidate,
+} from "@repurposepro/shared";
 import { Check, Play, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFramingAnalysis } from "../client/use-framing-analysis";
+import { CaptionOverlay } from "./caption-overlay";
 
 import {
   CLIP_END_TOLERANCE_SECONDS,
@@ -28,6 +35,24 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
     [activeId, clips],
   );
   const sourceUrl = createSourceVideoContentUrl(apiUrl, projectId);
+  const tracking = useFramingAnalysis(apiUrl, projectId);
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
+  const primary = useMemo(
+    () =>
+      activeClip && tracking.status.data
+        ? selectPrimaryTrack(tracking.status.data, activeClip)
+        : null,
+    [activeClip, tracking.status.data],
+  );
+  useEffect(() => {
+    let frame = 0;
+    const tick = () => {
+      if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (!activeClip || !videoRef.current) return;
@@ -48,12 +73,16 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
   }
 
   const caption = captionAtTime(activeClip.captionLines, currentTime);
-  const cropCenter = activeClip.crop
-    ? {
-        x: (activeClip.crop.x + activeClip.crop.width / 2) * 100,
-        y: (activeClip.crop.y + activeClip.crop.height / 2) * 100,
-      }
-    : { x: 50, y: 50 };
+  const effectiveCrop = activeClip.framing
+    ? cropAtTime(
+        { ...activeClip.framing, trackId: activeClip.framing.trackId ?? primary },
+        tracking.status.data,
+        currentTime,
+        dimensions,
+        activeClip,
+      )
+    : activeClip.crop;
+  const cropCenter = effectiveCrop ? cropObjectPosition(effectiveCrop) : { x: 50, y: 50 };
 
   const enforceBoundary = (video: HTMLVideoElement, event: ClipPlaybackBoundaryEvent): void => {
     const action = clipPlaybackBoundaryAction(video.currentTime, activeClip, loopClip, event);
@@ -154,6 +183,10 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
               controls
               crossOrigin="use-credentials"
               onLoadedMetadata={(event) => {
+                setDimensions({
+                  width: event.currentTarget.videoWidth,
+                  height: event.currentTarget.videoHeight,
+                });
                 event.currentTarget.currentTime = activeClip.startTime;
                 setCurrentTime(activeClip.startTime);
               }}
@@ -169,17 +202,12 @@ export function ClipPreviewBrowser({ apiUrl, clips, projectId }: ClipPreviewBrow
               Your browser does not support HTML video previews.
             </video>
             {activeClip.captionsEnabled && caption ? (
-              <p
-                className="pointer-events-none absolute z-10 max-w-[88%] rounded-md bg-black/80 px-3 py-2 text-center font-black uppercase leading-tight text-white shadow-lg"
-                style={{
-                  fontSize: `clamp(1rem, ${activeClip.previewFontSize / 16}cqw, ${activeClip.previewFontSize}px)`,
-                  left: `${activeClip.captionPosition.x * 100}%`,
-                  top: `${activeClip.captionPosition.y * 100}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                {caption.text}
-              </p>
+              <CaptionOverlay
+                line={caption}
+                position={activeClip.captionPosition}
+                fontSize={activeClip.previewFontSize}
+                textColor={activeClip.captionTextColor}
+              />
             ) : null}
           </div>
         </div>

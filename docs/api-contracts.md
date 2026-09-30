@@ -1475,6 +1475,34 @@ duplicate removal
 
 ---
 
+## Person framing and caption colors
+
+`GET /projects/:projectId/framing-analysis` returns `{ status, data }`, where status is
+`missing`, `queued`, `active`, `completed`, or `failed`. `data` is null until available,
+then contains `{ version, width, height, tracks }`. Each track has an `id` and ordered
+`samples` with absolute source `time` in seconds, normalized box `x`, `y`, `width`,
+`height`, and `confidence`. Dimensions account for rotation and pixel aspect ratio.
+
+`POST /projects/:projectId/framing-analysis` requests background tracking and returns
+the same status shape (HTTP 201). Both endpoints require authentication and ownership;
+unavailable, expired, or foreign sources return 404. Requests deduplicate by source and
+tracker version. Failed analysis can be retried; empty results have a 30-second cooldown.
+This operation does not transcribe, consume analysis credits, or change clip edits.
+
+Clip responses and editor saves support optional `captionTextColor` (`#RRGGBB`) and
+`framing: { mode: "follow" | "manual", trackId: string | null, offset: { x, y },
+manualCenter: { x, y } }`. Offsets range from -1 to 1; manual centers from 0 to 1.
+Caption edits and projected caption lines support `highlightColors`, a map from trimmed,
+lowercase highlighted phrases to six-digit hex colors. Existing caption text/highlight
+limits still apply. The defaults are white text and ember (`#c4522a`) highlights.
+
+Settings save atomically under the existing `expectedRevision` check. Older requests
+that omit new settings preserve them, including colors for retained highlighted phrases.
+Track completion never updates a clip or a browser draft. Existing clips explicitly
+apply tracking suggestions and persist them with **Save changes**. New clips follow the
+primary visible person by default. See [ADR 0003](adr/0003-person-tracking-and-caption-colors.md)
+for fixed crop geometry, interpolation, fallback, and future renderer requirements.
+
 ## 23. Final Rule
 
 An API endpoint is not complete until:

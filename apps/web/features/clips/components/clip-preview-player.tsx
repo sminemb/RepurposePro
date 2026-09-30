@@ -1,7 +1,15 @@
 "use client";
 
-import type { ClipPreviewCandidate } from "@repurposepro/shared";
-import { useEffect, useRef, useState } from "react";
+import {
+  cropAtTime,
+  cropObjectPosition,
+  defaultFraming,
+  selectPrimaryTrack,
+  type Framing,
+  type FramingTracks,
+  type ClipPreviewCandidate,
+} from "@repurposepro/shared";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   captionAtTime,
@@ -16,16 +24,47 @@ export function ClipPreviewPlayer({
   apiUrl,
   projectId,
   onTimeChange,
+  tracks = null,
+  onFramingChange,
 }: {
   clip: ClipPreviewCandidate;
   apiUrl: string;
   projectId: string;
   onTimeChange: (time: number) => void;
+  tracks?: FramingTracks | null;
+  onFramingChange?: (framing: Framing) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [time, setTime] = useState(clip.startTime);
   const [loop, setLoop] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
+  const primary = useMemo(
+    () =>
+      tracks
+        ? selectPrimaryTrack(tracks, { startTime: clip.startTime, endTime: clip.endTime })
+        : null,
+    [tracks, clip.startTime, clip.endTime],
+  );
+  const framing = clip.framing
+    ? { ...clip.framing, trackId: clip.framing.trackId ?? primary }
+    : undefined;
+  const crop = framing
+    ? cropAtTime(framing, tracks, time, dimensions, clip)
+    : (clip.crop ?? cropAtTime(defaultFraming, null, time, dimensions, clip));
+  const position = cropObjectPosition(crop);
+  const drag = useRef<{ x: number; y: number; center: { x: number; y: number } } | null>(null);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    let frame = 0;
+    const tick = () => {
+      setTime(video.currentTime);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [clip.id]);
   useEffect(() => {
     const video = videoRef.current;
     if (video && (video.currentTime < clip.startTime || video.currentTime >= clip.endTime)) {
@@ -47,7 +86,6 @@ export function ClipPreviewPlayer({
   };
   const line =
     time >= clip.startTime && time < clip.endTime ? captionAtTime(clip.captionLines, time) : null;
-  const crop = clip.crop;
   return (
     <section aria-label="Live clip preview" className="min-w-0">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -72,11 +110,14 @@ export function ClipPreviewPlayer({
           preload="metadata"
           src={createSourceVideoContentUrl(apiUrl, projectId)}
           style={{
-            objectPosition: crop
-              ? `${(crop.x + crop.width / 2) * 100}% ${(crop.y + crop.height / 2) * 100}%`
-              : "50% 50%",
+            objectPosition: `${position.x}% ${position.y}%`,
           }}
           onLoadedMetadata={(event) => {
+            setDimensions({
+              width: event.currentTarget.videoWidth,
+              height: event.currentTarget.videoHeight,
+            });
+            setFailed(false);
             event.currentTarget.currentTime = clip.startTime;
             setTime(clip.startTime);
           }}
@@ -87,11 +128,54 @@ export function ClipPreviewPlayer({
         >
           Your browser does not support video previews.
         </video>
+        {framing?.mode === "manual" && onFramingChange && (
+          <div
+            role="group"
+            aria-label="Drag picture to adjust framing"
+            className="absolute inset-x-0 top-0 bottom-16 cursor-move touch-none"
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              drag.current = { x: event.clientX, y: event.clientY, center: framing.manualCenter };
+            }}
+            onPointerUp={() => {
+              drag.current = null;
+            }}
+            onPointerCancel={() => {
+              drag.current = null;
+            }}
+            onPointerMove={(event) => {
+              if (!drag.current) return;
+              const rect = event.currentTarget.parentElement!.getBoundingClientRect();
+              onFramingChange({
+                ...framing,
+                manualCenter: {
+                  x: Math.max(
+                    0,
+                    Math.min(
+                      1,
+                      drag.current.center.x -
+                        ((event.clientX - drag.current.x) / rect.width) * crop.width,
+                    ),
+                  ),
+                  y: Math.max(
+                    0,
+                    Math.min(
+                      1,
+                      drag.current.center.y -
+                        ((event.clientY - drag.current.y) / rect.height) * crop.height,
+                    ),
+                  ),
+                },
+              });
+            }}
+          />
+        )}
         {clip.captionsEnabled && line ? (
           <CaptionOverlay
             line={line}
             position={clip.captionPosition}
             fontSize={clip.previewFontSize}
+            textColor={clip.captionTextColor}
           />
         ) : null}
       </div>

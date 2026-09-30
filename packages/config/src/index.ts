@@ -123,6 +123,10 @@ const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(2),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   STORAGE_ROOT: z.string().trim().min(1),
+  FACE_PYTHON_PATH: z.string().trim().min(1).optional(),
+  FACE_MODEL_PATH: z.string().trim().min(1).optional(),
+  FACE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(900_000).default(900_000),
+  FFPROBE_PATH: z.string().trim().min(1).default("ffprobe"),
   WHISPER_COMPUTE_TYPE: z.string().trim().min(1).default("int8"),
   WHISPER_DEVICE: z.enum(["auto", "cpu", "cuda"]).default("cpu"),
   WHISPER_ENABLE_WORD_TIMESTAMPS: booleanFromEnvironment.default(false),
@@ -245,6 +249,12 @@ export interface AuthConfig {
 }
 
 export interface WorkerConfig extends ServerConfig {
+  readonly framing: {
+    readonly pythonPath: string;
+    readonly modelPath: string;
+    readonly timeoutMs: number;
+    readonly ffprobePath: string;
+  };
   readonly bullmqPrefix: string;
   readonly ffmpegPath: string;
   readonly gemini: {
@@ -409,6 +419,16 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     databaseSsl: parsed.DATABASE_SSL,
     databaseUrl: parsed.DATABASE_URL,
+    framing: {
+      pythonPath: /[/\\]/.test(parsed.FACE_PYTHON_PATH ?? parsed.WHISPER_PYTHON_PATH)
+        ? resolveStorageRoot(parsed.FACE_PYTHON_PATH ?? parsed.WHISPER_PYTHON_PATH)
+        : (parsed.FACE_PYTHON_PATH ?? parsed.WHISPER_PYTHON_PATH),
+      modelPath: parsed.FACE_MODEL_PATH
+        ? resolveStorageRoot(parsed.FACE_MODEL_PATH)
+        : resolve(resolveStorageRoot(parsed.STORAGE_ROOT), "models/blaze_face_short_range.tflite"),
+      timeoutMs: parsed.FACE_TIMEOUT_MS,
+      ffprobePath: parsed.FFPROBE_PATH,
+    },
     ffmpegPath: parsed.FFMPEG_PATH,
     gemini: {
       apiKey: parsed.GEMINI_API_KEY,

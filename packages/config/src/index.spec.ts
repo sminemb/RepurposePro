@@ -55,6 +55,14 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe("configuration loaders", () => {
+  it("resolves a relative face detector interpreter from the workspace root", () => {
+    const config = loadWorkerConfig({
+      ...validServerEnvironment,
+      FACE_PYTHON_PATH: ".venv/framing/Scripts/python.exe",
+    });
+    expect(config.framing.pythonPath).toBe(resolve(".venv/framing/Scripts/python.exe"));
+    expect(loadWorkerConfig(validServerEnvironment).framing.pythonPath).toBe("python3.13");
+  });
   it("coerces server numbers and booleans", () => {
     const config = loadWorkerConfig(validServerEnvironment);
 

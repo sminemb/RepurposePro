@@ -1,6 +1,13 @@
 import { z } from "zod";
+import { framingSchema, type Framing } from "./framing";
+
+export const captionColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/u);
+export const highlightColorsSchema = z
+  .record(z.string().min(1).max(64), captionColorSchema)
+  .refine((colors) => Object.keys(colors).length <= 10);
 
 export interface CaptionLine {
+  readonly highlightColors?: Readonly<Record<string, string>>;
   readonly id?: string;
   readonly highlights?: readonly string[];
   readonly endTime: number;
@@ -21,6 +28,8 @@ export interface ClipCrop {
 }
 
 export interface ClipPreviewCandidate {
+  readonly captionTextColor?: string;
+  readonly framing?: Framing;
   readonly captionLines: readonly CaptionLine[];
   readonly captionPosition: CaptionPosition;
   readonly captionStyle: "hormozi";
@@ -44,6 +53,7 @@ export interface ProjectClipList {
 
 export const captionLineSchema = z
   .object({
+    highlightColors: highlightColorsSchema.optional(),
     id: z.string().max(100).optional(),
     highlights: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
     endTime: z.number().finite().positive(),
@@ -70,6 +80,8 @@ export const clipCropSchema = z
 
 export const clipPreviewCandidateSchema = z
   .object({
+    captionTextColor: captionColorSchema.optional(),
+    framing: framingSchema.nullish().transform((value) => value ?? undefined),
     captionLines: z.array(captionLineSchema).max(100_000),
     captionPosition: captionPositionSchema,
     captionStyle: z.literal("hormozi"),
