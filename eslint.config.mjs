@@ -13,6 +13,7 @@ export default tseslint.config(
       "**/.venv/**",
       "**/next-env.d.ts",
       "packages/db/drizzle/**",
+      "storage/**",
     ],
   },
   eslint.configs.recommended,
@@ -57,10 +58,21 @@ export default tseslint.config(
       "apps/api/src/modules/processing/*.spec.ts",
       "apps/api/src/modules/projects/*.spec.ts",
       "apps/api/src/modules/storage/*.spec.ts",
+      "apps/api/src/modules/rendering/*.spec.ts",
     ],
     languageOptions: {
       parserOptions: {
         project: ["./apps/api/tsconfig.eslint.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ["packages/shared/src/*.spec.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./packages/shared/tsconfig.eslint.json"],
         projectService: false,
         tsconfigRootDir: import.meta.dirname,
       },

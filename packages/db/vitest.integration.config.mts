@@ -38,6 +38,7 @@ export default defineConfig({
       "apps/worker/src/services/analysis-pipeline.postgres-redis.integration.spec.ts",
       "packages/db/src/schema/billing-integrity.integration.spec.ts",
       "packages/db/src/schema/analysis-transcripts.integration.spec.ts",
+      "apps/api/src/modules/rendering/rendering.postgres-redis.integration.spec.ts",
     ],
     env: {
       APP_ENV: "test",
