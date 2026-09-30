@@ -10,7 +10,7 @@ describe("getProjectCardAction", () => {
     });
   });
 
-  it.each(["queued", "transcribing", "analyzing", "rendering"] as const)(
+  it.each(["queued", "transcribing", "analyzing"] as const)(
     "routes %s projects to their persisted processing page",
     (status) => {
       expect(getProjectCardAction("project/1", status)).toEqual({
@@ -19,6 +19,17 @@ describe("getProjectCardAction", () => {
       });
     },
   );
+
+  it("routes renders and completed exports to downloads", () => {
+    expect(getProjectCardAction("project/1", "rendering")).toEqual({
+      href: "/projects/project%2F1/outputs",
+      label: "View render",
+    });
+    expect(getProjectCardAction("project/1", "completed")).toEqual({
+      href: "/projects/project%2F1/outputs",
+      label: "View exports",
+    });
+  });
 
   it("routes preview-ready projects to browser clips", () => {
     expect(getProjectCardAction("project/1", "preview_ready")).toEqual({

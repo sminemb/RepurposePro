@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { requestClipEditor } from "./clip-editor-api";
+import { prepareClipRender } from "./prepare-clip-render";
 import {
   draftInput,
   editorDraft,
@@ -31,6 +32,7 @@ export function useClipEditor(
   const [recovery, setRecovery] = useState<EditorDraft | null>(null);
   const [checkedRecovery, setCheckedRecovery] = useState(false);
   const draftRef = useRef(draft);
+  const savedRef = useRef(initial);
   const savingRef = useRef(false);
   const storageKey = `rp:clip-draft:${userId}:${projectId}:${initial.clip.id}`;
   const input = draftInput(draft);
@@ -118,6 +120,7 @@ export function useClipEditor(
     setError("");
     try {
       const result = await requestClipEditor(apiUrl, projectId, saved.clip.id, parsed);
+      savedRef.current = result;
       const latest = draftRef.current;
       const next = rebaseSavedDraft(latest, submitted, clipEditorInput(result));
       setSaved(result);
@@ -151,6 +154,16 @@ export function useClipEditor(
     saving,
     error,
     save,
+    prepareRender: () =>
+      prepareClipRender({
+        blocked: savingRef.current || Boolean(validation) || Boolean(recovery),
+        dirty,
+        save,
+        isCurrent: () =>
+          JSON.stringify(draftRef.current) ===
+          JSON.stringify(editorDraft(clipEditorInput(savedRef.current))),
+        getSaved: () => savedRef.current,
+      }),
     discard,
     recovery,
     restore: () => {
