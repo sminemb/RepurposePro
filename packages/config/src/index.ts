@@ -115,6 +115,23 @@ const serverEnvironmentSchema = z.object({
 });
 
 const workerEnvironmentSchema = serverEnvironmentSchema.extend({
+  FFMPEG_PRESET: z
+    .enum([
+      "ultrafast",
+      "superfast",
+      "veryfast",
+      "faster",
+      "fast",
+      "medium",
+      "slow",
+      "slower",
+      "veryslow",
+    ])
+    .default("medium"),
+  FFMPEG_CRF: z.coerce.number().int().min(0).max(51).default(20),
+  RENDER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(3_600_000).default(3_600_000),
+  RENDER_FONT_PATH: z.string().min(1).optional(),
+  FILE_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(7),
   BULLMQ_PREFIX: z.string().trim().min(1).default("repurposepro"),
   DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
   FFMPEG_PATH: z.string().trim().min(1),
@@ -249,6 +266,14 @@ export interface AuthConfig {
 }
 
 export interface WorkerConfig extends ServerConfig {
+  readonly render: {
+    readonly preset: string;
+    readonly crf: number;
+    readonly timeoutMs: number;
+    readonly fontPath: string;
+    readonly ffprobePath: string;
+    readonly retentionDays: number;
+  };
   readonly framing: {
     readonly pythonPath: string;
     readonly modelPath: string;
@@ -414,6 +439,16 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
   const parsed = parseEnvironment(workerEnvironmentSchema, "worker", environment);
 
   return {
+    render: {
+      preset: parsed.FFMPEG_PRESET,
+      crf: parsed.FFMPEG_CRF,
+      timeoutMs: parsed.RENDER_TIMEOUT_MS,
+      fontPath: parsed.RENDER_FONT_PATH
+        ? resolveStorageRoot(parsed.RENDER_FONT_PATH)
+        : resolve(workspaceRoot(), "packages/shared/assets/fonts/Inter-Black.ttf"),
+      ffprobePath: parsed.FFPROBE_PATH,
+      retentionDays: parsed.FILE_RETENTION_DAYS,
+    },
     appEnv: parsed.APP_ENV,
     bullmqPrefix: parsed.BULLMQ_PREFIX,
     databasePoolMax: parsed.DATABASE_POOL_MAX,
