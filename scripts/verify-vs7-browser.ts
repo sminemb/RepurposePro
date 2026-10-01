@@ -68,6 +68,8 @@ async function main() {
   let renderedIds = [...clipIds];
   let rendering = false;
   let regenerating = false;
+  let regenerationTarget = "";
+  let regenerationPolls = 0;
   const send = (response: ServerResponse, data: unknown, status = 200) => {
     response.statusCode = status;
     response.setHeader("Content-Type", "application/json");
@@ -81,7 +83,7 @@ async function main() {
   await mkdir(root, { recursive: true });
   await writeFile(
     join(root, "next-link.tsx"),
-    'export default function Link({href,...props}) { return <a {...props} href={href.includes("outputs")?"/?outputs=1"+location.search.replace("?","&"):"/"+location.search}/>; }',
+    'export default function Link({href,...props}) { return <a {...props} href={href.includes("outputs")?"/?outputs=1"+location.search.replace("?","&"):"/"}/>; }',
   );
   await writeFile(
     join(root, "next-navigation.ts"),
@@ -218,7 +220,11 @@ createRoot(document.getElementById('root')).render(<main style={{maxWidth:1440,m
             fail(response, "Could not regenerate this clip. Your saved clip is safe.", 503);
             return;
           }
-          regenerating = mode === "queued";
+          regenerating = mode.startsWith("queued");
+          regenerationTarget = id;
+          regenerationPolls = 0;
+          if (regenerating)
+            editors.set(id, { ...editor, clip: { ...editor.clip, regenerationJobId: jobId } });
           if (!regenerating) {
             // Deterministic backup promotion; no model, transcription, queue or credits involved.
             editors.delete(id);
@@ -301,11 +307,35 @@ createRoot(document.getElementById('root')).render(<main style={{maxWidth:1440,m
         url.pathname === `${apiPath}/status` ||
         /^\/api\/jobs\/[^/]+\/status$/.test(url.pathname)
       ) {
-        const state =
+        let state =
           parameters.get("state") ??
           (regenerating ? "queued" : rendering ? "rendering" : "completed");
-        const completed = state === "completed";
-        const failed = state === "failed";
+        if (regenerating && mode === "queuedfinish" && ++regenerationPolls >= 2)
+          state = "completed";
+        const regenerationJob = regenerating;
+        if (regenerationJob && (state === "completed" || state === "failed")) {
+          const original = editors.get(regenerationTarget)!;
+          if (state === "completed") {
+            editors.delete(regenerationTarget);
+            editors.set(replacementId, {
+              ...original,
+              clip: {
+                ...original.clip,
+                id: replacementId,
+                title: "A fresh replacement moment",
+                revision: 0,
+                regenerationJobId: null,
+              },
+            });
+          } else
+            editors.set(regenerationTarget, {
+              ...original,
+              clip: { ...original.clip, regenerationJobId: null },
+            });
+          regenerating = false;
+        }
+        const completed = state === "completed" && mode !== "partial" && mode !== "publishing";
+        const failed = state === "failed" || mode === "partial";
         const job = {
           id: jobId,
           status: completed
@@ -317,16 +347,46 @@ createRoot(document.getElementById('root')).render(<main style={{maxWidth:1440,m
                 : "active",
           step: state,
           progress: completed ? 100 : state === "queued" ? 0 : state === "saving_output" ? 97 : 42,
-          message: null,
+          message: failed
+            ? regenerationJob
+              ? "A replacement could not be found. Your original clip is safe; try again."
+              : "Some clips failed. Successful downloads are ready."
+            : null,
+          ...(regenerationJob && completed ? { replacementClipId: replacementId } : {}),
           startedAt: state === "queued" ? null : "2026-10-01T00:00:00.000Z",
           completedAt: completed || failed ? "2026-10-01T00:01:00.000Z" : null,
-          clips: renderedIds.map((clipId, index) => ({
-            clipId,
-            title: editors.get(clipId)?.clip.title ?? "Saved clip",
-            status: completed ? "completed" : failed ? "failed" : index ? "queued" : "active",
-            step: completed ? "completed" : failed ? "failed" : index ? "queued" : "rendering",
-            progress: completed ? 100 : index ? 0 : 84,
-          })),
+          clips: regenerationJob
+            ? undefined
+            : renderedIds.map((clipId, index) => ({
+                clipId,
+                title: editors.get(clipId)?.clip.title ?? "Saved clip",
+                status:
+                  (mode === "partial" || mode === "publishing") && !index
+                    ? "completed"
+                    : completed
+                      ? "completed"
+                      : failed
+                        ? "failed"
+                        : index
+                          ? "queued"
+                          : "active",
+                step:
+                  (mode === "partial" || mode === "publishing") && !index
+                    ? "completed"
+                    : completed
+                      ? "completed"
+                      : failed
+                        ? "failed"
+                        : index
+                          ? "rendering"
+                          : "rendering",
+                progress:
+                  completed || ((mode === "partial" || mode === "publishing") && !index)
+                    ? 100
+                    : index
+                      ? 42
+                      : 84,
+              })),
         };
         send(
           response,
@@ -345,20 +405,22 @@ createRoot(document.getElementById('root')).render(<main style={{maxWidth:1440,m
         send(
           response,
           outputListSchema.parse(
-            renderedIds.map((id, index) => ({
-              id: `00000000-0000-4000-8000-${String(80 + index).padStart(12, "0")}`,
-              renderJobId: jobId,
-              clipId: id,
-              type: "clip",
-              title: editors.get(id)?.clip.title ?? "Previous exported clip",
-              durationSeconds: 2.4,
-              fileSizeBytes: sourceVideo.length,
-              width: 1080,
-              height: 1920,
-              status: "ready",
-              createdAt: new Date(now).toISOString(),
-              expiresAt: new Date(now + 7 * 86400000).toISOString(),
-            })),
+            renderedIds
+              .filter((_, index) => !["partial", "publishing"].includes(mode) || index === 0)
+              .map((id, index) => ({
+                id: `00000000-0000-4000-8000-${String(80 + index).padStart(12, "0")}`,
+                renderJobId: jobId,
+                clipId: id,
+                type: "clip",
+                title: editors.get(id)?.clip.title ?? "Previous exported clip",
+                durationSeconds: 2.4,
+                fileSizeBytes: sourceVideo.length,
+                width: 1080,
+                height: 1920,
+                status: "ready",
+                createdAt: new Date(now).toISOString(),
+                expiresAt: new Date(now + 7 * 86400000).toISOString(),
+              })),
           ),
         );
         return;
