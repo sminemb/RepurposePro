@@ -80,6 +80,7 @@ export const clipCropSchema = z
 
 export const clipPreviewCandidateSchema = z
   .object({
+    selected: z.boolean().optional(),
     captionTextColor: captionColorSchema.optional(),
     framing: framingSchema.nullish().transform((value) => value ?? undefined),
     captionLines: z.array(captionLineSchema).max(100_000),

@@ -397,6 +397,8 @@ export const clipCandidates = pgTable(
       .notNull()
       .references(() => transcripts.id, { onDelete: "cascade" }),
     kind: clipCandidateKindEnum("kind").notNull(),
+    selected: boolean("selected").default(true).notNull(),
+    replacesClipId: uuid("replaces_clip_id").references((): AnyPgColumn => clipCandidates.id),
     rank: integer("rank").notNull(),
     title: varchar("title", { length: 120 }).notNull(),
     reason: varchar("reason", { length: 500 }).notNull(),
@@ -427,10 +429,12 @@ export const clipCandidates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    uniqueIndex("clip_candidates_job_kind_rank_unique").on(
-      table.processingJobId,
-      table.kind,
-      table.rank,
+    uniqueIndex("clip_candidates_job_kind_rank_unique")
+      .on(table.processingJobId, table.kind, table.rank)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check(
+      "clip_candidates_selection_check",
+      sql`NOT ${table.selected} OR (${table.kind} = 'primary' AND ${table.deletedAt} IS NULL)`,
     ),
     index("clip_candidates_project_primary_order_idx")
       .on(table.projectId, table.rank, table.id)

@@ -19,6 +19,18 @@ const candidate = {
 } as const;
 
 describe("projectClipListSchema", () => {
+  it("accepts persisted selection while keeping legacy candidates compatible", () => {
+    const data = {
+      clips: [{ ...candidate, selected: false }],
+      projectId,
+      sourceDurationSeconds: 30,
+    };
+    expect(projectClipListSchema.parse(data).clips[0].selected).toBe(false);
+    expect(
+      projectClipListSchema.safeParse({ ...data, clips: [{ ...candidate, selected: "yes" }] })
+        .success,
+    ).toBe(false);
+  });
   it("coerces database source duration and strips row-level unknown keys", () => {
     expect(
       projectClipListSchema.parse({

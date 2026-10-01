@@ -183,6 +183,13 @@
       "when": 1790775000000,
       "tag": "0025_single_clip_render",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790863137965,
+      "tag": "0026_vs7_candidate_state",
+      "breakpoints": true
     }
   ]
 }

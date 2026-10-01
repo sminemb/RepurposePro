@@ -106,6 +106,28 @@ suite("saved one clip renders", () => {
       )
     ).rows[0]!.result;
   }
+  it("persists selection independently of edits and scopes changes to the owner", async () => {
+    const select = async (user: string, selected: boolean) =>
+      (
+        await runtime.pool.query<{ result: unknown }>(
+          "SELECT public.set_owned_clip_selection($1,$2,$3,$4) AS result",
+          [user, project, clip, selected],
+        )
+      ).rows[0].result;
+    expect(await select("other-user", false)).toEqual({ error: "CLIP_NOT_FOUND" });
+    expect(await select("render-owner", false)).toMatchObject({ selected: false, revision: 0 });
+    const list = (
+      await runtime.pool.query<{ clips: { selected: boolean }[] }>(
+        "SELECT clips FROM public.list_owned_project_clip_candidates($1,$2)",
+        ["render-owner", project],
+      )
+    ).rows[0].clips;
+    expect(list[0].selected).toBe(false);
+    expect(await select("render-owner", true)).toMatchObject({ selected: true, revision: 0 });
+    await expect(
+      runtime.pool.query("UPDATE clip_candidates SET selected=false"),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
   it("rejects foreign owners, stale revisions and direct writes", async () => {
     expect(await start("other-user")).toEqual({ error: "PROJECT_NOT_FOUND" });
     expect(await start(undefined, 2)).toEqual({ error: "CLIP_EDIT_CONFLICT" });

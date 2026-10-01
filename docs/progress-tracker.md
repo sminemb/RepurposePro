@@ -109,7 +109,7 @@ FAILED
 | VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
-| VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS7 | User can manage multiple clips and regenerate a bad one | IN_PROGRESS | 2026-10-01 | 21:54 | — | — | VS7-T2 | 14% | — |
 | VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -470,20 +470,20 @@ This slice crosses list management UI, candidate state, regeneration logic, back
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS7         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-10-01 |
+| Start Time | 21:54 |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress | 14% |
 | Dependency | VS6         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                                    | Layers Touched       | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ---------------------------------------------------------------- | -------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS7-T1  | Add selected/deleted/backup candidate states                     | DB + API             | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T2  | Build multi-clip selection and delete behavior                   | Web + API            | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS7-T1 | Add selected/deleted/backup candidate states | DB + API | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 22:03 | 6 shared tests; 69 DB/Redis tests; typecheck |
+| VS7-T2 | Build multi-clip selection and delete behavior | Web + API | IN_PROGRESS | 2026-10-01 | 22:03 | — | — | — |
 | VS7-T3  | Regenerate one clip using unused backup candidate first          | Web + API + DB       | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS7-T4  | Fall back to Gemini regeneration only when backups are exhausted | Worker + Gemini      | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS7-T5  | Render only selected clips in one render job                     | API + Queue + Worker | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -772,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS6 - Render and download one vertical clip
-Current Task: None - VS6-T1 through VS6-T8 completed.
-Current Status: COMPLETED
+Current Slice: VS7 - Manage multiple clips and regenerate a bad one
+Current Task: VS7-T2 - IN_PROGRESS
+Current Status: IN_PROGRESS
 Last Completed Task: VS6-T8 - Preview/export parity verified; all VS6 tasks passed the final quality gate at 23:33 Asia/Manila.
-Next Recommended Task: VS7-T1 - Start the editable-summary slice after reading its specification.
-Uncommitted Changes: None after the VS6 commits on codex/vs6-render-download. Media fixtures, browser screenshots and logs under ignored storage/vs6-verification are intentionally not committed.
+Next Recommended Task: Complete VS7-T1 through VS7-T7 on codex/vs7-multi-clip.
+Uncommitted Changes: VS7 work in progress; each verified task is committed on codex/vs7-multi-clip. Ignored verification fixtures remain under storage/vs7-verification.
 Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 547 unit tests, 68 PostgreSQL/Redis integration tests and production builds. The final rerun cleared transient forced test-database cleanup errors; evidence is recorded in docs/verification/vs6.md.
 Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
 Important Context: Explicit one-clip export saves unsaved edits first and uses the returned revision. Free re-renders preserve previous outputs until expiration; failed renders retain editing/previews. Migration 0025 separates current analysis from current render work and adds immutable requests, retry-key aliases and fenced outputs; it was applied locally and is required before deployment. New worker dependency @napi-rs/canvas 1.0.9 and licensed pinned Inter Black assets. Shared caption/framing geometry follows ADRs 0002/0003/0004. Defaults: medium, CRF 20, 60-minute timeout, seven-day publication retention. Scheduled deletion remains VS10. Browser verification uses synthetic responses and real rendered fixture media.
 Required Commands Before Continuing: Read VS7 requirements, ADRs 0002/0003/0004 and docs/verification/vs6.md. Record an Asia/Manila start timestamp when VS7 begins. Preserve immutable render snapshots, the saved-revision contract and current-analysis preview access.
-Last Updated Date: 2026-09-30
-Last Updated Time: 23:33
+Last Updated Date: 2026-10-01
+Last Updated Time: 22:03
 Last Updated By: Codex
 ```
