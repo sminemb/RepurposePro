@@ -59,21 +59,40 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       throw new UnrecoverableError("Invalid render job");
     const jobId = job.id,
       token = randomUUID();
-    const raw = await this.query<unknown>("SELECT public.acquire_clip_render($1,$2,$3) AS result", [
-      jobId,
-      data.projectId,
-      token,
-    ]);
-    if (raw && typeof raw === "object" && "completed" in raw) return;
-    if (!raw) throw new Error("Render lease unavailable");
+    const acquired = await this.query<{ terminal?: boolean }>(
+      "SELECT public.acquire_clip_batch_render($1,$2,$3) AS result",
+      [jobId, data.projectId, token],
+    );
+    if (acquired?.terminal) return;
+    if (!acquired) throw new Error("Render lease unavailable");
+    try {
+      for (;;) {
+        const raw = await this.query<unknown>(
+          "SELECT public.begin_clip_render_item($1,$2) AS result",
+          [jobId, token],
+        );
+        if (!raw) return;
+        if (typeof raw === "object" && "retry" in raw) throw new Error("Retry unfinished clips");
+        await this.renderItem(jobId, data.projectId, token, raw);
+      }
+    } catch (error) {
+      await this.query("SELECT public.fail_clip_render($1,$2,true,'RENDER_FAILED') AS result", [
+        jobId,
+        token,
+      ]).catch(() => undefined);
+      throw error;
+    }
+  }
+  private async renderItem(jobId: string, projectId: string, token: string, raw: unknown) {
+    const snapshot = renderSnapshotSchema.parse(raw);
     const controller = new AbortController();
     let progress = 2,
       step = "preparing",
       heartbeat: Promise<void> | undefined;
     const touch = async () => {
       const valid = await this.query<boolean>(
-        "SELECT public.touch_clip_render($1,$2,$3,$4) AS result",
-        [jobId, token, step, progress],
+        "SELECT public.touch_clip_render_item($1,$2,$3,$4,$5) AS result",
+        [jobId, token, snapshot.clip.id, step, progress],
       );
       if (!valid) throw new Error("Render lease lost");
     };
@@ -89,8 +108,7 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       finalPath: string | undefined,
       published = false;
     try {
-      const snapshot = renderSnapshotSchema.parse(raw);
-      if (snapshot.projectId !== data.projectId || snapshot.sourceExpiresAt.getTime() <= Date.now())
+      if (snapshot.projectId !== projectId || snapshot.sourceExpiresAt.getTime() <= Date.now())
         throw new UnrecoverableError("Source video is unavailable");
       const root = await realpath(this.config.storageRoot),
         source = await realpath(snapshot.sourcePath);
@@ -181,6 +199,7 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
         snapshot.projectId,
         "renders",
         jobId,
+        snapshot.clip.id,
       );
       await mkdir(target, { recursive: true });
       finalPath = join(target, `${token}.mp4`);
@@ -190,10 +209,11 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       if (controller.signal.aborted) throw controller.signal.reason;
       await rename(outputPath, finalPath);
       const id = await this.query<string | null>(
-        "SELECT public.complete_clip_render($1,$2,$3,$4) AS result",
+        "SELECT public.complete_clip_render_item($1,$2,$3,$4,$5) AS result",
         [
           jobId,
           token,
+          snapshot.clip.id,
           {
             storagePath: finalPath.replaceAll("\\", "/"),
             fileName: `${
@@ -222,14 +242,18 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       const sourceFailure =
         error instanceof UnrecoverableError && error.message === "Source video is unavailable";
       const retry = !(error instanceof UnrecoverableError) && !controller.signal.aborted;
-      await this.query("SELECT public.fail_clip_render($1,$2,$3,$4) AS result", [
-        jobId,
-        token,
-        retry,
-        sourceFailure ? "RENDER_SOURCE_UNAVAILABLE" : "RENDER_FAILED",
-      ]).catch(() => undefined);
+      const failed = await this.query<boolean>(
+        "SELECT public.fail_clip_render_item($1,$2,$3,$4,$5) AS result",
+        [
+          jobId,
+          token,
+          snapshot.clip.id,
+          retry,
+          sourceFailure ? "RENDER_SOURCE_UNAVAILABLE" : "RENDER_FAILED",
+        ],
+      ).catch(() => false);
       this.logger.warn({ event: "render_failed", jobId, retry });
-      throw error;
+      if (!failed || controller.signal.aborted) throw error;
     } finally {
       clearInterval(timer);
       await heartbeat;

@@ -738,6 +738,10 @@ Rules:
 - `progress` may be null when exact progress is unknown.
 - Do not fake precision.
 - Prefer step-based status.
+- The authenticated owner's job must belong to the path's project. Foreign/mismatched jobs return 404.
+- `GET /jobs/:jobId/status` is also available as an ownership-scoped alias.
+- Render jobs include `clips`: each item has `clipId`, frozen `title`, `status` (`queued`, `active`, `completed`, `failed`), `step`, `progress`, and optional `errorCode`, `errorMessage`, `outputId`.
+- Regeneration jobs include `replacementClipId` after successful completion. Read status and outputs while a batch is active; each successful export is available immediately.
 
 ---
 
@@ -907,7 +911,15 @@ See [ADR 0002](adr/0002-source-timed-clip-edits.md) for compatibility and render
 
 ## DELETE `/projects/:projectId/clips/:clipId`
 
-Soft-deletes or deselects a clip candidate.
+Soft-deletes a current primary after the editor confirms deletion. Body: `{ "expectedRevision": 4 }`.
+Rows remain for lineage and downloads. Deletion preserves backups, source media, and previous exports.
+Revision conflicts and active render/regeneration work return 409. Ownership misses return 404.
+
+## PATCH `/projects/:projectId/clips/:clipId/selection`
+
+Body: `{ "selected": true }`. Returns the canonical clip, including `selected` and nullable
+`regenerationJobId`. Selection is independent of caption revisions and affects future exports.
+Visible initial primaries are selected; backups and archived rows are unselected.
 
 ### Response — 204
 
@@ -915,14 +927,20 @@ Soft-deletes or deselects a clip candidate.
 
 ## POST `/projects/:projectId/clips/:clipId/regenerate`
 
-Replaces one bad clip.
+Replaces one current primary clip slot. Body: `{ "expectedRevision": 4 }` and required
+`Idempotency-Key` (1–100 ASCII letters, digits, `_` or `-`). A key remains bound to its target
+and revision; replays return the same replacement or queued job without consuming another backup.
 
 ### Behavior
 
 1. Use unused backup candidate first.
 2. Use Gemini only if backups are exhausted.
 3. Do not deduct extra credits within the same paid MVP project.
-4. Affect only the requested clip slot.
+4. Affect only the requested clip slot; retain its rank, selection and caption appearance.
+5. Fresh transcript captions and automatic framing replace phrase edits and manual framing.
+6. A queued Gemini job retains the original until lease-, analysis- and revision-fenced success.
+7. Failures retain the original and are retryable using a fresh key; no credit deduction or refund is created.
+8. Only one render or regeneration may run per project. Target caption edits are blocked during regeneration.
 
 ### Response — 202 or 200
 
@@ -1015,7 +1033,7 @@ Returns updated summary state.
 
 ## POST `/projects/:projectId/render`
 
-Starts one saved primary clip export in VS6. Summary and multi-clip rendering are later slices.
+Starts a free batch of 1–10 selected, saved current-analysis primary clips. Summary rendering remains VS8.
 
 ### Request — clips project
 
@@ -1023,20 +1041,22 @@ Starts one saved primary clip export in VS6. Summary and multi-clip rendering ar
 {
   "type": "clips",
   "clipIds": ["5a3f86e2-4a61-49ba-a7d8-11fc495bde11"],
-  "expectedRevision": 4
+  "expectedRevisions": { "5a3f86e2-4a61-49ba-a7d8-11fc495bde11": 4 }
 }
 ```
 
 Optional `Idempotency-Key` header: 1–100 ASCII letters, digits, `_` or `-`.
 Each accepted key remains bound to its render attempt, including keys that reuse matching
 active work. Repeating a key returns that job's current status. A fresh key after completion
-creates a new free render. Exactly one active render is allowed per project.
+creates a new free render. Exactly one render or regeneration is allowed per project.
+Legacy one-clip `{ type: "clips", clipIds: [id], expectedRevision: 4 }` requests remain accepted.
+IDs must be unique; the revision map must contain exactly those IDs. `outputCount` is 1–10.
 
 ### Preconditions
 
 - Project belongs to user.
 - Project is preview-ready, waiting for user edits, or completed.
-- Exactly one primary clip belongs to the current analysis and its revision matches.
+- All 1–10 clips are selected live primaries belonging to the current analysis, and all saved revisions match. Validation is atomic; one invalid item creates no job or snapshot.
 - The source is available and unexpired; follow framing has no pending tracking job.
 - The immutable snapshot, zero-credit job and durable dispatch are stored atomically.
 - Save unsaved edits before requesting render. Queue outages retain durable work for retry.
@@ -1060,6 +1080,7 @@ RENDER_INVALID_PROJECT_STATE
 VALIDATION_ERROR
 CLIP_EDIT_CONFLICT
 RENDER_CLIP_NOT_FOUND
+RENDER_CLIP_NOT_SELECTED
 RENDER_ALREADY_RUNNING
 RENDER_IDEMPOTENCY_CONFLICT
 RENDER_FRAMING_PENDING
@@ -1118,7 +1139,10 @@ Successful downloads include `Content-Type: video/mp4`, accurate `Content-Length
 `Content-Disposition: attachment; filename="<safe-name>.mp4"`. Ownership is verified
 before storage resolution. Missing/foreign files return 404; expired/deleted files return 410.
 Output expiration starts at publication using `FILE_RETENTION_DAYS` (default seven).
-Returned metadata excludes all filesystem paths. The list retains earlier attempts.
+Returned metadata excludes all filesystem paths. The list retains earlier attempts and successful outputs from failed batches. Outputs publish
+individually while remaining clips run. Each clip has at most two automatic attempts; successful
+items are skipped on recovery. The parent finishes `completed` only when all succeed, otherwise
+`failed` with the project preview-ready. Retry failed, still-selected clips with a fresh free request.
 
 Recommended headers:
 

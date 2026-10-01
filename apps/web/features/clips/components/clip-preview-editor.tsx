@@ -18,6 +18,7 @@ import { FramingControls } from "./framing-controls";
 import { ClipPreviewPlayer } from "./clip-preview-player";
 import { EditorLeaveDialog } from "./editor-leave-dialog";
 import { editorFieldClass, TrimControls } from "./trim-controls";
+import { loadRenderJobStatus } from "@/features/rendering/client/job-status-api";
 import { RenderAction } from "@/features/rendering/components/render-action";
 import { selectClip, deleteClip, regenerateClip } from "../client/clip-management-api";
 import { ClipDeleteDialog } from "./clip-delete-dialog";
@@ -53,6 +54,64 @@ export function ClipPreviewEditor(props: Props) {
       setManagementBusy("");
     }
   };
+  const pendingJobs = JSON.stringify(
+    clips
+      .filter((clip) => clip.regenerationJobId)
+      .map((clip) => ({ clipId: clip.id, jobId: clip.regenerationJobId! })),
+  );
+  useEffect(() => {
+    const pending = JSON.parse(pendingJobs) as { clipId: string; jobId: string }[];
+    if (!pending.length) return;
+    const abort = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      for (const item of pending) {
+        try {
+          const job = await loadRenderJobStatus(props.apiUrl, item.jobId, abort.signal);
+          if (abort.signal.aborted) return;
+          if (job.status === "failed") {
+            setManagementError(
+              job.message || "Replacement failed. Your original clip is safe; try again.",
+            );
+            setClips((items) =>
+              items.map((clip) =>
+                clip.id === item.clipId ? { ...clip, regenerationJobId: null } : clip,
+              ),
+            );
+          } else if (job.status === "completed" && job.replacementClipId) {
+            const response = await fetch(
+              `${props.apiUrl.replace(/\/$/u, "")}/projects/${props.projectId}/clips`,
+              { credentials: "include", cache: "no-store", signal: abort.signal },
+            );
+            if (!response.ok)
+              throw new Error("Replacement saved. Reconnecting to your updated clips…");
+            const body = (await response.json()) as { data: unknown };
+            const next = projectClipListSchema.parse(body.data).clips;
+            if (abort.signal.aborted) return;
+            setClips((items) =>
+              next.map((clip) => {
+                const current = items.find((old) => old.id === clip.id);
+                return current ? { ...clip, selected: current.selected } : clip;
+              }),
+            );
+            setActiveId((id) => (id === item.clipId ? job.replacementClipId! : id));
+            setManagementError("");
+          }
+        } catch (failure) {
+          if (!abort.signal.aborted)
+            setManagementError(
+              failure instanceof Error ? failure.message : "Reconnecting to replacement progress…",
+            );
+        }
+      }
+      if (!abort.signal.aborted) timer = setTimeout(() => void poll(), 2000);
+    };
+    void poll();
+    return () => {
+      abort.abort();
+      clearTimeout(timer);
+    };
+  }, [pendingJobs, props.apiUrl, props.projectId]);
   useEffect(() => {
     if (!activeId) return;
     const abort = new AbortController();
@@ -106,6 +165,11 @@ export function ClipPreviewEditor(props: Props) {
       managementBusy={managementBusy}
       managementError={managementError}
       onSelection={onSelection}
+      onRegenerationJob={(id, jobId) =>
+        setClips((items) =>
+          items.map((clip) => (clip.id === id ? { ...clip, regenerationJobId: jobId } : clip)),
+        )
+      }
       onDeleted={(id) => {
         const next = clips.filter((clip) => clip.id !== id);
         setClips(next);
@@ -113,15 +177,21 @@ export function ClipPreviewEditor(props: Props) {
       }}
       initial={loaded}
       onSelect={setActiveId}
-      onReplaced={async (id) => {
+      onReplaced={async (id, originalId) => {
         const response = await fetch(
           `${props.apiUrl.replace(/\/$/u, "")}/projects/${props.projectId}/clips`,
           { credentials: "include", cache: "no-store" },
         );
         if (!response.ok) throw new Error("Replacement saved. Reload to see your updated clips.");
         const body = (await response.json()) as { data: unknown };
-        setClips([...projectClipListSchema.parse(body.data).clips]);
-        setActiveId(id);
+        const next = projectClipListSchema.parse(body.data).clips;
+        setClips((items) =>
+          next.map((clip) => {
+            const current = items.find((old) => old.id === clip.id);
+            return current ? { ...clip, selected: current.selected } : clip;
+          }),
+        );
+        setActiveId((active) => (active === originalId ? id : active));
       }}
       onSaved={(editor) =>
         setClips((items) =>
@@ -145,7 +215,8 @@ function EditorSession({
   onSaved: (editor: ClipEditor) => void;
   onSelection: (id: string, selected: boolean) => Promise<void>;
   onDeleted: (id: string) => void;
-  onReplaced: (id: string) => Promise<void>;
+  onReplaced: (id: string, originalId: string) => Promise<void>;
+  onRegenerationJob: (id: string, jobId: string | null) => void;
   managementBusy: string;
   managementError: string;
 }) {
@@ -165,10 +236,16 @@ function EditorSession({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [regenerating, setRegenerating] = useState(false);
+  const regenerationJob =
+    props.clips.find((clip) => clip.id === initial.clip.id)?.regenerationJobId ?? "";
+  const regenerationBusy = regenerating || Boolean(regenerationJob);
+  useEffect(() => {
+    if (!regenerationJob) regenerationKey.current = null;
+  }, [regenerationJob]);
   const [regenerateError, setRegenerateError] = useState("");
   const regenerationKey = useRef<{ key: string; revision: number } | null>(null);
   const regenerate = async () => {
-    if (regenerating) return;
+    if (regenerationBusy) return;
     setRegenerating(true);
     setRegenerateError("");
     const revision = state.getSaved().clip.revision ?? 0;
@@ -184,8 +261,10 @@ function EditorSession({
       );
       if (result.replacementClipId) {
         state.clearRecovery();
-        await props.onReplaced(result.replacementClipId);
-      } else throw new Error("Replacement is queued. Reload to check progress.");
+        await props.onReplaced(result.replacementClipId, initial.clip.id);
+      } else if (result.source === "gemini_regeneration") {
+        props.onRegenerationJob(initial.clip.id, result.jobId);
+      }
     } catch (failure) {
       setRegenerateError(failure instanceof Error ? failure.message : "Could not regenerate clip.");
     } finally {
@@ -285,18 +364,20 @@ function EditorSession({
           <div className="flex flex-wrap items-center gap-4">
             <button
               type="button"
-              disabled={regenerating || deleting || state.saving || Boolean(props.managementBusy)}
+              disabled={
+                regenerationBusy || deleting || state.saving || Boolean(props.managementBusy)
+              }
               onClick={() => navigation.request(() => void regenerate())}
               className="min-h-11 rounded-rp-md border border-rp-border px-3 text-sm text-rp-text"
             >
-              {regenerating ? "Finding a replacement…" : "Regenerate clip"}
+              {regenerationBusy ? "Finding a replacement…" : "Regenerate clip"}
             </button>
             <label className="inline-flex min-h-11 items-center gap-2 text-sm text-rp-text">
               <input
                 aria-label={`Select ${state.saved.clip.title} for export`}
                 type="checkbox"
                 checked={selected}
-                disabled={Boolean(props.managementBusy) || deleting || regenerating}
+                disabled={Boolean(props.managementBusy) || deleting || regenerationBusy}
                 onChange={(event) => void props.onSelection(initial.clip.id, event.target.checked)}
                 className="size-4 accent-rp-primary"
               />
@@ -304,7 +385,9 @@ function EditorSession({
             </label>
             <button
               type="button"
-              disabled={deleting || state.saving || Boolean(props.managementBusy)}
+              disabled={
+                regenerationBusy || deleting || state.saving || Boolean(props.managementBusy)
+              }
               onClick={() =>
                 navigation.request(() => {
                   setDeleteError("");
@@ -330,9 +413,13 @@ function EditorSession({
         <RenderAction
           apiUrl={props.apiUrl}
           projectId={props.projectId}
+          userId={props.userId}
+          selectedIds={props.clips.filter((clip) => clip.selected !== false).map((clip) => clip.id)}
           dirty={state.dirty}
           disabled={
-            !selected ||
+            !props.clips.some((clip) => clip.selected !== false) ||
+            props.clips.some((clip) => Boolean(clip.regenerationJobId)) ||
+            regenerationBusy ||
             state.saving ||
             deleting ||
             Boolean(state.validation) ||
@@ -371,7 +458,7 @@ function EditorSession({
             </span>
             <button
               type="button"
-              disabled={!state.dirty || state.saving}
+              disabled={regenerationBusy || !state.dirty || state.saving}
               className="min-h-11 rounded-rp-md border border-rp-border px-4 text-sm text-rp-text disabled:opacity-40"
               onClick={state.discard}
             >
@@ -379,7 +466,9 @@ function EditorSession({
             </button>
             <button
               type="button"
-              disabled={!state.dirty || state.saving || Boolean(state.validation)}
+              disabled={
+                regenerationBusy || !state.dirty || state.saving || Boolean(state.validation)
+              }
               className="min-h-11 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white disabled:opacity-40"
               onClick={() => void state.save()}
             >
@@ -429,7 +518,7 @@ function EditorSession({
                     type="checkbox"
                     aria-label={`Select ${clip.title} for export`}
                     checked={clip.selected !== false}
-                    disabled={Boolean(props.managementBusy) || deleting || regenerating}
+                    disabled={Boolean(props.managementBusy) || deleting || regenerationBusy}
                     onChange={(event) => void props.onSelection(clip.id, event.target.checked)}
                     className="size-4 shrink-0 accent-rp-primary"
                   />
@@ -458,10 +547,13 @@ function EditorSession({
               projectId={props.projectId}
               onTimeChange={setTime}
               tracks={tracking.status.data}
-              onFramingChange={(framing) => state.update({ ...state.draft, framing })}
+              onFramingChange={(framing) => {
+                if (!regenerationBusy) state.update({ ...state.draft, framing });
+              }}
             />
           </div>
           <aside
+            inert={regenerationBusy}
             aria-label="Clip settings"
             className={`hidden min-h-0 min-w-0 self-start overflow-y-auto rounded-rp-lg border border-rp-border bg-rp-surface p-4 [scrollbar-gutter:stable] md:sticky md:top-44 md:order-2 md:max-h-[max(12rem,calc(100dvh-12rem))] xl:order-3 xl:block ${panel === "settings" ? "md:block" : ""}`}
           >

@@ -562,6 +562,54 @@ export const renderRequestKeys = pgTable(
   ],
 );
 
+// Requests are immutable; item progress is kept in a separate relation.
+export const renderRequestItems = pgTable(
+  "render_request_items",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => renderRequests.jobId, { onDelete: "cascade" }),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    revision: integer("revision").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.clipId] }),
+    unique("render_request_items_ordinal_unique").on(t.jobId, t.ordinal),
+    check("render_request_items_revision_check", sql`${t.revision}>=0`),
+  ],
+);
+export const renderItemProgress = pgTable(
+  "render_item_progress",
+  {
+    jobId: uuid("job_id").notNull(),
+    clipId: uuid("clip_id").notNull(),
+    status: text("status").notNull().default("queued"),
+    step: text("step").notNull().default("queued"),
+    progress: integer("progress").notNull().default(0),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    outputId: uuid("output_id"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.clipId] }),
+    foreignKey({
+      columns: [t.jobId, t.clipId],
+      foreignColumns: [renderRequestItems.jobId, renderRequestItems.clipId],
+    }).onDelete("cascade"),
+    check(
+      "render_item_progress_status_check",
+      sql`${t.status} IN ('queued','active','completed','failed')`,
+    ),
+    check("render_item_progress_attempt_check", sql`${t.attemptCount} BETWEEN 0 AND 2`),
+    check("render_item_progress_percent_check", sql`${t.progress} BETWEEN 0 AND 100`),
+  ],
+);
+
 export const renderedOutputs = pgTable(
   "rendered_outputs",
   {

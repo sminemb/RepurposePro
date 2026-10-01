@@ -1,3 +1,5 @@
+import { GeminiClipRegenerator } from "./services/gemini-clip-regenerator.service";
+import { ClipRegenerationProcessor } from "./processors/clip-regeneration.processor";
 import { resolve } from "node:path";
 import { RenderWorkerService } from "./services/render-worker.service";
 import { FaceTracker } from "./services/face-tracker.service";
@@ -145,6 +147,26 @@ const config = loadWorkerConfig();
       },
     },
     {
+      provide: ClipRegenerationProcessor,
+      useFactory: async () => {
+        const client: GeminiModelClient = config.gemini.apiKey
+          ? await createGoogleGeminiClient(config.gemini.apiKey)
+          : {
+              generateContent: async () => {
+                throw new Error("Gemini is unavailable.");
+              },
+            };
+        return new ClipRegenerationProcessor(
+          createDatabaseClient({
+            connectionString: config.processingDatabaseUrl,
+            poolMax: config.databasePoolMax,
+            ssl: config.databaseSsl,
+          }),
+          new GeminiClipRegenerator(client, config.gemini),
+        );
+      },
+    },
+    {
       provide: ANALYSIS_PIPELINE_HANDLER,
       inject: [
         ANALYSIS_TRANSCRIPT_REPOSITORY,
@@ -162,11 +184,12 @@ const config = loadWorkerConfig();
     },
     {
       provide: AnalysisQueueConsumerService,
-      inject: [AnalysisJobProcessor],
-      useFactory: (processor: AnalysisJobProcessor) =>
+      inject: [AnalysisJobProcessor, ClipRegenerationProcessor],
+      useFactory: (processor: AnalysisJobProcessor, regeneration: ClipRegenerationProcessor) =>
         new AnalysisQueueConsumerService(processor, {
           prefix: config.bullmqPrefix,
           redisUrl: config.redisUrl,
+          regenerate: (job) => regeneration.process(job),
         }),
     },
   ],

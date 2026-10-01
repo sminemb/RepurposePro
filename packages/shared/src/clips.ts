@@ -34,6 +34,7 @@ export interface ClipCrop {
 
 export interface ClipPreviewCandidate {
   readonly selected?: boolean;
+  readonly regenerationJobId?: string | null;
   readonly captionTextColor?: string;
   readonly framing?: Framing;
   readonly captionLines: readonly CaptionLine[];
@@ -87,6 +88,7 @@ export const clipCropSchema = z
 export const clipPreviewCandidateSchema = z
   .object({
     selected: z.boolean().optional(),
+    regenerationJobId: z.uuid().nullish(),
     captionTextColor: captionColorSchema.optional(),
     framing: framingSchema.nullish().transform((value) => value ?? undefined),
     captionLines: z.array(captionLineSchema).max(100_000),

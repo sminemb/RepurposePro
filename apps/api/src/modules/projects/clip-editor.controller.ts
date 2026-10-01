@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  GoneException,
   HttpCode,
   Headers,
   NotFoundException,
@@ -12,9 +13,11 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
+import type { Response } from "express";
 import {
   clipEditInputSchema,
   clipSelectionInputSchema,
@@ -40,21 +43,22 @@ export class ClipEditorController {
     @Body() body: unknown,
     @Headers("idempotency-key") key: string | undefined,
     @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) response?: Response,
   ) {
     const userId = this.authorize(projectId, clipId, request);
     const input = clipRevisionInputSchema.safeParse(body);
     if (!input.success || !key || !/^[a-zA-Z0-9_-]{1,100}$/.test(key))
       throw this.httpError(new ClipEditorError("CLIP_INVALID_CAPTION_METADATA"), request);
     try {
-      return {
-        data: await this.editor.regenerate(
-          userId,
-          projectId,
-          clipId,
-          input.data.expectedRevision,
-          key,
-        ),
-      };
+      const data = await this.editor.regenerate(
+        userId,
+        projectId,
+        clipId,
+        input.data.expectedRevision,
+        key,
+      );
+      response?.status(data.source === "gemini_regeneration" ? 202 : 200);
+      return { data };
     } catch (error) {
       throw this.httpError(error, request);
     }
@@ -162,7 +166,9 @@ export class ClipEditorController {
         requestId: request.id ?? "req_unknown",
       },
     };
-    if (error.code === "CLIP_NOT_FOUND") return new NotFoundException(response);
+    if (error.code === "CLIP_NOT_FOUND" || error.code === "SOURCE_VIDEO_NOT_FOUND")
+      return new NotFoundException(response);
+    if (error.code === "SOURCE_VIDEO_EXPIRED") return new GoneException(response);
     if (
       error.code === "CLIP_EDIT_CONFLICT" ||
       error.code === "CLIP_BUSY" ||

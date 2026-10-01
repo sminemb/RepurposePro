@@ -111,12 +111,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -369,12 +365,8 @@
           "name": "clip_candidates_project_id_projects_id_fk",
           "tableFrom": "clip_candidates",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -382,12 +374,8 @@
           "name": "clip_candidates_processing_job_id_processing_jobs_id_fk",
           "tableFrom": "clip_candidates",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["processing_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -395,12 +383,8 @@
           "name": "clip_candidates_transcript_id_transcripts_id_fk",
           "tableFrom": "clip_candidates",
           "tableTo": "transcripts",
-          "columnsFrom": [
-            "transcript_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["transcript_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -408,12 +392,8 @@
           "name": "clip_candidates_replaces_clip_id_clip_candidates_id_fk",
           "tableFrom": "clip_candidates",
           "tableTo": "clip_candidates",
-          "columnsFrom": [
-            "replaces_clip_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["replaces_clip_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -646,12 +626,8 @@
           "name": "credit_ledger_user_id_users_id_fk",
           "tableFrom": "credit_ledger",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -659,14 +635,8 @@
           "name": "credit_ledger_project_owner_fk",
           "tableFrom": "credit_ledger",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "id",
-            "user_id"
-          ],
+          "columnsFrom": ["project_id", "user_id"],
+          "columnsTo": ["id", "user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -674,14 +644,8 @@
           "name": "credit_ledger_job_owner_fk",
           "tableFrom": "credit_ledger",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "id",
-            "user_id"
-          ],
+          "columnsFrom": ["processing_job_id", "user_id"],
+          "columnsTo": ["id", "user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -689,16 +653,8 @@
           "name": "credit_ledger_job_project_owner_fk",
           "tableFrom": "credit_ledger",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id",
-            "project_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "id",
-            "project_id",
-            "user_id"
-          ],
+          "columnsFrom": ["processing_job_id", "project_id", "user_id"],
+          "columnsTo": ["id", "project_id", "user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -706,14 +662,8 @@
           "name": "credit_ledger_payment_owner_fk",
           "tableFrom": "credit_ledger",
           "tableTo": "stripe_payments",
-          "columnsFrom": [
-            "stripe_payment_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "id",
-            "user_id"
-          ],
+          "columnsFrom": ["stripe_payment_id", "user_id"],
+          "columnsTo": ["id", "user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -877,12 +827,8 @@
           "name": "processing_failure_intents_processing_job_id_processing_jobs_id_fk",
           "tableFrom": "processing_failure_intents",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["processing_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1052,12 +998,8 @@
           "name": "processing_job_dispatches_processing_job_id_processing_jobs_id_fk",
           "tableFrom": "processing_job_dispatches",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["processing_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1304,12 +1246,8 @@
           "name": "processing_jobs_user_id_users_id_fk",
           "tableFrom": "processing_jobs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1317,14 +1255,8 @@
           "name": "processing_jobs_project_owner_fk",
           "tableFrom": "processing_jobs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "id",
-            "user_id"
-          ],
+          "columnsFrom": ["project_id", "user_id"],
+          "columnsTo": ["id", "user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1334,19 +1266,12 @@
         "processing_jobs_id_user_id_unique": {
           "name": "processing_jobs_id_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "user_id"
-          ]
+          "columns": ["id", "user_id"]
         },
         "processing_jobs_id_project_id_user_id_unique": {
           "name": "processing_jobs_id_project_id_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "project_id",
-            "user_id"
-          ]
+          "columns": ["id", "project_id", "user_id"]
         }
       },
       "policies": {},
@@ -1490,12 +1415,8 @@
           "name": "projects_user_id_users_id_fk",
           "tableFrom": "projects",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1503,12 +1424,8 @@
           "name": "projects_current_job_id_processing_jobs_id_fk",
           "tableFrom": "projects",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "current_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1516,12 +1433,8 @@
           "name": "projects_current_analysis_job_id_processing_jobs_id_fk",
           "tableFrom": "projects",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "current_analysis_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_analysis_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1531,10 +1444,7 @@
         "projects_id_user_id_unique": {
           "name": "projects_id_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "user_id"
-          ]
+          "columns": ["id", "user_id"]
         }
       },
       "policies": {},
@@ -1570,12 +1480,8 @@
           "name": "render_request_keys_project_id_projects_id_fk",
           "tableFrom": "render_request_keys",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1583,12 +1489,8 @@
           "name": "render_request_keys_job_id_render_requests_job_id_fk",
           "tableFrom": "render_request_keys",
           "tableTo": "render_requests",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "job_id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["job_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1596,10 +1498,7 @@
       "compositePrimaryKeys": {
         "render_request_keys_pkey": {
           "name": "render_request_keys_pkey",
-          "columns": [
-            "project_id",
-            "idempotency_key"
-          ]
+          "columns": ["project_id", "idempotency_key"]
         }
       },
       "uniqueConstraints": {},
@@ -1661,12 +1560,8 @@
           "name": "render_requests_job_id_processing_jobs_id_fk",
           "tableFrom": "render_requests",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1674,12 +1569,8 @@
           "name": "render_requests_project_id_projects_id_fk",
           "tableFrom": "render_requests",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1687,12 +1578,8 @@
           "name": "render_requests_clip_id_clip_candidates_id_fk",
           "tableFrom": "render_requests",
           "tableTo": "clip_candidates",
-          "columnsFrom": [
-            "clip_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clip_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1702,10 +1589,7 @@
         "render_requests_project_id_idempotency_key_key": {
           "name": "render_requests_project_id_idempotency_key_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "idempotency_key"
-          ]
+          "columns": ["project_id", "idempotency_key"]
         }
       },
       "policies": {},
@@ -1885,12 +1769,8 @@
           "name": "rendered_outputs_project_id_projects_id_fk",
           "tableFrom": "rendered_outputs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1898,12 +1778,8 @@
           "name": "rendered_outputs_render_job_id_render_requests_job_id_fk",
           "tableFrom": "rendered_outputs",
           "tableTo": "render_requests",
-          "columnsFrom": [
-            "render_job_id"
-          ],
-          "columnsTo": [
-            "job_id"
-          ],
+          "columnsFrom": ["render_job_id"],
+          "columnsTo": ["job_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1911,12 +1787,8 @@
           "name": "rendered_outputs_clip_candidate_id_clip_candidates_id_fk",
           "tableFrom": "rendered_outputs",
           "tableTo": "clip_candidates",
-          "columnsFrom": [
-            "clip_candidate_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clip_candidate_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1926,10 +1798,7 @@
         "rendered_outputs_render_job_id_clip_candidate_id_key": {
           "name": "rendered_outputs_render_job_id_clip_candidate_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "render_job_id",
-            "clip_candidate_id"
-          ]
+          "columns": ["render_job_id", "clip_candidate_id"]
         }
       },
       "policies": {},
@@ -2061,12 +1930,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2209,12 +2074,8 @@
           "name": "stripe_checkout_sessions_user_id_users_id_fk",
           "tableFrom": "stripe_checkout_sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2321,12 +2182,8 @@
           "name": "stripe_customers_user_id_users_id_fk",
           "tableFrom": "stripe_customers",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2336,10 +2193,7 @@
         "stripe_customers_user_id_stripe_customer_id_unique": {
           "name": "stripe_customers_user_id_stripe_customer_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "stripe_customer_id"
-          ]
+          "columns": ["user_id", "stripe_customer_id"]
         }
       },
       "policies": {},
@@ -2480,12 +2334,8 @@
           "name": "stripe_payments_user_id_users_id_fk",
           "tableFrom": "stripe_payments",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2493,14 +2343,8 @@
           "name": "stripe_payments_customer_owner_fk",
           "tableFrom": "stripe_payments",
           "tableTo": "stripe_customers",
-          "columnsFrom": [
-            "user_id",
-            "stripe_customer_id"
-          ],
-          "columnsTo": [
-            "user_id",
-            "stripe_customer_id"
-          ],
+          "columnsFrom": ["user_id", "stripe_customer_id"],
+          "columnsTo": ["user_id", "stripe_customer_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2510,10 +2354,7 @@
         "stripe_payments_id_user_id_unique": {
           "name": "stripe_payments_id_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "user_id"
-          ]
+          "columns": ["id", "user_id"]
         }
       },
       "policies": {},
@@ -2737,12 +2578,8 @@
           "name": "transcript_segments_transcript_id_transcripts_id_fk",
           "tableFrom": "transcript_segments",
           "tableTo": "transcripts",
-          "columnsFrom": [
-            "transcript_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["transcript_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2885,12 +2722,8 @@
           "name": "transcripts_project_id_projects_id_fk",
           "tableFrom": "transcripts",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2898,12 +2731,8 @@
           "name": "transcripts_processing_job_id_processing_jobs_id_fk",
           "tableFrom": "transcripts",
           "tableTo": "processing_jobs",
-          "columnsFrom": [
-            "processing_job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["processing_job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2911,12 +2740,8 @@
           "name": "transcripts_uploaded_video_id_uploaded_videos_id_fk",
           "tableFrom": "transcripts",
           "tableTo": "uploaded_videos",
-          "columnsFrom": [
-            "uploaded_video_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_video_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3091,12 +2916,8 @@
           "name": "uploaded_videos_project_id_projects_id_fk",
           "tableFrom": "uploaded_videos",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3310,12 +3131,8 @@
           "name": "video_framing_uploaded_video_id_uploaded_videos_id_fk",
           "tableFrom": "video_framing",
           "tableTo": "uploaded_videos",
-          "columnsFrom": [
-            "uploaded_video_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_video_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3325,10 +3142,7 @@
         "video_framing_uploaded_video_id_version_key": {
           "name": "video_framing_uploaded_video_id_version_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "uploaded_video_id",
-            "version"
-          ]
+          "columns": ["uploaded_video_id", "version"]
         }
       },
       "policies": {},
@@ -3345,10 +3159,7 @@
     "public.clip_candidate_kind": {
       "name": "clip_candidate_kind",
       "schema": "public",
-      "values": [
-        "primary",
-        "backup"
-      ]
+      "values": ["primary", "backup"]
     },
     "public.ledger_type": {
       "name": "ledger_type",
@@ -3364,30 +3175,17 @@
     "public.processing_dispatch_status": {
       "name": "processing_dispatch_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "published"
-      ]
+      "values": ["pending", "published"]
     },
     "public.processing_failure_intent_status": {
       "name": "processing_failure_intent_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "finalized"
-      ]
+      "values": ["pending", "finalized"]
     },
     "public.processing_job_status": {
       "name": "processing_job_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "active",
-        "completed",
-        "failed",
-        "refunded",
-        "cancelled"
-      ]
+      "values": ["queued", "active", "completed", "failed", "refunded", "cancelled"]
     },
     "public.processing_step": {
       "name": "processing_step",
@@ -3420,10 +3218,7 @@
     "public.project_output_type": {
       "name": "project_output_type",
       "schema": "public",
-      "values": [
-        "clips",
-        "summary"
-      ]
+      "values": ["clips", "summary"]
     },
     "public.project_status": {
       "name": "project_status",
@@ -3447,34 +3242,17 @@
     "public.stripe_checkout_session_status": {
       "name": "stripe_checkout_session_status",
       "schema": "public",
-      "values": [
-        "creating",
-        "open",
-        "completed",
-        "failed",
-        "expired"
-      ]
+      "values": ["creating", "open", "completed", "failed", "expired"]
     },
     "public.stripe_payment_status": {
       "name": "stripe_payment_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "paid",
-        "failed",
-        "refunded"
-      ]
+      "values": ["pending", "paid", "failed", "refunded"]
     },
     "public.stripe_webhook_event_status": {
       "name": "stripe_webhook_event_status",
       "schema": "public",
-      "values": [
-        "received",
-        "processing",
-        "processed",
-        "failed",
-        "ignored"
-      ]
+      "values": ["received", "processing", "processed", "failed", "ignored"]
     }
   },
   "schemas": {},

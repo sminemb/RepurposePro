@@ -109,7 +109,7 @@ FAILED
 | VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
-| VS7 | User can manage multiple clips and regenerate a bad one | IN_PROGRESS | 2026-10-01 | 21:54 | — | — | VS7-T4 | 43% | — |
+| VS7 | User can manage multiple clips and regenerate a bad one | IN_PROGRESS | 2026-10-01 | 21:54 | — | — | VS7-T6 | 71% | — |
 | VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -475,7 +475,7 @@ This slice crosses list management UI, candidate state, regeneration logic, back
 | Start Time | 21:54 |
 | End Date   | —           |
 | End Time   | —           |
-| Progress | 43% |
+| Progress | 71% |
 | Dependency | VS6         |
 
 ## Tasks
@@ -485,10 +485,10 @@ This slice crosses list management UI, candidate state, regeneration logic, back
 | VS7-T1 | Add selected/deleted/backup candidate states | DB + API | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 22:03 | 6 shared tests; 69 DB/Redis tests; typecheck |
 | VS7-T2 | Build multi-clip selection and delete behavior | Web + API | COMPLETED | 2026-10-01 | 22:03 | 2026-10-01 | 22:32 | Selection/delete checks passed: 70 integration tests, 12 focused tests, typecheck; browser Save then Delete and next-clip focus verified. |
 | VS7-T3 | Regenerate one clip using unused backup candidate first | Web + API + DB | COMPLETED | 2026-10-01 | 22:32 | 2026-10-01 | 22:35 | 71 database/Redis integration tests and 18 focused tests passed; typecheck passed; browser confirmed replacement and selection retained. |
-| VS7-T4  | Fall back to Gemini regeneration only when backups are exhausted | Worker + Gemini      | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T5  | Render only selected clips in one render job                     | API + Queue + Worker | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T6  | Show per-clip render progress and failures                       | Web + API            | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T7  | Display downloadable output cards for completed clips            | Web + API + Storage  | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS7-T4 | Fall back to Gemini regeneration only when backups are exhausted | Worker + Gemini | COMPLETED | 2026-10-01 | 22:37 | 2026-10-01 | 23:29 | 29 selector/processor tests, ownership/lease/overlap and zero-credit integration checks passed; regeneration survives clip switching and reload. |
+| VS7-T5 | Render only selected clips in one render job | API + Queue + Worker | COMPLETED | 2026-10-01 | 22:43 | 2026-10-01 | 23:29 | Atomic revisions, immutable snapshots, partial success, takeover and two-attempt recovery passed; real two-clip MP4 batch; full ci:check passed. |
+| VS7-T6 | Show per-clip render progress and failures | Web + API | IN_PROGRESS | 2026-10-01 | 23:02 | — | — | — |
+| VS7-T7 | Display downloadable output cards for completed clips | Web + API + Storage | IN_PROGRESS | 2026-10-01 | 23:02 | — | — | — |
 
 ## Slice Acceptance Criteria
 
@@ -773,16 +773,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS7 - Manage multiple clips and regenerate a bad one
-Current Task: VS7-T3 - COMPLETED
+Current Task: VS7-T5 - COMPLETED
 Current Status: IN_PROGRESS
-Last Completed Task: VS6-T8 - Preview/export parity verified; all VS6 tasks passed the final quality gate at 23:33 Asia/Manila.
-Next Recommended Task: Complete VS7-T1 through VS7-T7 on codex/vs7-multi-clip.
+Last Completed Task: VS7-T5 - Atomic selected batch rendering and real two-clip MP4 recovery verified at 23:29 Asia/Manila.
+Next Recommended Task: Finish browser evidence and commit VS7-T6/T7 progress and output cards.
 Uncommitted Changes: VS7 work in progress; each verified task is committed on codex/vs7-multi-clip. Ignored verification fixtures remain under storage/vs7-verification.
-Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 547 unit tests, 68 PostgreSQL/Redis integration tests and production builds. The final rerun cleared transient forced test-database cleanup errors; evidence is recorded in docs/verification/vs6.md.
+Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 583 unit tests, 74 PostgreSQL/Redis integration tests and production builds. Evidence: storage/vs7-verification/ci-check.log.
 Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
 Important Context: Explicit one-clip export saves unsaved edits first and uses the returned revision. Free re-renders preserve previous outputs until expiration; failed renders retain editing/previews. Migration 0025 separates current analysis from current render work and adds immutable requests, retry-key aliases and fenced outputs; it was applied locally and is required before deployment. New worker dependency @napi-rs/canvas 1.0.9 and licensed pinned Inter Black assets. Shared caption/framing geometry follows ADRs 0002/0003/0004. Defaults: medium, CRF 20, 60-minute timeout, seven-day publication retention. Scheduled deletion remains VS10. Browser verification uses synthetic responses and real rendered fixture media.
 Required Commands Before Continuing: Read VS7 requirements, ADRs 0002/0003/0004 and docs/verification/vs6.md. Record an Asia/Manila start timestamp when VS7 begins. Preserve immutable render snapshots, the saved-revision contract and current-analysis preview access.
 Last Updated Date: 2026-10-01
-Last Updated Time: 22:35
+Last Updated Time: 23:29
 Last Updated By: Codex
 ```

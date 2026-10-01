@@ -10,6 +10,7 @@ import { DatabaseService } from "../infrastructure/database.service";
 export function renderHttpError(code: string, requestId = "req_unknown"): HttpException {
   const status =
     code === "PROJECT_NOT_FOUND" ||
+    code === "JOB_NOT_FOUND" ||
     code === "RENDER_CLIP_NOT_FOUND" ||
     code === "OUTPUT_NOT_FOUND" ||
     code === "OUTPUT_FILE_MISSING"
@@ -21,7 +22,9 @@ export function renderHttpError(code: string, requestId = "req_unknown"): HttpEx
           : 409;
   const messages: Record<string, string> = {
     CLIP_EDIT_CONFLICT: "This clip changed elsewhere. Reload its saved version before rendering.",
-    RENDER_ALREADY_RUNNING: "Another clip is already rendering. Wait for it to finish.",
+    RENDER_ALREADY_RUNNING: "A render or replacement is already running. Wait for it to finish.",
+    RENDER_CLIP_NOT_SELECTED:
+      "A requested clip is no longer selected. Reload the editor before exporting.",
     RENDER_FRAMING_PENDING:
       "Person tracking is still running. Wait for it to finish or use manual framing.",
     SOURCE_VIDEO_EXPIRED: "The source video has expired.",
@@ -55,8 +58,15 @@ export class RenderingService {
     requestId: string,
   ) {
     const result = await this.database.database.pool.query<{ result: unknown }>(
-      "SELECT public.start_owned_clip_render($1,$2,$3,$4,$5) AS result",
-      [userId, projectId, input.clipIds[0], input.expectedRevision, key],
+      "SELECT public.start_owned_clip_batch_render($1,$2,$3,$4) AS result",
+      [
+        userId,
+        projectId,
+        "expectedRevisions" in input
+          ? input.expectedRevisions
+          : { [input.clipIds[0]]: input.expectedRevision },
+        key,
+      ],
     );
     const data = result.rows[0]?.result;
     if (data && typeof data === "object" && "error" in data && typeof data.error === "string")

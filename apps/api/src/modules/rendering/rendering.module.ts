@@ -1,3 +1,5 @@
+import { ClipRegenerationDispatcherService } from "./clip-regeneration-dispatcher.service";
+import { JobStatusController } from "./job-status.controller";
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { InfrastructureModule } from "../infrastructure/infrastructure.module";
@@ -8,7 +10,12 @@ import { RenderDispatcherService } from "./render-dispatcher.service";
 
 @Module({
   imports: [AuthModule, InfrastructureModule],
-  controllers: [RenderingController],
-  providers: [RenderingService, RenderDispatcherService, processingDatabaseProvider],
+  controllers: [RenderingController, JobStatusController],
+  providers: [
+    ClipRegenerationDispatcherService,
+    RenderingService,
+    RenderDispatcherService,
+    processingDatabaseProvider,
+  ],
 })
 export class RenderingModule {}

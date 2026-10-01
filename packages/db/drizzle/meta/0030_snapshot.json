@@ -1,6 +1,6 @@
 {
-  "id": "f6896bd3-e7a0-4042-84eb-c8b8fc42d9b7",
-  "prevId": "bcbaad71-cec5-43d9-8d9e-edce3a1f683f",
+  "id": "e18993ee-c074-4005-99f8-2736b6682f26",
+  "prevId": "47495232-0baa-4487-bdda-aab93d8d3526",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1596,6 +1596,183 @@
       },
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.render_item_progress": {
+      "name": "render_item_progress",
+      "schema": "",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clip_id": {
+          "name": "clip_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "step": {
+          "name": "step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "progress": {
+          "name": "progress",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "attempt_count": {
+          "name": "attempt_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_id": {
+          "name": "output_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "render_item_progress_job_id_clip_id_render_request_items_job_id_clip_id_fk": {
+          "name": "render_item_progress_job_id_clip_id_render_request_items_job_id_clip_id_fk",
+          "tableFrom": "render_item_progress",
+          "tableTo": "render_request_items",
+          "columnsFrom": ["job_id", "clip_id"],
+          "columnsTo": ["job_id", "clip_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "render_item_progress_job_id_clip_id_pk": {
+          "name": "render_item_progress_job_id_clip_id_pk",
+          "columns": ["job_id", "clip_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "render_item_progress_status_check": {
+          "name": "render_item_progress_status_check",
+          "value": "\"render_item_progress\".\"status\" IN ('queued','active','completed','failed')"
+        },
+        "render_item_progress_attempt_check": {
+          "name": "render_item_progress_attempt_check",
+          "value": "\"render_item_progress\".\"attempt_count\" BETWEEN 0 AND 2"
+        },
+        "render_item_progress_percent_check": {
+          "name": "render_item_progress_percent_check",
+          "value": "\"render_item_progress\".\"progress\" BETWEEN 0 AND 100"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.render_request_items": {
+      "name": "render_request_items",
+      "schema": "",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clip_id": {
+          "name": "clip_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "render_request_items_job_id_render_requests_job_id_fk": {
+          "name": "render_request_items_job_id_render_requests_job_id_fk",
+          "tableFrom": "render_request_items",
+          "tableTo": "render_requests",
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["job_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "render_request_items_clip_id_clip_candidates_id_fk": {
+          "name": "render_request_items_clip_id_clip_candidates_id_fk",
+          "tableFrom": "render_request_items",
+          "tableTo": "clip_candidates",
+          "columnsFrom": ["clip_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "render_request_items_job_id_clip_id_pk": {
+          "name": "render_request_items_job_id_clip_id_pk",
+          "columns": ["job_id", "clip_id"]
+        }
+      },
+      "uniqueConstraints": {
+        "render_request_items_ordinal_unique": {
+          "name": "render_request_items_ordinal_unique",
+          "nullsNotDistinct": false,
+          "columns": ["job_id", "ordinal"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "render_request_items_revision_check": {
+          "name": "render_request_items_revision_check",
+          "value": "\"render_request_items\".\"revision\">=0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.render_request_keys": {

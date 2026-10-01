@@ -14,15 +14,21 @@ export class ClipEditorError extends Error {
     super(
       code === "CLIP_EDIT_CONFLICT"
         ? "This clip was changed elsewhere. Reload its saved version before saving again."
-        : code === "CLIP_NOT_FOUND"
-          ? "This clip is no longer available."
-          : code === "CLIP_INVALID_TIME_RANGE"
-            ? "End time must be after start time."
-            : code === "CLIP_OUTSIDE_SOURCE_DURATION"
-              ? "The clip must stay within the source video."
-              : code === "CLIP_BUSY"
-                ? "Wait for the current render or regeneration to finish."
-                : "Check the caption settings and try again.",
+        : code === "SOURCE_VIDEO_EXPIRED"
+          ? "The source video has expired."
+          : code === "SOURCE_VIDEO_NOT_FOUND"
+            ? "The source video is unavailable."
+            : code.startsWith("CLIP_REGENERATION")
+              ? "A replacement is unavailable. Your original clip is safe; try again."
+              : code === "CLIP_NOT_FOUND"
+                ? "This clip is no longer available."
+                : code === "CLIP_INVALID_TIME_RANGE"
+                  ? "End time must be after start time."
+                  : code === "CLIP_OUTSIDE_SOURCE_DURATION"
+                    ? "The clip must stay within the source video."
+                    : code === "CLIP_BUSY"
+                      ? "Wait for the current render or regeneration to finish."
+                      : "Check the caption settings and try again.",
     );
     this.name = "ClipEditorError";
   }
