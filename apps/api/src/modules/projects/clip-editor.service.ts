@@ -1,5 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { clipEditorSchema, type ClipEditor, type ClipEditInput } from "@repurposepro/shared";
+import {
+  clipEditorSchema,
+  clipPreviewCandidateSchema,
+  clipRegenerationResultSchema,
+  type ClipEditor,
+  type ClipEditInput,
+} from "@repurposepro/shared";
 
 import { DatabaseService } from "../infrastructure/database.service";
 
@@ -14,7 +20,9 @@ export class ClipEditorError extends Error {
             ? "End time must be after start time."
             : code === "CLIP_OUTSIDE_SOURCE_DURATION"
               ? "The clip must stay within the source video."
-              : "Check the caption settings and try again.",
+              : code === "CLIP_BUSY"
+                ? "Wait for the current render or regeneration to finish."
+                : "Check the caption settings and try again.",
     );
     this.name = "ClipEditorError";
   }
@@ -22,6 +30,56 @@ export class ClipEditorError extends Error {
 
 @Injectable()
 export class ClipEditorService {
+  public async regenerate(
+    userId: string,
+    projectId: string,
+    clipId: string,
+    revision: number,
+    key: string,
+  ) {
+    const row = await this.databaseService.database.pool.query<{ result: unknown }>(
+      "SELECT public.start_owned_clip_regeneration($1,$2,$3,$4,$5) AS result",
+      [userId, projectId, clipId, revision, key],
+    );
+    const result = row.rows[0]?.result;
+    if (
+      result &&
+      typeof result === "object" &&
+      "error" in result &&
+      typeof result.error === "string"
+    )
+      throw new ClipEditorError(result.error);
+    return clipRegenerationResultSchema.parse(result);
+  }
+  public async select(userId: string, projectId: string, clipId: string, selected: boolean) {
+    const row = await this.databaseService.database.pool.query<{ result: unknown }>(
+      "SELECT public.set_owned_clip_selection($1,$2,$3,$4) AS result",
+      [userId, projectId, clipId, selected],
+    );
+    const result = row.rows[0]?.result;
+    if (
+      result &&
+      typeof result === "object" &&
+      "error" in result &&
+      typeof result.error === "string"
+    )
+      throw new ClipEditorError(result.error);
+    return clipPreviewCandidateSchema.parse(result);
+  }
+
+  public async delete(
+    userId: string,
+    projectId: string,
+    clipId: string,
+    revision: number,
+  ): Promise<void> {
+    const row = await this.databaseService.database.pool.query<{ result: { error?: string } }>(
+      "SELECT public.delete_owned_clip_candidate($1,$2,$3,$4) AS result",
+      [userId, projectId, clipId, revision],
+    );
+    if (!row.rows[0]?.result) throw new Error("Clip deletion returned no result.");
+    if (row.rows[0].result.error) throw new ClipEditorError(row.rows[0].result.error);
+  }
   private readonly logger = new Logger(ClipEditorService.name);
   public constructor(private readonly databaseService: DatabaseService) {}
 

@@ -32,6 +32,26 @@ function setup() {
   };
 }
 describe("ClipEditorController", () => {
+  it("validates selection separately and rejects deletion without a revision", async () => {
+    const select = vi.fn().mockResolvedValue({ id: clipId, selected: false });
+    const remove = vi.fn();
+    const controller = new ClipEditorController({
+      select,
+      delete: remove,
+    } as unknown as ClipEditorService);
+    await expect(
+      controller.select(projectId, clipId, { selected: false }, request),
+    ).resolves.toEqual({ data: { id: clipId, selected: false } });
+    await expect(
+      controller.select(projectId, clipId, { selected: 1 }, request),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(controller.delete(projectId, clipId, {}, request)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(remove).not.toHaveBeenCalled();
+    await controller.delete(projectId, clipId, { expectedRevision: 0 }, request);
+    expect(remove).toHaveBeenCalledWith("owner", projectId, clipId, 0);
+  });
   it("requires an authenticated user before reading or saving", async () => {
     const { controller, save } = setup();
     await expect(

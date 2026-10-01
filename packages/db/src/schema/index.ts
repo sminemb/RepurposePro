@@ -614,6 +614,41 @@ export const renderedOutputs = pgTable(
   ],
 );
 
+export const clipRegenerationRequests = pgTable(
+  "clip_regeneration_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    analysisJobId: uuid("analysis_job_id")
+      .notNull()
+      .references(() => processingJobs.id),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    expectedRevision: integer("expected_revision").notNull(),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+    replacementClipId: uuid("replacement_clip_id").references(() => clipCandidates.id),
+    jobId: uuid("job_id").references(() => processingJobs.id),
+    source: text("source").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("clip_regeneration_requests_project_key_unique").on(
+      table.projectId,
+      table.idempotencyKey,
+    ),
+    unique("clip_regeneration_requests_job_unique").on(table.jobId),
+    check("clip_regeneration_requests_revision_check", sql`${table.expectedRevision}>=0`),
+    check(
+      "clip_regeneration_requests_source_check",
+      sql`${table.source} IN ('backup_candidate','gemini_regeneration')`,
+    ),
+  ],
+);
+
 export const processingFailureIntents = pgTable(
   "processing_failure_intents",
   {

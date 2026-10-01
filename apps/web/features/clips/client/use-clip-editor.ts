@@ -144,6 +144,7 @@ export function useClipEditor(
     clearRecovery();
   };
   return {
+    getSaved: () => savedRef.current,
     saved,
     draft,
     update,

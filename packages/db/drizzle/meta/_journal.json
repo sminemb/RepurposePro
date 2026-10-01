@@ -190,6 +190,20 @@
       "when": 1790863137965,
       "tag": "0026_vs7_candidate_state",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790863468383,
+      "tag": "0027_vs7_clip_deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790864125762,
+      "tag": "0028_vs7_backup_regeneration",
+      "breakpoints": true
     }
   ]
 }

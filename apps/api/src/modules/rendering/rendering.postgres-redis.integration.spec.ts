@@ -89,6 +89,82 @@ suite("saved one clip renders", () => {
       ],
     );
   });
+  it("replaces one slot with the best unused backup exactly once without charging", async () => {
+    await owner.pool.query(
+      "UPDATE projects SET current_job_id=$1,status='preview_ready' WHERE id=$2",
+      [analysis, project],
+    );
+    await owner.pool.query(
+      "INSERT INTO credit_ledger(user_id,type,amount,project_id,processing_job_id,description,idempotency_key) VALUES('render-owner','processing_deduction',-1,$1,$2,'Fixture analysis',$3)",
+      [project, analysis, randomUUID()],
+    );
+    const backups = [randomUUID(), randomUUID()];
+    for (let rank = 0; rank < 2; rank++)
+      await owner.pool.query(
+        "INSERT INTO clip_candidates(id,project_id,processing_job_id,transcript_id,kind,rank,title,reason,start_time,end_time,score,caption_lines,caption_position) SELECT $1,project_id,processing_job_id,transcript_id,'backup',$3,'Replacement','Fixture',start_time,end_time,score,caption_lines,caption_position FROM clip_candidates WHERE id=$2",
+        [backups[rank], clip, rank],
+      );
+    await owner.pool.query(
+      "UPDATE clip_candidates SET preview_font_size=72,caption_text_color='#123456',selected=false WHERE id=$1",
+      [clip],
+    );
+    const revision = (
+      await owner.pool.query<{ edit_revision: number }>(
+        "SELECT edit_revision FROM clip_candidates WHERE id=$1",
+        [clip],
+      )
+    ).rows[0].edit_revision;
+    const key = randomUUID();
+    const regenerate = async (id = clip, k = key, rev = revision) =>
+      (
+        await runtime.pool.query<{ result: unknown }>(
+          "SELECT start_owned_clip_regeneration('render-owner',$1,$2,$3,$4) AS result",
+          [project, id, rev, k],
+        )
+      ).rows[0].result;
+    const [a, b] = await Promise.all([regenerate(), regenerate()]);
+    expect(a).toEqual({ replacementClipId: backups[0], source: "backup_candidate" });
+    expect(b).toEqual(a);
+    expect(await regenerate()).toEqual(a);
+    expect(await regenerate(clip, key, revision + 1)).toEqual({
+      error: "CLIP_REGENERATION_IDEMPOTENCY_CONFLICT",
+    });
+    const replacement = (
+      await owner.pool.query(
+        "SELECT selected,rank,preview_font_size,caption_text_color,caption_edits,replaces_clip_id,kind FROM clip_candidates WHERE id=$1",
+        [backups[0]],
+      )
+    ).rows[0];
+    expect(replacement).toMatchObject({
+      selected: false,
+      rank: 0,
+      preview_font_size: 72,
+      caption_text_color: "#123456",
+      caption_edits: [],
+      replaces_clip_id: clip,
+      kind: "primary",
+    });
+    expect(
+      (
+        await owner.pool.query("SELECT count(*) FROM credit_ledger WHERE processing_job_id=$1", [
+          analysis,
+        ])
+      ).rows[0].count,
+    ).toBe("1");
+    expect(
+      (
+        await owner.pool.query("SELECT kind,selected FROM clip_candidates WHERE id=$1", [
+          backups[1],
+        ])
+      ).rows[0],
+    ).toMatchObject({ kind: "backup", selected: false });
+    // Return the original slot for the existing single-clip regression scenarios.
+    await owner.pool.query("UPDATE clip_candidates SET deleted_at=now() WHERE id=$1", [backups[0]]);
+    await owner.pool.query(
+      "UPDATE clip_candidates SET deleted_at=NULL,selected=true,preview_font_size=48,caption_text_color='#FFFFFF' WHERE id=$1",
+      [clip],
+    );
+  });
   afterAll(async () => {
     await Promise.all([runtime, processing, owner].map(closeDatabaseClient));
     const statement = await admin.pool.query<{ sql: string }>(
@@ -138,11 +214,58 @@ suite("saved one clip renders", () => {
       processing.pool.query("UPDATE rendered_outputs SET title='stolen'"),
     ).rejects.toMatchObject({ code: "42501" });
   });
+  it("soft-deletes a candidate while retaining history and allowing reuse of its live slot", async () => {
+    const extra = randomUUID(),
+      replacement = randomUUID();
+    await owner.pool.query(
+      "INSERT INTO clip_candidates(id,project_id,processing_job_id,transcript_id,kind,rank,title,reason,start_time,end_time,score,caption_lines,caption_position) SELECT $1,project_id,processing_job_id,transcript_id,kind,9,title,reason,start_time,end_time,score,caption_lines,caption_position FROM clip_candidates WHERE id=$2",
+      [extra, clip],
+    );
+    const remove = async (user: string, revision: number) =>
+      (
+        await runtime.pool.query<{ result: unknown }>(
+          "SELECT delete_owned_clip_candidate($1,$2,$3,$4) AS result",
+          [user, project, extra, revision],
+        )
+      ).rows[0].result;
+    expect(await remove("other-user", 0)).toEqual({ error: "CLIP_NOT_FOUND" });
+    expect(await remove("render-owner", 1)).toEqual({ error: "CLIP_EDIT_CONFLICT" });
+    expect(await remove("render-owner", 0)).toEqual({});
+    expect(await remove("render-owner", 0)).toEqual({});
+    expect(
+      (
+        await owner.pool.query("SELECT selected,deleted_at FROM clip_candidates WHERE id=$1", [
+          extra,
+        ])
+      ).rows[0],
+    ).toMatchObject({ selected: false, deleted_at: expect.any(Date) });
+    await owner.pool.query(
+      "INSERT INTO clip_candidates(id,project_id,processing_job_id,transcript_id,kind,rank,title,reason,start_time,end_time,score,caption_lines,caption_position,replaces_clip_id) SELECT $1,project_id,processing_job_id,transcript_id,kind,9,title,reason,start_time,end_time,score,caption_lines,caption_position,id FROM clip_candidates WHERE id=$2",
+      [replacement, extra],
+    );
+    const list = (
+      await runtime.pool.query<{ clips: { id: string }[] }>(
+        "SELECT clips FROM list_owned_project_clip_candidates('render-owner',$1)",
+        [project],
+      )
+    ).rows[0].clips;
+    expect(list.map((item) => item.id)).toEqual([clip, replacement]);
+    await owner.pool.query("DELETE FROM clip_candidates WHERE id=$1", [replacement]);
+    await owner.pool.query("DELETE FROM clip_candidates WHERE id=$1", [extra]);
+  });
   it("deduplicates concurrent requests and freezes saved data without charging", async () => {
     const key = randomUUID();
     const [a, b] = await Promise.all([start(undefined, 0, key), start(undefined, 0, key)]);
     expect(a).toEqual(b);
     renderJob = a.jobId!;
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown }>(
+          "SELECT delete_owned_clip_candidate('render-owner',$1,$2,0) AS result",
+          [project, clip],
+        )
+      ).rows[0].result,
+    ).toEqual({ error: "CLIP_BUSY" });
     expect((await start(undefined, 0, aliasKey)).jobId).toBe(renderJob);
     expect((await start()).jobId).toBe(renderJob);
     const state = (

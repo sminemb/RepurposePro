@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { framingSchema, type Framing } from "./framing";
 
+export const clipSelectionInputSchema = z.object({ selected: z.boolean() }).strict();
+export const clipRevisionInputSchema = z
+  .object({ expectedRevision: z.number().int().nonnegative() })
+  .strict();
+
 export const captionColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/u);
 export const highlightColorsSchema = z
   .record(z.string().min(1).max(64), captionColorSchema)
@@ -28,6 +33,7 @@ export interface ClipCrop {
 }
 
 export interface ClipPreviewCandidate {
+  readonly selected?: boolean;
   readonly captionTextColor?: string;
   readonly framing?: Framing;
   readonly captionLines: readonly CaptionLine[];

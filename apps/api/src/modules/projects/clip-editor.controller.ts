@@ -3,15 +3,25 @@ import {
   Body,
   ConflictException,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  Headers,
   NotFoundException,
   Param,
   Patch,
+  Post,
   Req,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { clipEditInputSchema, type ApiSuccess, type ClipEditor } from "@repurposepro/shared";
+import {
+  clipEditInputSchema,
+  clipSelectionInputSchema,
+  clipRevisionInputSchema,
+  type ApiSuccess,
+  type ClipEditor,
+} from "@repurposepro/shared";
 import { z } from "zod";
 
 import { AuthGuard, type AuthenticatedRequest } from "../auth/auth.guard";
@@ -21,6 +31,71 @@ import { ClipEditorError, ClipEditorService } from "./clip-editor.service";
 @UseGuards(AuthGuard)
 export class ClipEditorController {
   public constructor(private readonly editor: ClipEditorService) {}
+
+  @Post("regenerate")
+  @HttpCode(200)
+  public async regenerate(
+    @Param("projectId") projectId: string,
+    @Param("clipId") clipId: string,
+    @Body() body: unknown,
+    @Headers("idempotency-key") key: string | undefined,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = this.authorize(projectId, clipId, request);
+    const input = clipRevisionInputSchema.safeParse(body);
+    if (!input.success || !key || !/^[a-zA-Z0-9_-]{1,100}$/.test(key))
+      throw this.httpError(new ClipEditorError("CLIP_INVALID_CAPTION_METADATA"), request);
+    try {
+      return {
+        data: await this.editor.regenerate(
+          userId,
+          projectId,
+          clipId,
+          input.data.expectedRevision,
+          key,
+        ),
+      };
+    } catch (error) {
+      throw this.httpError(error, request);
+    }
+  }
+
+  @Patch("selection")
+  public async select(
+    @Param("projectId") projectId: string,
+    @Param("clipId") clipId: string,
+    @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = this.authorize(projectId, clipId, request);
+    const input = clipSelectionInputSchema.safeParse(body);
+    if (!input.success)
+      throw this.httpError(new ClipEditorError("CLIP_INVALID_CAPTION_METADATA"), request);
+    try {
+      return { data: await this.editor.select(userId, projectId, clipId, input.data.selected) };
+    } catch (error) {
+      throw this.httpError(error, request);
+    }
+  }
+
+  @Delete()
+  @HttpCode(204)
+  public async delete(
+    @Param("projectId") projectId: string,
+    @Param("clipId") clipId: string,
+    @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = this.authorize(projectId, clipId, request);
+    const input = clipRevisionInputSchema.safeParse(body);
+    if (!input.success)
+      throw this.httpError(new ClipEditorError("CLIP_INVALID_CAPTION_METADATA"), request);
+    try {
+      await this.editor.delete(userId, projectId, clipId, input.data.expectedRevision);
+    } catch (error) {
+      throw this.httpError(error, request);
+    }
+  }
 
   @Get()
   public async get(
@@ -88,7 +163,13 @@ export class ClipEditorController {
       },
     };
     if (error.code === "CLIP_NOT_FOUND") return new NotFoundException(response);
-    if (error.code === "CLIP_EDIT_CONFLICT") return new ConflictException(response);
+    if (
+      error.code === "CLIP_EDIT_CONFLICT" ||
+      error.code === "CLIP_BUSY" ||
+      error.code.startsWith("CLIP_REGENERATION") ||
+      error.code === "CLIP_BACKUPS_EXHAUSTED"
+    )
+      return new ConflictException(response);
     return new BadRequestException(response);
   }
 }
