@@ -1024,6 +1024,16 @@ WHISPER_TIMEOUT_MS=900000
 
 # 11. FFmpeg Variables
 
+VS6 defaults to `FFMPEG_PRESET=medium`, `FFMPEG_CRF=20` and
+`RENDER_TIMEOUT_MS=3600000` (60 minutes). Presets are validated against x264's
+ultrafast–veryslow options; CRF is an integer from 0 to 51; timeout is an integer
+from 1,000 to 3,600,000 ms. `RENDER_FONT_PATH` optionally selects the bundled
+Inter 4.1 Black font file at `packages/shared/assets/fonts/Inter-Black.ttf`.
+Overrides must have the pinned SHA-256 hash; the worker refuses substituted fonts.
+FFprobe is required for output validation. Output codecs, dimensions and pixel
+format are fixed for VS6. `FILE_RETENTION_DAYS` defaults to seven and is validated
+from 1 to 365; expiration starts after publication rather than source upload.
+
 ## `FFMPEG_PATH`
 
 Purpose:

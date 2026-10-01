@@ -19,6 +19,12 @@ const processingStatuses = new Set<ProjectStatus>([
 export function getProjectCardAction(projectId: string, status: ProjectStatus): ProjectCardAction {
   const encodedProjectId = encodeURIComponent(projectId);
 
+  if (status === "rendering" || status === "completed")
+    return {
+      href: `/projects/${encodedProjectId}/outputs`,
+      label: status === "rendering" ? "View render" : "View exports",
+    };
+
   if (status === "preview_ready") {
     return {
       href: `/projects/${encodedProjectId}/clips`,

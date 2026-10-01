@@ -17,6 +17,7 @@ import { FramingControls } from "./framing-controls";
 import { ClipPreviewPlayer } from "./clip-preview-player";
 import { EditorLeaveDialog } from "./editor-leave-dialog";
 import { editorFieldClass, TrimControls } from "./trim-controls";
+import { RenderAction } from "@/features/rendering/components/render-action";
 
 interface Props {
   apiUrl: string;
@@ -172,6 +173,18 @@ function EditorSession({
         </div>
       ) : null}
       <div inert={Boolean(state.recovery)}>
+        <RenderAction
+          apiUrl={props.apiUrl}
+          projectId={props.projectId}
+          dirty={state.dirty}
+          disabled={
+            state.saving ||
+            Boolean(state.validation) ||
+            Boolean(state.recovery) ||
+            (state.draft.framing?.mode === "follow" && tracking.busy)
+          }
+          prepare={state.prepareRender}
+        />
         <label className="mb-5 block space-y-2 text-sm text-rp-text md:hidden">
           <span>Choose a clip ({props.clips.length})</span>
           <select

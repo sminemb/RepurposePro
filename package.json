@@ -40,6 +40,7 @@
     "@next/eslint-plugin-next": "16.2.11",
     "@repurposepro/config": "workspace:*",
     "@repurposepro/db": "workspace:*",
+    "@repurposepro/shared": "workspace:*",
     "@types/node": "26.1.1",
     "eslint": "10.6.0",
     "globals": "17.7.0",

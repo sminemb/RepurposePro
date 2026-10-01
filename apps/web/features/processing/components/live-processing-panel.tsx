@@ -54,6 +54,8 @@ export function LiveProcessingPanel({
         router.replace(`/projects/${encodeURIComponent(projectId)}/clips`);
       },
       onSnapshot: (nextSnapshot) => {
+        if (nextSnapshot.status === "rendering" || nextSnapshot.status === "completed")
+          router.replace(`/projects/${encodeURIComponent(projectId)}/outputs`);
         setPollingIssue(false);
         setSnapshot(nextSnapshot);
       },

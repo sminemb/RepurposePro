@@ -176,6 +176,13 @@
       "when": 1790460000001,
       "tag": "0024_source_framing",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790775000000,
+      "tag": "0025_single_clip_render",
+      "breakpoints": true
     }
   ]
 }

@@ -55,6 +55,25 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe("configuration loaders", () => {
+  it("defaults and validates render encoding, retention and bounded timeouts", () => {
+    const config = loadWorkerConfig(validServerEnvironment);
+    expect(config.render).toMatchObject({
+      preset: "medium",
+      crf: 20,
+      timeoutMs: 3600000,
+      retentionDays: 7,
+    });
+    for (const invalid of [
+      { FFMPEG_PRESET: "custom" },
+      { FFMPEG_CRF: "52" },
+      { RENDER_TIMEOUT_MS: "3600001" },
+      { FILE_RETENTION_DAYS: "0" },
+    ]) {
+      expect(() => loadWorkerConfig({ ...validServerEnvironment, ...invalid })).toThrow(
+        ConfigValidationError,
+      );
+    }
+  });
   it("resolves a relative face detector interpreter from the workspace root", () => {
     const config = loadWorkerConfig({
       ...validServerEnvironment,

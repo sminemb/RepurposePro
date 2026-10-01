@@ -9,6 +9,7 @@ import { HealthModule } from "./modules/health/health.module";
 import { InfrastructureModule } from "./modules/infrastructure/infrastructure.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProcessingModule } from "./modules/processing/processing.module";
+import { RenderingModule } from "./modules/rendering/rendering.module";
 import { createLoggingConfig } from "./logging.config";
 import { UnexpectedExceptionFilter } from "./common/filters/unexpected-exception.filter";
 
@@ -23,6 +24,7 @@ const config = loadApiConfig();
     BillingModule,
     ProjectsModule,
     ProcessingModule,
+    RenderingModule,
   ],
   providers: [
     {

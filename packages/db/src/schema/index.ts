@@ -10,6 +10,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -193,6 +194,12 @@ export const projects = pgTable(
     currentJobId: uuid("current_job_id").references((): AnyPgColumn => processingJobs.id, {
       onDelete: "set null",
     }),
+    currentAnalysisJobId: uuid("current_analysis_job_id").references(
+      (): AnyPgColumn => processingJobs.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
@@ -502,6 +509,103 @@ export const processingJobDispatches = pgTable(
           AND ${table.bullmqJobId} IS NOT NULL
         )
       )`,
+    ),
+  ],
+);
+
+export const renderRequests = pgTable(
+  "render_requests",
+  {
+    jobId: uuid("job_id")
+      .primaryKey()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    revision: integer("revision").notNull(),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("render_requests_project_id_idempotency_key_key").on(
+      table.projectId,
+      table.idempotencyKey,
+    ),
+    check("render_requests_revision_check", sql`${table.revision}>=0`),
+  ],
+);
+
+export const renderRequestKeys = pgTable(
+  "render_request_keys",
+  {
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => renderRequests.jobId, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({
+      name: "render_request_keys_pkey",
+      columns: [table.projectId, table.idempotencyKey],
+    }),
+  ],
+);
+
+export const renderedOutputs = pgTable(
+  "rendered_outputs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    renderJobId: uuid("render_job_id")
+      .notNull()
+      .references(() => renderRequests.jobId),
+    clipCandidateId: uuid("clip_candidate_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    type: text("type").default("clip").notNull(),
+    title: text("title").notNull(),
+    storagePath: text("storage_path").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").default("video/mp4").notNull(),
+    fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull(),
+    durationSeconds: numeric("duration_seconds", { precision: 12, scale: 3 }).notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    videoCodec: text("video_codec").notNull(),
+    audioCodec: text("audio_codec").notNull(),
+    status: text("status").default("ready").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("rendered_outputs_render_job_id_clip_candidate_id_key").on(
+      table.renderJobId,
+      table.clipCandidateId,
+    ),
+    index("rendered_outputs_project_created_idx").on(table.projectId, table.createdAt.desc()),
+    index("rendered_outputs_expiry_idx")
+      .on(table.expiresAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check("rendered_outputs_type_check", sql`${table.type}='clip'`),
+    check("rendered_outputs_file_size_bytes_check", sql`${table.fileSizeBytes}>0`),
+    check("rendered_outputs_duration_seconds_check", sql`${table.durationSeconds}>0`),
+    check("rendered_outputs_width_check", sql`${table.width}=1080`),
+    check("rendered_outputs_height_check", sql`${table.height}=1920`),
+    check("rendered_outputs_video_codec_check", sql`${table.videoCodec}='h264'`),
+    check("rendered_outputs_audio_codec_check", sql`${table.audioCodec}='aac'`),
+    check(
+      "rendered_outputs_status_check",
+      sql`${table.status} IN ('ready','failed','expired','deleted')`,
     ),
   ],
 );

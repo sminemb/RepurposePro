@@ -1015,32 +1015,31 @@ Returns updated summary state.
 
 ## POST `/projects/:projectId/render`
 
-Starts final rendering.
+Starts one saved primary clip export in VS6. Summary and multi-clip rendering are later slices.
 
 ### Request — clips project
 
 ```json
 {
   "type": "clips",
-  "clipIds": ["clip_1", "clip_2"]
+  "clipIds": ["5a3f86e2-4a61-49ba-a7d8-11fc495bde11"],
+  "expectedRevision": 4
 }
 ```
 
-### Request — summary project
-
-```json
-{
-  "type": "summary"
-}
-```
+Optional `Idempotency-Key` header: 1–100 ASCII letters, digits, `_` or `-`.
+Each accepted key remains bound to its render attempt, including keys that reuse matching
+active work. Repeating a key returns that job's current status. A fresh key after completion
+creates a new free render. Exactly one active render is allowed per project.
 
 ### Preconditions
 
 - Project belongs to user.
-- Project is preview-ready or waiting for user edits.
-- Requested clips belong to project.
-- At least one selected clip exists for clip render.
-- Latest metadata is persisted.
+- Project is preview-ready, waiting for user edits, or completed.
+- Exactly one primary clip belongs to the current analysis and its revision matches.
+- The source is available and unexpired; follow framing has no pending tracking job.
+- The immutable snapshot, zero-credit job and durable dispatch are stored atomically.
+- Save unsaved edits before requesting render. Queue outages retain durable work for retry.
 
 ### Response — 202
 
@@ -1049,7 +1048,7 @@ Starts final rendering.
   "data": {
     "jobId": "job_...",
     "status": "queued",
-    "outputCount": 2
+    "outputCount": 1
   }
 }
 ```
@@ -1058,10 +1057,14 @@ Starts final rendering.
 
 ```text
 RENDER_INVALID_PROJECT_STATE
-RENDER_NO_CLIPS_SELECTED
+VALIDATION_ERROR
+CLIP_EDIT_CONFLICT
 RENDER_CLIP_NOT_FOUND
 RENDER_ALREADY_RUNNING
-QUEUE_UNAVAILABLE
+RENDER_IDEMPOTENCY_CONFLICT
+RENDER_FRAMING_PENDING
+SOURCE_VIDEO_NOT_FOUND
+SOURCE_VIDEO_EXPIRED
 ```
 
 ---
@@ -1077,6 +1080,8 @@ QUEUE_UNAVAILABLE
   "data": [
     {
       "id": "out_...",
+      "renderJobId": "render-job-uuid",
+      "clipId": "clip-uuid",
       "type": "clip",
       "title": "Why Most Creators Burn Out",
       "durationSeconds": 73.7,
@@ -1108,6 +1113,13 @@ Authorizes and streams/downloads the file.
 
 Binary MP4 file.
 
+Successful downloads include `Content-Type: video/mp4`, accurate `Content-Length`,
+`Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`, and
+`Content-Disposition: attachment; filename="<safe-name>.mp4"`. Ownership is verified
+before storage resolution. Missing/foreign files return 404; expired/deleted files return 410.
+Output expiration starts at publication using `FILE_RETENTION_DAYS` (default seven).
+Returned metadata excludes all filesystem paths. The list retains earlier attempts.
+
 Recommended headers:
 
 ```text
@@ -1128,7 +1140,7 @@ OUTPUT_FILE_MISSING
 
 ## DELETE `/projects/:projectId/outputs/:outputId`
 
-Deletes one rendered output.
+Planned for a later slice; VS6 does not implement output deletion. Deletes one rendered output.
 
 ### Response — 204
 

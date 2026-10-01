@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { RenderWorkerService } from "./services/render-worker.service";
 import { FaceTracker } from "./services/face-tracker.service";
 import { FramingService } from "./services/framing.service";
 import { Module } from "@nestjs/common";
@@ -40,6 +41,18 @@ const config = loadWorkerConfig();
 @Module({
   imports: [LoggerModule.forRoot(createLoggingConfig(config))],
   providers: [
+    {
+      provide: RenderWorkerService,
+      useFactory: () =>
+        new RenderWorkerService(
+          createDatabaseClient({
+            connectionString: config.processingDatabaseUrl,
+            poolMax: config.databasePoolMax,
+            ssl: config.databaseSsl,
+          }),
+          config,
+        ),
+    },
     {
       provide: FaceTracker,
       useFactory: () =>
