@@ -9,7 +9,7 @@ import {
 import { AlertTriangle, Clock3, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -46,6 +46,14 @@ export function LiveProcessingPanel({
   const router = useRouter();
   const [pollingIssue, setPollingIssue] = useState(false);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const previousRefundStatus = useRef(initialSnapshot.currentJob?.failure?.refundStatus);
+
+  useEffect(() => {
+    const refundStatus = snapshot.currentJob?.failure?.refundStatus;
+    const changed = previousRefundStatus.current !== refundStatus;
+    previousRefundStatus.current = refundStatus;
+    if (changed && refundStatus === "completed") router.refresh();
+  }, [router, snapshot.currentJob?.failure?.refundStatus]);
 
   useEffect(() => {
     const poller = createProcessingStatusPoller({
@@ -170,7 +178,7 @@ export function LiveProcessingPanel({
             ) : null}
             <Link
               className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-rp-primary underline underline-offset-4"
-              href="/billing/history"
+              href="/billing#credit-history-title"
             >
               View credit history
             </Link>

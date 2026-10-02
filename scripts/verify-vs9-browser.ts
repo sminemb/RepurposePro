@@ -23,7 +23,7 @@ async function main() {
   );
   await writeFile(
     join(root, "navigation.ts"),
-    "const router={push(url){history.pushState({},'',url)},replace(url){history.replaceState({},'',url)},refresh(){}};export function useRouter(){return router;}",
+    "const router={push(url){history.pushState({},'',url)},replace(url){history.replaceState({},'',url)},refresh(){window.__vs9Refreshes=(window.__vs9Refreshes??0)+1}};export function useRouter(){return router;}",
   );
   await writeFile(
     join(root, "entry.tsx"),

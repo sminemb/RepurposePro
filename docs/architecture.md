@@ -1657,7 +1657,7 @@ The architecture is successful if RepurposePro can:
 7. Show editable previews before rendering.
 8. Render selected clips or summary into MP4.
 9. Let the user download final outputs.
-10. Refund credits automatically when processing fails.
+10. Refund the exact analysis charge automatically on eligible terminal failure before a saved preview.
 11. Delete files automatically after 7 days.
 12. Keep payment and credit history auditable.
 
@@ -1679,4 +1679,24 @@ current job/lease and creates one private job/lease-path export expiring seven d
 
 Migrations 0036-0039 must precede API/worker startup. See [ADR 0006](adr/0006-summary-video-lifecycle.md)
 and [VS8 verification](verification/vs8.md). Existing clip and billing contracts remain supported;
-broader refunds and scheduled deletion remain VS9/VS10.
+VS9 extends paid-analysis refunds below. Scheduled deletion remains VS10.
+
+## VS9 implemented paid-analysis recovery
+
+A valid, durably saved preview fulfills paid clip or summary analysis. Before that boundary,
+eligible terminal failure atomically refunds the exact deduction once. Successful analysis and
+free rendering/regeneration are excluded. Immutable reasons, ledger uniqueness and execution
+leases remain authoritative in PostgreSQL; historical replays cannot mutate a newer job.
+
+Lease-fenced stage records cap extraction/transcription at two attempts and Gemini selection at
+three total transport/repair calls. Workers save specific failure intents before relinquishing
+execution; API sweepers settle credits, with queue-event and stale-job reconciliation as fallback.
+Publication ambiguity is checked against durable completion before declaring failure.
+
+Ownership-scoped status exposes safe reasons and confirmed ledger amounts. The processing UI
+polls pending settlement, refreshes balance when confirmed, and offers another paid analysis only
+after current cost/balance review and explicit confirmation. Atomic restart checks the retained
+source and creates a fresh job, charge, dispatch and budgets while retaining previous history.
+
+Migrations 0040–0043 must precede updated API/worker startup. See
+[ADR 0007](adr/0007-paid-analysis-refunds.md) and [VS9 verification](verification/vs9.md).
