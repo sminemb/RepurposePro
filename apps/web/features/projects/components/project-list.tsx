@@ -39,7 +39,7 @@ export function ProjectList({ projects }: ProjectListProps) {
       {projects.map((project) => {
         const Icon = project.outputType === "clips" ? Clapperboard : FileVideo;
         const outputLabel = project.outputType === "clips" ? "Short clips" : "Summary video";
-        const action = getProjectCardAction(project.id, project.status);
+        const action = getProjectCardAction(project.id, project.status, project.outputType);
 
         return (
           <article

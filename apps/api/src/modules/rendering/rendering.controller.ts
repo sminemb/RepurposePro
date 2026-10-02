@@ -18,7 +18,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { loadApiConfig } from "@repurposepro/config";
-import { renderClipInputSchema } from "@repurposepro/shared";
+import { renderInputSchema } from "@repurposepro/shared";
 import { z } from "zod";
 import { AuthGuard, type AuthenticatedRequest } from "../auth/auth.guard";
 import { RenderingService, renderHttpError } from "./rendering.service";
@@ -46,7 +46,7 @@ export class RenderingController {
     @Req() request: AuthenticatedRequest,
   ) {
     const userId = this.user(request, projectId);
-    const input = renderClipInputSchema.safeParse(body);
+    const input = renderInputSchema.safeParse(body);
     if (!input.success || (key !== undefined && !/^[a-zA-Z0-9_-]{1,100}$/.test(key)))
       throw renderHttpError("VALIDATION_ERROR", request.id);
     return {

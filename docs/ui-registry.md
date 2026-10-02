@@ -1649,92 +1649,40 @@ Strong hook, useful insight, and clear emotional delivery.
 
 ## 12. Summary Editor Components
 
+Implemented in `apps/web/features/summary/components/summary-preview-editor.tsx`.
+The authenticated page is `/projects/:projectId/summary`. Processing completion and dashboard
+preview links choose summary or clips from trusted project output type.
+
 ## 12.1 SummaryPreviewEditor
 
-Purpose:
+Source-shaped video and original audio preview without caption/crop controls. Desktop uses
+source/list columns; below the existing `lg` breakpoint they stack into a simplified layout.
+Individual preview stops at range end. Continuous playback skips gaps; the seek slider maps
+summary time to source time and resumes there.
 
-Review summary video segments before render.
-
-Layout:
-
-```text
-segment list
-source video preview
-duration summary
-render action
-```
-
-Rules:
-
-- Preserve chronological order in MVP.
-- No complex freeform timeline.
-
----
+Explicit Save/Discard, Save/Discard/Cancel navigation protection, user/project/analysis-scoped
+recoverable session drafts and conflict-safe reload reuse clip editor conventions. Render saves
+dirty changes first and submits the returned revision. Saves affect future exports only.
 
 ## 12.2 SummarySegmentList
 
-Purpose:
-
-Render chronological summary segments.
-
-States:
-
-```text
-loading
-empty
-success
-error
-```
-
----
+Keeps original order. Selected cards appear first; removed cards stay in a collapsed section
+and can be trimmed before restoration. Empty selection offers restoration and disables render.
+Editing is disabled during saves and render acceptance.
 
 ## 12.3 SummarySegmentCard
 
-Purpose:
-
-Show one selected summary segment.
-
-Displays:
-
-```text
-start time
-end time
-duration
-reason selected
-preview action
-remove action
-```
-
-States:
-
-```text
-default
-selected
-removed
-editing
-```
-
----
+Shows start/end, duration and selection reason. Numeric seconds permit shortening/extension
+within source bounds and selected neighbors. Invalid or overlapping drafts cannot be saved.
+Remove sets selection false; Restore validates complete selected chronology.
 
 ## 12.4 SummaryDurationBar
 
-Purpose:
+Shows source, target and draft selected durations with accessible text. AI targets 10% with
+8-12% accepted; manual edits can change length freely.
 
-Show current summary length versus target.
-
-Displays:
-
-```text
-current duration
-target duration
-original duration
-```
-
-Example:
-
-```text
-Summary: 3:04 / Target: 3:00
-```
+Summary exports reuse `OutputBrowser` for persistent progress, failures, free retries, retained
+previous downloads, source-shaped dimensions and expiration-aware links.
 
 ---
 

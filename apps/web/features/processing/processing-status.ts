@@ -33,6 +33,9 @@ export function isProjectProcessingStatus(
   const snapshot = value as Partial<ProjectProcessingStatus>;
   return (
     snapshot.projectId === expectedProjectId &&
+    (snapshot.outputType === undefined ||
+      snapshot.outputType === "clips" ||
+      snapshot.outputType === "summary") &&
     typeof snapshot.status === "string" &&
     projectStatuses.has(snapshot.status) &&
     (snapshot.currentJob === null || isProcessingJobSnapshot(snapshot.currentJob))

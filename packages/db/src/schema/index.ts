@@ -552,7 +552,7 @@ export const renderRequestKeys = pgTable(
     idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
     jobId: uuid("job_id")
       .notNull()
-      .references(() => renderRequests.jobId, { onDelete: "cascade" }),
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
   },
   (table) => [
     primaryKey({
@@ -619,10 +619,8 @@ export const renderedOutputs = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     renderJobId: uuid("render_job_id")
       .notNull()
-      .references(() => renderRequests.jobId),
-    clipCandidateId: uuid("clip_candidate_id")
-      .notNull()
-      .references(() => clipCandidates.id),
+      .references(() => processingJobs.id),
+    clipCandidateId: uuid("clip_candidate_id").references(() => clipCandidates.id),
     type: text("type").default("clip").notNull(),
     title: text("title").notNull(),
     storagePath: text("storage_path").notNull(),
@@ -648,11 +646,23 @@ export const renderedOutputs = pgTable(
     index("rendered_outputs_expiry_idx")
       .on(table.expiresAt)
       .where(sql`${table.deletedAt} IS NULL`),
-    check("rendered_outputs_type_check", sql`${table.type}='clip'`),
+    check(
+      "rendered_outputs_type_check",
+      sql`(${table.type}='clip' AND ${table.clipCandidateId} IS NOT NULL) OR (${table.type}='summary' AND ${table.clipCandidateId} IS NULL)`,
+    ),
+    uniqueIndex("rendered_outputs_summary_job_unique")
+      .on(table.renderJobId)
+      .where(sql`${table.type}='summary'`),
     check("rendered_outputs_file_size_bytes_check", sql`${table.fileSizeBytes}>0`),
     check("rendered_outputs_duration_seconds_check", sql`${table.durationSeconds}>0`),
-    check("rendered_outputs_width_check", sql`${table.width}=1080`),
-    check("rendered_outputs_height_check", sql`${table.height}=1920`),
+    check(
+      "rendered_outputs_width_check",
+      sql`(${table.type}='clip' AND ${table.width}=1080) OR (${table.type}='summary' AND ${table.width}>0 AND ${table.width}%2=0)`,
+    ),
+    check(
+      "rendered_outputs_height_check",
+      sql`(${table.type}='clip' AND ${table.height}=1920) OR (${table.type}='summary' AND ${table.height}>0 AND ${table.height}%2=0)`,
+    ),
     check("rendered_outputs_video_codec_check", sql`${table.videoCodec}='h264'`),
     check("rendered_outputs_audio_codec_check", sql`${table.audioCodec}='aac'`),
     check(
@@ -994,4 +1004,67 @@ export const videoFraming = pgTable(
       sql`${table.status} IN ('queued','active','completed','failed')`,
     ),
   ],
+);
+
+export const summaries = pgTable(
+  "summaries",
+  {
+    analysisJobId: uuid("analysis_job_id")
+      .primaryKey()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => uploadedVideos.id),
+    editRevision: integer("edit_revision").default(0).notNull(),
+    targetDurationSeconds: numeric("target_duration_seconds", {
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+  },
+  (t) => [
+    check("summary_revision_check", sql`${t.editRevision}>=0`),
+    check("summary_target_check", sql`${t.targetDurationSeconds}>0`),
+  ],
+);
+export const summarySegments = pgTable(
+  "summary_segments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    analysisJobId: uuid("analysis_job_id")
+      .notNull()
+      .references(() => summaries.analysisJobId, { onDelete: "cascade" }),
+    segmentOrder: integer("segment_order").notNull(),
+    startTime: numeric("start_time", { precision: 12, scale: 3 }).notNull(),
+    endTime: numeric("end_time", { precision: 12, scale: 3 }).notNull(),
+    reason: varchar("reason", { length: 500 }).notNull(),
+    selected: boolean("selected").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    unique("summary_segment_order_unique").on(t.analysisJobId, t.segmentOrder),
+    check("summary_segment_range_check", sql`${t.startTime}>=0 AND ${t.endTime}>${t.startTime}`),
+    check("summary_segment_order_check", sql`${t.segmentOrder}>=0`),
+  ],
+);
+export const summaryRenderRequests = pgTable(
+  "summary_render_requests",
+  {
+    jobId: uuid("job_id")
+      .primaryKey()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    analysisJobId: uuid("analysis_job_id")
+      .notNull()
+      .references(() => summaries.analysisJobId),
+    revision: integer("revision").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [check("summary_render_revision_check", sql`${t.revision}>=0`)],
 );

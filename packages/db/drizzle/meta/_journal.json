@@ -253,6 +253,34 @@
       "when": 1790867408733,
       "tag": "0035_vs7_project_job_status",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790915858390,
+      "tag": "0036_rare_kang",
+      "breakpoints": true
+    },
+    {
+      "breakpoints": true,
+      "when": 1790916092148,
+      "idx": 37,
+      "tag": "0037_summary_lifecycle",
+      "version": "7"
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1790916755043,
+      "tag": "0038_tan_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1790917694703,
+      "tag": "0039_summary_precision_and_dispatch",
+      "breakpoints": true
     }
   ]
 }

@@ -764,6 +764,12 @@ Rules:
 }
 ```
 
+Status also includes `outputType: "clips" | "summary"` for editor routing. Summary render
+
+jobs use the existing job status shape without a `clips` array.
+
+
+
 ---
 
 # 12. Clip Endpoints
@@ -971,69 +977,131 @@ If new AI generation is queued:
 
 # 13. Summary Endpoints
 
+
+
 ## GET `/projects/:projectId/summary`
 
-### Response — 200
+
+
+Authenticated current-analysis preview. Returns 404 `SUMMARY_NOT_FOUND` for an unavailable
+
+summary or an ownership miss. Responses use `Cache-Control: private, no-store`.
+
+
 
 ```json
+
 {
+
   "data": {
-    "targetDurationSeconds": 180,
-    "currentDurationSeconds": 184,
-    "segments": [
-      {
-        "id": "sumseg_...",
-        "startTime": 120,
-        "endTime": 185.4,
-        "durationSeconds": 65.4,
-        "reason": "Introduces the main topic and gives necessary context.",
-        "selected": true,
-        "order": 1
-      }
-    ]
+
+    "analysisJobId": "00000000-0000-4000-8000-000000000080",
+
+    "revision": 0,
+
+    "sourceDurationSeconds": 100,
+
+    "targetDurationSeconds": 10,
+
+    "currentDurationSeconds": 10,
+
+    "segments": [{
+
+      "id": "00000000-0000-4000-8000-000000000081",
+
+      "order": 0,
+
+      "startTime": 10,
+
+      "endTime": 20,
+
+      "durationSeconds": 10,
+
+      "reason": "Keep the main explanation and context.",
+
+      "selected": true
+
+    }]
+
   }
+
 }
+
 ```
 
----
+
+
+Every segment is returned, including removed (`selected: false`) segments. IDs and zero-based
+
+order remain stable for that analysis. A render becoming the current job does not change
+
+`analysisJobId` or preview access. Generated duration targets 10%, with 8-12% accepted.
+
+
 
 ## PATCH `/projects/:projectId/summary`
 
-Updates summary segment metadata.
 
-### Request
+
+Complete snapshot of all known IDs, including removed segments:
+
+
 
 ```json
+
 {
-  "segments": [
-    {
-      "id": "sumseg_...",
-      "startTime": 122.3,
-      "endTime": 183.9,
-      "selected": true
-    }
-  ]
+
+  "expectedRevision": 0,
+
+  "segments": [{
+
+    "id": "00000000-0000-4000-8000-000000000081",
+
+    "startTime": 10,
+
+    "endTime": 23,
+
+    "selected": true
+
+  }]
+
 }
+
 ```
 
-### Rules
 
-- Preserve chronological order.
-- No overlapping selected segments unless explicitly supported later.
-- End must be greater than start.
-- Segments must stay within source duration.
 
-### Response — 200
+Saves atomically under the project and summary locks. Returns the canonical GET shape with
 
-Returns updated summary state.
+revision incremented. Missing, duplicate, foreign or unknown IDs return 400 `VALIDATION_ERROR`.
+
+Stale revision returns 409 `SUMMARY_EDIT_CONFLICT`. Invalid source bounds, ordering or selected
+
+overlap return 409 `SUMMARY_INVALID_RANGES`. Times normalize to milliseconds; end must remain
+
+after start at that precision. Original segment order and reasons cannot be changed.
+
+
+
+Removal sets `selected: false`; restoration must fit between selected neighbors. Removed
+
+ranges may overlap selected ranges until restored. Manual edits can exceed 8-12%; zero selected
+
+segments may be saved, but cannot be rendered. Saving during a render affects future exports
+
+only and never charges credits or changes the immutable render request.
+
+
 
 ---
+
+
 
 # 14. Render Endpoints
 
 ## POST `/projects/:projectId/render`
 
-Starts a free batch of 1–10 selected, saved current-analysis primary clips. Summary rendering remains VS8.
+Starts a free batch of 1–10 selected, saved current-analysis primary clips, or one saved summary.
 
 ### Request — clips project
 
@@ -1050,7 +1118,33 @@ Each accepted key remains bound to its render attempt, including keys that reuse
 active work. Repeating a key returns that job's current status. A fresh key after completion
 creates a new free render. Exactly one render or regeneration is allowed per project.
 Legacy one-clip `{ type: "clips", clipIds: [id], expectedRevision: 4 }` requests remain accepted.
-IDs must be unique; the revision map must contain exactly those IDs. `outputCount` is 1–10.
+Clip IDs must be unique; the revision map must contain exactly those IDs. Clip `outputCount` is 1–10.
+
+### Request — summary project
+
+
+
+```json
+
+{ "type": "summary", "expectedRevision": 3 }
+
+```
+
+
+
+Uses the same idempotency header and response envelope, with `outputCount: 1`. Keys bind to
+
+analysis identity and saved summary revision. All selected ranges and source identity are frozen
+
+in one transaction with the zero-credit job and durable dispatch. Summary-specific errors are
+
+`SUMMARY_NOT_FOUND` (404), `SUMMARY_EDIT_CONFLICT` (409), `SUMMARY_EMPTY_SELECTION` (409), and
+
+`SUMMARY_INVALID_RANGES` (409). Source expiration returns 410. A fresh key after a failed job
+
+starts a free retry of the current saved revision. At most two persisted automatic attempts run.
+
+
 
 ### Preconditions
 
@@ -1118,6 +1212,16 @@ SOURCE_VIDEO_EXPIRED
 ```
 
 ---
+
+Output metadata is discriminated by `type`. Existing `type: "clip"` exports retain a non-null
+
+`clipId` and 1080x1920 dimensions. Summary exports have `type: "summary"`, `clipId: null`, and
+
+positive even source-shaped dimensions. One summary output is permitted per render job.
+
+Every export expires seven days after its own publication; older downloads survive later failures.
+
+
 
 ## GET `/projects/:projectId/outputs/:outputId/download`
 

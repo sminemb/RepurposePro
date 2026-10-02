@@ -1,4 +1,5 @@
 import { GeminiClipRegenerator } from "./services/gemini-clip-regenerator.service";
+import { GeminiSummarySelector } from "./services/gemini-summary-selector.service";
 import { ClipRegenerationProcessor } from "./processors/clip-regeneration.processor";
 import { resolve } from "node:path";
 import { RenderWorkerService } from "./services/render-worker.service";
@@ -167,20 +168,36 @@ const config = loadWorkerConfig();
       },
     },
     {
+      provide: GeminiSummarySelector,
+      useFactory: async () =>
+        new GeminiSummarySelector(
+          config.gemini.apiKey
+            ? await createGoogleGeminiClient(config.gemini.apiKey)
+            : {
+                generateContent: async () => {
+                  throw new Error("Gemini is unavailable.");
+                },
+              },
+          { ...config.gemini, model: config.gemini.summaryModel ?? config.gemini.model },
+        ),
+    },
+    {
       provide: ANALYSIS_PIPELINE_HANDLER,
       inject: [
         ANALYSIS_TRANSCRIPT_REPOSITORY,
         AnalysisTranscriptService,
         GeminiClipSelector,
         FramingService,
+        GeminiSummarySelector,
       ],
       useFactory: (
         repository: AnalysisTranscriptRepositoryContract,
         transcripts: AnalysisTranscriptService,
         selector: GeminiClipSelector,
         framing: FramingService,
+        summarySelector: GeminiSummarySelector,
       ): AnalysisPipelineHandler =>
-        new AnalysisPipelineService(repository, transcripts, selector, framing),
+        new AnalysisPipelineService(repository, transcripts, selector, framing, summarySelector),
     },
     {
       provide: AnalysisQueueConsumerService,

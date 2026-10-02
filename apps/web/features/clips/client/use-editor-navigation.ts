@@ -64,7 +64,11 @@ export function useEditorNavigation(
         if (!new URL(form.action).pathname.endsWith("/sign-out")) return;
         try {
           for (const key of Object.keys(sessionStorage)) {
-            if (key.startsWith(`rp:clip-draft:${userId}:`)) sessionStorage.removeItem(key);
+            if (
+              key.startsWith(`rp:clip-draft:${userId}:`) ||
+              key.startsWith(`rp:summary-draft:${userId}:`)
+            )
+              sessionStorage.removeItem(key);
           }
         } catch {
           /* Storage can be disabled. */
@@ -95,6 +99,10 @@ export function useEditorNavigation(
     };
   }, [dirty, saving, request, clearRecovery, userId]);
   return {
+    navigateSaved: (action: () => void) => {
+      bypass.current = true;
+      action();
+    },
     pending,
     request,
     cancel: () => {

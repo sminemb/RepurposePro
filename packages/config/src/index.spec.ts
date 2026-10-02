@@ -92,6 +92,7 @@ describe("configuration loaders", () => {
       apiKey: undefined,
       maxRetries: 2,
       model: "gemini-3.5-flash-lite",
+      summaryModel: "gemini-3.5-flash-lite",
       timeoutMs: 60_000,
     });
     expect(config.logPretty).toBe(true);

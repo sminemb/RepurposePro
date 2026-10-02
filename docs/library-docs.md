@@ -1876,3 +1876,16 @@ That means:
 - Delete files after 7 days.
 
 This keeps RepurposePro cheaper, faster, and easier to build.
+
+
+## VS8 implementation references
+
+- [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output): required
+  object/range fields with independent server validation. Live testing rejected a large bounded
+  array schema with `INVALID_ARGUMENT`; the model schema omits that cardinality constraint while
+  the prompt and independent validator retain the 100-segment cap and 1-500-character reasons.
+- [FFmpeg video options](https://ffmpeg.org/ffmpeg-all.html#Video-Options): default autorotation
+  normalizes source rotation while encoding; `-display_rotation` creates the rotated test fixture.
+- [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html): paired trim/atrim, timestamp reset,
+  chronological audio/video concat and square-pixel scaling. These docs were fetched through
+  Context7; provider structured-output behavior was additionally verified with a live model.

@@ -524,41 +524,32 @@ filesystem paths.
 
 ---
 
-# 11. `summary_segments`
+# 11. Summary state, segments and immutable render requests
 
-Stores editable chronological summary selections.
+VS8 migrations 0036-0039 implement these tables. Runtime roles access them only through
+ownership-scoped or lease-fenced security-definer functions; direct reads and writes are denied.
 
-| Column          | Type        | Rules              |
-| --------------- | ----------- | ------------------ |
-| `id`            | uuid        | PK                 |
-| `project_id`    | uuid        | FK projects        |
-| `source_job_id` | uuid        | FK processing_jobs |
-| `segment_order` | integer     | Required           |
-| `start_time`    | numeric     | Required           |
-| `end_time`      | numeric     | Required           |
-| `reason`        | text        | Required           |
-| `selected`      | boolean     | Default true       |
-| `created_at`    | timestamptz | Required           |
-| `updated_at`    | timestamptz | Required           |
+| Table | Key and stored state |
+| --- | --- |
+| `summaries` | `analysis_job_id` PK/FK processing job; `project_id`, `source_id`, nonnegative `edit_revision`, positive `target_duration_seconds` |
+| `summary_segments` | Stable UUID `id`; FK `analysis_job_id`; zero-based `segment_order`; millisecond `start_time`/`end_time`; reason (1-500 characters); `selected`; creation/update times |
+| `summary_render_requests` | `job_id` PK/FK processing job; project and analysis identity; saved revision; immutable JSON source/range snapshot; creation time |
 
-Constraints:
+Ordering is unique on `(analysis_job_id, segment_order)`, so later analyses retain independent
+rows. Selected ranges are chronological, within the source and non-overlapping. Preview
+finalization validates every generated range, 8-12% total and current analysis/worker lease,
+then inserts all metadata and completes the analysis atomically. Replays reuse existing previews.
 
-```text
-end_time > start_time
-segment_order >= 0
-unique(project_id, segment_order)
-```
+Saves require every known segment ID and the current revision. They lock the project and
+summary, normalize times to millisecond precision, validate selected neighbors and increment
+one summary-wide revision. Removal retains the row with `selected=false`. Restoration validates
+the same chronology. Edited duration is unrestricted; a saved empty selection is allowed.
 
-Rules:
-
-- Preserve chronological order in MVP.
-- Selected segments should not overlap unless explicitly supported later.
-
-Recommended index:
-
-```text
-(project_id, segment_order)
-```
+Immutable render snapshots contain selected source ranges, saved revision/analysis identity,
+source ID/path/expiry/file size and project owner/title. Attempt/progress state remains in
+`processing_jobs`; durable delivery remains in `processing_job_dispatches`. Persisted attempts
+cap execution at two across crashes, queue retries and takeover. A fresh free request can retry
+later. Failed renders return the project to preview-ready while keeping edits and downloads.
 
 ---
 
@@ -620,7 +611,7 @@ Idempotency recommendation:
 unique(render_job_id, clip_candidate_id)
 ```
 
-For summary output, enforce one summary output row per render job by application rule or partial unique index.
+VS8 enforces one summary per render job with a partial unique index. Clip outputs still require a non-null clip reference and 1080x1920 dimensions. Summary outputs require a null clip reference and positive even source-shaped dimensions. Both retain H.264/AAC, positive file-size and duration checks. `rendered_outputs.render_job_id` and `render_request_keys.job_id` now reference `processing_jobs`, allowing either render request type.
 
 ---
 

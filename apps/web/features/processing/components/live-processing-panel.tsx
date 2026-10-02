@@ -50,8 +50,10 @@ export function LiveProcessingPanel({
       getVisibilityState: () => document.visibilityState,
       load: (signal) => loadProcessingStatus(apiUrl, projectId, signal),
       onFailure: () => setPollingIssue(true),
-      onPreviewReady: () => {
-        router.replace(`/projects/${encodeURIComponent(projectId)}/clips`);
+      onPreviewReady: (snapshot) => {
+        router.replace(
+          `/projects/${encodeURIComponent(projectId)}/${snapshot.outputType === "summary" ? "summary" : "clips"}`,
+        );
       },
       onSnapshot: (nextSnapshot) => {
         if (nextSnapshot.status === "rendering" || nextSnapshot.status === "completed")

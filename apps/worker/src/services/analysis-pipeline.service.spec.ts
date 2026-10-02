@@ -12,6 +12,7 @@ import {
 } from "./analysis-pipeline.service";
 import type { AnalysisTranscriptService } from "./analysis-transcript.service";
 import type { GeminiClipSelector } from "./gemini-clip-selector.service";
+import type { GeminiSummarySelector } from "./gemini-summary-selector.service";
 import type { ProcessingLifecycleRepositoryContract } from "./processing-lifecycle.repository";
 import {
   ProcessingLeaseLostError,
@@ -47,6 +48,59 @@ const transcript: PersistedTranscript = {
 };
 
 describe("AnalysisPipelineService", () => {
+  it.each(["created", "existing", "lost", "rejected"] as const)(
+    "branches trusted summary analysis and fences %s finalization without clip work",
+    async (outcome) => {
+      const finalizePreview = vi.fn(),
+        clipSelect = vi.fn(),
+        forJob = vi.fn();
+      const finalizeSummary = vi.fn().mockResolvedValue(outcome);
+      const select = vi
+        .fn()
+        .mockResolvedValue({ summarySegments: [{ startTime: 0, endTime: 3, reason: "Idea" }] });
+      const service = new AnalysisPipelineService(
+        {
+          ...repositoryWith(finalizePreview),
+          getOutputType: vi.fn().mockResolvedValue("summary"),
+          finalizeSummary,
+        },
+        {
+          getOrCreate: vi.fn().mockResolvedValue({ sourceDurationSeconds: 30, transcript }),
+        } as unknown as AnalysisTranscriptService,
+        { select: clipSelect } as unknown as GeminiClipSelector,
+        { forJob },
+        { select } as unknown as GeminiSummarySelector,
+      );
+      const result = service.handle(
+        { jobId, projectId },
+        leaseContext(vi.fn().mockResolvedValue(undefined)),
+      );
+      if (outcome === "lost") await expect(result).rejects.toBeInstanceOf(ProcessingLeaseLostError);
+      else if (outcome === "rejected")
+        await expect(result).rejects.toBeInstanceOf(AnalysisPreviewFinalizationError);
+      else await expect(result).resolves.toEqual({ outcome: "preview_ready" });
+      expect(finalizeSummary).toHaveBeenCalledWith(jobId, "worker-test", leaseToken, [
+        { startTime: 0, endTime: 3, reason: "Idea" },
+      ]);
+      expect(clipSelect).not.toHaveBeenCalled();
+      expect(forJob).not.toHaveBeenCalled();
+      expect(finalizePreview).not.toHaveBeenCalled();
+    },
+  );
+  it("does not select under a lost trusted analysis context", async () => {
+    const select = vi.fn();
+    const service = new AnalysisPipelineService(
+      { ...repositoryWith(vi.fn()), getOutputType: vi.fn().mockResolvedValue(null) },
+      {
+        getOrCreate: vi.fn().mockResolvedValue({ sourceDurationSeconds: 30, transcript }),
+      } as unknown as AnalysisTranscriptService,
+      { select } as unknown as GeminiClipSelector,
+    );
+    await expect(
+      service.handle({ jobId, projectId }, leaseContext(vi.fn().mockResolvedValue(undefined))),
+    ).rejects.toBeInstanceOf(ProcessingLeaseLostError);
+    expect(select).not.toHaveBeenCalled();
+  });
   it("persists ordered progress and finalizes default browser-preview metadata atomically", async () => {
     const updateProgress = vi
       .fn<ProcessingLeaseContext["updateProgress"]>()
