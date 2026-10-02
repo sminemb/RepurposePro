@@ -112,7 +112,7 @@ FAILED
 | VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
-| VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS10  | Files expire and are deleted after 7 days                         | IN_PROGRESS | 2026-10-02 | 22:26 | — | — | VS10-T1 | 0% | — |
 | VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 
@@ -605,9 +605,9 @@ This slice crosses expiration metadata, cleanup jobs, storage deletion, UI badge
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS10        |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-10-02  |
+| Start Time | 22:26       |
 | End Date   | —           |
 | End Time   | —           |
 | Progress   | 0%          |
@@ -617,7 +617,7 @@ This slice crosses expiration metadata, cleanup jobs, storage deletion, UI badge
 
 | Task ID | Vertical Task                                       | Layers Touched   | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | --------------------------------------------------- | ---------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS10-T1 | Add `expires_at` and `deleted_at` where needed      | DB               | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS10-T1 | Add `expires_at` and `deleted_at` where needed      | DB               | IN_PROGRESS | 2026-10-02 | 22:26 | — | — | — |
 | VS10-T2 | Show expiration badges and notices                  | Web + API        | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS10-T3 | Create scheduled cleanup job                        | Queue + Worker   | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS10-T4 | Delete source, temp, clip, and summary files safely | Worker + Storage | NOT_STARTED | —          | —          | —        | —        | —            |
