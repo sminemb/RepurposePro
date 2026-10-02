@@ -82,6 +82,15 @@ startup. Existing clip references/dimensions, free rendering, paid-analysis cred
 idempotency and previous output expiration remain compatible. No new runtime credentials or
 required environment variable is introduced. See [ADR 0006](../adr/0006-summary-video-lifecycle.md).
 
-Final `pnpm ci:check` is pending. Completion requires formatting, lint, typecheck, unit/integration
-tests and production builds. Final evidence will be recorded in
-`storage/vs8-verification/ci-check.log` before VS8 is marked complete.
+Final `pnpm ci:check` passed at 13:43 Asia/Manila: formatting, lint, TypeScript,
+611 unit tests, 86 PostgreSQL/Redis integration tests and all production builds. The unit stage
+intentionally skips the database tests, which all pass in the dedicated integration stage.
+The existing Next.js file-tracing warning is non-fatal. Full log:
+`storage/vs8-verification/ci-check.log`.
+
+Final browser checks confirm render progress after refresh, subsequent completion, Save & leave,
+source-shaped playback and authenticated fixture download (200, video/mp4, positive byte count).
+Inspected screenshots: `desktop-editor.png`, `desktop-exports.png`, `mobile-editor.png`, and
+`mobile-expired.png`. Expected synthetic conflict responses are distinguished from runtime errors;
+the final expiration page has no console errors or warnings. Task completion was recorded at
+13:51 Asia/Manila. Three verified milestones cover prompt, pipeline/rendering and editor/completion.

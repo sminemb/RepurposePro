@@ -16,7 +16,11 @@ const processingStatuses = new Set<ProjectStatus>([
   "refunded",
 ]);
 
-export function getProjectCardAction(projectId: string, status: ProjectStatus): ProjectCardAction {
+export function getProjectCardAction(
+  projectId: string,
+  status: ProjectStatus,
+  outputType: "clips" | "summary" = "clips",
+): ProjectCardAction {
   const encodedProjectId = encodeURIComponent(projectId);
 
   if (status === "rendering" || status === "completed")
@@ -27,8 +31,8 @@ export function getProjectCardAction(projectId: string, status: ProjectStatus): 
 
   if (status === "preview_ready") {
     return {
-      href: `/projects/${encodedProjectId}/clips`,
-      label: "Review clips",
+      href: `/projects/${encodedProjectId}/${outputType === "summary" ? "summary" : "clips"}`,
+      label: outputType === "summary" ? "Review summary" : "Review clips",
     };
   }
 

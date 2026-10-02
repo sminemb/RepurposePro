@@ -34,7 +34,9 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
   }
 
   if (isPreviewReady(snapshot)) {
-    redirect(`/projects/${encodeURIComponent(projectId)}/clips`);
+    redirect(
+      `/projects/${encodeURIComponent(projectId)}/${snapshot.outputType === "summary" ? "summary" : "clips"}`,
+    );
   }
   if (!snapshot.currentJob) {
     return (

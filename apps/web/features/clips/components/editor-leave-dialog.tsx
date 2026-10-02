@@ -9,6 +9,7 @@ export function EditorLeaveDialog({
   onCancel,
   onDiscard,
   onSave,
+  subject = "clip",
 }: {
   open: boolean;
   saving: boolean;
@@ -16,6 +17,7 @@ export function EditorLeaveDialog({
   onCancel: () => void;
   onDiscard: () => void;
   onSave: () => void;
+  subject?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -36,7 +38,7 @@ export function EditorLeaveDialog({
         Save your changes?
       </h2>
       <p className="mt-3 text-sm leading-6 text-rp-text-muted">
-        You have unsaved edits to this clip. Save them before leaving, or discard them.
+        You have unsaved edits to this {subject}. Save them before leaving, or discard them.
       </p>
       {error ? (
         <p className="mt-3 text-sm text-rp-danger" role="alert">

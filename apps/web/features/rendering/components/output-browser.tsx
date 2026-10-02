@@ -10,6 +10,7 @@ import {
 } from "@repurposepro/shared";
 import { loadProcessingStatus } from "@/features/processing/client/processing-status-api";
 import { loadRenderJobStatus, type RenderJobStatus } from "../client/job-status-api";
+import { summaryRequest, renderSummary } from "@/features/summary/client/summary-api";
 
 const steps: Record<string, string> = {
   queued: "Queued",
@@ -130,7 +131,9 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
   }, [apiUrl, base, projectId, refreshVersion]);
 
   const job =
-    renderJob?.clips !== undefined && renderJob.id === snapshot?.currentJob?.id
+    snapshot?.currentJob &&
+    renderJob?.id === snapshot.currentJob.id &&
+    (snapshot?.outputType === "summary" || renderJob?.clips !== undefined)
       ? snapshot.currentJob
       : null;
   const detail = renderJob?.id === job?.id ? renderJob : null;
@@ -139,6 +142,11 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
   const clipResults = detail?.clips ?? [];
   const completed = clipResults.filter((clip) => clip.status === "completed").length;
   const failedClips = clipResults.filter((clip) => clip.status === "failed");
+  const isSummary = snapshot?.outputType === "summary";
+  const summaryOutput = outputs.find((output) => output.renderJobId === job?.id);
+  const summaryExpired =
+    summaryOutput &&
+    (summaryOutput.status === "expired" || Date.parse(summaryOutput.expiresAt) <= Date.now());
   const groups = new Map<string, OutputMetadata[]>();
   for (const output of outputs) {
     const group = groups.get(output.renderJobId) ?? [];
@@ -208,49 +216,90 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
       setRetrying(false);
     }
   };
+  const retrySummary = async () => {
+    if (retrying || active || !failed) return;
+    setRetrying(true);
+    setRetryError("");
+    try {
+      const saved = await summaryRequest(apiUrl, projectId);
+      const signature = `${job?.id}:${saved.analysisJobId}:${saved.revision}`;
+      if (retryAttempt.current?.signature !== signature)
+        retryAttempt.current = { signature, key: crypto.randomUUID() };
+      await renderSummary(apiUrl, projectId, saved.revision, retryAttempt.current.key);
+      setRenderJob(null);
+      retryAttempt.current = null;
+      setRefreshVersion((value) => value + 1);
+    } catch (failure) {
+      setRetryError(failure instanceof Error ? failure.message : "Could not retry this summary.");
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-rp-text-muted">
-          Your exported clips stay available until the expiration shown below.
+          Your exports stay available until the expiration shown below.
         </p>
         <Link
           className="inline-flex min-h-11 items-center rounded-rp-md border border-rp-border px-4 text-sm text-rp-text"
-          href={`/projects/${encodeURIComponent(projectId)}/clips`}
+          href={`/projects/${encodeURIComponent(projectId)}/${snapshot?.outputType === "summary" ? "summary" : "clips"}`}
         >
-          Return to clip editor
+          Return to {snapshot?.outputType === "summary" ? "summary" : "clip"} editor
         </Link>
       </div>
-      {job && (active || clipResults.length > 0) ? (
+      {job && (active || failed || clipResults.length > 0 || isSummary) ? (
         <section
           aria-live="polite"
           className="rounded-rp-lg border border-rp-border bg-rp-surface p-6"
         >
           <h2 className="font-semibold text-rp-text">
             {active
-              ? "Rendering your selected clips"
-              : failed
-                ? completed
-                  ? "Some clips could not be exported"
-                  : "Your clips could not be exported"
-                : "Your clips are ready"}
+              ? snapshot?.outputType === "summary"
+                ? "Rendering your summary"
+                : "Rendering your selected clips"
+              : isSummary
+                ? failed
+                  ? "Your summary could not be exported"
+                  : summaryExpired
+                    ? "Your summary export has expired"
+                    : "Your summary is ready"
+                : failed
+                  ? completed
+                    ? "Some clips could not be exported"
+                    : "Your clips could not be exported"
+                  : "Your clips are ready"}
           </h2>
           <p className="mt-2 text-sm text-rp-text-muted">
-            {clipResults.length
-              ? `${completed} of ${clipResults.length} clips completed.`
-              : "Preparing your saved clips."}{" "}
-            {failedClips.length ? `${failedClips.length} failed. ` : ""}
-            {active
-              ? "Downloads appear as each clip finishes. You can leave this page and return later."
-              : completed
-                ? "Successful downloads remain available below."
-                : "Your saved edits are ready for another attempt."}
+            {isSummary ? (
+              active ? (
+                "Preparing your saved summary. Your download will appear when rendering finishes. You can return later."
+              ) : failed ? (
+                "Your saved edits and earlier downloads are safe. You can retry for free."
+              ) : summaryExpired ? (
+                "This download is no longer available. You can render again for free while the source remains available."
+              ) : (
+                "Your summary is complete. Available downloads are shown below."
+              )
+            ) : (
+              <>
+                {clipResults.length
+                  ? `${completed} of ${clipResults.length} clips completed.`
+                  : "Preparing your saved clips."}{" "}
+                {failedClips.length ? `${failedClips.length} failed. ` : ""}
+                {active
+                  ? "Downloads appear as each clip finishes. You can leave this page and return later."
+                  : completed
+                    ? "Successful downloads remain available below."
+                    : "Your saved edits are ready for another attempt."}
+              </>
+            )}
           </p>
           {active ? (
             <div
               role="progressbar"
-              aria-label="Batch render progress"
+              aria-label={isSummary ? "Summary render progress" : "Batch render progress"}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={detail?.progress ?? job.progress ?? 0}
@@ -300,14 +349,24 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
               {retrying ? "Starting retry…" : "Retry failed selected clips"}
             </button>
           ) : null}
+          {isSummary && failed ? (
+            <button
+              type="button"
+              onClick={() => void retrySummary()}
+              disabled={retrying}
+              className="mt-4 inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {retrying ? "Starting retry…" : "Retry summary for free"}
+            </button>
+          ) : null}
         </section>
       ) : null}
-      {failed && !clipResults.length ? (
+      {failed && !isSummary && !clipResults.length ? (
         <p
           role="alert"
           className="rounded-rp-md border border-rp-danger/40 bg-rp-surface p-4 text-rp-text"
         >
-          Your clips could not be exported. Your saved edits and previous exports are safe. Return
+          Your video could not be exported. Your saved edits and previous exports are safe. Return
           to the editor to render again.
         </p>
       ) : null}
@@ -327,7 +386,7 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
         </p>
       ) : !outputs.length && !active ? (
         <p className="rounded-rp-lg border border-rp-border bg-rp-surface p-6 text-rp-text-muted">
-          No rendered outputs yet. Open your clip editor and render selected clips to download their
+          No rendered outputs yet. Open your editor and render your saved selection to download its
           MP4s.
         </p>
       ) : null}
@@ -352,7 +411,8 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
                   className="rounded-rp-lg border border-rp-border bg-rp-surface p-5"
                 >
                   <p className="text-xs font-semibold uppercase tracking-wide text-rp-primary">
-                    Vertical MP4 · 1080 × 1920
+                    {output.type === "summary" ? "Summary MP4" : "Vertical MP4"} · {output.width} ×{" "}
+                    {output.height}
                   </p>
                   <h3 className="mt-3 text-lg font-semibold text-rp-text">{output.title}</h3>
                   <p className="mt-2 text-sm text-rp-text-muted">
