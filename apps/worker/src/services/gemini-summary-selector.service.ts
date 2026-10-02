@@ -12,6 +12,9 @@ export class GeminiSummarySelector {
     private readonly options: GeminiClipSelectorOptions,
   ) {}
   public async select(input: ClipSelectionPromptInput, signal: AbortSignal) {
+    signal.throwIfAborted();
+    if (!input.transcriptSegments.some((s) => s.text.trim()))
+      throw new Error("No speech is available for summary selection.");
     let issues: string[] = [];
     for (let attempt = 0; attempt <= this.options.maxRetries; attempt++) {
       signal.throwIfAborted();
@@ -32,7 +35,7 @@ export class GeminiSummarySelector {
               summarySegments: {
                 type: "array",
                 minItems: 1,
-                maxItems: MAX_SUMMARY_SEGMENTS,
+                description: `At most ${MAX_SUMMARY_SEGMENTS} chronological source ranges.`,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -40,7 +43,7 @@ export class GeminiSummarySelector {
                   properties: {
                     startTime: { type: "number", minimum: 0, maximum: input.sourceDurationSeconds },
                     endTime: { type: "number", minimum: 0, maximum: input.sourceDurationSeconds },
-                    reason: { type: "string", minLength: 1, maxLength: 500 },
+                    reason: { type: "string", description: "Selection reason, 1–500 characters." },
                   },
                 },
               },

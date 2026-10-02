@@ -59,6 +59,7 @@ export default tseslint.config(
       "apps/api/src/modules/projects/*.spec.ts",
       "apps/api/src/modules/storage/*.spec.ts",
       "apps/api/src/modules/rendering/*.spec.ts",
+      "apps/api/src/modules/summary/*.spec.ts",
     ],
     languageOptions: {
       parserOptions: {

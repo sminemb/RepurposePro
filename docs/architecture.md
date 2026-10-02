@@ -507,7 +507,7 @@ For summary projects:
 - Ordered segment list
 - Target duration
 - Segment reasons
-- Optional captions if summary captions are enabled later
+- Original source picture and speaker audio, without captions or crop controls
 
 ---
 
@@ -995,8 +995,8 @@ Summary patch endpoint should support:
 
 - Segment selection
 - Start/end adjustment
-- Segment deletion
-- Segment ordering if allowed
+- Removal/restoration through selection
+- Stable original order and one summary-wide edit revision
 
 For MVP, preserve chronological order.
 
@@ -1658,3 +1658,23 @@ The architecture is successful if RepurposePro can:
 10. Refund credits automatically when processing fails.
 11. Delete files automatically after 7 days.
 12. Keep payment and credit history auditable.
+
+
+## VS8 implemented summary lifecycle
+
+Trusted database project mode branches the shared paid-analysis pipeline after cached local
+Whisper transcription. Summary analysis uses `summary-v1` and independent strict validation,
+skipping clip ranking, caption derivation and face tracking. Empty speech and exhausted response
+repairs fail through the existing paid-analysis failure lifecycle without partial previews.
+
+The current-analysis summary and segments persist atomically under execution leases. Ownership
+functions accept complete revisioned edits. A free render freezes revision, analysis, ranges and
+source identity with durable dispatch. The existing render queue retains concurrency one and
+routes `render_summary` to its own renderer, with two persisted attempts and lease cancellation.
+FFmpeg trims video/audio together, resets timestamps, concatenates chronologically, normalizes
+rotation/pixels/even dimensions and encodes H.264/AAC. Publication validates media, fences the
+current job/lease and creates one private job/lease-path export expiring seven days later.
+
+Migrations 0036-0039 must precede API/worker startup. See [ADR 0006](adr/0006-summary-video-lifecycle.md)
+and [VS8 verification](verification/vs8.md). Existing clip and billing contracts remain supported;
+broader refunds and scheduled deletion remain VS9/VS10.

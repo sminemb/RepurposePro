@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from "node:crypto";
+import { SummaryRenderer } from "./summary-renderer.service";
 import { copyFile, mkdir, mkdtemp, readFile, realpath, rename, rm, stat } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { Logger, type OnModuleInit, type OnModuleDestroy } from "@nestjs/common";
@@ -8,6 +9,7 @@ import {
   renderSnapshotSchema,
   VIDEO_RENDER_QUEUE,
   RENDER_CLIP_JOB,
+  RENDER_SUMMARY_JOB,
   CAPTION_FONT,
 } from "@repurposepro/shared";
 import { Worker, UnrecoverableError, type Job, type ConnectionOptions } from "bullmq";
@@ -47,7 +49,7 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
     const data = job.data as { jobId?: unknown; projectId?: unknown };
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
     if (
-      job.name !== RENDER_CLIP_JOB ||
+      ![RENDER_CLIP_JOB, RENDER_SUMMARY_JOB].includes(job.name) ||
       !job.id ||
       !uuid.test(job.id) ||
       !data ||
@@ -59,6 +61,8 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       throw new UnrecoverableError("Invalid render job");
     const jobId = job.id,
       token = randomUUID();
+    if (job.name === RENDER_SUMMARY_JOB)
+      return new SummaryRenderer(this.database, this.config).process(jobId, data.projectId);
     const acquired = await this.query<{ terminal?: boolean }>(
       "SELECT public.acquire_clip_batch_render($1,$2,$3) AS result",
       [jobId, data.projectId, token],

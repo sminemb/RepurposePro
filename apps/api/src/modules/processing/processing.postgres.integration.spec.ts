@@ -319,6 +319,7 @@ describeIntegration("paid processing start API", () => {
     expect(status.headers.get("cache-control")).toBe("private, no-store");
     await expect(status.json()).resolves.toEqual({
       data: {
+        outputType: "clips",
         currentJob: {
           id: storedJob.id,
           progress: null,

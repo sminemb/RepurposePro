@@ -836,15 +836,17 @@ GEMINI_FINAL_RANKING_MODEL=gemini-2.5-flash
 
 ## `GEMINI_SUMMARY_MODEL`
 
-Purpose:
-
-Model used for summary segment selection.
-
-Recommended initial value:
+Optional worker model override for chronological summary selection. When unset, the worker
+uses the configured `GEMINI_CLIP_MODEL`. `.env.example` shows the existing default model:
 
 ```env
-GEMINI_SUMMARY_MODEL=gemini-2.5-flash
+GEMINI_SUMMARY_MODEL=gemini-3.5-flash-lite
 ```
+
+Summary selection reuses `GEMINI_TIMEOUT_MS` and `GEMINI_MAX_RETRIES`. The latter permits at
+most two complete-response repairs. SDK transport retries remain one per request; paid analysis
+retry and failure/refund handling remain shared. No new queue, subprocess or retention settings
+are required. Live smoke results are recorded separately from deterministic failure tests.
 
 ---
 
@@ -1654,7 +1656,7 @@ STRIPE_CANCEL_URL=http://localhost:3000/billing?checkout=cancelled
 GEMINI_API_KEY=replace-me
 GEMINI_CLIP_MODEL=gemini-3.5-flash-lite
 GEMINI_FINAL_RANKING_MODEL=gemini-2.5-flash
-GEMINI_SUMMARY_MODEL=gemini-2.5-flash
+GEMINI_SUMMARY_MODEL=gemini-3.5-flash-lite
 GEMINI_TIMEOUT_MS=60000
 GEMINI_MAX_RETRIES=2
 

@@ -54,7 +54,12 @@ export class ProcessingStatusService {
         return this.unavailable();
       }
 
-      return { currentJob: null, projectId: record.projectId, status: record.projectStatus };
+      return {
+        currentJob: null,
+        projectId: record.projectId,
+        status: record.projectStatus,
+        ...(record.outputType ? { outputType: record.outputType } : {}),
+      };
     }
 
     if (
@@ -67,6 +72,7 @@ export class ProcessingStatusService {
     }
 
     return {
+      ...(record.outputType ? { outputType: record.outputType } : {}),
       currentJob: {
         id: record.currentJobId,
         progress:

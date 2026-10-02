@@ -4,7 +4,18 @@ import type { ClipSelectionPromptInput } from "./clip-selection";
 export const SUMMARY_SELECTION_PROMPT_VERSION = "summary-v1";
 export const MAX_SUMMARY_SEGMENTS = 100;
 const rangeSchema = z
-  .object({ startTime: z.number().finite().nonnegative(), endTime: z.number().finite().positive() })
+  .object({
+    startTime: z
+      .number()
+      .finite()
+      .nonnegative()
+      .transform((v) => Number(v.toFixed(3))),
+    endTime: z
+      .number()
+      .finite()
+      .positive()
+      .transform((v) => Number(v.toFixed(3))),
+  })
   .refine((s) => s.endTime > s.startTime);
 export const generatedSummarySegmentSchema = rangeSchema
   .safeExtend({ reason: z.string().trim().min(1).max(500) })
@@ -45,6 +56,7 @@ export function validateSummaryEdits(
   segments: readonly SummaryRange[],
   sourceDuration: number,
 ): boolean {
+  if (!Number.isFinite(sourceDuration) || sourceDuration <= 0) return false;
   let end = 0;
   for (const segment of segments) {
     if (

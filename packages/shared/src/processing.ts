@@ -35,6 +35,7 @@ export interface ProcessingJobSnapshot {
 }
 
 export interface ProjectProcessingStatus {
+  readonly outputType?: "clips" | "summary";
   readonly currentJob: ProcessingJobSnapshot | null;
   readonly projectId: string;
   readonly status: ProjectStatus;

@@ -110,7 +110,7 @@ FAILED
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
 | VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
-| VS8   | User can generate, edit, render, and download a summary video     | IN_PROGRESS | 2026-10-02 | 12:32      | —          | —        | —            |       0% | —       |
+| VS8 | User can generate, edit, render, and download a summary video | IN_PROGRESS | 2026-10-02 | 12:32 | — | — | — | 43% | — |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -519,20 +519,20 @@ This slice reuses the processing pipeline but delivers the second core product o
 | Start Time | 12:32       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress   | 43%          |
 | Dependency | VS6         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                                   | Layers Touched               | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | --------------------------------------------------------------- | ---------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS8-T1  | Create versioned summary-selection prompt                       | Shared + Gemini              | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 12:38 | 18 focused tests; typecheck |
-| VS8-T2  | Generate chronological summary segments targeting ~10% duration | Worker + Gemini + Validation | IN_PROGRESS | 2026-10-02 | 12:38 | | —        | —        | —            |
-| VS8-T3  | Persist summary segment metadata                                | DB + API                     | IN_PROGRESS | 2026-10-02 | 12:38 | | —        | —        | —            |
-| VS8-T4  | Build SummaryPreviewEditor                                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS8-T5  | Allow segment trim and removal while preserving chronology      | Web + API + DB               | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS8-T6  | Render concatenated summary MP4 with original audio             | Worker + FFmpeg              | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS8-T7  | Persist and expose summary output download                      | DB + API + Storage + Web     | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS8-T1 | Create versioned summary-selection prompt | Shared + Gemini | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 12:38 | 18 focused tests; typecheck |
+| VS8-T2 | Generate chronological summary segments targeting ~10% duration | Worker + Gemini + Validation | COMPLETED | 2026-10-02 | 12:38 | 2026-10-02 | 13:38 | Pipeline tests; 86 PostgreSQL/Redis tests; live-model smoke |
+| VS8-T3 | Persist summary segment metadata | DB + API | COMPLETED | 2026-10-02 | 12:38 | 2026-10-02 | 13:38 | Pipeline tests; 86 PostgreSQL/Redis tests; live-model smoke |
+| VS8-T4 | Build SummaryPreviewEditor | Web + API | IN_PROGRESS | 2026-10-02 | 12:55 | — | — | Browser and final gate in progress |
+| VS8-T5 | Allow segment trim and removal while preserving chronology | Web + API + DB | IN_PROGRESS | 2026-10-02 | 12:55 | — | — | Browser and final gate in progress |
+| VS8-T6 | Render concatenated summary MP4 with original audio | Worker + FFmpeg | IN_PROGRESS | 2026-10-02 | 12:55 | — | — | Browser and final gate in progress |
+| VS8-T7 | Persist and expose summary output download | DB + API + Storage + Web | IN_PROGRESS | 2026-10-02 | 12:55 | — | — | Browser and final gate in progress |
 
 ## Slice Acceptance Criteria
 
@@ -772,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS7 - Manage multiple clips and regenerate a bad one
-Current Task: VS7-T7 - COMPLETED
-Current Status: COMPLETED
-Last Completed Task: VS7-T7 - All seven VS7 tasks completed at 23:51 Asia/Manila; full quality gate and desktop/mobile verification passed.
-Next Recommended Task: VS8-T1 - Create the versioned summary-selection prompt. Summary videos are the VS8 slice.
-Uncommitted Changes: None. Verified VS7 work is committed on codex/vs7-multi-clip. Ignored media, screenshots, request recordings and logs remain under storage/vs7-verification.
-Known Failing Tests: None. Final pnpm ci:check passed formatting, lint, typecheck, 583 unit tests, 74 PostgreSQL/Redis integration tests and production builds at 23:51 Asia/Manila. Evidence: docs/verification/vs7.md and storage/vs7-verification/ci-check.log.
-Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
-Important Context: Persisted selection is independent of caption revisions. Delete archives candidates. Backup-first regeneration preserves slot, selection and caption appearance; Gemini fallback uses frozen transcript/overlap exclusions and leaves the original until fenced completion. Render accepts 1-10 saved selected revisions, freezes every item atomically and publishes each successful MP4 immediately. Failed items get at most two automatic attempts; recovery skips successes and partial failures return preview-ready with downloads retained. Regeneration and rendering are free and excluded from paid-analysis deduction/refund paths. Migrations 0026-0035 were applied locally and must precede updated API/worker startup; legacy single-clip requests, outputs and idempotency bindings remain compatible. See ADR 0005. Summary videos remain VS8, refund expansion VS9 and scheduled deletion VS10. Browser evidence uses production components with synthetic API responses and real fixture media; the real batch test uses PostgreSQL, Redis and FFmpeg. Gemini failure/recovery is tested with deterministic model mocks.
-Required Commands Before Continuing: Read VS8 requirements, ADRs 0002-0005 and docs/verification/vs7.md. Record an actual Asia/Manila start timestamp when VS8 begins. Preserve immutable render items, saved-revision checks, current-analysis preview access and free regeneration/render behavior.
-Last Updated Date: 2026-10-01
-Last Updated Time: 23:53
+Current Slice: VS8 - Complete summary-video workflow
+Current Task: VS8-T2 through VS8-T7 - Implementation and acceptance verification
+Current Status: IN_PROGRESS
+Last Completed Task: VS8-T2/T3 - Summary pipeline and atomic persistence verified at 13:38 Asia/Manila.
+Next Recommended Task: Finish summary failure/recovery, real-media and browser verification, then full quality gate.
+Uncommitted Changes: VS8 pipeline, schema/functions, API, renderer, editor, fixture tests and documentation in progress on codex/vs8-summary-video.
+Known Failing Tests: None in focused summary and database checks; final formatting/lint/typecheck/build rerun pending.
+Known Blockers: None.
+Important Context: Summary mode preserves source aspect and audio without captions. Generated ranges target 10% (8-12% valid); edited durations are unrestricted. Saved revisions and analysis identity freeze render snapshots. Render execution is free and capped at two persisted attempts. Broader refunds and scheduled deletion remain VS9/VS10.
+Required Commands Before Continuing: Complete focused integration/browser verification and pnpm ci:check. Apply migrations before updated API/worker startup.
+Last Updated Date: 2026-10-02
+Last Updated Time: 13:38
 Last Updated By: Codex
 ```

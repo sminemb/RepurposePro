@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { GeminiSummarySelector } from "./gemini-summary-selector.service";
+import type { GeminiModelClient } from "./gemini-clip-selector.service";
 
 describe("Gemini summary selector", () => {
   const input = {
@@ -14,7 +15,7 @@ describe("Gemini summary selector", () => {
   });
   it("repairs an invalid response and returns only a fully valid selection", async () => {
     const generateContent = vi
-      .fn()
+      .fn<GeminiModelClient["generateContent"]>()
       .mockResolvedValueOnce({ text: '{"summarySegments":[]}' })
       .mockResolvedValueOnce({ text: valid });
     const result = await new GeminiSummarySelector({ generateContent }, options).select(
@@ -42,6 +43,16 @@ describe("Gemini summary selector", () => {
     await expect(
       new GeminiSummarySelector({ generateContent }, options).select(input, controller.signal),
     ).rejects.toThrow();
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+  it("rejects empty speech before spending a model request", async () => {
+    const generateContent = vi.fn();
+    await expect(
+      new GeminiSummarySelector({ generateContent }, options).select(
+        { ...input, transcriptSegments: [] },
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("No speech");
     expect(generateContent).not.toHaveBeenCalled();
   });
   it("propagates transport failure to the paid-analysis lifecycle", async () => {

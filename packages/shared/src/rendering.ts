@@ -4,6 +4,10 @@ import { framingTracksSchema } from "./framing";
 
 export const VIDEO_RENDER_QUEUE = "video-render-queue";
 export const RENDER_CLIP_JOB = "render_clips";
+export const RENDER_SUMMARY_JOB = "render_summary";
+export const renderSummaryInputSchema = z
+  .object({ type: z.literal("summary"), expectedRevision: z.number().int().nonnegative() })
+  .strict();
 const legacyRenderClipInputSchema = z
   .object({
     type: z.literal("clips"),
@@ -36,6 +40,8 @@ export const renderClipInputSchema = z.union([
   batchRenderClipInputSchema,
 ]);
 export type RenderClipInput = z.infer<typeof renderClipInputSchema>;
+export const renderInputSchema = z.union([renderClipInputSchema, renderSummaryInputSchema]);
+export type RenderInput = z.infer<typeof renderInputSchema>;
 export const renderStartSchema = z.object({
   jobId: z.uuid(),
   status: z.enum(["queued", "active", "completed", "failed"]),
@@ -57,7 +63,7 @@ export const renderSnapshotSchema = z
   })
   .strict();
 export type RenderSnapshot = z.infer<typeof renderSnapshotSchema>;
-export const outputMetadataSchema = z
+const clipOutputMetadataSchema = z
   .object({
     id: z.uuid(),
     renderJobId: z.uuid(),
@@ -73,5 +79,14 @@ export const outputMetadataSchema = z
     expiresAt: z.string(),
   })
   .strip();
+export const outputMetadataSchema = z.discriminatedUnion("type", [
+  clipOutputMetadataSchema,
+  clipOutputMetadataSchema.extend({
+    type: z.literal("summary"),
+    clipId: z.null(),
+    width: z.number().int().positive().multipleOf(2),
+    height: z.number().int().positive().multipleOf(2),
+  }),
+]);
 export type OutputMetadata = z.infer<typeof outputMetadataSchema>;
 export const outputListSchema = z.array(outputMetadataSchema);

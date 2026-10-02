@@ -5,6 +5,7 @@ import { DatabaseService } from "../infrastructure/database.service";
 export const PROCESSING_STATUS_REPOSITORY = Symbol("PROCESSING_STATUS_REPOSITORY");
 
 export interface ProcessingStatusRecord {
+  readonly outputType?: "clips" | "summary";
   readonly currentJobId: string | null;
   readonly currentJobProgress: number | null;
   readonly currentJobReferenceId: string | null;
@@ -26,6 +27,7 @@ export class ProcessingStatusRepository implements ProcessingStatusRepositoryCon
     const result = await this.databaseService.database.pool.query<ProcessingStatusRecord>(
       `SELECT
          project.id AS "projectId",
+         project.output_type AS "outputType",
          project.status AS "projectStatus",
          project.current_job_id AS "currentJobReferenceId",
          current_job.id AS "currentJobId",

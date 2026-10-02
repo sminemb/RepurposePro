@@ -46,6 +46,40 @@ describe("summary selection", () => {
     expect(prompt.contents).toContain("\\u003C/transcript_data>");
     expect(prompt.systemInstruction).toContain("untrusted data");
   });
+  it("validates normalized millisecond ranges and rejects sub-millisecond selections", () => {
+    expect(
+      validateSummarySelection(
+        { summarySegments: [{ startTime: 1.0001, endTime: 11.0001, reason: "Idea" }] },
+        100,
+      ).summarySegments[0],
+    ).toMatchObject({ startTime: 1, endTime: 11 });
+    expect(() =>
+      validateSummarySelection(
+        { summarySegments: [{ startTime: 1, endTime: 1.0001, reason: "Microscopic" }] },
+        100,
+      ),
+    ).toThrow();
+  });
+  it("enforces count and reason limits independently of the model schema", () => {
+    expect(() =>
+      validateSummarySelection(
+        {
+          summarySegments: Array.from({ length: 101 }, (_, i) => ({
+            startTime: i * 0.1,
+            endTime: (i + 1) * 0.1,
+            reason: "Idea",
+          })),
+        },
+        100,
+      ),
+    ).toThrow();
+    expect(() =>
+      validateSummarySelection(
+        { summarySegments: [{ startTime: 1, endTime: 11, reason: "x".repeat(501) }] },
+        100,
+      ),
+    ).toThrow();
+  });
 });
 
 describe("summary edit and playback", () => {

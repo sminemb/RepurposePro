@@ -1,4 +1,5 @@
 import type { CaptionLine, VideoAnalysisJobPayload } from "@repurposepro/shared";
+import type { GeminiSummarySelector } from "./gemini-summary-selector.service";
 
 import type {
   AnalysisPipelineHandler,
@@ -38,6 +39,7 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
     private readonly transcripts: AnalysisTranscriptService,
     private readonly selector: GeminiClipSelector,
     private readonly framing?: { forJob(jobId: string, signal: AbortSignal): Promise<void> },
+    private readonly summarySelector?: GeminiSummarySelector,
   ) {}
 
   public isDurablePreviewReady(payload: VideoAnalysisJobPayload): Promise<boolean> {
@@ -51,6 +53,38 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
     await context.updateProgress("preparing", 10);
     const transcriptResult = await this.transcripts.getOrCreate(payload.jobId, context);
     await context.updateProgress("analyzing", 65);
+    const outputType = this.repository.getOutputType
+      ? await this.repository.getOutputType(payload.jobId, context.workerId, context.leaseToken)
+      : "clips";
+    if (!outputType) throw new ProcessingLeaseLostError();
+    if (outputType === "summary") {
+      if (!this.summarySelector || !this.repository.finalizeSummary)
+        throw new AnalysisPreviewFinalizationError();
+      const selection = await this.summarySelector.select(
+        {
+          sourceDurationSeconds: transcriptResult.sourceDurationSeconds,
+          transcriptSegments: transcriptResult.transcript.segments.map((s) => ({
+            startTime: s.startSeconds,
+            endTime: s.endSeconds,
+            sequence: s.sequence,
+            text: s.text,
+          })),
+        },
+        context.signal,
+      );
+      await context.updateProgress("generating_preview", 95);
+      const outcome = await context.finalize(() =>
+        this.repository.finalizeSummary!(
+          payload.jobId,
+          context.workerId,
+          context.leaseToken,
+          selection.summarySegments,
+        ),
+      );
+      if (outcome === "lost") throw new ProcessingLeaseLostError();
+      if (outcome === "rejected") throw new AnalysisPreviewFinalizationError();
+      return { outcome: "preview_ready" };
+    }
     const selection = await this.selector.select(
       {
         sourceDurationSeconds: transcriptResult.sourceDurationSeconds,

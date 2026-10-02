@@ -43,6 +43,17 @@ export type PersistTranscriptOutcome =
   | { readonly outcome: "rejected"; readonly transcriptId: null };
 
 export interface AnalysisTranscriptRepositoryContract {
+  getOutputType?(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+  ): Promise<"clips" | "summary" | null>;
+  finalizeSummary?(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    segments: readonly { startTime: number; endTime: number; reason: string }[],
+  ): Promise<"created" | "existing" | "lost" | "rejected">;
   finalizePreview(
     jobId: string,
     workerId: string,
@@ -99,6 +110,30 @@ export class AnalysisTranscriptRepository
   implements AnalysisTranscriptRepositoryContract, OnModuleInit, OnModuleDestroy
 {
   public constructor(private readonly database: DatabaseClient) {}
+
+  public async getOutputType(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+  ): Promise<"clips" | "summary" | null> {
+    const result = await this.database.pool.query<{ result: unknown }>(
+      "SELECT public.analysis_output_type($1,$2,$3) AS result",
+      [jobId, workerId, leaseToken],
+    );
+    return z.enum(["clips", "summary"]).nullable().parse(result.rows[0]?.result);
+  }
+  public async finalizeSummary(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    segments: readonly { startTime: number; endTime: number; reason: string }[],
+  ) {
+    const result = await this.database.pool.query<{ result: unknown }>(
+      "SELECT public.finalize_summary_preview($1,$2,$3,$4) AS result",
+      [jobId, workerId, leaseToken, JSON.stringify(segments)],
+    );
+    return z.enum(["created", "existing", "lost", "rejected"]).parse(result.rows[0]?.result);
+  }
 
   public async onModuleInit(): Promise<void> {
     await checkDatabaseConnection(this.database);
