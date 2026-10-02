@@ -3,6 +3,7 @@ import { access, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/pr
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export interface LocalStorageConfig {
+  readonly registerTemporary?: (userId: string, projectId: string, path: string) => Promise<void>;
   readonly storageRoot: string;
 }
 
@@ -37,8 +38,10 @@ export interface StoredSourceUpload {
 export class LocalStorageService {
   public readonly storageRoot: string;
   private readonly stagingRoot: string;
+  private readonly registerTemporary?: LocalStorageConfig["registerTemporary"];
 
   public constructor(config: LocalStorageConfig) {
+    this.registerTemporary = config.registerTemporary;
     this.storageRoot = resolve(config.storageRoot);
     this.stagingRoot = join(this.storageRoot, ".staging");
   }
@@ -83,6 +86,8 @@ export class LocalStorageService {
     );
     let backupCreated = false;
 
+    for (const path of [replacementDirectory, backupDirectory, sourcePaths.directory])
+      await this.registerTemporary?.(input.userId, input.projectId, path);
     await mkdir(replacementDirectory, { recursive: true });
 
     try {

@@ -4,6 +4,13 @@ import type { DatabaseService } from "../infrastructure/database.service";
 import type { AuthenticatedRequest } from "../auth/auth.guard";
 
 describe("FramingController", () => {
+  it("reports expiration with HTTP 410 while preserving the error code", async () => {
+    const { controller } = setup({ error: "SOURCE_VIDEO_EXPIRED" });
+    await expect(controller.start(project, request)).rejects.toMatchObject({
+      status: 410,
+      response: { error: { code: "SOURCE_VIDEO_EXPIRED" } },
+    });
+  });
   const project = "00000000-0000-4000-8000-000000000001";
   const request = { user: { id: "owner" } } as AuthenticatedRequest;
   const setup = (result: unknown) => {

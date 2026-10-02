@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
-import { ClipPreviewsService } from "../projects/clip-previews.service";
+import { ClipPreviewsService, ClipPreviewAccessError } from "../projects/clip-previews.service";
 import { type ProcessingJobStatus, type ProcessingStartResult } from "@repurposepro/shared";
 
 import {
@@ -15,12 +15,13 @@ type ProcessingStartErrorCode =
   | "PROCESSING_INVALID_PROJECT_STATE"
   | "PROCESSING_VIDEO_REQUIRED"
   | "PROJECT_NOT_FOUND"
+  | "SOURCE_VIDEO_EXPIRED"
   | "QUEUE_UNAVAILABLE";
 
 export class ProcessingStartError extends Error {
   public constructor(
     public readonly code: ProcessingStartErrorCode,
-    public readonly statusCode: 404 | 409 | 503,
+    public readonly statusCode: 404 | 409 | 410 | 503,
     message: string,
   ) {
     super(message);
@@ -51,7 +52,13 @@ export class ProcessingStartService {
       ) {
         try {
           await this.sourceVideos.getSourceVideoContent(userId, projectId);
-        } catch {
+        } catch (error) {
+          if (error instanceof ClipPreviewAccessError && error.code === "SOURCE_VIDEO_EXPIRED")
+            throw new ProcessingStartError(
+              "SOURCE_VIDEO_EXPIRED",
+              410,
+              "The source video has expired.",
+            );
           throw new ProcessingStartError(
             "PROCESSING_VIDEO_REQUIRED",
             409,
@@ -71,6 +78,12 @@ export class ProcessingStartService {
     }
 
     switch (record.outcome) {
+      case "video_expired":
+        throw new ProcessingStartError(
+          "SOURCE_VIDEO_EXPIRED",
+          410,
+          "The source video has expired.",
+        );
       case "created":
       case "existing": {
         const result = this.toResult(record);

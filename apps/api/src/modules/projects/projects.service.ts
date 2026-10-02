@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, lt, or, sql } from "drizzle-orm";
 import {
   calculateRequiredCredits,
   type ApiListSuccess,
@@ -93,7 +93,10 @@ export class ProjectsService {
     }
 
     const rows = await this.databaseService.database.db
-      .select()
+      .select({
+        ...getTableColumns(projects),
+        expiresAt: sql<Date | null>`(SELECT expires_at FROM uploaded_videos WHERE project_id = ${projects.id} LIMIT 1)`,
+      })
       .from(projects)
       .where(and(...conditions))
       .orderBy(desc(projects.createdAt), desc(projects.id))
@@ -229,6 +232,7 @@ export class ProjectsService {
       .select({
         durationSeconds: uploadedVideos.durationSeconds,
         expiresAt: uploadedVideos.expiresAt,
+        deletedAt: uploadedVideos.deletedAt,
         fileSizeBytes: uploadedVideos.fileSizeBytes,
         fps: uploadedVideos.fps,
         hasAudio: uploadedVideos.hasAudio,
@@ -244,7 +248,6 @@ export class ProjectsService {
           eq(projects.userId, userId),
           eq(uploadedVideos.projectId, projectId),
           isNull(projects.deletedAt),
-          isNull(uploadedVideos.deletedAt),
         ),
       )
       .limit(1);
@@ -256,6 +259,13 @@ export class ProjectsService {
     const durationSeconds = Number(video.durationSeconds);
 
     return {
+      deletedAt: video.deletedAt?.toISOString() ?? null,
+      status:
+        video.expiresAt.getTime() <= Date.now()
+          ? "expired"
+          : video.deletedAt
+            ? "deleted"
+            : "available",
       durationSeconds,
       expiresAt: video.expiresAt.toISOString(),
       fileName: video.originalFileName,
@@ -285,11 +295,13 @@ export class ProjectsService {
     }
   }
 
-  private toSummary(project: typeof projects.$inferSelect): ProjectSummary {
+  private toSummary(
+    project: typeof projects.$inferSelect & { expiresAt?: Date | null },
+  ): ProjectSummary {
     return {
       clipCount: 0,
       createdAt: project.createdAt.toISOString(),
-      expiresAt: null,
+      expiresAt: project.expiresAt ? new Date(project.expiresAt).toISOString() : null,
       id: project.id,
       name: project.name,
       outputType: project.outputType,

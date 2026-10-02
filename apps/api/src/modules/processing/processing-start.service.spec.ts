@@ -30,6 +30,20 @@ function setup(record: ProcessingStartRecord = startRecord("created")) {
 }
 
 describe("ProcessingStartService", () => {
+  it("rejects an expired source before dispatch or another charge", async () => {
+    const fixture = setup({
+      creditsCharged: null,
+      jobId: null,
+      outcome: "video_expired",
+      projectId,
+      status: null,
+    });
+    await expect(fixture.service.start("user-1", projectId, requestId)).rejects.toMatchObject({
+      code: "SOURCE_VIDEO_EXPIRED",
+      statusCode: 410,
+    });
+    expect(fixture.dispatchJob).not.toHaveBeenCalled();
+  });
   it("checks an actual retained source before charging a refunded restart", async () => {
     const start = vi.fn().mockResolvedValue(startRecord("created"));
     const getSourceVideoContent = vi.fn().mockResolvedValue({ path: "retained.mp4" });

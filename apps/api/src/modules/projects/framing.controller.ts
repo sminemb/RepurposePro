@@ -8,6 +8,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  GoneException,
 } from "@nestjs/common";
 import { framingStatusSchema, type ApiSuccess, type FramingStatus } from "@repurposepro/shared";
 import { z } from "zod";
@@ -41,8 +42,22 @@ export class FramingController {
       "SELECT public.owned_video_framing($1,$2,$3) AS result",
       [request.user.id, projectId, start],
     );
-    if (!result.rows[0]?.result)
-      throw new NotFoundException("The source video is unavailable or expired.");
-    return { data: framingStatusSchema.parse(result.rows[0].result) };
+    const data = result.rows[0]?.result;
+    if (
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      data.error === "SOURCE_VIDEO_EXPIRED"
+    )
+      throw new GoneException({
+        error: {
+          code: "SOURCE_VIDEO_EXPIRED",
+          message: "The source video has expired.",
+          details: null,
+          requestId: request.id ?? "req_unknown",
+        },
+      });
+    if (!data) throw new NotFoundException("The source video is unavailable or expired.");
+    return { data: framingStatusSchema.parse(data) };
   }
 }

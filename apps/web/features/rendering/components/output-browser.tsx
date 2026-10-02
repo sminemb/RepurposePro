@@ -11,6 +11,9 @@ import {
 import { loadProcessingStatus } from "@/features/processing/client/processing-status-api";
 import { loadRenderJobStatus, type RenderJobStatus } from "../client/job-status-api";
 import { summaryRequest, renderSummary } from "@/features/summary/client/summary-api";
+import { ExpirationBadge, useExpiration } from "@/components/app/expiration-badge";
+import { useSourceRetention } from "@/features/upload/client/use-source-retention";
+import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
 
 const steps: Record<string, string> = {
   queued: "Queued",
@@ -25,6 +28,11 @@ const steps: Record<string, string> = {
 export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId: string }) {
   const base = apiUrl.replace(/\/$/u, "");
   const [outputs, setOutputs] = useState<OutputMetadata[]>([]);
+  const retention = useSourceRetention(apiUrl, projectId);
+  const nextDeadline = outputs
+    .filter((output) => output.status === "ready" && Date.parse(output.expiresAt) > Date.now())
+    .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))[0]?.expiresAt;
+  useExpiration(nextDeadline);
   const [snapshot, setSnapshot] = useState<ProjectProcessingStatus | null>(null);
   const [renderJob, setRenderJob] = useState<RenderJobStatus | null>(null);
   const [error, setError] = useState("");
@@ -158,7 +166,7 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
   );
 
   const retryFailed = async () => {
-    if (retrying || active || !failedClips.length) return;
+    if (retrying || active || !failedClips.length || !retention.available) return;
     setRetrying(true);
     setRetryError("");
     try {
@@ -217,7 +225,7 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
     }
   };
   const retrySummary = async () => {
-    if (retrying || active || !failed) return;
+    if (retrying || active || !failed || !retention.available) return;
     setRetrying(true);
     setRetryError("");
     try {
@@ -238,6 +246,11 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
 
   return (
     <div className="space-y-6">
+      <SourceRetentionNotice
+        metadata={retention.metadata}
+        available={retention.available}
+        error={retention.error}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-rp-text-muted">
           Your exports stay available until the expiration shown below.
@@ -343,7 +356,7 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
             <button
               type="button"
               onClick={() => void retryFailed()}
-              disabled={retrying}
+              disabled={retrying || !retention.available}
               className="mt-4 inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {retrying ? "Starting retry…" : "Retry failed selected clips"}
@@ -353,7 +366,7 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
             <button
               type="button"
               onClick={() => void retrySummary()}
-              disabled={retrying}
+              disabled={retrying || !retention.available}
               className="mt-4 inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {retrying ? "Starting retry…" : "Retry summary for free"}
@@ -419,13 +432,9 @@ export function OutputBrowser({ apiUrl, projectId }: { apiUrl: string; projectId
                     {output.durationSeconds.toFixed(1)} seconds ·{" "}
                     {(output.fileSizeBytes / 1048576).toFixed(1)} MB
                   </p>
-                  <p className="mt-2 text-xs text-rp-text-muted">
-                    {ready
-                      ? `Expires ${new Date(output.expiresAt).toLocaleString()}`
-                      : output.status === "ready"
-                        ? "Export expired"
-                        : `Export ${output.status}`}
-                  </p>
+                  <div className="mt-2">
+                    <ExpirationBadge expiresAt={output.expiresAt} label="Export" />
+                  </div>
                   {ready ? (
                     <a
                       className="mt-5 inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white"

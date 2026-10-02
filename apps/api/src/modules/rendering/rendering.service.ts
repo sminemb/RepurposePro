@@ -109,9 +109,9 @@ export class RenderingService {
         status: z.string(),
       })
       .parse(result.rows[0].result);
-    if (output.deleted) throw renderHttpError("OUTPUT_DELETED");
     if (output.expiresAt.getTime() <= Date.now() || output.status === "expired")
       throw renderHttpError("OUTPUT_EXPIRED");
+    if (output.deleted) throw renderHttpError("OUTPUT_DELETED");
     if (output.status !== "ready") throw renderHttpError("OUTPUT_NOT_FOUND");
     return output;
   }

@@ -30,7 +30,7 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 30_000,
     include: [
-      "apps/worker/src/services/cleanup.postgres.integration.spec.ts",
+      "apps/api/src/modules/projects/cleanup.postgres.integration.spec.ts",
       "apps/api/src/modules/summary/summary.postgres-redis.integration.spec.ts",
       "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",
       "apps/api/src/modules/processing/analysis-queue.redis.integration.spec.ts",

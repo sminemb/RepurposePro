@@ -110,9 +110,13 @@ export class AnalysisTranscriptService {
       `${jobId}-${context.leaseToken}-${attempt}.wav`,
     );
     try {
+      await this.repository.registerTemporary?.(jobId, context.leaseToken, audioPath);
       await context.updateProgress("extracting_audio", 25);
       await this.extractor.extract({
         destinationPath: audioPath,
+        registerTemporary: this.repository.registerTemporary
+          ? (path) => this.repository.registerTemporary!(jobId, context.leaseToken, path)
+          : undefined,
         signal: context.signal,
         sourcePath: transcriptionContext.sourcePath,
       });

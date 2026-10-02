@@ -55,6 +55,23 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe("configuration loaders", () => {
+  it("defaults and validates bounded cleanup scheduling", () => {
+    expect(loadWorkerConfig(validServerEnvironment).cleanup).toEqual({
+      cron: "0 * * * *",
+      batchSize: 100,
+      concurrency: 1,
+    });
+    for (const invalid of [
+      { CLEANUP_BATCH_SIZE: "0" },
+      { CLEANUP_BATCH_SIZE: "1001" },
+      { CLEANUP_SCHEDULE_CRON: "invalid" },
+      { CLEANUP_WORKER_CONCURRENCY: "0" },
+    ]) {
+      expect(() => loadWorkerConfig({ ...validServerEnvironment, ...invalid })).toThrow(
+        ConfigValidationError,
+      );
+    }
+  });
   it("defaults and validates render encoding, retention and bounded timeouts", () => {
     const config = loadWorkerConfig(validServerEnvironment);
     expect(config.render).toMatchObject({

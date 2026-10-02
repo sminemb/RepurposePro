@@ -42,7 +42,7 @@ BEGIN
    IF NOT FOUND THEN CONTINUE; END IF;
   END IF;
   IF candidate.kind<>'output' AND public.storage_project_in_use(candidate.project_id) THEN CONTINUE; END IF;
-  SELECT * INTO claimed FROM public.storage_cleanup_targets WHERE id=candidate.id AND deleted_at IS NULL
+  SELECT * INTO claimed FROM public.storage_cleanup_targets WHERE id=candidate.id AND deleted_at IS NULL AND expires_at<=clock_timestamp() AND next_attempt_at<=clock_timestamp()
   AND (lease_expires_at IS NULL OR lease_expires_at<=clock_timestamp()) AND (writer_expires_at IS NULL OR writer_expires_at<=clock_timestamp()) FOR UPDATE SKIP LOCKED;
   IF NOT FOUND THEN CONTINUE; END IF;
   UPDATE public.storage_cleanup_targets SET lease_token=p_token,lease_expires_at=clock_timestamp()+interval '5 minutes',attempt_count=attempt_count+1 WHERE id=claimed.id RETURNING * INTO claimed;

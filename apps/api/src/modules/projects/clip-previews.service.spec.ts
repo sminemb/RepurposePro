@@ -24,6 +24,43 @@ afterEach(async () => {
 });
 
 describe("ClipPreviewsService", () => {
+  it.each([-1, 0, 1])(
+    "enforces the exact expiration boundary at offset %s milliseconds",
+    async (offset) => {
+      const directory = await mkdtemp(join(tmpdir(), "rp-source-boundary-"));
+      temporaryDirectories.push(directory);
+      const path = join(directory, "video");
+      await writeFile(path, "0123456789");
+      const deadline = Date.parse("2026-10-03T00:00:00Z");
+      vi.spyOn(Date, "now").mockReturnValue(deadline + offset);
+      const { query, readSourceUpload, service } = setup();
+      query.mockResolvedValue({
+        rows: [
+          {
+            expiresAt: new Date(deadline),
+            fileSizeBytes: 10,
+            mimeType: "video/mp4",
+            originalFileName: "source.mp4",
+            storagePath: path,
+          },
+        ],
+      });
+      readSourceUpload.mockResolvedValue({
+        videoPath: path,
+        manifest: { fileSizeBytes: 10, mimeType: "video/mp4" },
+      });
+      if (offset < 0)
+        await expect(service.getSourceVideoContent(userId, projectId)).resolves.toMatchObject({
+          path,
+        });
+      else {
+        await expect(service.getSourceVideoContent(userId, projectId)).rejects.toMatchObject({
+          code: "SOURCE_VIDEO_EXPIRED",
+        });
+        expect(readSourceUpload).not.toHaveBeenCalled();
+      }
+    },
+  );
   it("returns a validated, fixed-bound clip list without internal fields", async () => {
     const { query, service } = setup();
     query.mockResolvedValue({

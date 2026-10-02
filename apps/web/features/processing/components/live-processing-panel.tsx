@@ -17,6 +17,8 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { loadProcessingStatus } from "../client/processing-status-api";
 import { createProcessingStatusPoller } from "../client/processing-status-poller";
 import { AnalysisRetryPanel } from "./analysis-retry-panel";
+import { useSourceRetention } from "@/features/upload/client/use-source-retention";
+import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
 
 interface LiveProcessingPanelProps {
   readonly apiUrl: string;
@@ -44,6 +46,7 @@ export function LiveProcessingPanel({
   projectId,
 }: LiveProcessingPanelProps) {
   const router = useRouter();
+  const retention = useSourceRetention(apiUrl, projectId);
   const [pollingIssue, setPollingIssue] = useState(false);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const previousRefundStatus = useRef(initialSnapshot.currentJob?.failure?.refundStatus);
@@ -103,6 +106,11 @@ export function LiveProcessingPanel({
 
   return (
     <>
+      <SourceRetentionNotice
+        metadata={retention.metadata}
+        available={retention.available}
+        error={retention.error}
+      />
       <PageHeader
         description={
           job?.failure?.refundStatus === "completed"
@@ -184,6 +192,7 @@ export function LiveProcessingPanel({
             </Link>
             {failure.refundStatus === "completed" ? (
               <AnalysisRetryPanel
+                sourceAvailable={retention.available}
                 key={job?.id}
                 apiUrl={apiUrl}
                 projectId={projectId}

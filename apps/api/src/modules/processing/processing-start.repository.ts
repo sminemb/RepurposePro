@@ -11,7 +11,8 @@ export type ProcessingStartOutcome =
   | "insufficient_credits"
   | "invalid_project_state"
   | "project_not_found"
-  | "video_required";
+  | "video_required"
+  | "video_expired";
 
 export interface ProcessingStartRecord {
   readonly creditsCharged: number | null;

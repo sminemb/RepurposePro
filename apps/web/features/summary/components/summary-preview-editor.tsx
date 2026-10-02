@@ -10,6 +10,8 @@ import {
 import { useSummaryEditor, type SummaryDraftSegment } from "../client/use-summary-editor";
 import { useEditorNavigation } from "@/features/clips/client/use-editor-navigation";
 import { EditorLeaveDialog } from "@/features/clips/components/editor-leave-dialog";
+import { useSourceRetention } from "@/features/upload/client/use-source-retention";
+import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
 const button =
   "inline-flex min-h-11 items-center justify-center rounded-rp-md border border-rp-border px-4 text-sm font-semibold text-rp-text disabled:opacity-50";
 const primary = `${button} border-rp-primary bg-rp-primary text-white`;
@@ -29,6 +31,7 @@ export function SummaryPreviewEditor({
   userId: string;
 }) {
   const state = useSummaryEditor(initial, apiUrl, projectId, userId);
+  const retention = useSourceRetention(apiUrl, projectId);
   const navigation = useEditorNavigation(
     state.dirty,
     state.busy,
@@ -54,6 +57,13 @@ export function SummaryPreviewEditor({
     playback.current = null;
     setPlaying(false);
   };
+  useEffect(() => {
+    if (!retention.available) {
+      video.current?.pause();
+      playback.current = null;
+      setPlaying(false);
+    }
+  }, [retention.available]);
   useEffect(() => {
     let frame: number;
     const tick = () => {
@@ -91,6 +101,7 @@ export function SummaryPreviewEditor({
     return () => cancelAnimationFrame(frame);
   }, []);
   const play = async (ranges: SummarySegment[], continuous: boolean) => {
+    if (!retention.available) return;
     const element = video.current;
     if (!element || !ranges.length) return;
     setMediaError("");
@@ -136,6 +147,11 @@ export function SummaryPreviewEditor({
   };
   return (
     <div className="space-y-6">
+      <SourceRetentionNotice
+        metadata={retention.metadata}
+        available={retention.available}
+        error={retention.error}
+      />
       <div className="flex flex-wrap gap-4 text-sm">
         <Link className="text-rp-text-muted" href="/dashboard">
           ← Back to workspace
@@ -180,7 +196,11 @@ export function SummaryPreviewEditor({
           <video
             ref={video}
             className="mt-5 max-h-[32rem] w-full rounded-rp-md bg-black"
-            src={`${apiUrl.replace(/\/$/, "")}/projects/${encodeURIComponent(projectId)}/source-video/content`}
+            src={
+              retention.available
+                ? `${apiUrl.replace(/\/$/, "")}/projects/${encodeURIComponent(projectId)}/source-video/content`
+                : undefined
+            }
             crossOrigin="use-credentials"
             preload="metadata"
             playsInline
@@ -195,7 +215,7 @@ export function SummaryPreviewEditor({
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               className={button}
-              disabled={!state.valid || !selected.length || state.busy}
+              disabled={!retention.available || !state.valid || !selected.length || state.busy}
               onClick={() => void play(selected, true)}
             >
               Play summary
@@ -213,7 +233,7 @@ export function SummaryPreviewEditor({
               max={Number.isFinite(total) ? total : 0}
               step={0.1}
               value={Math.min(current, Number.isFinite(total) ? total : 0)}
-              disabled={!state.valid || !selected.length}
+              disabled={!retention.available || !state.valid || !selected.length}
               className="mt-3 w-full accent-rp-primary"
               onChange={(event) => {
                 const t = Number(event.target.value);
@@ -229,6 +249,7 @@ export function SummaryPreviewEditor({
           </p>
         </section>
         <SummarySegmentList
+          previewUnavailable={!retention.available}
           segments={state.segments}
           draft={state.draft}
           busy={state.busy}
@@ -283,7 +304,13 @@ export function SummaryPreviewEditor({
         </button>
         <button
           className={primary}
-          disabled={!state.valid || !selected.length || state.busy || !!state.recovery}
+          disabled={
+            !retention.available ||
+            !state.valid ||
+            !selected.length ||
+            state.busy ||
+            !!state.recovery
+          }
           onClick={() => {
             stop();
             void state.render().then((success) => {
@@ -347,6 +374,7 @@ export function SummaryDurationBar({
   );
 }
 export function SummarySegmentList({
+  previewUnavailable = false,
   segments,
   draft,
   busy,
@@ -355,6 +383,7 @@ export function SummarySegmentList({
   onPreview,
 }: {
   segments: SummarySegment[];
+  previewUnavailable?: boolean;
   draft: SummaryDraftSegment[];
   busy: boolean;
   onChange: (id: string, update: Partial<SummaryDraftSegment>) => void;
@@ -368,6 +397,7 @@ export function SummarySegmentList({
         segment={s}
         draft={draft.find((d) => d.id === s.id)!}
         busy={busy}
+        previewUnavailable={previewUnavailable}
         onChange={onChange}
         onRestore={onRestore}
         onPreview={onPreview}
@@ -397,6 +427,7 @@ export function SummarySegmentList({
   );
 }
 export function SummarySegmentCard({
+  previewUnavailable = false,
   segment: s,
   draft,
   busy,
@@ -405,6 +436,7 @@ export function SummarySegmentCard({
   onPreview,
 }: {
   segment: SummarySegment;
+  previewUnavailable?: boolean;
   draft: SummaryDraftSegment;
   busy: boolean;
   onChange: (id: string, update: Partial<SummaryDraftSegment>) => void;
@@ -451,7 +483,12 @@ export function SummarySegmentCard({
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           className={button}
-          disabled={busy || !Number.isFinite(s.startTime) || !(s.endTime > s.startTime)}
+          disabled={
+            previewUnavailable ||
+            busy ||
+            !Number.isFinite(s.startTime) ||
+            !(s.endTime > s.startTime)
+          }
           onClick={() => onPreview(s)}
         >
           Preview segment

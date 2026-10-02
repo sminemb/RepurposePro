@@ -37,6 +37,7 @@ describe("summary subprocess publication fences", () => {
         finalPath: string | undefined,
         signal: AbortSignal | undefined;
       const query = vi.fn(async (sql: string, args: unknown[]) => {
+        if (sql.includes("register_job_storage_target")) return { rows: [{ id: randomUUID() }] };
         let result: unknown = true;
         if (sql.includes("acquire_summary_render")) result = snapshot;
         if (sql.includes("touch_summary_render")) result = mode !== "lease-loss" || ++touches === 1;

@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ProcessingRequestError, startProcessing } from "../client/processing-api";
 import { getCreditStartState } from "./credit-start-state";
+import { useExpiration } from "@/components/app/expiration-badge";
 
 interface ProcessingStartPanelProps {
   readonly apiUrl: string;
@@ -40,6 +41,9 @@ export function ProcessingStartPanel({
   onStarted,
 }: ProcessingStartPanelProps) {
   const router = useRouter();
+  const expiration = useExpiration(metadata.expiresAt);
+  const sourceUnavailable =
+    expiration === "expired" || !!metadata.deletedAt || metadata.status === "deleted";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
@@ -49,6 +53,7 @@ export function ProcessingStartPanel({
   const creditState = getCreditStartState(balance?.balance ?? null, metadata.requiredCredits);
 
   async function start(): Promise<void> {
+    if (sourceUnavailable || Date.parse(metadata.expiresAt) <= Date.now()) return;
     setError(null);
     setPending(true);
 
@@ -149,7 +154,12 @@ export function ProcessingStartPanel({
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
-        {creditState.kind === "insufficient" ? (
+        {sourceUnavailable ? (
+          <p role="status" className="text-sm text-rp-warning">
+            The source video has expired or was deleted. Create a new project to upload again.
+            Existing exports keep their own deadlines.
+          </p>
+        ) : creditState.kind === "insufficient" ? (
           <Link
             className="inline-flex min-h-11 items-center gap-2 rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-rp-primary-foreground hover:bg-rp-primary-hover"
             href="/billing"

@@ -14,10 +14,12 @@ export function AnalysisRetryPanel({
   apiUrl,
   projectId,
   onStarted,
+  sourceAvailable = true,
 }: {
   readonly apiUrl: string;
   readonly projectId: string;
   readonly onStarted: (result: ProcessingStartResult) => void;
+  readonly sourceAvailable?: boolean;
 }) {
   const [details, setDetails] = useState<Awaited<
     ReturnType<typeof loadAnalysisRetryDetails>
@@ -26,6 +28,7 @@ export function AnalysisRetryPanel({
   const [issue, setIssue] = useState<"unavailable" | "temporary" | null>(null);
 
   async function prepare() {
+    if (!sourceAvailable) return;
     setPending(true);
     setIssue(null);
     try {
@@ -68,7 +71,7 @@ export function AnalysisRetryPanel({
         <button
           type="button"
           aria-busy={pending}
-          disabled={pending}
+          disabled={pending || !sourceAvailable}
           onClick={() => void prepare()}
           className="inline-flex min-h-11 items-center rounded-rp-md border border-rp-primary/40 px-5 text-sm font-semibold text-rp-primary hover:bg-rp-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rp-primary disabled:opacity-60"
         >

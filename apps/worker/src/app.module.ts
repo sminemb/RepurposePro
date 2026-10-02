@@ -3,6 +3,7 @@ import { GeminiSummarySelector } from "./services/gemini-summary-selector.servic
 import { ClipRegenerationProcessor } from "./processors/clip-regeneration.processor";
 import { resolve } from "node:path";
 import { RenderWorkerService } from "./services/render-worker.service";
+import { CleanupWorkerService } from "./services/cleanup-worker.service";
 import { FaceTracker } from "./services/face-tracker.service";
 import { FramingService } from "./services/framing.service";
 import { Module } from "@nestjs/common";
@@ -44,6 +45,18 @@ const config = loadWorkerConfig();
 @Module({
   imports: [LoggerModule.forRoot(createLoggingConfig(config))],
   providers: [
+    {
+      provide: CleanupWorkerService,
+      useFactory: () =>
+        new CleanupWorkerService(
+          createDatabaseClient({
+            connectionString: config.processingDatabaseUrl,
+            poolMax: config.databasePoolMax,
+            ssl: config.databaseSsl,
+          }),
+          config,
+        ),
+    },
     {
       provide: RenderWorkerService,
       useFactory: () =>

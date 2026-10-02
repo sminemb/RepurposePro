@@ -5,6 +5,7 @@ import {
   type DatabaseClient,
 } from "@repurposepro/db";
 import { z } from "zod";
+import { registerJobAsset } from "./storage-registration";
 
 import {
   timestampedTranscriptSchema,
@@ -43,6 +44,7 @@ export type PersistTranscriptOutcome =
   | { readonly outcome: "rejected"; readonly transcriptId: null };
 
 export interface AnalysisTranscriptRepositoryContract {
+  registerTemporary?(jobId: string, token: string, path: string): Promise<void>;
   getOutputType?(
     jobId: string,
     workerId: string,
@@ -110,6 +112,10 @@ export class AnalysisTranscriptRepository
   implements AnalysisTranscriptRepositoryContract, OnModuleInit, OnModuleDestroy
 {
   public constructor(private readonly database: DatabaseClient) {}
+
+  public async registerTemporary(jobId: string, token: string, path: string): Promise<void> {
+    await registerJobAsset(this.database, jobId, token, path, "audio");
+  }
 
   public async getOutputType(
     jobId: string,

@@ -29,6 +29,8 @@ export interface CreateProjectInput {
 }
 
 export interface SourceVideoMetadata {
+  readonly status?: "available" | "expired" | "deleted";
+  readonly deletedAt?: string | null;
   readonly durationSeconds: number;
   readonly expiresAt: string;
   readonly fileName: string;
