@@ -397,6 +397,8 @@ export const clipCandidates = pgTable(
       .notNull()
       .references(() => transcripts.id, { onDelete: "cascade" }),
     kind: clipCandidateKindEnum("kind").notNull(),
+    selected: boolean("selected").default(true).notNull(),
+    replacesClipId: uuid("replaces_clip_id").references((): AnyPgColumn => clipCandidates.id),
     rank: integer("rank").notNull(),
     title: varchar("title", { length: 120 }).notNull(),
     reason: varchar("reason", { length: 500 }).notNull(),
@@ -427,10 +429,12 @@ export const clipCandidates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    uniqueIndex("clip_candidates_job_kind_rank_unique").on(
-      table.processingJobId,
-      table.kind,
-      table.rank,
+    uniqueIndex("clip_candidates_job_kind_rank_unique")
+      .on(table.processingJobId, table.kind, table.rank)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check(
+      "clip_candidates_selection_check",
+      sql`NOT ${table.selected} OR (${table.kind} = 'primary' AND ${table.deletedAt} IS NULL)`,
     ),
     index("clip_candidates_project_primary_order_idx")
       .on(table.projectId, table.rank, table.id)
@@ -558,6 +562,54 @@ export const renderRequestKeys = pgTable(
   ],
 );
 
+// Requests are immutable; item progress is kept in a separate relation.
+export const renderRequestItems = pgTable(
+  "render_request_items",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => renderRequests.jobId, { onDelete: "cascade" }),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    revision: integer("revision").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.clipId] }),
+    unique("render_request_items_ordinal_unique").on(t.jobId, t.ordinal),
+    check("render_request_items_revision_check", sql`${t.revision}>=0`),
+  ],
+);
+export const renderItemProgress = pgTable(
+  "render_item_progress",
+  {
+    jobId: uuid("job_id").notNull(),
+    clipId: uuid("clip_id").notNull(),
+    status: text("status").notNull().default("queued"),
+    step: text("step").notNull().default("queued"),
+    progress: integer("progress").notNull().default(0),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    outputId: uuid("output_id"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.clipId] }),
+    foreignKey({
+      columns: [t.jobId, t.clipId],
+      foreignColumns: [renderRequestItems.jobId, renderRequestItems.clipId],
+    }).onDelete("cascade"),
+    check(
+      "render_item_progress_status_check",
+      sql`${t.status} IN ('queued','active','completed','failed')`,
+    ),
+    check("render_item_progress_attempt_check", sql`${t.attemptCount} BETWEEN 0 AND 2`),
+    check("render_item_progress_percent_check", sql`${t.progress} BETWEEN 0 AND 100`),
+  ],
+);
+
 export const renderedOutputs = pgTable(
   "rendered_outputs",
   {
@@ -606,6 +658,41 @@ export const renderedOutputs = pgTable(
     check(
       "rendered_outputs_status_check",
       sql`${table.status} IN ('ready','failed','expired','deleted')`,
+    ),
+  ],
+);
+
+export const clipRegenerationRequests = pgTable(
+  "clip_regeneration_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    analysisJobId: uuid("analysis_job_id")
+      .notNull()
+      .references(() => processingJobs.id),
+    clipId: uuid("clip_id")
+      .notNull()
+      .references(() => clipCandidates.id),
+    expectedRevision: integer("expected_revision").notNull(),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+    replacementClipId: uuid("replacement_clip_id").references(() => clipCandidates.id),
+    jobId: uuid("job_id").references(() => processingJobs.id),
+    source: text("source").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("clip_regeneration_requests_project_key_unique").on(
+      table.projectId,
+      table.idempotencyKey,
+    ),
+    unique("clip_regeneration_requests_job_unique").on(table.jobId),
+    check("clip_regeneration_requests_revision_check", sql`${table.expectedRevision}>=0`),
+    check(
+      "clip_regeneration_requests_source_check",
+      sql`${table.source} IN ('backup_candidate','gemini_regeneration')`,
     ),
   ],
 );

@@ -26,6 +26,7 @@ export type AnalysisQueueWorkerFactory = (
 ) => AnalysisQueueWorker;
 
 export interface AnalysisQueueConsumerOptions {
+  readonly regenerate?: (job: Pick<Job, "id" | "name" | "data">) => Promise<void>;
   readonly createRedis?: AnalysisQueueRedisFactory;
   readonly createWorker?: AnalysisQueueWorkerFactory;
   readonly prefix: string;
@@ -59,11 +60,13 @@ export class AnalysisQueueConsumerService implements OnModuleInit, OnModuleDestr
       const worker = (this.worker = (this.options.createWorker ?? defaultWorkerFactory)(
         VIDEO_ANALYSIS_QUEUE_NAME,
         (job) =>
-          this.processor.process({
-            data: job.data,
-            id: job.id,
-            name: job.name,
-          }),
+          job.name === "regenerate_clip_candidate" && this.options.regenerate
+            ? this.options.regenerate(job)
+            : this.processor.process({
+                data: job.data,
+                id: job.id,
+                name: job.name,
+              }),
         { concurrency: 1, connection, prefix: this.options.prefix },
       ));
       worker.on("error", (error) => {

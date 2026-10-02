@@ -109,7 +109,7 @@ FAILED
 | VS4   | User receives AI-generated clip previews from an uploaded video   | COMPLETED   | 2026-07-30 | 19:09      | 2026-08-02 | 09:16    | None         |     100% | —       |
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
-| VS7   | User can manage multiple clips and regenerate a bad one           | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
 | VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -470,34 +470,34 @@ This slice crosses list management UI, candidate state, regeneration logic, back
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS7         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 0%          |
+| Status | COMPLETED |
+| Start Date | 2026-10-01 |
+| Start Time | 21:54 |
+| End Date | 2026-10-01 |
+| End Time | 23:51 |
+| Progress | 100% |
 | Dependency | VS6         |
 
 ## Tasks
 
-| Task ID | Vertical Task                                                    | Layers Touched       | Status      | Start Date | Start Time | End Date | End Time | Verification |
+| Task ID | Vertical Task                                                    | Layers Touched       | Status | COMPLETED |
 | ------- | ---------------------------------------------------------------- | -------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS7-T1  | Add selected/deleted/backup candidate states                     | DB + API             | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T2  | Build multi-clip selection and delete behavior                   | Web + API            | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T3  | Regenerate one clip using unused backup candidate first          | Web + API + DB       | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T4  | Fall back to Gemini regeneration only when backups are exhausted | Worker + Gemini      | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T5  | Render only selected clips in one render job                     | API + Queue + Worker | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T6  | Show per-clip render progress and failures                       | Web + API            | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS7-T7  | Display downloadable output cards for completed clips            | Web + API + Storage  | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS7-T1 | Add selected/deleted/backup candidate states | DB + API | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 22:03 | 6 shared tests; 69 DB/Redis tests; typecheck |
+| VS7-T2 | Build multi-clip selection and delete behavior | Web + API | COMPLETED | 2026-10-01 | 22:03 | 2026-10-01 | 22:32 | Selection/delete checks passed: 70 integration tests, 12 focused tests, typecheck; browser Save then Delete and next-clip focus verified. |
+| VS7-T3 | Regenerate one clip using unused backup candidate first | Web + API + DB | COMPLETED | 2026-10-01 | 22:32 | 2026-10-01 | 22:35 | 71 database/Redis integration tests and 18 focused tests passed; typecheck passed; browser confirmed replacement and selection retained. |
+| VS7-T4 | Fall back to Gemini regeneration only when backups are exhausted | Worker + Gemini | COMPLETED | 2026-10-01 | 22:37 | 2026-10-01 | 23:29 | 29 selector/processor tests, ownership/lease/overlap and zero-credit integration checks passed; regeneration survives clip switching and reload. |
+| VS7-T5 | Render only selected clips in one render job | API + Queue + Worker | COMPLETED | 2026-10-01 | 22:43 | 2026-10-01 | 23:29 | Atomic revisions, immutable snapshots, partial success, takeover and two-attempt recovery passed; real two-clip MP4 batch; full ci:check passed. |
+| VS7-T6 | Show per-clip render progress and failures | Web + API | COMPLETED | 2026-10-01 | 23:02 | 2026-10-01 | 23:51 | Persisted per-clip states, counts, partial failure, refresh and offline/reconnect browser checks passed; failed retry respects current selection. |
+| VS7-T7 | Display downloadable output cards for completed clips | Web + API + Storage | COMPLETED | 2026-10-01 | 23:02 | 2026-10-01 | 23:51 | Immediate authenticated MP4 download during rendering verified at desktop and 390px; older exports retained; full ci:check passed (583 unit, 74 integration tests). |
 
 ## Slice Acceptance Criteria
 
-- [ ] User can select/deselect clips.
-- [ ] User can delete a candidate.
-- [ ] User can regenerate one bad clip.
-- [ ] Backup candidate is preferred.
-- [ ] Regeneration does not charge extra in MVP.
-- [ ] Only selected clips render.
+- [x] User can select/deselect clips.
+- [x] User can delete a candidate.
+- [x] User can regenerate one bad clip.
+- [x] Backup candidate is preferred.
+- [x] Regeneration does not charge extra in MVP.
+- [x] Only selected clips render.
 
 ---
 
@@ -772,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS6 - Render and download one vertical clip
-Current Task: None - VS6-T1 through VS6-T8 completed.
+Current Slice: VS7 - Manage multiple clips and regenerate a bad one
+Current Task: VS7-T7 - COMPLETED
 Current Status: COMPLETED
-Last Completed Task: VS6-T8 - Preview/export parity verified; all VS6 tasks passed the final quality gate at 23:33 Asia/Manila.
-Next Recommended Task: VS7-T1 - Start the editable-summary slice after reading its specification.
-Uncommitted Changes: None after the VS6 commits on codex/vs6-render-download. Media fixtures, browser screenshots and logs under ignored storage/vs6-verification are intentionally not committed.
-Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 547 unit tests, 68 PostgreSQL/Redis integration tests and production builds. The final rerun cleared transient forced test-database cleanup errors; evidence is recorded in docs/verification/vs6.md.
+Last Completed Task: VS7-T7 - All seven VS7 tasks completed at 23:51 Asia/Manila; full quality gate and desktop/mobile verification passed.
+Next Recommended Task: VS8-T1 - Create the versioned summary-selection prompt. Summary videos are the VS8 slice.
+Uncommitted Changes: None. Verified VS7 work is committed on codex/vs7-multi-clip. Ignored media, screenshots, request recordings and logs remain under storage/vs7-verification.
+Known Failing Tests: None. Final pnpm ci:check passed formatting, lint, typecheck, 583 unit tests, 74 PostgreSQL/Redis integration tests and production builds at 23:51 Asia/Manila. Evidence: docs/verification/vs7.md and storage/vs7-verification/ci-check.log.
 Known Blockers: None. The existing Next.js file-tracing warning is non-fatal.
-Important Context: Explicit one-clip export saves unsaved edits first and uses the returned revision. Free re-renders preserve previous outputs until expiration; failed renders retain editing/previews. Migration 0025 separates current analysis from current render work and adds immutable requests, retry-key aliases and fenced outputs; it was applied locally and is required before deployment. New worker dependency @napi-rs/canvas 1.0.9 and licensed pinned Inter Black assets. Shared caption/framing geometry follows ADRs 0002/0003/0004. Defaults: medium, CRF 20, 60-minute timeout, seven-day publication retention. Scheduled deletion remains VS10. Browser verification uses synthetic responses and real rendered fixture media.
-Required Commands Before Continuing: Read VS7 requirements, ADRs 0002/0003/0004 and docs/verification/vs6.md. Record an Asia/Manila start timestamp when VS7 begins. Preserve immutable render snapshots, the saved-revision contract and current-analysis preview access.
-Last Updated Date: 2026-09-30
-Last Updated Time: 23:33
+Important Context: Persisted selection is independent of caption revisions. Delete archives candidates. Backup-first regeneration preserves slot, selection and caption appearance; Gemini fallback uses frozen transcript/overlap exclusions and leaves the original until fenced completion. Render accepts 1-10 saved selected revisions, freezes every item atomically and publishes each successful MP4 immediately. Failed items get at most two automatic attempts; recovery skips successes and partial failures return preview-ready with downloads retained. Regeneration and rendering are free and excluded from paid-analysis deduction/refund paths. Migrations 0026-0035 were applied locally and must precede updated API/worker startup; legacy single-clip requests, outputs and idempotency bindings remain compatible. See ADR 0005. Summary videos remain VS8, refund expansion VS9 and scheduled deletion VS10. Browser evidence uses production components with synthetic API responses and real fixture media; the real batch test uses PostgreSQL, Redis and FFmpeg. Gemini failure/recovery is tested with deterministic model mocks.
+Required Commands Before Continuing: Read VS8 requirements, ADRs 0002-0005 and docs/verification/vs7.md. Record an actual Asia/Manila start timestamp when VS8 begins. Preserve immutable render items, saved-revision checks, current-analysis preview access and free regeneration/render behavior.
+Last Updated Date: 2026-10-01
+Last Updated Time: 23:53
 Last Updated By: Codex
 ```
