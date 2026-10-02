@@ -321,6 +321,7 @@ describeIntegration("paid processing start API", () => {
       data: {
         outputType: "clips",
         currentJob: {
+          failure: null,
           id: storedJob.id,
           progress: null,
           status: "queued",

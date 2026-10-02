@@ -1,4 +1,5 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
+import { ClipPreviewsService } from "../projects/clip-previews.service";
 import { type ProcessingJobStatus, type ProcessingStartResult } from "@repurposepro/shared";
 
 import {
@@ -33,6 +34,7 @@ export class ProcessingStartService {
     @Inject(PROCESSING_START_REPOSITORY)
     private readonly processingStartRepository: ProcessingStartRepositoryContract,
     private readonly analysisDispatcher: AnalysisDispatcherService,
+    @Optional() private readonly sourceVideos?: ClipPreviewsService,
   ) {}
 
   public async start(
@@ -43,8 +45,24 @@ export class ProcessingStartService {
     let record: ProcessingStartRecord;
 
     try {
+      if (
+        this.sourceVideos &&
+        (await this.processingStartRepository.requiresRestartValidation?.(userId, projectId))
+      ) {
+        try {
+          await this.sourceVideos.getSourceVideoContent(userId, projectId);
+        } catch {
+          throw new ProcessingStartError(
+            "PROCESSING_VIDEO_REQUIRED",
+            409,
+            "Your retained upload is unavailable. Create a new project and upload your video again.",
+          );
+        }
+      }
+
       record = await this.processingStartRepository.start(userId, projectId);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof ProcessingStartError) throw error;
       throw new ProcessingStartError(
         "BILLING_DEDUCTION_FAILED",
         503,

@@ -1,4 +1,6 @@
 import {
+  isProcessingFailureCode,
+  type ProcessingFailureSnapshot,
   ProcessingJobStatus,
   ProcessingJobStep,
   ProjectStatus,
@@ -43,6 +45,7 @@ export function isProjectProcessingStatus(
 }
 
 export function isPreviewReady(snapshot: ProjectProcessingStatus): boolean {
+  if (snapshot.currentJob?.failure) return false;
   return (
     snapshot.status === ProjectStatus.PreviewReady ||
     snapshot.currentJob?.step === ProcessingJobStep.PreviewReady
@@ -50,6 +53,7 @@ export function isPreviewReady(snapshot: ProjectProcessingStatus): boolean {
 }
 
 export function isTerminalProcessingStatus(snapshot: ProjectProcessingStatus): boolean {
+  if (snapshot.currentJob?.failure?.refundStatus === "pending") return false;
   return (
     terminalProjectStatuses.has(snapshot.status) ||
     (snapshot.currentJob !== null && terminalJobStatuses.has(snapshot.currentJob.status))
@@ -66,8 +70,33 @@ function isProcessingJobSnapshot(value: unknown): value is ProcessingJobSnapshot
     job.id.length > 0 &&
     typeof job.status === "string" &&
     processingStatuses.has(job.status) &&
+    (job.failure === undefined || job.failure === null || isFailure(job.failure)) &&
     (job.step === null || (typeof job.step === "string" && processingSteps.has(job.step))) &&
     (progress === null ||
       (progress !== undefined && Number.isInteger(progress) && progress >= 0 && progress <= 100))
+  );
+}
+
+function isFailure(value: unknown): value is ProcessingFailureSnapshot {
+  if (typeof value !== "object" || value === null) return false;
+  const failure = value as Partial<ProcessingFailureSnapshot>;
+  if (
+    !isProcessingFailureCode(failure.code) ||
+    typeof failure.message !== "string" ||
+    !failure.message.trim() ||
+    failure.message.length > 500 ||
+    !Number.isSafeInteger(failure.refundedCredits)
+  )
+    return false;
+  if (failure.refundStatus === "completed")
+    return (
+      failure.refundedCredits! > 0 &&
+      typeof failure.refundCompletedAt === "string" &&
+      Number.isFinite(Date.parse(failure.refundCompletedAt))
+    );
+  return (
+    (failure.refundStatus === "pending" || failure.refundStatus === "not_eligible") &&
+    failure.refundedCredits === 0 &&
+    failure.refundCompletedAt === null
   );
 }

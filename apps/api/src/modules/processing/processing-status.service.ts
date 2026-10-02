@@ -1,5 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
+  isProcessingFailureCode,
+  PROCESSING_FAILURES,
+  type ProcessingFailureSnapshot,
   ProcessingJobStatus,
   ProcessingJobStep,
   ProjectStatus,
@@ -74,6 +77,7 @@ export class ProcessingStatusService {
     return {
       ...(record.outputType ? { outputType: record.outputType } : {}),
       currentJob: {
+        ...(record.failureCode !== undefined ? { failure: this.failure(record) } : {}),
         id: record.currentJobId,
         progress:
           record.currentJobStatus === ProcessingJobStatus.Queued && record.currentJobProgress === 0
@@ -93,6 +97,29 @@ export class ProcessingStatusService {
       503,
       "We could not load this project's processing status.",
     );
+  }
+
+  private failure(record: ProcessingStatusRecord): ProcessingFailureSnapshot | null {
+    if (!record.failureCode || (record.currentJobType && record.currentJobType !== "analyze_video"))
+      return null;
+    if (!isProcessingFailureCode(record.failureCode)) return this.unavailable();
+    const completed = record.currentJobStatus === ProcessingJobStatus.Refunded;
+    if (
+      completed &&
+      (!record.refundEligible ||
+        !record.refundCompletedAt ||
+        !Number.isInteger(record.refundedCredits) ||
+        (record.refundedCredits ?? 0) <= 0 ||
+        record.refundedCredits !== record.creditsCharged)
+    )
+      return this.unavailable();
+    return {
+      code: record.failureCode,
+      message: PROCESSING_FAILURES[record.failureCode].message,
+      refundStatus: completed ? "completed" : record.refundEligible ? "pending" : "not_eligible",
+      refundedCredits: completed ? record.refundedCredits! : 0,
+      refundCompletedAt: completed ? record.refundCompletedAt!.toISOString() : null,
+    };
   }
 }
 

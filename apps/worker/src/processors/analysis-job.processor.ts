@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { ANALYZE_VIDEO_JOB_NAME, type VideoAnalysisJobPayload } from "@repurposepro/shared";
 import { UnrecoverableError } from "bullmq";
+import { classifyAnalysisFailure } from "../services/analysis-retry";
 
 import {
   ProcessingLeaseLostError,
@@ -106,13 +107,23 @@ export class AnalysisJobProcessor {
         payload.projectId,
         executionId,
         async (context) => {
-          const result = await this.handler.handle(payload, context);
-          if (!isAnalysisPipelineResult(result)) {
-            throw new UnrecoverableError(
-              "Analysis pipeline did not persist a preview-ready result.",
-            );
+          try {
+            const result = await this.handler.handle(payload, context);
+            if (!isAnalysisPipelineResult(result)) {
+              throw new UnrecoverableError(
+                "Analysis pipeline did not persist a preview-ready result.",
+              );
+            }
+            return result;
+          } catch (error: unknown) {
+            // A committed preview with a lost response still fulfills paid analysis.
+            if (await this.handler.isDurablePreviewReady?.(payload).catch(() => false))
+              return { outcome: "preview_ready" as const };
+            if (!context.signal.aborted && !(error instanceof ProcessingLeaseLostError)) {
+              await context.terminalFailure?.(classifyAnalysisFailure(error));
+            }
+            throw error;
           }
-          return result;
         },
       );
 

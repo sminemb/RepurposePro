@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { loadApiConfig } from "@repurposepro/config";
 
 import { AuthModule } from "../auth/auth.module";
+import { ClipPreviewsService } from "../projects/clip-previews.service";
+import { StorageModule } from "../storage/storage.module";
 import { InfrastructureModule } from "../infrastructure/infrastructure.module";
 import { BullMqConnectionFactory } from "../infrastructure/bullmq-connection.factory";
 import {
@@ -54,9 +56,10 @@ import { ProcessingStatusService } from "./processing-status.service";
 
 @Module({
   controllers: [ProcessingController],
-  imports: [AuthModule, InfrastructureModule],
+  imports: [AuthModule, InfrastructureModule, StorageModule],
   providers: [
     ProcessingStartService,
+    ClipPreviewsService,
     ProcessingStartRepository,
     AnalysisDispatchRepository,
     AnalysisDispatcherService,

@@ -600,7 +600,8 @@ Next.js
 - Use latest saved metadata.
 - Do not charge extra for initial final render in MVP.
 - Regenerated clips within the same paid project are included.
-- Failed render should refund credits if no usable output is produced.
+- Paid analysis refunds credits if no valid preview is durably saved. Later renders are free;
+  failures retain the preview and permit a free render retry (ADR 0007).
 
 ---
 
@@ -1460,7 +1461,7 @@ Refund credits if:
 
 - Transcription fails
 - AI analysis fails
-- Rendering fails and no usable output is produced
+- Audio extraction or preview persistence fails before a valid preview is durably saved
 - Worker crashes and the job cannot be recovered
 
 Do not refund credits if:
@@ -1468,6 +1469,7 @@ Do not refund credits if:
 - User deletes the project after successful processing
 - User does not like the AI-selected clips but processing succeeded
 - User chooses not to render after preview metadata is generated
+- Free rendering or regeneration fails after a valid preview was saved (ADR 0007)
 
 This can be adjusted later, but MVP rules should be explicit.
 
@@ -1655,7 +1657,7 @@ The architecture is successful if RepurposePro can:
 7. Show editable previews before rendering.
 8. Render selected clips or summary into MP4.
 9. Let the user download final outputs.
-10. Refund credits automatically when processing fails.
+10. Refund the exact analysis charge automatically on eligible terminal failure before a saved preview.
 11. Delete files automatically after 7 days.
 12. Keep payment and credit history auditable.
 
@@ -1677,4 +1679,24 @@ current job/lease and creates one private job/lease-path export expiring seven d
 
 Migrations 0036-0039 must precede API/worker startup. See [ADR 0006](adr/0006-summary-video-lifecycle.md)
 and [VS8 verification](verification/vs8.md). Existing clip and billing contracts remain supported;
-broader refunds and scheduled deletion remain VS9/VS10.
+VS9 extends paid-analysis refunds below. Scheduled deletion remains VS10.
+
+## VS9 implemented paid-analysis recovery
+
+A valid, durably saved preview fulfills paid clip or summary analysis. Before that boundary,
+eligible terminal failure atomically refunds the exact deduction once. Successful analysis and
+free rendering/regeneration are excluded. Immutable reasons, ledger uniqueness and execution
+leases remain authoritative in PostgreSQL; historical replays cannot mutate a newer job.
+
+Lease-fenced stage records cap extraction/transcription at two attempts and Gemini selection at
+three total transport/repair calls. Workers save specific failure intents before relinquishing
+execution; API sweepers settle credits, with queue-event and stale-job reconciliation as fallback.
+Publication ambiguity is checked against durable completion before declaring failure.
+
+Ownership-scoped status exposes safe reasons and confirmed ledger amounts. The processing UI
+polls pending settlement, refreshes balance when confirmed, and offers another paid analysis only
+after current cost/balance review and explicit confirmation. Atomic restart checks the retained
+source and creates a fresh job, charge, dispatch and budgets while retaining previous history.
+
+Migrations 0040–0043 must precede updated API/worker startup. See
+[ADR 0007](adr/0007-paid-analysis-refunds.md) and [VS9 verification](verification/vs9.md).

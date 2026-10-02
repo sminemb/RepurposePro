@@ -126,6 +126,45 @@ describe("processing status poller", () => {
     expect(harness.load).toHaveBeenCalledOnce();
     expect(harness.onPreviewReady).not.toHaveBeenCalled();
   });
+
+  it("continues through pending settlement and stops at the ledger-confirmed refund", async () => {
+    const pending: ProjectProcessingStatus = {
+      ...active,
+      currentJob: {
+        ...active.currentJob!,
+        failure: {
+          code: "WHISPER_FAILED",
+          message: "Transcription failed.",
+          refundStatus: "pending",
+          refundedCredits: 0,
+          refundCompletedAt: null,
+        },
+      },
+    };
+    const completed: ProjectProcessingStatus = {
+      ...pending,
+      status: "refunded",
+      currentJob: {
+        ...pending.currentJob!,
+        status: "refunded",
+        step: "failed",
+        failure: {
+          ...pending.currentJob!.failure!,
+          refundStatus: "completed",
+          refundedCredits: 11,
+          refundCompletedAt: "2026-10-02T13:00:00Z",
+        },
+      },
+    };
+    const harness = setupPoller([pending, completed]);
+    harness.poller.start();
+    await settle();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(harness.onSnapshot).toHaveBeenLastCalledWith(completed);
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(harness.load).toHaveBeenCalledTimes(2);
+    expect(harness.onPreviewReady).not.toHaveBeenCalled();
+  });
 });
 
 function setupPoller(

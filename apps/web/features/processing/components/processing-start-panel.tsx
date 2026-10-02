@@ -1,6 +1,10 @@
 "use client";
 
-import type { CreditBalance, SourceVideoMetadata } from "@repurposepro/shared";
+import type {
+  CreditBalance,
+  SourceVideoMetadata,
+  ProcessingStartResult,
+} from "@repurposepro/shared";
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ProcessingRequestError, startProcessing } from "../client/processing-api";
 import { getCreditStartState } from "./credit-start-state";
@@ -22,6 +26,8 @@ interface ProcessingStartPanelProps {
   readonly balanceError: string | null;
   readonly metadata: SourceVideoMetadata;
   readonly projectId: string;
+  readonly retry?: boolean;
+  readonly onStarted?: (result: ProcessingStartResult) => void;
 }
 
 export function ProcessingStartPanel({
@@ -30,10 +36,16 @@ export function ProcessingStartPanel({
   balanceError,
   metadata,
   projectId,
+  retry = false,
+  onStarted,
 }: ProcessingStartPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (retry) confirmationHeading.current?.focus();
+  }, [retry]);
   const creditState = getCreditStartState(balance?.balance ?? null, metadata.requiredCredits);
 
   async function start(): Promise<void> {
@@ -41,8 +53,10 @@ export function ProcessingStartPanel({
     setPending(true);
 
     try {
-      await startProcessing({ apiUrl, projectId });
+      const result = await startProcessing({ apiUrl, projectId });
+      onStarted?.(result);
       router.push(`/projects/${encodeURIComponent(projectId)}/processing`);
+      router.refresh();
     } catch (reason) {
       setError(
         reason instanceof ProcessingRequestError
@@ -64,11 +78,18 @@ export function ProcessingStartPanel({
           <CreditCard aria-hidden="true" className="size-5" />
         </span>
         <div>
-          <h2 id="processing-cost-title" className="text-base font-semibold text-rp-text">
-            Confirm processing cost
+          <h2
+            ref={confirmationHeading}
+            tabIndex={retry ? -1 : undefined}
+            id="processing-cost-title"
+            className="text-base font-semibold text-rp-text"
+          >
+            {retry ? "Confirm new analysis cost" : "Confirm processing cost"}
           </h2>
           <p className="mt-1 text-sm leading-6 text-rp-text-muted">
-            Credits are deducted once when you start analysis.
+            {retry
+              ? "This starts a new paid analysis using your retained upload."
+              : "Credits are deducted once when you start analysis."}
           </p>
         </div>
       </div>
@@ -93,7 +114,9 @@ export function ProcessingStartPanel({
 
       <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-rp-text-muted">
         <ShieldCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-rp-success" />
-        Credits are charged once. Retrying the same queued analysis will not charge them again.
+        {retry
+          ? "A new analysis is a new charge. Automatic retries are free, and a failure before a saved preview receives a full refund."
+          : "Credits are charged once. Retrying the same queued analysis will not charge them again."}
       </p>
 
       {balanceError ? (
@@ -149,7 +172,9 @@ export function ProcessingStartPanel({
             ) : null}
             {pending
               ? "Starting processing"
-              : `Start processing for ${metadata.requiredCredits} credits`}
+              : retry
+                ? `Confirm and use ${metadata.requiredCredits} credits`
+                : `Start processing for ${metadata.requiredCredits} credits`}
           </button>
         ) : null}
       </div>

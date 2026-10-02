@@ -1191,3 +1191,21 @@ It is complete when:
 - Retention is representable.
 - Queue workers can recover from persisted state.
 - The schema supports the full vertical slice.
+
+## VS9 paid-analysis recovery additions
+
+Migrations 0040–0043 add `analysis_stage_attempts`, keyed by `(job_id, stage)`, with
+transcription attempts capped at two and selection attempts capped at three. Attempts and safe
+last-failure codes are persisted under the current execution lease before external work. A job
+insert trigger creates both zero budgets atomically; active historical jobs are backfilled.
+
+Only restricted processing functions may increment budgets, record safe stage failures or save a
+terminal intent. Terminal persistence atomically clears the worker lease after accepting an
+immutable intent. The sweeper can claim cleared or expired leases, but skips valid live leases.
+Runtime reads only failure intent job/code/status columns and the immutable eligibility predicate.
+Ledger writes remain restricted and immutable; refunds require the exact original deduction.
+
+Refunded historical jobs replay only after exact deduction/refund verification, without touching a
+new current job. Paid restart verifies settlement and a retained, unexpired audio source, creates
+one new deduction/job/dispatch/budget transaction, and keeps prior jobs and ledger history.
+Apply these forward migrations before starting the updated API/worker.

@@ -41,6 +41,7 @@ export * from "./clip-management";
 export * from "./clip-editor";
 export * from "./framing";
 export * from "./processing";
+export * from "./processing-failure";
 export * from "./projects";
 export * from "./rendering";
 export * from "./caption-layout";

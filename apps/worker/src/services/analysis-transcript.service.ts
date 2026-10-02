@@ -3,11 +3,17 @@ import { dirname, join } from "node:path";
 
 import { Inject } from "@nestjs/common";
 
+import {
+  beginAnalysisAttempt,
+  classifyAnalysisFailure,
+  waitForAnalysisRetry,
+} from "./analysis-retry";
 import type { ProcessingLeaseContext } from "./processing-lifecycle.service";
 import { ProcessingLeaseLostError } from "./processing-lifecycle.service";
 import {
   ANALYSIS_TRANSCRIPT_REPOSITORY,
   type AnalysisTranscriptRepositoryContract,
+  type AnalysisTranscriptionContext,
   type PersistedTranscript,
 } from "./analysis-transcript.repository";
 import { TranscriptionAudioExtractor } from "./transcription-audio-extractor.service";
@@ -40,7 +46,7 @@ export class AnalysisTranscriptService {
     jobId: string,
     context: ProcessingLeaseContext,
   ): Promise<AnalysisTranscriptResult> {
-    const transcriptionContext = await this.repository.loadContext(
+    let transcriptionContext = await this.repository.loadContext(
       jobId,
       context.workerId,
       context.leaseToken,
@@ -58,7 +64,51 @@ export class AnalysisTranscriptService {
       };
     }
 
-    const audioPath = join(dirname(transcriptionContext.sourcePath), ".analysis", `${jobId}.wav`);
+    for (;;) {
+      const attempt = context.beginAttempt
+        ? await beginAnalysisAttempt(context, "transcription")
+        : 1;
+      try {
+        return await this.transcribeAndPersist(jobId, context, transcriptionContext, attempt);
+      } catch (error: unknown) {
+        if (
+          context.signal.aborted ||
+          error instanceof ProcessingLeaseLostError ||
+          !context.beginAttempt
+        )
+          throw error;
+        await context.recordAttemptFailure!("transcription", classifyAnalysisFailure(error));
+        // A lost persistence response must not repeat already completed transcription.
+        transcriptionContext = await this.repository.loadContext(
+          jobId,
+          context.workerId,
+          context.leaseToken,
+        );
+        if (transcriptionContext.outcome === "lost") throw new ProcessingLeaseLostError();
+        if (transcriptionContext.outcome === "rejected")
+          throw new AnalysisTranscriptUnavailableError();
+        if (transcriptionContext.outcome === "transcript_ready")
+          return {
+            sourceDurationSeconds: transcriptionContext.sourceDurationSeconds,
+            transcript: transcriptionContext.transcript,
+          };
+        if (attempt >= 2) throw error;
+        await waitForAnalysisRetry(context.signal, attempt);
+      }
+    }
+  }
+
+  private async transcribeAndPersist(
+    jobId: string,
+    context: ProcessingLeaseContext,
+    transcriptionContext: Extract<AnalysisTranscriptionContext, { outcome: "ready" }>,
+    attempt: number,
+  ): Promise<AnalysisTranscriptResult> {
+    const audioPath = join(
+      dirname(transcriptionContext.sourcePath),
+      ".analysis",
+      `${jobId}-${context.leaseToken}-${attempt}.wav`,
+    );
     try {
       await context.updateProgress("extracting_audio", 25);
       await this.extractor.extract({
@@ -81,13 +131,11 @@ export class AnalysisTranscriptService {
         transcript,
         transcriptionContext.sourceDurationSeconds,
       );
-      const persisted = await this.repository.persist(
-        jobId,
-        context.workerId,
-        context.leaseToken,
-        this.model,
-        normalizedTranscript,
-      );
+      const persisted = await this.repository
+        .persist(jobId, context.workerId, context.leaseToken, this.model, normalizedTranscript)
+        .catch(() => {
+          throw new AnalysisTranscriptUnavailableError();
+        });
       if (persisted.outcome === "lost") {
         throw new ProcessingLeaseLostError();
       }

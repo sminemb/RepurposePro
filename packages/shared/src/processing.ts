@@ -1,4 +1,5 @@
 import type { ProjectStatus } from "./projects";
+import type { ProcessingFailureSnapshot } from "./processing-failure";
 
 export const ProcessingJobStatus = {
   Active: "active",
@@ -28,6 +29,7 @@ export const ProcessingJobStep = {
 export type ProcessingJobStep = (typeof ProcessingJobStep)[keyof typeof ProcessingJobStep];
 
 export interface ProcessingJobSnapshot {
+  readonly failure?: ProcessingFailureSnapshot | null;
   readonly id: string;
   readonly progress: number | null;
   readonly status: ProcessingJobStatus;

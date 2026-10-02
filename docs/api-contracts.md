@@ -758,7 +758,8 @@ Rules:
       "id": "job_...",
       "status": "active",
       "step": "transcribing",
-      "progress": 42
+      "progress": 42,
+      "failure": null
     }
   }
 }
@@ -1457,29 +1458,37 @@ Stripe webhook endpoint.
 
 Refunds for normal processing failures are **credit refunds**, not Stripe money refunds.
 
-VS3 provides the centralized automatic-refund primitive, durable terminal-failure intents, failed
-BullMQ reconciliation, and execution-lease expiry recovery. VS9 still owns later worker-stage
-coverage and clear user-facing refund UI.
+VS3 provides the atomic credit ledger finalizer, durable failure intents and queue/stale-job
+reconciliation. VS9 extends these to classified paid-analysis failures and recovery UI.
+A valid, durably saved clip or summary preview fulfills the charge (ADR 0007).
 
-Eligible failures may include:
+Eligible terminal failures before that preview include audio extraction, Whisper, Gemini
+transport, exhausted invalid output, storage and unrecoverable worker execution. PostgreSQL
+requires a paid analysis job, its exact deduction, no completed preview and no valid execution
+lease. Successful analysis, free rendering/regeneration, user cancellation, deletion after success
+and dissatisfaction with valid selections never refund analysis credits.
 
-```text
-audio extraction failure
-Whisper failure
-Gemini failure
-invalid Gemini output after retry policy exhausted
-FFmpeg render failure before usable output
-worker crash that permanently fails job
-storage failure that prevents usable result
-```
+Workers count attempts before external work: two transcription-stage executions and three total
+Gemini selection calls shared between transport retries and response repairs. Backoff is abortable
+at one then two seconds. Persisted transcripts are reused. Workers save a fenced specific failure
+intent and relinquish execution; API sweepers alone settle the full charge. Generic queue/crash
+observations prefer a surviving specific reason. A committed preview with a lost response succeeds.
 
-The exact eligibility policy is centralized in PostgreSQL. The restricted processing operation
-locks the job and owning current project, verifies the positive charge and exact immutable
-deduction, records at most one exact refund ledger row, and updates the project and job in the same
-transaction. Retries and concurrent terminal events are idempotent. Ineligible failures update
-failure state but create no refund. The first accepted terminal reason and eligibility are
-immutable; a conflicting later reason returns a conflict outcome without changing state. Queue and
-worker paths persist a failure intent first, and leased sweepers finish or retry finalization.
+The restricted finalizer locks the ledger, project and job, verifies the exact immutable deduction,
+and commits one exact refund with job/project state. The first accepted terminal reason and
+eligibility remain immutable. Verified historical refund replays never modify a newer analysis.
+
+The ownership-scoped processing status includes `currentJob.failure` (null outside failed paid
+analysis), containing safe `code`/`message`, `refundStatus` (pending/completed/not_eligible),
+`refundedCredits` and nullable ISO `refundCompletedAt`. Pending/ineligible amounts are zero;
+completed amounts must match the persisted refund ledger and original charge. No private
+provider output, diagnostics, paths or ledger internals are exposed.
+
+A settled refunded project can use the existing confirmed analysis-start endpoint again while a
+usable source remains retained. The API verifies the actual retained file; PostgreSQL verifies
+settlement, ownership, source audio/expiry and credits. A fresh job, deduction, dispatch and zero
+retry budgets are atomic; duplicate concurrent starts reuse that active job. Pending settlement
+cannot restart. UI refreshes cost/balance and requires explicit new-charge confirmation.
 
 ---
 

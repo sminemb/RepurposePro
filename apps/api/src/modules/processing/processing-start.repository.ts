@@ -22,6 +22,7 @@ export interface ProcessingStartRecord {
 }
 
 export interface ProcessingStartRepositoryContract {
+  requiresRestartValidation?(userId: string, projectId: string): Promise<boolean>;
   start(userId: string, projectId: string): Promise<ProcessingStartRecord>;
 }
 
@@ -31,6 +32,16 @@ export class ProcessingStartRepository implements ProcessingStartRepositoryContr
     @Inject(PROCESSING_DATABASE)
     private readonly databaseService: ScopedDatabaseProvider,
   ) {}
+
+  public async requiresRestartValidation(userId: string, projectId: string): Promise<boolean> {
+    const result = await this.databaseService.database.pool.query<{ required: boolean }>(
+      "SELECT public.is_owned_refunded_analysis_project($1,$2) AS required",
+      [userId, projectId],
+    );
+    if (result.rows.length !== 1 || typeof result.rows[0]?.required !== "boolean")
+      throw new Error("Analysis restart preflight returned an invalid result.");
+    return result.rows[0].required;
+  }
 
   public async start(userId: string, projectId: string): Promise<ProcessingStartRecord> {
     const result = await this.databaseService.database.pool.query<ProcessingStartRecord>(

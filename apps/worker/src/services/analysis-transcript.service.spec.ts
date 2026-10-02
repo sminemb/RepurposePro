@@ -50,6 +50,89 @@ afterEach(async () => {
 });
 
 describe("AnalysisTranscriptService", () => {
+  it("reuses a durably saved transcript after its persistence response is lost", async () => {
+    const sourcePath = join(await temporaryRoot(), "source.mp4");
+    const loadContext = vi
+      .fn<AnalysisTranscriptRepositoryContract["loadContext"]>()
+      .mockResolvedValueOnce({
+        outcome: "ready",
+        projectId,
+        sourcePath,
+        sourceDurationSeconds: 30,
+        transcript: null,
+      })
+      .mockResolvedValue({
+        outcome: "transcript_ready",
+        projectId,
+        sourcePath,
+        sourceDurationSeconds: 30,
+        transcript: persistedTranscript,
+      });
+    const repository = repositoryWith(
+      loadContext,
+      vi.fn().mockRejectedValue(new Error("lost response")),
+    );
+    const extract = vi.fn();
+    const transcribe = vi.fn().mockResolvedValue(transcript);
+    const service = new AnalysisTranscriptService(
+      repository,
+      { extract } as unknown as TranscriptionAudioExtractor,
+      { transcribe } as unknown as WhisperTranscriber,
+      "small.en",
+    );
+    const beginAttempt = vi
+      .fn()
+      .mockResolvedValue({ outcome: "started", attempt: 2, failureCode: null });
+    expect(
+      await service.getOrCreate(jobId, {
+        ...leaseContext(),
+        beginAttempt,
+        recordAttemptFailure: vi.fn(),
+      }),
+    ).toEqual({ sourceDurationSeconds: 30, transcript: persistedTranscript });
+    expect(beginAttempt).toHaveBeenCalledOnce();
+    expect(transcribe).toHaveBeenCalledOnce();
+  });
+  it("retries transcription once under a durable budget and succeeds without charging again", async () => {
+    const sourcePath = join(await temporaryRoot(), "source.mp4");
+    const repository = repositoryWith(
+      vi.fn().mockResolvedValue({
+        outcome: "ready",
+        projectId,
+        sourcePath,
+        sourceDurationSeconds: 30,
+        transcript: null,
+      }),
+      vi.fn().mockResolvedValue({ outcome: "created", transcriptId }),
+    );
+    const transcribe = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("timeout"), {
+          name: "WhisperTranscriptionError",
+          reason: "timeout",
+        }),
+      )
+      .mockResolvedValue(transcript);
+    const service = new AnalysisTranscriptService(
+      repository,
+      { extract: vi.fn() } as unknown as TranscriptionAudioExtractor,
+      { transcribe } as unknown as WhisperTranscriber,
+      "small.en",
+    );
+    const context = leaseContext();
+    context.beginAttempt = vi
+      .fn()
+      .mockResolvedValueOnce({ outcome: "started", attempt: 1, failureCode: null })
+      .mockResolvedValueOnce({ outcome: "started", attempt: 2, failureCode: "WHISPER_FAILED" });
+    const recordAttemptFailure = vi.fn().mockResolvedValue(undefined);
+    context.recordAttemptFailure = recordAttemptFailure;
+    await expect(service.getOrCreate(jobId, context)).resolves.toMatchObject({
+      transcript: persistedTranscript,
+    });
+    expect(transcribe).toHaveBeenCalledTimes(2);
+    expect(recordAttemptFailure).toHaveBeenCalledWith("transcription", "WHISPER_FAILED");
+  });
   it("reuses a durable transcript without extracting or invoking Python", async () => {
     const sourcePath = join(await temporaryRoot(), "source", "video.mp4");
     const loadContext = vi

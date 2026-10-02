@@ -50,6 +50,47 @@ function selector(
 }
 
 describe("GeminiClipSelector", () => {
+  it("shares three durable calls between transport retries and output repairs", async () => {
+    const generateContent = vi
+      .fn<GeminiModelClient["generateContent"]>()
+      .mockRejectedValueOnce(new Error("transport"))
+      .mockResolvedValueOnce({ text: "{}" })
+      .mockResolvedValue({ text: response([clip("Usable partial", 0, 20, 0.9)]) });
+    let count = 0;
+    const fail = vi.fn();
+    const service = new GeminiClipSelector(
+      { generateContent },
+      { model: "test", maxRetries: 20, timeoutMs: 100 },
+    );
+    const selected = await service.select(input, new AbortController().signal, {
+      begin: async () => ++count,
+      fail,
+      wait: vi.fn(),
+    });
+    expect(generateContent).toHaveBeenCalledTimes(3);
+    expect(selected.primary).toHaveLength(1);
+    expect(fail.mock.calls.slice(0, 2)).toEqual([["GEMINI_FAILED"], ["INVALID_AI_OUTPUT"]]);
+  });
+
+  it("reports a final transport failure after earlier invalid output within the same budget", async () => {
+    const generateContent = vi
+      .fn<GeminiModelClient["generateContent"]>()
+      .mockResolvedValueOnce({ text: "{}" })
+      .mockRejectedValue(new Error("transport"));
+    let count = 0;
+    const service = new GeminiClipSelector(
+      { generateContent },
+      { model: "test", maxRetries: 20, timeoutMs: 100 },
+    );
+    await expect(
+      service.select(input, new AbortController().signal, {
+        begin: async () => ++count,
+        fail: vi.fn(),
+        wait: vi.fn(),
+      }),
+    ).rejects.toMatchObject({ reason: "request_failed" });
+    expect(generateContent).toHaveBeenCalledTimes(3);
+  });
   it("requests application/json with JSON Schema and the clips-v1 transcript-only prompt", async () => {
     const output = response([clip("Only clip", 0, 15, 0.9)]);
     const { generateContent, select } = selector([output]);

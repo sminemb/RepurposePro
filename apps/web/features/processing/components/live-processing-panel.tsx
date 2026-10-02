@@ -8,13 +8,15 @@ import {
 } from "@repurposepro/shared";
 import { AlertTriangle, Clock3, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/app/status-badge";
 
 import { loadProcessingStatus } from "../client/processing-status-api";
 import { createProcessingStatusPoller } from "../client/processing-status-poller";
+import { AnalysisRetryPanel } from "./analysis-retry-panel";
 
 interface LiveProcessingPanelProps {
   readonly apiUrl: string;
@@ -44,6 +46,14 @@ export function LiveProcessingPanel({
   const router = useRouter();
   const [pollingIssue, setPollingIssue] = useState(false);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const previousRefundStatus = useRef(initialSnapshot.currentJob?.failure?.refundStatus);
+
+  useEffect(() => {
+    const refundStatus = snapshot.currentJob?.failure?.refundStatus;
+    const changed = previousRefundStatus.current !== refundStatus;
+    previousRefundStatus.current = refundStatus;
+    if (changed && refundStatus === "completed") router.refresh();
+  }, [router, snapshot.currentJob?.failure?.refundStatus]);
 
   useEffect(() => {
     const poller = createProcessingStatusPoller({
@@ -68,20 +78,39 @@ export function LiveProcessingPanel({
     });
     poller.start();
     return () => poller.stop();
-  }, [apiUrl, projectId, router]);
+  }, [apiUrl, projectId, router, snapshot.currentJob?.id]);
 
   const job = snapshot.currentJob;
   const queued = snapshot.status === ProjectStatus.Queued;
   const failed =
-    snapshot.status === ProjectStatus.Failed || job?.status === ProcessingJobStatus.Failed;
+    !!job?.failure ||
+    snapshot.status === ProjectStatus.Failed ||
+    snapshot.status === ProjectStatus.Refunded ||
+    job?.status === ProcessingJobStatus.Failed ||
+    job?.status === ProcessingJobStatus.Refunded;
+  const failure = job?.failure;
   const step = job?.step ? stepLabels[job.step] : "Waiting for the next step";
   const progress = job?.progress ?? null;
-  const announcement = `${step}. ${progress === null ? "Progress estimate pending." : `${progress}% complete.`}`;
+  const refundMessage =
+    failure?.refundStatus === "completed"
+      ? `${failure.refundedCredits} credits refunded.`
+      : failure?.refundStatus === "pending"
+        ? "Your full analysis refund is pending. This page will update when it settles."
+        : "This failure is not eligible for an analysis refund.";
+  const announcement = failure
+    ? `${failure.message} ${refundMessage}`
+    : `${step}. ${progress === null ? "Progress estimate pending." : `${progress}% complete.`}`;
 
   return (
     <>
       <PageHeader
-        description="This page refreshes automatically while your analysis runs in the background."
+        description={
+          job?.failure?.refundStatus === "completed"
+            ? "Your refund is confirmed. Review the cost before trying analysis again."
+            : job?.failure
+              ? "This page refreshes automatically while your refund settles."
+              : "This page refreshes automatically while your analysis runs in the background."
+        }
         title={
           failed
             ? "Processing stopped"
@@ -120,46 +149,94 @@ export function LiveProcessingPanel({
                       : "Analysis is underway"}
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-rp-text-muted">
-                  Processing continues in the background. You can leave this page and return from
-                  your dashboard.
+                  {failed
+                    ? "Your analysis stopped before a usable preview was saved."
+                    : "Processing continues in the background. You can leave this page and return from your dashboard."}
                 </p>
               </div>
             </div>
-            <StatusBadge status={snapshot.status} />
+            <StatusBadge
+              status={
+                failure
+                  ? failure.refundStatus === "completed"
+                    ? ProjectStatus.Refunded
+                    : ProjectStatus.Failed
+                  : snapshot.status
+              }
+            />
           </div>
         </div>
 
-        <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
-          <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
-              Current step
-            </p>
-            <p className="mt-2 text-base font-semibold text-rp-text">{step}</p>
-          </div>
-          <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
-              Progress
-            </p>
-            <p className="mt-2 text-base font-semibold text-rp-text">
-              {progress === null ? "No progress estimate yet" : `${progress}% complete`}
-            </p>
-            {progress !== null ? (
-              <div
-                aria-label="Processing progress"
-                aria-valuemax={100}
-                aria-valuemin={0}
-                aria-valuenow={progress}
-                className="mt-3 h-2 overflow-hidden rounded-full bg-rp-border"
-                role="progressbar"
-              >
-                <div
-                  className="h-full rounded-full bg-rp-primary transition-[width] duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+        {failure ? (
+          <div className="p-5 sm:p-7">
+            <p className="text-base font-medium leading-7 text-rp-text">{failure.message}</p>
+            <p className="mt-3 text-sm leading-6 text-rp-text-muted">{refundMessage}</p>
+            {failure.refundCompletedAt ? (
+              <p className="mt-1 text-xs leading-5 text-rp-text-muted">
+                Confirmed {new Date(failure.refundCompletedAt).toLocaleString()}
+              </p>
+            ) : null}
+            <Link
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-rp-primary underline underline-offset-4"
+              href="/billing#credit-history-title"
+            >
+              View credit history
+            </Link>
+            {failure.refundStatus === "completed" ? (
+              <AnalysisRetryPanel
+                key={job?.id}
+                apiUrl={apiUrl}
+                projectId={projectId}
+                onStarted={(result) => {
+                  setSnapshot({
+                    ...snapshot,
+                    status: ProjectStatus.Queued,
+                    currentJob: {
+                      id: result.jobId,
+                      status: result.status,
+                      step: "queued",
+                      progress: 0,
+                      failure: null,
+                    },
+                  });
+                  router.refresh();
+                }}
+              />
             ) : null}
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
+            <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
+                Current step
+              </p>
+              <p className="mt-2 text-base font-semibold text-rp-text">{step}</p>
+            </div>
+            <div className="rounded-rp-md border border-rp-border bg-rp-card/65 p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-rp-text-muted">
+                Progress
+              </p>
+              <p className="mt-2 text-base font-semibold text-rp-text">
+                {progress === null ? "No progress estimate yet" : `${progress}% complete`}
+              </p>
+              {progress !== null ? (
+                <div
+                  aria-label="Processing progress"
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={progress}
+                  className="mt-3 h-2 overflow-hidden rounded-full bg-rp-border"
+                  role="progressbar"
+                >
+                  <div
+                    className="h-full rounded-full bg-rp-primary transition-[width] duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {pollingIssue ? (
           <p className="border-t border-rp-warning/25 bg-rp-warning-soft/25 px-5 py-3 text-sm text-rp-text-muted sm:px-7">

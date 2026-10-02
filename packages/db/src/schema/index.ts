@@ -1068,3 +1068,24 @@ export const summaryRenderRequests = pgTable(
   },
   (t) => [check("summary_render_revision_check", sql`${t.revision}>=0`)],
 );
+
+export const analysisStageAttempts = pgTable(
+  "analysis_stage_attempts",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => processingJobs.id, { onDelete: "cascade" }),
+    stage: text("stage").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    lastFailureCode: text("last_failure_code"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.jobId, table.stage] }),
+    check("analysis_stage_name_check", sql`${table.stage} IN ('transcription', 'selection')`),
+    check(
+      "analysis_stage_budget_check",
+      sql`${table.attempts} >= 0 AND ${table.attempts} <= CASE WHEN ${table.stage} = 'transcription' THEN 2 ELSE 3 END`,
+    ),
+  ],
+);
