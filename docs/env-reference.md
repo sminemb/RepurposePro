@@ -1450,7 +1450,7 @@ Schedule expired-file cleanup.
 Example:
 
 ```env
-CLEANUP_SCHEDULE_CRON=0 * * * *
+CLEANUP_SCHEDULE_CRON="0 * * * *"
 ```
 
 Meaning:
@@ -1702,7 +1702,7 @@ FACE_SAMPLE_INTERVAL_SECONDS=3
 FACE_CROP_SMOOTHING_WINDOW=5
 
 # Cleanup
-CLEANUP_SCHEDULE_CRON=0 * * * *
+CLEANUP_SCHEDULE_CRON="0 * * * *"
 CLEANUP_BATCH_SIZE=100
 
 # Tests
@@ -1829,3 +1829,23 @@ PROJECT_STATUS_LABEL
 ```
 
 UI behavior belongs in `ui-tokens.md`, `ui-rules.md`, and code.
+
+## VS10 validated retention settings and rollout
+
+| Variable | Default | Validation and behavior |
+| --- | --- | --- |
+| `FILE_RETENTION_DAYS` | `7` | Integer 1–365. Future accepted sources and newly published exports receive independent deadlines. Existing deadlines are never reset. Audio inherits source expiry; abandoned staging expires after creation plus this interval. |
+| `CLEANUP_SCHEDULE_CRON` | `0 * * * *` | Numeric five-field cron expression; scheduler timezone is fixed to UTC. Quote values containing spaces in env files. |
+| `CLEANUP_BATCH_SIZE` | `100` | Integer 1–1000; bounds each durable cleanup claim. Remaining targets recover on later sweeps. |
+| `CLEANUP_WORKER_CONCURRENCY` | `1` | Only 1 is accepted for the MVP cleanup worker. |
+
+Cleanup uses the existing `REDIS_URL`, `BULLMQ_PREFIX`, `STORAGE_ROOT` and restricted
+`DATABASE_PROCESSING_URL`. Scheduler ID is `expired-media-hourly`; queue is `cleanup-queue` and
+job name is `cleanup_expired_project_files`. Restart safely upserts the scheduler and enqueues
+one deduplicated startup sweep per UTC hour. Jobs have four total attempts with exponential
+backoff starting at 30 seconds. Deletion occurs on the next eligible pass; API expiration is immediate.
+
+Apply forward migrations 0044–0046 as the owner before starting updated API/worker processes.
+Run PostgreSQL/Redis integration tests through `pnpm test:db-integration` so configured development
+roles are restored afterwards. Retention never recursively deletes the project directory or
+touches models/fonts/logs. See [ADR 0008](adr/0008-file-retention.md) for lease and rollout details.

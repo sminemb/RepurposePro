@@ -1209,3 +1209,34 @@ Refunded historical jobs replay only after exact deduction/refund verification, 
 new current job. Paid restart verifies settlement and a retained, unexpired audio source, creates
 one new deduction/job/dispatch/budget transaction, and keeps prior jobs and ledger history.
 Apply these forward migrations before starting the updated API/worker.
+
+## VS10 durable file cleanup
+
+Migrations 0044–0046 reuse source/output `expires_at` and `deleted_at` without extending historical
+deadlines. The `storage_cleanup_targets` table stores asset kind/identity, owner/project/job,
+unique normalized private path, expiration/deletion timestamps, writer token/deadline, cleanup
+token/deadline, attempt count and next-attempt timestamp. Its pending index supports bounded
+expiration claims. Registry history remains durable without cascading removal of retained records.
+
+Kinds are `source`, `output`, `audio`, `render_temp`, `upload_temp` and recognized legacy `orphan`.
+Triggers register source directories and individual exports, promote temporary publication targets,
+and preserve existing media deadlines during backfill. Registration functions validate current
+job/upload ownership before bytes are written. Audio inherits source expiry; temporary staging uses
+creation plus configured retention. Reused upload locations reject outstanding cleanup tokens and
+rearm confirmed tombstones only under a fresh live upload writer.
+
+Restricted processing functions claim due rows under project/target locks, renew five-minute
+token-fenced cleanup leases and confirm successful/missing-file deletion. Failed attempts release
+the lease with a retry deadline. Concurrent claims use `SKIP LOCKED`; stale tokens cannot confirm.
+Source/output tombstones are written only on successful completion. Project deletion is unchanged.
+
+Valid processing/framing leases or upload writers defer affected assets. Expired sources reject
+new execution acquisition; stale workers cannot publish. Ownership functions retain deleted media
+metadata for HTTP 410 and revisioned editing. Unavailable queued/recovering jobs enter existing
+terminal failure/refund handling under its original financial permissions.
+
+Runtime roles cannot read or write the registry directly. Runtime can register its owned uploads;
+processing can register owned worker assets and execute narrow claim/renew/finish/orphan/count
+functions. `PUBLIC`, checkout and webhook receive no cleanup functions. Cleanup receives no new
+financial write permissions and does not modify accounts, payments, immutable ledger entries,
+project/job history, transcripts, previews, render requests or refund intents.

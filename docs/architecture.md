@@ -644,7 +644,7 @@ Deleted
 | Completed              | Final outputs are ready                         |
 | Failed                 | Job failed                                      |
 | Refunded               | Credits were refunded after failure             |
-| Deleted                | Files were deleted manually or by retention job |
+| Deleted                | Project was explicitly deleted; retention keeps project history/status |
 
 ---
 
@@ -1679,7 +1679,7 @@ current job/lease and creates one private job/lease-path export expiring seven d
 
 Migrations 0036-0039 must precede API/worker startup. See [ADR 0006](adr/0006-summary-video-lifecycle.md)
 and [VS8 verification](verification/vs8.md). Existing clip and billing contracts remain supported;
-VS9 extends paid-analysis refunds below. Scheduled deletion remains VS10.
+VS9 extends paid-analysis refunds below. VS10 implements scheduled deletion below.
 
 ## VS9 implemented paid-analysis recovery
 
@@ -1700,3 +1700,34 @@ source and creates a fresh job, charge, dispatch and budgets while retaining pre
 
 Migrations 0040–0043 must precede updated API/worker startup. See
 [ADR 0007](adr/0007-paid-analysis-refunds.md) and [VS9 verification](verification/vs9.md).
+
+## VS10 implemented file retention
+
+Source media expires seven days after upload acceptance; each published export has its own
+seven-day deadline. Existing deadlines are preserved. The API treats `expires_at <= now` as
+expired before reading storage, even after physical deletion. Owner-visible source/output
+metadata, transcripts, edits, previews, projects, jobs, payments, ledger entries and refund
+intents remain. Metadata editing and downloads of later, unexpired exports remain available.
+
+The durable `storage_cleanup_targets` registry tracks each private asset, retry state and fenced
+writer/cleanup leases. Source and output triggers register and backfill published assets.
+Upload staging, commit/backup directories, extracted audio and render attempts register before
+writing. Audio inherits its source deadline; abandoned staging receives its own creation deadline.
+Normal immediate temporary-file removal continues.
+
+The worker upserts one BullMQ Job Scheduler on `cleanup-queue`, hourly in UTC, and adds one
+deduplicated startup sweep per UTC hour. Batches default to 100 with concurrency one. Four total
+attempts use exponential backoff from 30 seconds; later sweeps recover unfinished targets.
+PostgreSQL claims serialize with worker acquisition and upload ownership. Valid active leases
+defer physical source deletion; acquisition and publication remain fenced after expiration.
+
+Each claimed asset is checked for lexical/resolved containment, owner/project layout and junction
+or symlink traversal before removal. Missing files succeed; failures remain retryable. Cleanup
+never recursively removes a whole project. Bounded rotating scans recover only recognized old
+application media, after an active-owner check; models, fonts, logs and unrelated storage are excluded.
+Run logs report counts and target IDs without exposing private paths to users.
+
+Queued/recovering work with expired sources enters the existing terminal failure/refund lifecycle.
+Cleanup only removes bytes and confirms media tombstones; it does not settle credits or create
+refunds. Migrations 0044–0046 must precede updated API/worker startup. See
+[ADR 0008](adr/0008-file-retention.md) and [VS10 verification](verification/vs10.md).

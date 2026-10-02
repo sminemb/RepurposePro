@@ -112,7 +112,7 @@ FAILED
 | VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
-| VS10  | Files expire and are deleted after 7 days                         | IN_PROGRESS | 2026-10-02 | 22:26 | — | — | VS10-T1 | 0% | — |
+| VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
 | VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 
@@ -605,32 +605,32 @@ This slice crosses expiration metadata, cleanup jobs, storage deletion, UI badge
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS10        |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-10-02  |
 | Start Time | 22:26       |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 0%          |
+| End Date   | 2026-10-03  |
+| End Time   | 07:13       |
+| Progress   | 100%        |
 | Dependency | VS6         |
 
 ## Tasks
 
 | Task ID | Vertical Task                                       | Layers Touched   | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | --------------------------------------------------- | ---------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS10-T1 | Add `expires_at` and `deleted_at` where needed      | DB               | IN_PROGRESS | 2026-10-02 | 22:26 | — | — | — |
-| VS10-T2 | Show expiration badges and notices                  | Web + API        | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS10-T3 | Create scheduled cleanup job                        | Queue + Worker   | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS10-T4 | Delete source, temp, clip, and summary files safely | Worker + Storage | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS10-T5 | Preserve payment, ledger, and minimal job metadata  | DB               | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS10-T6 | Make cleanup idempotent and test repeated runs      | Worker + Tests   | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS10-T1 | Add durable retention targets and preserve deadlines | DB               | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:10 | Backfill and lease fences verified; [evidence](verification/vs10.md). |
+| VS10-T2 | Show expiration badges and notices                  | Web + API        | COMPLETED | 2026-10-02 | 22:48 | 2026-10-03 | 07:10 | API boundaries and desktop/mobile notices verified; [evidence](verification/vs10.md). |
+| VS10-T3 | Create scheduled cleanup job                        | Queue + Worker   | COMPLETED | 2026-10-02 | 22:38 | 2026-10-03 | 07:10 | Redis scheduler restart, UTC and retries verified; [evidence](verification/vs10.md). |
+| VS10-T4 | Delete source, temp, clip, and summary files safely | Worker + Storage | COMPLETED | 2026-10-02 | 22:38 | 2026-10-03 | 07:10 | Filesystem containment, leases and independent removal verified; [evidence](verification/vs10.md). |
+| VS10-T5 | Preserve payment, ledger, and minimal job metadata  | DB               | COMPLETED | 2026-10-02 | 22:46 | 2026-10-03 | 07:10 | History snapshots and VS9 refund replay verified; [evidence](verification/vs10.md). |
+| VS10-T6 | Make cleanup idempotent and test repeated runs      | Worker + Tests   | COMPLETED | 2026-10-02 | 23:07 | 2026-10-03 | 07:13 | Full gate: 648 unit and 121 integration tests pass; browser and local rollout verified; [evidence](verification/vs10.md). |
 
 ## Slice Acceptance Criteria
 
-- [ ] Expiration is visible before deletion.
-- [ ] Files delete after 7 days.
-- [ ] Cleanup is safe to rerun.
-- [ ] Billing and ledger records remain.
-- [ ] Expired files cannot be downloaded.
+- [x] Expiration is visible before deletion.
+- [x] Files delete after 7 days.
+- [x] Cleanup is safe to rerun.
+- [x] Billing and ledger records remain.
+- [x] Expired files cannot be downloaded.
 
 ---
 
@@ -778,17 +778,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS9 - Automatic refunds and clear failure recovery
-Current Task: None - All six VS9 tasks completed.
+Current Slice: VS10 - Seven-day file retention
+Current Task: None - VS10 completed.
 Current Status: COMPLETED
-Last Completed Task: VS9-T6 - Completed at 21:57 Asia/Manila; full gate, migrations and desktop/mobile recovery verification passed.
-Next Recommended Task: VS10-T1 - Add expires_at and deleted_at where needed.
-Uncommitted Changes: None intentionally retained. Verified milestones committed on codex/vs9-failure-refunds; local logs/screenshots remain ignored under storage/vs9-verification.
-Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 633 unit tests, 110 PostgreSQL/Redis integration tests and production builds at 21:57 Asia/Manila. Evidence: docs/verification/vs9.md and storage/vs9-verification/ci-check-final.log.
-Known Blockers: None. Existing Next.js file-tracing warning remains non-fatal.
-Important Context: A valid durably saved clip/summary preview fulfills paid analysis. Eligible pre-preview terminal failure refunds the exact deduction once through API sweepers; workers only persist fenced specific intents. PostgreSQL budgets cap transcription at two attempts and Gemini selection at three transport/repair calls, surviving takeover. Valid partial clip selections may publish successfully. Confirmed UI amounts come from the refund ledger; pending settlement blocks restart. A fresh confirmed paid restart validates the retained source and atomically creates job/deduction/dispatch/budgets; old events cannot affect it. Migrations 0040-0043 were applied locally and must precede updated API/worker startup; configured database roles were restored after integration tests. Summary revision fences, existing clip contracts and free render/regeneration retries remain supported. Browser evidence uses real components with deterministic responses; real PostgreSQL worker-to-refund integration is verified separately. Scheduled deletion and broader security hardening remain VS10/VS11.
-Required Commands Before Continuing: Read ADR 0007, docs/verification/vs9.md and VS10 requirements. Record actual Asia/Manila timestamps. Preserve saved-preview eligibility, ledger immutability, lease/budget fences, historical replay safety and zero-credit rendering/regeneration.
-Last Updated Date: 2026-10-02
-Last Updated Time: 21:57
+Last Completed Task: VS10-T6 at 07:13 Asia/Manila on 2026-10-03. All six VS10 tasks are completed.
+Next Recommended Task: VS11-T1 when requested; production rollout must apply migrations before updated service startup.
+Uncommitted Changes: None after the documentation completion commit. Local fixtures/logs/screenshots stay ignored under storage.
+Known Failing Tests: None. pnpm ci:check passes: 648 unit tests, 121 PostgreSQL/Redis integration tests and all production builds. Desktop/mobile fixtures and local retention function definitions verified.
+Known Blockers: None. Existing non-fatal Next.js dynamic tracing warning remains documented in verification evidence.
+Important Context: Source acceptance and export publication have independent deadlines; existing deadlines are preserved. API expiration is immediate. Durable asset targets and token leases defer active owners, fence stale publication and retry deletion safely. Retained transcripts, editing metadata, previews, project/job/payment/ledger/refund history survive. Cleanup itself has no financial mutation. Migration 0046 must follow 0044/0045 before updated API/worker startup. Database integration harness restores development roles.
+Required Commands Before Continuing: For production rollout, apply migrations 0044-0046 before updated API/worker startup. Local migrations and restored development roles are verified; PostgreSQL/Redis checks pass. Implementation milestone: 2b4bfb6. See docs/verification/vs10.md. Preserve VS9 refund invariants.
+Last Updated Date: 2026-10-03
+Last Updated Time: 07:13
 Last Updated By: Codex
 ```
