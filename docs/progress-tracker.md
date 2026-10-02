@@ -110,7 +110,7 @@ FAILED
 | VS5 | User can edit one clip preview before rendering | COMPLETED | 2026-09-14 | 00:21 | 2026-09-14 | 01:06 | None | 100% | — |
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
 | VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
-| VS8   | User can generate, edit, render, and download a summary video     | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS8   | User can generate, edit, render, and download a summary video     | IN_PROGRESS | 2026-10-02 | 12:32      | —          | —        | —            |       0% | —       |
 | VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -514,9 +514,9 @@ This slice reuses the processing pipeline but delivers the second core product o
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS8         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-10-02  |
+| Start Time | 12:32       |
 | End Date   | —           |
 | End Time   | —           |
 | Progress   | 0%          |
@@ -526,9 +526,9 @@ This slice reuses the processing pipeline but delivers the second core product o
 
 | Task ID | Vertical Task                                                   | Layers Touched               | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | --------------------------------------------------------------- | ---------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS8-T1  | Create versioned summary-selection prompt                       | Shared + Gemini              | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS8-T2  | Generate chronological summary segments targeting ~10% duration | Worker + Gemini + Validation | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS8-T3  | Persist summary segment metadata                                | DB + API                     | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS8-T1  | Create versioned summary-selection prompt                       | Shared + Gemini              | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 12:38 | 18 focused tests; typecheck |
+| VS8-T2  | Generate chronological summary segments targeting ~10% duration | Worker + Gemini + Validation | IN_PROGRESS | 2026-10-02 | 12:38 | | —        | —        | —            |
+| VS8-T3  | Persist summary segment metadata                                | DB + API                     | IN_PROGRESS | 2026-10-02 | 12:38 | | —        | —        | —            |
 | VS8-T4  | Build SummaryPreviewEditor                                      | Web + API                    | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS8-T5  | Allow segment trim and removal while preserving chronology      | Web + API + DB               | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS8-T6  | Render concatenated summary MP4 with original audio             | Worker + FFmpeg              | NOT_STARTED | —          | —          | —        | —        | —            |

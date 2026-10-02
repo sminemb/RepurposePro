@@ -137,6 +137,7 @@ const workerEnvironmentSchema = serverEnvironmentSchema.extend({
   FFMPEG_PATH: z.string().trim().min(1),
   GEMINI_API_KEY: z.string().trim().min(1).optional(),
   GEMINI_CLIP_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
+  GEMINI_SUMMARY_MODEL: z.string().trim().min(1).optional(),
   GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(2),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   STORAGE_ROOT: z.string().trim().min(1),
@@ -286,6 +287,7 @@ export interface WorkerConfig extends ServerConfig {
     readonly apiKey: string | undefined;
     readonly maxRetries: number;
     readonly model: string;
+    readonly summaryModel?: string;
     readonly timeoutMs: number;
   };
   readonly processingDatabaseUrl: string;
@@ -469,6 +471,7 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
       apiKey: parsed.GEMINI_API_KEY,
       maxRetries: parsed.GEMINI_MAX_RETRIES,
       model: parsed.GEMINI_CLIP_MODEL,
+      summaryModel: parsed.GEMINI_SUMMARY_MODEL ?? parsed.GEMINI_CLIP_MODEL,
       timeoutMs: parsed.GEMINI_TIMEOUT_MS,
     },
     logLevel: parsed.LOG_LEVEL,
