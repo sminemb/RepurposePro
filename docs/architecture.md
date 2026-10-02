@@ -600,7 +600,8 @@ Next.js
 - Use latest saved metadata.
 - Do not charge extra for initial final render in MVP.
 - Regenerated clips within the same paid project are included.
-- Failed render should refund credits if no usable output is produced.
+- Paid analysis refunds credits if no valid preview is durably saved. Later renders are free;
+  failures retain the preview and permit a free render retry (ADR 0007).
 
 ---
 
@@ -1460,7 +1461,7 @@ Refund credits if:
 
 - Transcription fails
 - AI analysis fails
-- Rendering fails and no usable output is produced
+- Audio extraction or preview persistence fails before a valid preview is durably saved
 - Worker crashes and the job cannot be recovered
 
 Do not refund credits if:
@@ -1468,6 +1469,7 @@ Do not refund credits if:
 - User deletes the project after successful processing
 - User does not like the AI-selected clips but processing succeeded
 - User chooses not to render after preview metadata is generated
+- Free rendering or regeneration fails after a valid preview was saved (ADR 0007)
 
 This can be adjusted later, but MVP rules should be explicit.
 

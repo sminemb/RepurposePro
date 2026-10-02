@@ -111,7 +111,7 @@ FAILED
 | VS6 | User can render and download one final vertical MP4 clip | COMPLETED | 2026-09-30 | 21:20 | 2026-09-30 | 23:33 | — | 100% | — |
 | VS7 | User can manage multiple clips and regenerate a bad one | COMPLETED | 2026-10-01 | 21:54 | 2026-10-01 | 23:51 | None | 100% | — |
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
-| VS9   | Failed processing automatically refunds credits and explains why  | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS9 | Failed processing automatically refunds credits and explains why | IN_PROGRESS | 2026-10-02 | 20:35 | — | — | VS9-T2 | 17% | — |
 | VS10  | Files expire and are deleted after 7 days                         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
@@ -557,20 +557,20 @@ This slice crosses failure classification, DB transaction safety, credit ledger,
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS9         |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-10-02 |
+| Start Time | 20:35 |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress | 17% |
 | Dependency | VS3–VS8     |
 
 ## Tasks
 
 | Task ID | Vertical Task                                   | Layers Touched       | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ----------------------------------------------- | -------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS9-T1  | Define refund-eligible failure rules            | Shared + Domain      | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS9-T2  | Implement idempotent credit refund transaction  | API + DB + Tests     | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS9-T1 | Define refund-eligible failure rules | Shared + Domain | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 20:37 | Shared policy tests pass; ADR 0007 defines saved-preview boundary. |
+| VS9-T2 | Implement idempotent credit refund transaction | API + DB + Tests | IN_PROGRESS | 2026-10-02 | 20:37 | — | — | Extend atomic refund and durable retry safeguards. |
 | VS9-T3  | Connect worker failures to refund orchestration | Worker + API + Queue | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS9-T4  | Prevent duplicate refunds during retries        | API + DB + Tests     | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS9-T5  | Build clear failure/refund UI state             | Web + API            | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -772,17 +772,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS8 - Complete summary-video workflow
-Current Task: VS8-T7 - COMPLETED
-Current Status: COMPLETED
+Current Slice: VS9 - Automatic refunds and clear failure recovery
+Current Task: VS9-T2 - IN_PROGRESS
+Current Status: IN_PROGRESS
 Last Completed Task: VS8-T7 - All seven VS8 tasks completed at 13:51 Asia/Manila; full gate and desktop/mobile verification passed.
 Next Recommended Task: VS9-T1 - Define broader refund-eligible failure rules.
-Uncommitted Changes: None. Verified VS8 milestones are committed on codex/vs8-summary-video. Ignored fixture media, screenshots, requests and logs remain under storage/vs8-verification.
+Uncommitted Changes: VS9 implementation is in progress on codex/vs9-failure-refunds.
 Known Failing Tests: None. pnpm ci:check passed formatting, lint, typecheck, 611 unit tests, 86 PostgreSQL/Redis integration tests and production builds at 13:43 Asia/Manila. Evidence: docs/verification/vs8.md and storage/vs8-verification/ci-check.log.
 Known Blockers: None. Existing Next.js file-tracing warning remains non-fatal.
 Important Context: Summary analysis reads trusted project mode, reuses cached local Whisper and paid-analysis lifecycle, and skips clip/caption/face work. summary-v1 targets 10% with generated totals restricted to 8-12%; edited totals are unrestricted. Stable analysis-scoped IDs/order and summary-wide revisions support atomic complete saves and reversible removal. Free renders freeze analysis/revision/source/ranges, use durable dispatch and two persisted attempts, preserve source aspect and original audio, and publish one job/lease-path H.264/AAC export with seven-day retention. Failures preserve edits and older downloads. Migrations 0036-0039 were applied locally and must precede updated service startup. Live Gemini smoke passed separately on a synthetic transcript; deterministic tests cover failures. Broader refunds remain VS9; scheduled deletion remains VS10.
 Required Commands Before Continuing: Read ADR 0006, docs/verification/vs8.md and VS9 requirements. Record actual Asia/Manila timestamps. Preserve summary revision/publication fences, existing clip contracts and zero-credit rendering.
 Last Updated Date: 2026-10-02
-Last Updated Time: 13:51
+Last Updated Time: 20:37
 Last Updated By: Codex
 ```
