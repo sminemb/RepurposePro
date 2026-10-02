@@ -1,5 +1,6 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
-import type { ProcessingJobStep } from "@repurposepro/shared";
+import type { ProcessingFailureCode, ProcessingJobStep } from "@repurposepro/shared";
+import type { AnalysisAttempt, AnalysisStage } from "./analysis-retry";
 
 import {
   PROCESSING_LIFECYCLE_REPOSITORY,
@@ -17,6 +18,9 @@ export interface ProcessingLifecycleOptions {
 }
 
 export interface ProcessingLeaseContext {
+  beginAttempt?(stage: AnalysisStage): Promise<AnalysisAttempt>;
+  recordAttemptFailure?(stage: AnalysisStage, code: ProcessingFailureCode): Promise<void>;
+  terminalFailure?(code: ProcessingFailureCode): Promise<void>;
   readonly leaseToken: string;
   readonly signal: AbortSignal;
   readonly workerId: string;
@@ -152,7 +156,37 @@ export class ProcessingLifecycleService {
       await heartbeatPromise?.catch(() => undefined);
     };
 
+    let lastProgress = 10;
+    let terminalPersisted = false;
     const context: ProcessingLeaseContext = {
+      ...(this.repository.beginAttempt
+        ? {
+            beginAttempt: (stage: AnalysisStage) =>
+              this.repository.beginAttempt!(jobId, workerId, leaseToken, stage),
+            recordAttemptFailure: async (stage: AnalysisStage, code: ProcessingFailureCode) => {
+              const outcome = await this.repository.recordAttemptFailure!(
+                jobId,
+                workerId,
+                leaseToken,
+                stage,
+                code,
+              );
+              if (outcome === "lost") throw loseLease();
+            },
+            terminalFailure: async (code: ProcessingFailureCode) => {
+              await stopHeartbeat();
+              if (abortController.signal.aborted) throw abortController.signal.reason;
+              const outcome = await this.repository.terminalFailure!(
+                jobId,
+                workerId,
+                leaseToken,
+                code,
+              );
+              if (outcome === "lost") throw loseLease();
+              terminalPersisted = true;
+            },
+          }
+        : {}),
       finalize: async (operation) => {
         await stopHeartbeat();
         if (abortController.signal.aborted) {
@@ -164,13 +198,14 @@ export class ProcessingLifecycleService {
       signal: abortController.signal,
       workerId,
       updateProgress: async (step, progress) => {
+        lastProgress = Math.max(lastProgress, progress);
         try {
           const outcome = await this.repository.updateProgress(
             jobId,
             workerId,
             leaseToken,
             step,
-            progress,
+            lastProgress,
           );
           if (outcome === "lost") {
             throw loseLease();
@@ -193,7 +228,7 @@ export class ProcessingLifecycleService {
     } catch (error: unknown) {
       await stopHeartbeat();
 
-      if (error instanceof RetryableProcessingError) {
+      if (error instanceof RetryableProcessingError && !terminalPersisted) {
         const release = await this.repository.release(jobId, workerId, leaseToken);
         if (release === "lost") {
           throw new ProcessingLeaseLostError(

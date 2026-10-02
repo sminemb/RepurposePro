@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { PROCESSING_FAILURES } from "@repurposepro/shared";
 
 import type {
   ProcessingStatusRecord,
@@ -31,6 +32,56 @@ function setup(result: ProcessingStatusRecord | null = record()) {
 }
 
 describe("ProcessingStatusService", () => {
+  it("returns a safe stage reason and only the confirmed ledger refund amount", async () => {
+    const { service } = setup(
+      record({
+        currentJobStatus: "refunded",
+        projectStatus: "refunded",
+        currentJobType: "analyze_video",
+        failureCode: "WHISPER_FAILED",
+        refundEligible: true,
+        creditsCharged: 11,
+        refundedCredits: 11,
+        refundCompletedAt: new Date("2026-10-02T12:00:00Z"),
+      }),
+    );
+    await expect(service.get("user-1", projectId)).resolves.toMatchObject({
+      currentJob: {
+        failure: {
+          code: "WHISPER_FAILED",
+          message: PROCESSING_FAILURES.WHISPER_FAILED.message,
+          refundStatus: "completed",
+          refundedCredits: 11,
+          refundCompletedAt: "2026-10-02T12:00:00.000Z",
+        },
+      },
+    });
+  });
+  it("shows zero confirmed credits while a classified terminal failure is awaiting settlement", async () => {
+    const { service } = setup(
+      record({ failureCode: "GEMINI_FAILED", refundEligible: true, creditsCharged: 11 }),
+    );
+    await expect(service.get("user-1", projectId)).resolves.toMatchObject({
+      currentJob: {
+        failure: { refundStatus: "pending", refundedCredits: 0, refundCompletedAt: null },
+      },
+    });
+  });
+  it("fails closed instead of inventing a refund when ledger evidence disagrees", async () => {
+    const { service } = setup(
+      record({
+        currentJobStatus: "refunded",
+        failureCode: "WHISPER_FAILED",
+        refundEligible: true,
+        creditsCharged: 11,
+        refundedCredits: 10,
+        refundCompletedAt: new Date(),
+      }),
+    );
+    await expect(service.get("user-1", projectId)).rejects.toMatchObject({
+      code: "PROCESSING_STATUS_UNAVAILABLE",
+    });
+  });
   it("returns the persisted queued job without inventing progress", async () => {
     const { get, service } = setup();
 

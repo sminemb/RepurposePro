@@ -26,6 +26,23 @@ describe("Gemini summary selector", () => {
     expect(generateContent).toHaveBeenCalledTimes(2);
     expect(generateContent.mock.calls[1]![0].contents).toContain("Repair");
   });
+  it("shares three calls between transport retry and invalid-response repair", async () => {
+    const generateContent = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("transport"))
+      .mockResolvedValueOnce({ text: "{}" })
+      .mockResolvedValueOnce({ text: valid });
+    let count = 0;
+    const attempts = { begin: vi.fn(async () => ++count), fail: vi.fn(), wait: vi.fn() };
+    const result = await new GeminiSummarySelector({ generateContent }, options).select(
+      input,
+      new AbortController().signal,
+      attempts,
+    );
+    expect(result.summarySegments).toHaveLength(1);
+    expect(count).toBe(3);
+    expect(attempts.fail.mock.calls).toEqual([["GEMINI_FAILED"], ["INVALID_AI_OUTPUT"]]);
+  });
   it("fails after bounded repairs without salvaging partial ranges", async () => {
     const generateContent = vi.fn().mockResolvedValue({ text: "{}" });
     await expect(

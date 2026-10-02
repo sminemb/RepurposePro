@@ -30,6 +30,34 @@ function setup(record: ProcessingStartRecord = startRecord("created")) {
 }
 
 describe("ProcessingStartService", () => {
+  it("checks an actual retained source before charging a refunded restart", async () => {
+    const start = vi.fn().mockResolvedValue(startRecord("created"));
+    const getSourceVideoContent = vi.fn().mockResolvedValue({ path: "retained.mp4" });
+    const service = new ProcessingStartService(
+      { start, requiresRestartValidation: vi.fn().mockResolvedValue(true) },
+      { dispatchJob: vi.fn().mockResolvedValue(true) } as never,
+      { getSourceVideoContent } as never,
+    );
+    await service.start("user-1", projectId, requestId);
+    expect(getSourceVideoContent).toHaveBeenCalledWith("user-1", projectId);
+    expect(getSourceVideoContent.mock.invocationCallOrder[0]).toBeLessThan(
+      start.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("does not charge a refunded restart when the retained file is unavailable", async () => {
+    const start = vi.fn();
+    const service = new ProcessingStartService(
+      { start, requiresRestartValidation: vi.fn().mockResolvedValue(true) },
+      { dispatchJob: vi.fn() } as never,
+      { getSourceVideoContent: vi.fn().mockRejectedValue(new Error("private path")) } as never,
+    );
+    await expect(service.start("user-1", projectId, requestId)).rejects.toMatchObject({
+      code: "PROCESSING_VIDEO_REQUIRED",
+      statusCode: 409,
+    });
+    expect(start).not.toHaveBeenCalled();
+  });
   it("dispatches a newly created durable job before returning the unchanged response", async () => {
     const { dispatchJob, service, start } = setup();
 

@@ -1,4 +1,9 @@
-import type { ProcessingJobStep } from "@repurposepro/shared";
+import {
+  isProcessingFailureCode,
+  type ProcessingFailureCode,
+  type ProcessingJobStep,
+} from "@repurposepro/shared";
+import type { AnalysisAttempt, AnalysisStage } from "./analysis-retry";
 import {
   checkDatabaseConnection,
   closeDatabaseClient,
@@ -20,6 +25,25 @@ export interface ProcessingLeaseAcquisition {
 }
 
 export interface ProcessingLifecycleRepositoryContract {
+  beginAttempt?(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    stage: AnalysisStage,
+  ): Promise<AnalysisAttempt>;
+  recordAttemptFailure?(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    stage: AnalysisStage,
+    code: ProcessingFailureCode,
+  ): Promise<"recorded" | "lost">;
+  terminalFailure?(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    code: ProcessingFailureCode,
+  ): Promise<"persisted" | "duplicate" | "finalized" | "lost">;
   acquire(jobId: string, projectId: string, workerId: string): Promise<ProcessingLeaseAcquisition>;
   release(
     jobId: string,
@@ -43,6 +67,59 @@ export class ProcessingLifecycleRepository
 
   public async onModuleInit(): Promise<void> {
     await checkDatabaseConnection(this.database);
+  }
+
+  public async beginAttempt(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    stage: AnalysisStage,
+  ): Promise<AnalysisAttempt> {
+    const result = await this.database.pool.query<AnalysisAttempt>(
+      `SELECT outcome,attempt,failure_code AS "failureCode" FROM public.begin_analysis_stage_attempt($1,$2,$3,$4)`,
+      [jobId, workerId, leaseToken, stage],
+    );
+    const attempt = result.rows[0];
+    if (
+      result.rows.length !== 1 ||
+      !attempt ||
+      !["started", "exhausted", "lost"].includes(attempt.outcome) ||
+      !Number.isInteger(attempt.attempt) ||
+      attempt.attempt < 0 ||
+      (attempt.failureCode !== null && !isProcessingFailureCode(attempt.failureCode))
+    ) {
+      throw new Error("Analysis stage attempt returned invalid state.");
+    }
+    return attempt;
+  }
+
+  public async recordAttemptFailure(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    stage: AnalysisStage,
+    code: ProcessingFailureCode,
+  ): Promise<"recorded" | "lost"> {
+    return this.queryOutcome(
+      "SELECT public.record_analysis_stage_failure($1,$2,$3,$4,$5) AS outcome",
+      [jobId, workerId, leaseToken, stage, code],
+      ["recorded", "lost"],
+      "stage failure",
+    );
+  }
+
+  public async terminalFailure(
+    jobId: string,
+    workerId: string,
+    leaseToken: string,
+    code: ProcessingFailureCode,
+  ): Promise<"persisted" | "duplicate" | "finalized" | "lost"> {
+    return this.queryOutcome(
+      "SELECT public.persist_analysis_terminal_failure($1,$2,$3,$4) AS outcome",
+      [jobId, workerId, leaseToken, code],
+      ["persisted", "duplicate", "finalized", "lost"],
+      "terminal failure",
+    );
   }
 
   public async onModuleDestroy(): Promise<void> {

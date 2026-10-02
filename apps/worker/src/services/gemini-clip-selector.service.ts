@@ -5,6 +5,7 @@ import {
   type ClipSelectionPromptInput,
 } from "@repurposepro/shared";
 import { z } from "zod";
+import type { SelectionAttempts } from "./analysis-retry";
 
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const OVERLAP_DEDUPLICATION_RATIO = 0.8;
@@ -85,12 +86,16 @@ export class GeminiClipSelector {
   public async select(
     input: ClipSelectionPromptInput,
     signal: AbortSignal,
+    attempts?: SelectionAttempts,
   ): Promise<GeneratedClipSelection> {
     let prompt = createClipSelectionPrompt(input);
     let best: SelectionValidation | undefined;
 
-    for (let attempt = 0; attempt <= this.options.maxRetries; attempt += 1) {
+    let lastRequestError: GeminiClipSelectionError | undefined;
+    const maxRetries = attempts ? 2 : this.options.maxRetries;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       if (signal.aborted) throwAbortReason(signal);
+      const durableAttempt = attempts ? await attempts.begin() : attempt + 1;
 
       let response: { readonly text?: string };
       try {
@@ -112,9 +117,17 @@ export class GeminiClipSelector {
         });
       } catch (error: unknown) {
         if (signal.aborted) throwAbortReason(signal);
-        throw new GeminiClipSelectionError("request_failed", { cause: error });
+        lastRequestError = new GeminiClipSelectionError("request_failed", { cause: error });
+        if (!attempts) throw lastRequestError;
+        await attempts.fail("GEMINI_FAILED");
+        if (durableAttempt < 3) {
+          await attempts.wait(durableAttempt);
+          continue;
+        }
+        break;
       }
 
+      lastRequestError = undefined;
       const validated = validateResponse(response.text, input.sourceDurationSeconds);
       if (isBetterSelection(validated, best)) {
         best = validated;
@@ -122,14 +135,18 @@ export class GeminiClipSelector {
       if (validated.selection.primary.length >= targetPrimaryCount(input.sourceDurationSeconds)) {
         return validated.selection;
       }
-      if (attempt < this.options.maxRetries) {
+      await attempts?.fail("INVALID_AI_OUTPUT");
+      if (durableAttempt >= 3 && attempts) break;
+      if (attempt < maxRetries) {
         prompt = createClipSelectionRepairPrompt(input, validated.issues);
+        await attempts?.wait(durableAttempt);
       }
     }
 
     if (best && best.selection.primary.length > 0) {
       return best.selection;
     }
+    if (lastRequestError) throw lastRequestError;
     throw new GeminiClipSelectionError("no_usable_candidates");
   }
 }

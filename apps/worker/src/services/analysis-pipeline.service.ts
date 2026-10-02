@@ -1,5 +1,6 @@
 import type { CaptionLine, VideoAnalysisJobPayload } from "@repurposepro/shared";
 import type { GeminiSummarySelector } from "./gemini-summary-selector.service";
+import { selectionAttempts } from "./analysis-retry";
 
 import type {
   AnalysisPipelineHandler,
@@ -71,6 +72,7 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
           })),
         },
         context.signal,
+        selectionAttempts(context),
       );
       await context.updateProgress("generating_preview", 95);
       const outcome = await context.finalize(() =>
@@ -79,7 +81,9 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
           context.workerId,
           context.leaseToken,
           selection.summarySegments,
-        ),
+        ).catch(() => {
+          throw new AnalysisPreviewFinalizationError();
+        }),
       );
       if (outcome === "lost") throw new ProcessingLeaseLostError();
       if (outcome === "rejected") throw new AnalysisPreviewFinalizationError();
@@ -96,6 +100,7 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
         })),
       },
       context.signal,
+      selectionAttempts(context),
     );
 
     await context.updateProgress("generating_preview", 80);
@@ -103,13 +108,17 @@ export class AnalysisPipelineService implements AnalysisPipelineHandler {
     const candidates = createPreviewCandidates(selection, transcriptResult);
     await context.updateProgress("generating_preview", 95);
     const outcome = await context.finalize(() =>
-      this.repository.finalizePreview(
-        payload.jobId,
-        context.workerId,
-        context.leaseToken,
-        PROMPT_VERSION,
-        candidates,
-      ),
+      this.repository
+        .finalizePreview(
+          payload.jobId,
+          context.workerId,
+          context.leaseToken,
+          PROMPT_VERSION,
+          candidates,
+        )
+        .catch(() => {
+          throw new AnalysisPreviewFinalizationError();
+        }),
     );
     if (outcome === "lost") {
       throw new ProcessingLeaseLostError();

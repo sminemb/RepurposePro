@@ -726,8 +726,8 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
       startAnalysis(processingClientB, "reliability-user-a", projectId),
     ]);
     expect(starts.map((s) => s.outcome).sort()).toEqual(["created", "existing"]);
-    expect(starts[0]!.jobId).toBe(starts[1]!.jobId);
-    expect(starts[0]!.jobId).not.toBe(first.jobId);
+    expect(starts[0].jobId).toBe(starts[1].jobId);
+    expect(starts[0].jobId).not.toBe(first.jobId);
     expect(await finalizeFailure(processingClientA, first.jobId, "WHISPER_FAILED")).toEqual({
       outcome: "already_refunded",
       refundedCredits: first.creditsCharged,
@@ -742,7 +742,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
       "SELECT current_job_id, status FROM projects WHERE id=$1",
       [projectId],
     );
-    expect(project.rows[0]).toMatchObject({ current_job_id: starts[0]!.jobId, status: "queued" });
+    expect(project.rows[0]).toMatchObject({ current_job_id: starts[0].jobId, status: "queued" });
   });
 
   it("keeps stage budgets across takeover and rejects stale attempt/failure writes", async () => {
@@ -751,7 +751,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     await publishDispatch(processingClientA, "budget-dispatch", jobId);
     const first = await acquireLease(processingClientA, jobId, projectId, "budget-worker-a");
     const begin = (worker: string, token: string) =>
-      processingClientA.pool.query(
+      processingClientA.pool.query<{ outcome: string; attempt: number }>(
         "SELECT * FROM public.begin_analysis_stage_attempt($1,$2,$3,'transcription')",
         [jobId, worker, token],
       );
@@ -776,7 +776,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     expect((await begin("budget-worker-b", second.leaseToken!)).rows[0].outcome).toBe("exhausted");
     expect(
       (
-        await processingClientA.pool.query(
+        await processingClientA.pool.query<{ outcome: string }>(
           "SELECT public.persist_analysis_terminal_failure($1,$2,$3,'WHISPER_FAILED') AS outcome",
           [jobId, "budget-worker-a", first.leaseToken],
         )
@@ -784,7 +784,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     ).toBe("lost");
     expect(
       (
-        await processingClientB.pool.query(
+        await processingClientB.pool.query<{ outcome: string }>(
           "SELECT public.persist_analysis_terminal_failure($1,$2,$3,'WHISPER_FAILED') AS outcome",
           [jobId, "budget-worker-b", second.leaseToken],
         )
@@ -793,6 +793,40 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     expect((await finalizeFailure(processingClientA, jobId, "WHISPER_FAILED")).outcome).toBe(
       "refunded",
     );
+  });
+
+  it("blocks pending settlement and expired retained uploads from a paid restart", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Blocked restart");
+    const { jobId } = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await persistFailureIntent(processingClientA, jobId, "WHISPER_FAILED", "pending-test");
+    expect((await startAnalysis(processingClientA, "reliability-user-a", projectId)).outcome).toBe(
+      "invalid_project_state",
+    );
+    await finalizeFailure(processingClientA, jobId, "WHISPER_FAILED");
+    await migrationClient.pool.query(
+      "UPDATE uploaded_videos SET expires_at=now()-interval '1 second' WHERE project_id=$1",
+      [projectId],
+    );
+    expect((await startAnalysis(processingClientA, "reliability-user-a", projectId)).outcome).toBe(
+      "video_required",
+    );
+  });
+
+  it("keeps retry counters and worker failure functions unavailable to other roles", async () => {
+    await expect(
+      runtimeClient.pool.query("SELECT * FROM analysis_stage_attempts"),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      processingClientA.pool.query("UPDATE analysis_stage_attempts SET attempts=0"),
+    ).rejects.toMatchObject({ code: "42501" });
+    for (const client of [runtimeClient, checkoutClient, webhookClient]) {
+      await expect(
+        client.pool.query(
+          "SELECT public.begin_analysis_stage_attempt($1,'worker',$2,'selection')",
+          [randomUUID(), randomUUID()],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    }
   });
 
   async function createUploadedProject(userId: string, name: string): Promise<string> {
