@@ -716,6 +716,85 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
     }
   });
 
+  it("restarts settled refunded analysis once and safely replays the historical refund", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Refunded restart");
+    const first = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await persistFailureIntent(processingClientA, first.jobId, "WHISPER_FAILED", "worker:test");
+    await finalizeFailure(processingClientA, first.jobId, "WHISPER_FAILED");
+    const starts = await Promise.all([
+      startAnalysis(processingClientA, "reliability-user-a", projectId),
+      startAnalysis(processingClientB, "reliability-user-a", projectId),
+    ]);
+    expect(starts.map((s) => s.outcome).sort()).toEqual(["created", "existing"]);
+    expect(starts[0]!.jobId).toBe(starts[1]!.jobId);
+    expect(starts[0]!.jobId).not.toBe(first.jobId);
+    expect(await finalizeFailure(processingClientA, first.jobId, "WHISPER_FAILED")).toEqual({
+      outcome: "already_refunded",
+      refundedCredits: first.creditsCharged,
+    });
+    const ledger = await runtimeClient.pool.query<{ amount: number; type: string }>(
+      "SELECT type, amount FROM credit_ledger WHERE project_id=$1 ORDER BY created_at, id",
+      [projectId],
+    );
+    expect(ledger.rows.filter((r) => r.type === "refund")).toHaveLength(1);
+    expect(ledger.rows.reduce((sum, r) => sum + r.amount, 0)).toBe(-first.creditsCharged);
+    const project = await runtimeClient.pool.query(
+      "SELECT current_job_id, status FROM projects WHERE id=$1",
+      [projectId],
+    );
+    expect(project.rows[0]).toMatchObject({ current_job_id: starts[0]!.jobId, status: "queued" });
+  });
+
+  it("keeps stage budgets across takeover and rejects stale attempt/failure writes", async () => {
+    const projectId = await createUploadedProject("reliability-user-a", "Durable retry budget");
+    const { jobId } = await startAnalysis(processingClientA, "reliability-user-a", projectId);
+    await publishDispatch(processingClientA, "budget-dispatch", jobId);
+    const first = await acquireLease(processingClientA, jobId, projectId, "budget-worker-a");
+    const begin = (worker: string, token: string) =>
+      processingClientA.pool.query(
+        "SELECT * FROM public.begin_analysis_stage_attempt($1,$2,$3,'transcription')",
+        [jobId, worker, token],
+      );
+    expect((await begin("budget-worker-a", first.leaseToken!)).rows[0]).toMatchObject({
+      outcome: "started",
+      attempt: 1,
+    });
+    await processingClientA.pool.query(
+      "SELECT public.record_analysis_stage_failure($1,$2,$3,'transcription','WHISPER_FAILED')",
+      [jobId, "budget-worker-a", first.leaseToken],
+    );
+    await migrationClient.pool.query(
+      "UPDATE processing_jobs SET execution_lease_expires_at=now()-interval '1 second' WHERE id=$1",
+      [jobId],
+    );
+    const second = await acquireLease(processingClientB, jobId, projectId, "budget-worker-b");
+    expect((await begin("budget-worker-a", first.leaseToken!)).rows[0].outcome).toBe("lost");
+    expect((await begin("budget-worker-b", second.leaseToken!)).rows[0]).toMatchObject({
+      outcome: "started",
+      attempt: 2,
+    });
+    expect((await begin("budget-worker-b", second.leaseToken!)).rows[0].outcome).toBe("exhausted");
+    expect(
+      (
+        await processingClientA.pool.query(
+          "SELECT public.persist_analysis_terminal_failure($1,$2,$3,'WHISPER_FAILED') AS outcome",
+          [jobId, "budget-worker-a", first.leaseToken],
+        )
+      ).rows[0].outcome,
+    ).toBe("lost");
+    expect(
+      (
+        await processingClientB.pool.query(
+          "SELECT public.persist_analysis_terminal_failure($1,$2,$3,'WHISPER_FAILED') AS outcome",
+          [jobId, "budget-worker-b", second.leaseToken],
+        )
+      ).rows[0].outcome,
+    ).toBe("persisted");
+    expect((await finalizeFailure(processingClientA, jobId, "WHISPER_FAILED")).outcome).toBe(
+      "refunded",
+    );
+  });
+
   async function createUploadedProject(userId: string, name: string): Promise<string> {
     const projectId = randomUUID();
     await migrationClient.pool.query(
