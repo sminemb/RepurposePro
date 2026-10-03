@@ -1,7 +1,7 @@
 # RepurposePro
 
 RepurposePro turns long podcast and talking-head videos into short vertical clips and condensed
-summary videos. This repository currently contains the VS0 bootable platform foundation.
+summary videos. It includes the local MVP and repeatable verification for both processing journeys.
 
 ## Prerequisites
 
@@ -66,8 +66,35 @@ unauthenticated, or uses a signing secret different from `.env`.
 | `pnpm typecheck`           | Typecheck shared packages and all applications                            |
 | `pnpm test`                | Run Vitest unit tests                                                     |
 | `pnpm test:db-integration` | Run PostgreSQL tests, then restore local least-privilege role credentials |
+| `pnpm test:e2e`            | Build and test both journeys with disposable infrastructure and Chromium  |
 | `pnpm build`               | Build all workspace projects in dependency order                          |
-| `pnpm ci:check`            | Run formatting, lint, typecheck, tests, and builds                        |
+| `pnpm ci:check`            | Run formatting, lint, typecheck, unit/integration tests, builds, and E2E  |
+
+## MVP verification and demo
+
+Follow [the local demo guide](docs/demo-script.md) for real Stripe sandbox, Whisper and Gemini
+verification. Keep normal development applications stopped while running `pnpm ci:check`:
+integration tests rotate local role credentials, and builds can restart watch-mode workers.
+
+The deterministic browser gate needs Docker Desktop, FFmpeg/ffprobe and Chromium:
+
+```powershell
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+It starts actual production-built web/API/worker applications, PostgreSQL, Redis, private storage
+and FFmpeg under a unique run identifier. Only remote Stripe, Arcjet, Whisper and Gemini boundaries
+use test fixtures. Normal application entrypoints/configuration never import those fixtures.
+Each test has an isolated browser context; one worker runs tests sequentially. Failed tests retain
+screenshots and traces under ignored `storage/vs12-e2e/<run-id>`, alongside media properties,
+browser error records and service logs. Teardown removes only that run's Compose project/volumes.
+
+Tracking uses the actual Python detector. Set up the pinned framing dependencies/model described
+in [ADR 0003](docs/adr/0003-person-tracking-and-caption-colors.md). The gate defaults to Python in
+`.venv/framing`; set `E2E_FACE_PYTHON_PATH` to your framing executable when using a different
+environment. The default model is `storage/models/blaze_face_short_range.tflite`. The generated
+test video has no faces; live speaker tracking is verified separately with real footage.
 
 ## Environment configuration
 

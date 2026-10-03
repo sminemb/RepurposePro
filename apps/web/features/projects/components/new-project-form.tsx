@@ -33,7 +33,13 @@ export function NewProjectForm() {
   );
 
   return (
-    <form action={formAction} className="grid gap-8" noValidate>
+    <form
+      action={formAction}
+      className="grid gap-8"
+      noValidate
+      // Error state is a resolved action too; keep the submitted values for a normal retry.
+      onReset={(event) => event.preventDefault()}
+    >
       <div className="grid gap-2">
         <label className="text-sm font-medium text-rp-text" htmlFor="project-name">
           Project name

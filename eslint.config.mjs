@@ -5,6 +5,10 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
+    files: ["scripts/e2e/**/*.{mjs,cjs}"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     ignores: [
       "**/.next/**",
       "**/coverage/**",

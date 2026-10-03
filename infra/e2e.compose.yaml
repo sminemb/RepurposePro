@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: e2e_bootstrap
+      POSTGRES_PASSWORD: e2e-bootstrap-only
+      POSTGRES_DB: repurposepro_e2e
+      POSTGRES_OWNER_PASSWORD: e2e-owner-only
+      POSTGRES_RUNTIME_PASSWORD: e2e-runtime-only
+      POSTGRES_CHECKOUT_PASSWORD: e2e-checkout-only
+      POSTGRES_WEBHOOK_PASSWORD: e2e-webhook-only
+      POSTGRES_PROCESSING_PASSWORD: e2e-processing-only
+    ports:
+      - "127.0.0.1:${E2E_POSTGRES_PORT}:5432"
+    volumes:
+      - ./postgres/e2e-init.sql:/docker-entrypoint-initdb.d/10-e2e-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e_bootstrap -d repurposepro_e2e"]
+      interval: 1s
+      timeout: 3s
+      retries: 60
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "e2e-redis-only"]
+    ports:
+      - "127.0.0.1:${E2E_REDIS_PORT}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "e2e-redis-only", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 60
