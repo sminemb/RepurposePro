@@ -33,4 +33,16 @@ describe("protection decisions", () => {
   it("allows valid allowed and dry-run decisions", () => {
     expect(protectionFailure({ isDenied: () => false, isErrored: () => false })).toBeNull();
   });
+  it("uses the SDK's Date reset time for the signup window", () => {
+    expect(
+      protectionFailure(
+        {
+          isDenied: () => true,
+          isErrored: () => false,
+          reason: { isRateLimit: () => true, resetTime: new Date(700_000) },
+        },
+        100_000,
+      ),
+    ).toMatchObject({ retryAfter: 600 });
+  });
 });

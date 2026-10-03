@@ -19,7 +19,7 @@ export interface ProtectionFailure {
 export interface ProtectionDecision {
   isDenied(): boolean;
   isErrored(): boolean;
-  readonly reason?: { isRateLimit(): boolean; readonly resetTime?: number };
+  readonly reason?: { isRateLimit(): boolean; readonly resetTime?: Date | number };
 }
 export function protectionFailure(value: unknown, now = Date.now()): ProtectionFailure | null {
   const unavailable: ProtectionFailure = {
@@ -38,7 +38,8 @@ export function protectionFailure(value: unknown, now = Date.now()): ProtectionF
       return unavailable;
     if (!decision.isDenied()) return null;
     if (decision.reason?.isRateLimit()) {
-      const reset = decision.reason.resetTime;
+      const rawReset = decision.reason.resetTime;
+      const reset = rawReset instanceof Date ? rawReset.getTime() / 1000 : rawReset;
       const retryAfter =
         typeof reset === "number" && Number.isFinite(reset)
           ? Math.max(1, Math.min(600, Math.ceil(reset - now / 1000)))
