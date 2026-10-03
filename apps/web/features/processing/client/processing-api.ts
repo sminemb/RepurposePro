@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import type { ApiError, ApiSuccess, ProcessingStartResult } from "@repurposepro/shared";
 
 interface StartProcessingInput {
@@ -45,7 +46,9 @@ export async function startProcessing({
     const error = body && "error" in body ? body.error : null;
     throw new ProcessingRequestError(
       error?.code ?? "PROCESSING_START_FAILED",
-      error?.message ?? "We could not start processing. Try again.",
+      protectionRetryMessage(error?.code, "Analysis", response.headers.get("retry-after")) ??
+        error?.message ??
+        "We could not start processing. Try again.",
     );
   }
 

@@ -46,3 +46,40 @@ describe("protection decisions", () => {
     ).toMatchObject({ retryAfter: 600 });
   });
 });
+import { protectionOutcome, protectionRetryMessage } from "./protection";
+describe("safe protection diagnostics and guidance", () => {
+  it("enforces individual rule errors even with an allow decision", () => {
+    expect(
+      protectionFailure({
+        isDenied: () => false,
+        isErrored: () => false,
+        results: [{ state: "RUN", conclusion: "ERROR" }],
+      }),
+    ).toMatchObject({ status: 503 });
+  });
+  it("logs dry-run denials without enforcing them", () => {
+    const decision = {
+      isDenied: () => false,
+      isErrored: () => false,
+      results: [{ state: "DRY_RUN", conclusion: "DENY" }],
+    };
+    expect(protectionFailure(decision)).toBeNull();
+    expect(protectionOutcome(decision)).toBe("dry_run_denied");
+  });
+  it("rejects challenge decisions before side effects", () => {
+    expect(
+      protectionFailure({ isDenied: () => false, isErrored: () => false, conclusion: "CHALLENGE" }),
+    ).toMatchObject({ status: 403 });
+  });
+  it("uses bounded retry guidance", () => {
+    expect(protectionRetryMessage("RATE_LIMIT_EXCEEDED", "Upload", "600")).toContain("600 seconds");
+    expect(protectionRetryMessage("RATE_LIMIT_EXCEEDED", "Upload", "untrusted")).toContain(
+      "a minute",
+    );
+    expect(protectionRetryMessage("PROTECTION_UNAVAILABLE", "Upload")).toContain(
+      "Try again shortly",
+    );
+    expect(protectionRetryMessage("REQUEST_BLOCKED", "Upload")).toContain("Refresh the page");
+    expect(protectionRetryMessage("OTHER", "Upload")).toBeUndefined();
+  });
+});

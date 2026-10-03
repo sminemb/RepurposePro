@@ -40,6 +40,7 @@ export function createProtectionClient(action: ProtectionAction) {
       config,
       sdk: arcjet({
         key: config.key,
+        log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
         proxies: config.proxies,
         rules: [
           shield({ mode: config.mode }),

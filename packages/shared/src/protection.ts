@@ -20,6 +20,8 @@ export interface ProtectionDecision {
   isDenied(): boolean;
   isErrored(): boolean;
   readonly reason?: { isRateLimit(): boolean; readonly resetTime?: Date | number };
+  readonly conclusion?: string;
+  readonly results?: readonly { state?: string; conclusion?: string }[];
 }
 export function protectionFailure(value: unknown, now = Date.now()): ProtectionFailure | null {
   const unavailable: ProtectionFailure = {
@@ -33,10 +35,11 @@ export function protectionFailure(value: unknown, now = Date.now()): ProtectionF
       !decision ||
       typeof decision.isDenied !== "function" ||
       typeof decision.isErrored !== "function" ||
-      decision.isErrored()
+      decision.isErrored() ||
+      decision.results?.some((result) => result.conclusion === "ERROR")
     )
       return unavailable;
-    if (!decision.isDenied()) return null;
+    if (!decision.isDenied() && decision.conclusion !== "CHALLENGE") return null;
     if (decision.reason?.isRateLimit()) {
       const rawReset = decision.reason.resetTime;
       const reset = rawReset instanceof Date ? rawReset.getTime() / 1000 : rawReset;
@@ -59,4 +62,41 @@ export function protectionFailure(value: unknown, now = Date.now()): ProtectionF
   } catch {
     return unavailable;
   }
+}
+
+export function protectionOutcome(value: unknown): string {
+  const failure = protectionFailure(value);
+  if (failure) return failure.code;
+  const decision = value as ProtectionDecision;
+  return decision.results?.some(
+    (result) => result.state === "DRY_RUN" && result.conclusion === "DENY",
+  )
+    ? "dry_run_denied"
+    : "allowed";
+}
+
+export function protectionRetryMessage(
+  code: string | undefined,
+  action: string,
+  retryAfter?: string | null,
+): string | undefined {
+  if (code === "RATE_LIMIT_EXCEEDED") {
+    const seconds = Number(retryAfter);
+    const wait =
+      Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 600
+        ? `${seconds} seconds`
+        : "a minute";
+    return `Too many attempts. Wait ${wait} and try again.`;
+  }
+  if (
+    [
+      "PROTECTION_UNAVAILABLE",
+      "PROCESSING_START_UNAVAILABLE",
+      "BILLING_CHECKOUT_UNAVAILABLE",
+    ].includes(code ?? "")
+  )
+    return `${action} is temporarily unavailable. Try again shortly.`;
+  if (code === "REQUEST_BLOCKED")
+    return "We could not verify this request. Refresh the page and try again.";
+  return undefined;
 }

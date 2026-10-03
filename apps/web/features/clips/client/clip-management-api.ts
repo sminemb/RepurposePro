@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import { clipPreviewCandidateSchema, clipRegenerationResultSchema } from "@repurposepro/shared";
 
 export async function mutateClip(
@@ -20,9 +21,17 @@ export async function mutateClip(
   );
   if (!response.ok) {
     const error = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
+      error?: { message?: string; code?: string };
     } | null;
-    throw new Error(error?.error?.message ?? "Could not update this clip. Please try again.");
+    throw new Error(
+      protectionRetryMessage(
+        error?.error?.code,
+        "Clip regeneration",
+        response.headers.get("retry-after"),
+      ) ??
+        error?.error?.message ??
+        "Could not update this clip. Please try again.",
+    );
   }
   return response.status === 204 ? null : ((await response.json()) as { data: unknown }).data;
 }

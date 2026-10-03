@@ -11,8 +11,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 }
 
-void bootstrap().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : "Unknown startup error.";
-  process.stderr.write(`Worker failed to start: ${message}\n`);
+void bootstrap().catch(() => {
+  process.stderr.write("Worker failed to start. Check configuration and service availability.\n");
   process.exitCode = 1;
 });

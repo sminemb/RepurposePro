@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 
 import { RequestMethod } from "@nestjs/common";
-import type { ApiConfig } from "@repurposepro/config";
+import {
+  safeRequestId,
+  safeLogContext,
+  safeLogSerializers,
+  type ApiConfig,
+} from "@repurposepro/config";
 import type { Params } from "nestjs-pino";
 
 export function createLoggingConfig(config: ApiConfig): Params {
@@ -9,12 +14,14 @@ export function createLoggingConfig(config: ApiConfig): Params {
     forRoutes: [{ path: "{*splat}", method: RequestMethod.ALL }],
     pinoHttp: {
       autoLogging: true,
+      wrapSerializers: false,
+      serializers: safeLogSerializers,
+      formatters: { log: safeLogContext },
+      customSuccessMessage: () => "request_completed",
+      customErrorMessage: () => "request_failed",
       genReqId(request, response): string {
         const incomingRequestId = request.headers["x-request-id"];
-        const requestId =
-          typeof incomingRequestId === "string" && incomingRequestId.length > 0
-            ? incomingRequestId
-            : `req_${randomUUID()}`;
+        const requestId = safeRequestId(incomingRequestId) ?? `req_${randomUUID()}`;
 
         response.setHeader("x-request-id", requestId);
         return requestId;

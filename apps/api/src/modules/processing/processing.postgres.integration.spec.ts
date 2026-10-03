@@ -202,13 +202,11 @@ describeIntegration("paid processing start API", () => {
       .useValue({})
       .overrideProvider(ANALYSIS_RATE_LIMIT_CLIENT)
       .useValue({
-        protect: vi
-          .fn()
-          .mockResolvedValue({
-            isDenied: () => false,
-            isErrored: () => false,
-            reason: { isRateLimit: () => true },
-          }),
+        protect: vi.fn().mockResolvedValue({
+          isDenied: () => false,
+          isErrored: () => false,
+          reason: { isRateLimit: () => true },
+        }),
       })
       .overrideProvider(ANALYSIS_QUEUE_GATEWAY)
       .useValue({ enqueue, inspect: vi.fn().mockResolvedValue(null) })

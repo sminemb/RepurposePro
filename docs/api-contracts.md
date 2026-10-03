@@ -1701,3 +1701,27 @@ normal at 24 hours or more, warning below 24 hours, urgent below one hour, expir
 the deadline. Timers update deadline transitions and focus/visibility changes. Project lists,
 upload/processing views, editors and exports use the same states. Expired source playback/work
 controls and expired export download controls are unavailable; retained metadata editing stays usable.
+
+## VS11 mutation and error boundaries
+
+Protection runs before project creation, upload staging, analysis credit deduction, Checkout
+purchase creation, clip/summary rendering, regeneration and framing job creation. Sessions and
+ownership still apply; denied mutations create no staged upload, job, purchase or charge.
+Upload preflight requires an owned eligible project, then accepts one file, no form fields and
+one multipart part. Existing size, extension/MIME, real-media/audio and 30-minute bounds remain.
+
+Rate denial returns `429 RATE_LIMIT_EXCEEDED` with a positive seconds-valued `Retry-After`.
+Credentialed CORS responses expose `Retry-After` and `X-Request-Id` to the configured frontend
+origin so browser clients can read retry and correlation headers.
+Bot/attack denial returns `403 REQUEST_BLOCKED`. Thrown errors, rule errors and invalid
+protection configuration return 503; Checkout and analysis preserve
+`BILLING_CHECKOUT_UNAVAILABLE` and `PROCESSING_START_UNAVAILABLE`, while other protected
+actions use `PROTECTION_UNAVAILABLE`. Local DRY_RUN logs simulated denials without enforcing
+them. Better Auth retains its top-level `code`/`message` response, rather than the API's domain
+envelope. Logout, reads and signed Stripe webhooks remain outside these interactive windows.
+
+Existing domain error envelopes and codes are preserved. Expected framework HTTP errors retain
+their status and receive a safe API envelope. Unexpected errors return generic 500 responses
+without exception content. Logs retain action/stage, safe IDs, status and outcome; request
+bodies, raw URLs, headers, cookies, private paths, transcripts and provider/subprocess errors
+are excluded. UI failures explain the retry interval, temporary outage or refresh action.

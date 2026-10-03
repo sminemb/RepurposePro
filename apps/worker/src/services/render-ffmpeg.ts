@@ -157,17 +157,24 @@ export async function probeMedia(
     .object({
       streams: z
         .array(
-          z.object({
-            width: z.number().int().positive().max(16384).optional(),
-            height: z.number().int().positive().max(16384).optional(),
-            sample_aspect_ratio: z.string().max(64).optional(),
-            side_data_list: z
-              .array(z.object({ rotation: z.number().finite().optional() }))
-              .max(100)
-              .optional(),
-            codec_type: z.string().max(32).optional(),
-            codec_name: z.string().max(64).optional(),
-          }),
+          z
+            .object({
+              width: z.number().int().positive().max(16384).optional(),
+              height: z.number().int().positive().max(16384).optional(),
+              sample_aspect_ratio: z.string().max(64).optional(),
+              side_data_list: z
+                .array(z.object({ rotation: z.number().finite().optional() }))
+                .max(100)
+                .optional(),
+              codec_type: z.string().max(32).optional(),
+              codec_name: z.string().max(64).optional(),
+            })
+            .refine(
+              (stream) =>
+                stream.codec_type !== "video" ||
+                (stream.width !== undefined && stream.height !== undefined),
+              "Video dimensions are required.",
+            ),
         )
         .max(100),
       format: z.object({

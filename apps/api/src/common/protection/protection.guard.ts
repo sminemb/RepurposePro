@@ -7,7 +7,7 @@ import {
   SetMetadata,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { protectionFailure, type ProtectionAction } from "@repurposepro/shared";
+import { protectionFailure, protectionOutcome, type ProtectionAction } from "@repurposepro/shared";
 import { AuthGuard, type AuthenticatedRequest } from "../../modules/auth/auth.guard";
 import { createProtectionClient } from "./arcjet-client";
 
@@ -40,7 +40,7 @@ export class ProtectionGuard implements CanActivate {
     this.logger.log({
       event: "protection_decision",
       action,
-      outcome: failure?.code ?? "allowed",
+      outcome: protectionOutcome(decision),
       requestId: request.id,
     });
     if (failure) {

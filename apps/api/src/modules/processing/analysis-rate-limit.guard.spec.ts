@@ -15,13 +15,11 @@ const context = {
 
 describe("AnalysisRateLimitGuard", () => {
   it("uses the authenticated user ID as the Arcjet characteristic", async () => {
-    const protect = vi
-      .fn()
-      .mockResolvedValue({
-        isDenied: () => false,
-        isErrored: () => false,
-        reason: { isRateLimit: () => true },
-      });
+    const protect = vi.fn().mockResolvedValue({
+      isDenied: () => false,
+      isErrored: () => false,
+      reason: { isRateLimit: () => true },
+    });
     const guard = new AnalysisRateLimitGuard({ protect });
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
@@ -33,13 +31,11 @@ describe("AnalysisRateLimitGuard", () => {
 
   it("returns a safe 429 envelope when Arcjet denies analysis", async () => {
     const guard = new AnalysisRateLimitGuard({
-      protect: vi
-        .fn()
-        .mockResolvedValue({
-          isDenied: () => true,
-          isErrored: () => false,
-          reason: { isRateLimit: () => true },
-        }),
+      protect: vi.fn().mockResolvedValue({
+        isDenied: () => true,
+        isErrored: () => false,
+        reason: { isRateLimit: () => true },
+      }),
     });
 
     await expect(guard.canActivate(context)).rejects.toMatchObject({

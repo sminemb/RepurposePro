@@ -3,6 +3,17 @@ import { describe, expect, it } from "vitest";
 import { getAuthResponseError } from "./auth-form-errors";
 
 describe("getAuthResponseError", () => {
+  it.each([true, false])("gives safe protection guidance for signup=%s", (signup) => {
+    expect(getAuthResponseError({ code: "RATE_LIMIT_EXCEEDED" }, signup).message).toContain(
+      signup ? "10 minutes" : "a minute",
+    );
+    expect(getAuthResponseError({ code: "PROTECTION_UNAVAILABLE" }, signup).title).toContain(
+      signup ? "Sign-up" : "Sign-in",
+    );
+    expect(
+      getAuthResponseError({ code: "REQUEST_BLOCKED", message: "SECRET_MARKER" }, signup).message,
+    ).not.toContain("SECRET_MARKER");
+  });
   it("explains that a sign-up email is already registered", () => {
     const error = getAuthResponseError(
       {

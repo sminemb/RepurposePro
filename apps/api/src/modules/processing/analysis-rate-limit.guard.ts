@@ -7,7 +7,11 @@ import {
   UnauthorizedException,
   Logger,
 } from "@nestjs/common";
-import { protectionFailure, type ProtectionDecision } from "@repurposepro/shared";
+import {
+  protectionFailure,
+  protectionOutcome,
+  type ProtectionDecision,
+} from "@repurposepro/shared";
 import { createProtectionClient } from "../../common/protection/arcjet-client";
 import type { AuthenticatedRequest } from "../auth/auth.guard";
 export const ANALYSIS_RATE_LIMIT_CLIENT = Symbol("ANALYSIS_RATE_LIMIT_CLIENT");
@@ -58,7 +62,7 @@ export class AnalysisRateLimitGuard implements CanActivate {
     this.logger.log({
       event: "protection_decision",
       action: "analyze",
-      outcome: failure?.code ?? "allowed",
+      outcome: protectionOutcome(decision),
       requestId: request.id,
     });
     if (failure) {

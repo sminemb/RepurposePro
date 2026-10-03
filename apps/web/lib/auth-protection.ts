@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { loadProtectionConfig } from "@repurposepro/config";
-import { protectionFailure, protectionPolicies, type ProtectionAction } from "@repurposepro/shared";
+import {
+  protectionFailure,
+  protectionOutcome,
+  protectionPolicies,
+  type ProtectionAction,
+} from "@repurposepro/shared";
 
 const clients = new Map<ProtectionAction, Awaited<ReturnType<typeof createClient>>>();
 async function createClient(action: "signup" | "login") {
@@ -10,6 +15,7 @@ async function createClient(action: "signup" | "login") {
     config,
     sdk: arcjet({
       key: config.key,
+      log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       rules: [
         shield({ mode: config.mode }),
         detectBot({ mode: config.mode, allow: [] }),
@@ -71,7 +77,7 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
       event: "protection_decision",
       action,
       requestId,
-      outcome: failure?.code ?? "allowed",
+      outcome: protectionOutcome(decision),
     }),
   );
   if (!failure) return null;

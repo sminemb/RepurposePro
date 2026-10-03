@@ -113,7 +113,7 @@ FAILED
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
-| VS11 | Critical security, abuse protection, and reliability are hardened | IN_PROGRESS | 2026-10-03 | 08:19 | — | — | None | 86% | — |
+| VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
@@ -647,12 +647,12 @@ This is a cross-cutting hardening slice and should not replace earlier security 
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS11        |
-| Status | IN_PROGRESS |
+| Status | COMPLETED |
 | Start Date | 2026-10-03   |
 | Start Time | 08:19       |
-| End Date   | —           |
-| End Time   | —           |
-| Progress | 86% |
+| End Date | 2026-10-03 |
+| End Time | 11:20 |
+| Progress | 100% |
 | Dependency | VS1–VS10    |
 
 ## Tasks
@@ -665,16 +665,16 @@ This is a cross-cutting hardening slice and should not replace earlier security 
 | VS11-T4 | Audit worker job payload validation and safe subprocess execution | Worker + Security | COMPLETED | 2026-10-03 | 08:56 | 2026-10-03 | 09:06 | 78 focused regressions; 25 real clip/summary lifecycle tests; typecheck and lint passed. |
 | VS11-T5 | Audit Stripe webhook idempotency | API + Stripe + Tests | COMPLETED | 2026-10-03 | 09:07 | 2026-10-03 | 09:09 | 21 PostgreSQL billing tests including signed concurrent crash recovery; webhook unit tests and lint passed. |
 | VS11-T6 | Audit Gemini output validation and retry behavior | Worker + Gemini + Tests | COMPLETED | 2026-10-03 | 09:09 | 2026-10-03 | 09:16 | 49 Gemini regressions; 44 durable retry/refund pipeline integration tests; typecheck and lint passed. |
-| VS11-T7 | Add structured logs and human-readable error mapping              | API + Worker + Web      | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS11-T7 | Add structured logs and human-readable error mapping | API + Worker + Web | COMPLETED | 2026-10-03 | 09:16 | 2026-10-03 | 11:20 | Full ci:check passed: 750 unit tests, 124 PostgreSQL/Redis tests, formatting, lint, typecheck and builds; browser and live Arcjet verified. Registry workaround documented. |
 
 ## Slice Acceptance Criteria
 
-- [ ] Cross-user access attempts fail.
-- [ ] Expensive endpoints are protected.
-- [ ] Shell commands cannot be injected via user input.
-- [ ] Duplicate Stripe events are harmless.
-- [ ] Invalid AI output cannot corrupt project data.
-- [ ] Logs contain actionable context without secrets.
+- [x] Cross-user access attempts fail.
+- [x] Expensive endpoints are protected.
+- [x] Shell commands cannot be injected via user input.
+- [x] Duplicate Stripe events are harmless.
+- [x] Invalid AI output cannot corrupt project data.
+- [x] Logs contain actionable context without secrets.
 
 ---
 
@@ -780,15 +780,15 @@ Do not mark a slice complete because only one technical layer is finished.
 ```text
 Current Slice: VS11 - Security, abuse protection and reliability
 Current Task: None
-Current Status: IN_PROGRESS
-Last Completed Task: VS11-T6 at 09:16 Asia/Manila on 2026-10-03.
-Next Recommended Task: Continue all remaining VS11 tasks in tracker order.
-Uncommitted Changes: Active task changes until verified task commit; local fixtures/logs stay ignored under storage.
-Known Failing Tests: See docs/verification/vs11.md for executed checks and pending verification.
-Known Blockers: None.
+Current Status: COMPLETED
+Last Completed Task: VS11-T7 at 11:20 Asia/Manila on 2026-10-03.
+Next Recommended Task: VS12 when requested.
+Uncommitted Changes: None after the verified T7 commit. Local fixtures/logs stay ignored under storage.
+Known Failing Tests: None. Full ci:check passed: 750 unit and 124 PostgreSQL/Redis tests, formatting, lint, typecheck and builds. Browser and live Arcjet outcomes verified.
+Known Blockers: npm registry metadata retries affect normal dependency re-verification. Verified CI used a temporary pre-run warn setting; see VS11 evidence. No remaining VS11 code work.
 Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Migrations 0044-0046 precede service startup. VS11 branch codex/vs11-hardening.
-Required Commands Before Continuing: Run focused checks per increment and pnpm ci:check before slice completion. Use pnpm test:db-integration to restore development roles.
+Required Commands Before Continuing: Retry pnpm install --frozen-lockfile with normal policy when registry access recovers. Use pnpm test:db-integration for integration checks and automatic development-role restoration.
 Last Updated Date: 2026-10-03
-Last Updated Time: 09:16
+Last Updated Time: 11:20
 Last Updated By: Codex
 ```

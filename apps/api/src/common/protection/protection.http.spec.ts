@@ -9,6 +9,7 @@ import type { Server } from "node:http";
 import type * as Config from "@repurposepro/config";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../../app.module";
+import { apiCorsOptions } from "../../cors.config";
 import { AuthService } from "../../modules/auth/auth.service";
 import { AuthGuard } from "../../modules/auth/auth.guard";
 import { DatabaseService } from "../../modules/infrastructure/database.service";
@@ -82,6 +83,7 @@ describe("protection before HTTP side effects", () => {
       ],
     }).compile();
     app = module.createNestApplication();
+    app.enableCors(apiCorsOptions("http://localhost:3000"));
     await app.listen(0, "127.0.0.1");
     const server = app.getHttpServer() as Server;
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -96,6 +98,24 @@ describe("protection before HTTP side effects", () => {
       useClass: unknown;
     }[];
     expect(providers).toContainEqual({ provide: APP_GUARD, useClass: ProtectionGuard });
+  });
+  it("exposes retry headers to the configured credentialed frontend", async () => {
+    state.protect.mockResolvedValue({
+      isDenied: () => true,
+      isErrored: () => false,
+      reason: { isRateLimit: () => true },
+    });
+    const response = await fetch(`${base}/projects`, {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify({ name: "Blocked", outputType: "clips" }),
+    });
+    expect(response.status).toBe(429);
+    expect(response.headers.get("access-control-allow-origin")).toBe("http://localhost:3000");
+    expect(response.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(response.headers.get("access-control-expose-headers")).toBe("Retry-After,X-Request-Id");
+    expect(response.headers.get("retry-after")).toBe("60");
+    expect(mutation).not.toHaveBeenCalled();
   });
   it.each([429, 403, 503])(
     "blocks every mutation before upload staging or service calls (%s)",

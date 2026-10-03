@@ -22,13 +22,11 @@ describe("POST /api/v1/billing/checkout", () => {
     createCheckout = vi
       .fn()
       .mockResolvedValue({ checkoutUrl: "https://checkout.stripe.com/c/pay_test" });
-    protect = vi
-      .fn()
-      .mockResolvedValue({
-        isDenied: () => false,
-        isErrored: () => false,
-        reason: { isRateLimit: () => true },
-      });
+    protect = vi.fn().mockResolvedValue({
+      isDenied: () => false,
+      isErrored: () => false,
+      reason: { isRateLimit: () => true },
+    });
     const getSession = vi.fn().mockImplementation(async ({ headers }: { headers: Headers }) => {
       if (headers.get("cookie") === "session=user-a") {
         return { user: { email: "a@example.test", id: "user-a", name: "User A" } };

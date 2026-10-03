@@ -17,12 +17,14 @@ export function getAuthResponseError(
   if (responseError.status === 429 || responseError.code === "RATE_LIMIT_EXCEEDED")
     return {
       title: "Please wait before trying again",
-      message: "Too many attempts. Wait a moment, then try again.",
+      message: isSignUp
+        ? "Too many attempts. Wait 10 minutes, then try again."
+        : "Too many attempts. Wait a minute, then try again.",
       variant: "warning",
     };
   if (responseError.code === "PROTECTION_UNAVAILABLE")
     return {
-      title: "Sign-in is temporarily unavailable",
+      title: `${isSignUp ? "Sign-up" : "Sign-in"} is temporarily unavailable`,
       message: "Please try again shortly.",
       variant: "warning",
     };

@@ -590,3 +590,4 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
 }
 export { assertSafeStoragePath, assertSafeStorageTree } from "./safe-storage";
 export { assertSafeExecutable } from "./safe-executable";
+export { safeRequestId, safeLogContext, safeLogSerializers } from "./safe-logging";
