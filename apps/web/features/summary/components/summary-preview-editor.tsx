@@ -459,7 +459,7 @@ export function SummarySegmentCard({
             aria-label={`Segment ${s.order + 1} start`}
             className={field}
             type="number"
-            step={0.1}
+            step={0.001}
             min={0}
             value={draft.startText}
             disabled={busy}
@@ -472,7 +472,7 @@ export function SummarySegmentCard({
             aria-label={`Segment ${s.order + 1} end`}
             className={field}
             type="number"
-            step={0.1}
+            step={0.001}
             min={0}
             value={draft.endText}
             disabled={busy}

@@ -88,7 +88,13 @@ export class UploadFileInterceptor implements NestInterceptor {
             request.res?.once("finish", stop);
             request.res?.once("close", stop);
             request.once("aborted", stop);
-            if (request.destroyed || request.res?.destroyed || file.stream.destroyed) {
+            // A fully received IncomingMessage is normally destroyed while registration awaits
+            // PostgreSQL. Only an incomplete destroyed request represents an interrupted upload.
+            if (
+              (request.destroyed && !request.complete) ||
+              request.res?.destroyed ||
+              file.stream.destroyed
+            ) {
               stop();
               callback(new Error("Upload interrupted."), "");
               return;
@@ -124,7 +130,9 @@ export class UploadFileInterceptor implements NestInterceptor {
         fileSize: config.maxUploadBytes,
         files: 1,
         fields: 0,
-        parts: 1,
+        // Busboy 1.6 emits partsLimit when it reaches this count, not only when exceeded.
+        // files/fields still reject a second part; leave room for the valid first file.
+        parts: 2,
         fieldNameSize: 100,
         headerPairs: 100,
       },

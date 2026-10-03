@@ -1,5 +1,6 @@
 import { FramingController } from "./framing.controller";
 import { Module } from "@nestjs/common";
+import { UploadOwnershipGuard } from "./upload-ownership.guard";
 
 import { AuthModule } from "../auth/auth.module";
 import { InfrastructureModule } from "../infrastructure/infrastructure.module";
@@ -29,4 +30,3 @@ import { UploadFileInterceptor } from "./upload-file.interceptor";
   ],
 })
 export class ProjectsModule {}
-import { UploadOwnershipGuard } from "./upload-ownership.guard";

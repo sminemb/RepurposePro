@@ -75,7 +75,10 @@ export default async function BillingPage() {
             </div>
             <div className="mt-6">
               {ledgerResult.kind === "success" ? (
-                <CreditLedgerTable initialPage={ledgerResult.page} />
+                <CreditLedgerTable
+                  key={ledgerResult.page.data.map((entry) => entry.id).join(":")}
+                  initialPage={ledgerResult.page}
+                />
               ) : (
                 <CreditBalanceError message={ledgerResult.message} />
               )}

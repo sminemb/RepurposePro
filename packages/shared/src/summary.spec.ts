@@ -95,6 +95,34 @@ describe("summary edit and playback", () => {
   it("allows manual duration beyond the generation target", () => {
     expect(validateSummaryEdits([{ ...segments[0], endTime: 29 }, segments[1]], 100)).toBe(true);
   });
+  it.each([NaN, Infinity, -Infinity, 0, -1])("rejects invalid source duration %s", (duration) => {
+    expect(validateSummaryEdits(segments, duration)).toBe(false);
+    expect(() =>
+      validateSummarySelection(
+        {
+          summarySegments: segments.map((s) => ({
+            startTime: s.startTime,
+            endTime: s.endTime,
+            reason: "Idea",
+          })),
+        },
+        duration,
+      ),
+    ).toThrow();
+  });
+  it.each([NaN, Infinity, -Infinity])("rejects non-finite edited endpoints %s", (time) => {
+    expect(validateSummaryEdits([{ ...segments[0]!, startTime: time }], 100)).toBe(false);
+    expect(validateSummaryEdits([{ ...segments[0]!, endTime: time }], 100)).toBe(false);
+  });
+  it("permits adjacent ranges and source-end edits without treating removed ranges as playback", () => {
+    expect(
+      validateSummaryEdits([segments[0]!, { ...segments[1]!, startTime: 15, endTime: 100 }], 100),
+    ).toBe(true);
+    const selected = [{ ...segments[0]!, selected: false }, segments[1]!];
+    expect(summaryTimeToSource(selected, -1)).toBe(30);
+    expect(summaryTimeToSource(selected, 50)).toBe(35);
+    expect(summaryTimeToSource([], 0)).toBe(0);
+  });
   it("rejects selected overlap and permits removed ranges", () => {
     expect(validateSummaryEdits([{ ...segments[0], endTime: 31 }, segments[1]], 100)).toBe(false);
     expect(

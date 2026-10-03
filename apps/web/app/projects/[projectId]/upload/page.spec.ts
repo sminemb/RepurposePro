@@ -1,17 +1,24 @@
-import { createElement, Fragment, type ReactNode } from "react";
+import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceVideoMetadata } from "@repurposepro/shared";
 
-const { getCreditBalanceMock, getSavedSourceVideoMock, getSessionMock, headersMock, redirectMock } =
-  vi.hoisted(() => ({
-    getCreditBalanceMock: vi.fn(),
-    getSavedSourceVideoMock: vi.fn(),
-    getSessionMock: vi.fn(),
-    headersMock: vi.fn(),
-    redirectMock: vi.fn(),
-  }));
+const {
+  getCreditBalanceMock,
+  getSavedSourceVideoMock,
+  getProcessingStatusMock,
+  getSessionMock,
+  headersMock,
+  redirectMock,
+} = vi.hoisted(() => ({
+  getCreditBalanceMock: vi.fn(),
+  getSavedSourceVideoMock: vi.fn(),
+  getProcessingStatusMock: vi.fn(),
+  getSessionMock: vi.fn(),
+  headersMock: vi.fn(),
+  redirectMock: vi.fn(),
+}));
 
 vi.mock("@/components/app/app-sidebar", () => ({
   AppSidebar: () => createElement("aside", { "data-testid": "app-sidebar" }),
@@ -33,6 +40,9 @@ vi.mock("@/features/billing/server/billing-api", () => ({
 }));
 vi.mock("@/features/processing/components/processing-start-panel", () => ({
   ProcessingStartPanel: () => createElement("div", { "data-testid": "processing-start-panel" }),
+}));
+vi.mock("@/features/processing/server/processing-api", () => ({
+  getProjectProcessingStatus: getProcessingStatusMock,
 }));
 vi.mock("@/features/upload/components/upload-dropzone", () => ({
   UploadDropzone: () => createElement("div", { "data-testid": "upload-dropzone" }),
@@ -56,7 +66,8 @@ vi.mock("lucide-react", () => ({
 }));
 vi.mock("next/headers", () => ({ headers: headersMock }));
 vi.mock("next/link", () => ({
-  default: ({ children }: { children: ReactNode }) => createElement(Fragment, null, children),
+  default: ({ children, href }: { children: ReactNode; href: string }) =>
+    createElement("a", { href }, children),
 }));
 vi.mock("next/navigation", () => ({ redirect: redirectMock }));
 
@@ -86,6 +97,11 @@ describe("UploadPage", () => {
     getCreditBalanceMock.mockReset();
     getCreditBalanceMock.mockResolvedValue({ kind: "success", balance: { balance: 10 } });
     getSavedSourceVideoMock.mockReset();
+    getProcessingStatusMock.mockReset();
+    getProcessingStatusMock.mockResolvedValue({
+      kind: "success",
+      snapshot: { status: "uploaded", outputType: "clips" },
+    });
     getSessionMock.mockReset();
     getSessionMock.mockResolvedValue({ user: { email: "creator@example.com", name: "Creator" } });
     headersMock.mockReset();
@@ -146,5 +162,49 @@ describe("UploadPage", () => {
     await expect(renderUploadPage()).rejects.toThrow("redirected to /login");
 
     expect(redirectMock).toHaveBeenCalledWith("/login");
+  });
+  it.each(["preview_ready", "completed"])(
+    "opens the existing %s editor instead of offering another charge",
+    async (status) => {
+      getSavedSourceVideoMock.mockResolvedValue({ kind: "success", metadata: sourceVideo });
+      getProcessingStatusMock.mockResolvedValue({
+        kind: "success",
+        snapshot: { status, outputType: "summary" },
+      });
+      const page = await renderUploadPage();
+      expect(page).toContain('href="/projects/project-1/summary"');
+      expect(page).toContain("Open your editor");
+      expect(page).not.toContain('data-testid="processing-start-panel"');
+    },
+  );
+  it.each(["queued", "transcribing", "analyzing", "rendering", "failed", "refunded"])(
+    "directs %s projects to their processing status",
+    async (status) => {
+      getSavedSourceVideoMock.mockResolvedValue({ kind: "success", metadata: sourceVideo });
+      getProcessingStatusMock.mockResolvedValue({
+        kind: "success",
+        snapshot: { status, outputType: "clips" },
+      });
+      const page = await renderUploadPage();
+      expect(page).toContain('href="/projects/project-1/processing"');
+      expect(page).toContain("View processing status");
+      expect(page).not.toContain('data-testid="processing-start-panel"');
+    },
+  );
+  it("withholds paid confirmation when processing status is unavailable", async () => {
+    getSavedSourceVideoMock.mockResolvedValue({ kind: "success", metadata: sourceVideo });
+    getProcessingStatusMock.mockResolvedValue({ kind: "unavailable" });
+    const page = await renderUploadPage();
+    expect(page).toContain("Refresh the page to try again.");
+    expect(page).toContain('role="alert"');
+    expect(page).not.toContain('data-testid="processing-start-panel"');
+  });
+  it("requires authentication for the processing status", async () => {
+    getSavedSourceVideoMock.mockResolvedValue({ kind: "success", metadata: sourceVideo });
+    getProcessingStatusMock.mockResolvedValue({ kind: "unauthenticated" });
+    redirectMock.mockImplementation((path: string) => {
+      throw new Error(`redirected to ${path}`);
+    });
+    await expect(renderUploadPage()).rejects.toThrow("redirected to /login");
   });
 });

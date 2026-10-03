@@ -8,6 +8,7 @@ import { AppTopbar } from "@/components/app/app-topbar";
 import { PageHeader } from "@/components/app/page-header";
 import { getCreditBalance } from "@/features/billing/server/billing-api";
 import { ProcessingStartPanel } from "@/features/processing/components/processing-start-panel";
+import { getProjectProcessingStatus } from "@/features/processing/server/processing-api";
 import { UploadDropzone } from "@/features/upload/components/upload-dropzone";
 import { VideoMetadataCard } from "@/features/upload/components/video-metadata-card";
 import { getSavedSourceVideo } from "@/features/upload/server/source-video-api";
@@ -23,22 +24,31 @@ export default async function UploadPage({ params }: UploadPageProps) {
   if (!session) redirect("/login");
 
   const { projectId } = await params;
-  const [balanceResult, sourceVideoResult] = await Promise.all([
+  const [balanceResult, sourceVideoResult, processingResult] = await Promise.all([
     getCreditBalance(),
     getSavedSourceVideo(projectId),
+    getProjectProcessingStatus(projectId),
   ]);
   if (balanceResult.kind === "unauthenticated") redirect("/login");
   if (sourceVideoResult.kind === "unauthenticated") redirect("/login");
+  if (processingResult.kind === "unauthenticated") redirect("/login");
 
   const apiUrl = loadWebConfig().apiUrl;
   const balance = balanceResult.kind === "success" ? balanceResult.balance : null;
   const balanceError = balanceResult.kind === "unavailable" ? balanceResult.message : null;
+  const processing = processingResult.kind === "success" ? processingResult.snapshot : null;
+  const hasPreview = processing && ["preview_ready", "completed"].includes(processing.status);
+  const nextStep = hasPreview
+    ? processing.outputType === "summary"
+      ? "summary"
+      : "clips"
+    : "processing";
   const sourceVideoView = (() => {
     switch (sourceVideoResult.kind) {
       case "success":
         return {
           content: "saved" as const,
-          description: "Your original video is saved to this project and ready for processing.",
+          description: "Your original video is saved to this project.",
           metadata: sourceVideoResult.metadata,
           title: "Your source video",
         };
@@ -81,13 +91,27 @@ export default async function UploadPage({ params }: UploadPageProps) {
               {sourceVideoView.content === "saved" ? (
                 <>
                   <VideoMetadataCard metadata={sourceVideoView.metadata} />
-                  <ProcessingStartPanel
-                    apiUrl={apiUrl}
-                    balance={balance}
-                    balanceError={balanceError}
-                    metadata={sourceVideoView.metadata}
-                    projectId={projectId}
-                  />
+                  {processing?.status === "uploaded" ? (
+                    <ProcessingStartPanel
+                      apiUrl={apiUrl}
+                      balance={balance}
+                      balanceError={balanceError}
+                      metadata={sourceVideoView.metadata}
+                      projectId={projectId}
+                    />
+                  ) : processing ? (
+                    <Link
+                      className="mt-5 inline-flex min-h-11 items-center rounded-rp-md bg-rp-primary px-5 text-sm font-semibold text-white"
+                      href={`/projects/${projectId}/${nextStep}`}
+                    >
+                      {hasPreview ? "Open your editor" : "View processing status"}
+                    </Link>
+                  ) : (
+                    <p role="alert" className="mt-5 text-sm text-rp-warning">
+                      We could not verify this project's processing status. Refresh the page to try
+                      again.
+                    </p>
+                  )}
                 </>
               ) : sourceVideoView.content === "upload" ? (
                 <UploadDropzone
