@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import "server-only";
 
 import type {
@@ -117,7 +118,18 @@ export async function createCheckoutSession(pack: CreditPackCode): Promise<Check
     }
 
     if (!response.ok) {
-      return { kind: "unavailable", message: checkoutUnavailableMessage };
+      const body = (await response.json().catch(() => null)) as {
+        error?: { code?: string };
+      } | null;
+      return {
+        kind: "unavailable",
+        message:
+          protectionRetryMessage(
+            body?.error?.code,
+            "Checkout",
+            response.headers.get("retry-after"),
+          ) ?? checkoutUnavailableMessage,
+      };
     }
 
     const body = (await response.json()) as ApiSuccess<unknown>;

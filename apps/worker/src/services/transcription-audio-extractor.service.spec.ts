@@ -75,6 +75,8 @@ describe("TranscriptionAudioExtractor", () => {
         "-loglevel",
         "error",
         "-y",
+        "-protocol_whitelist",
+        "file,pipe",
         "-i",
         sourcePath,
         "-map",
@@ -92,7 +94,7 @@ describe("TranscriptionAudioExtractor", () => {
       ],
       {
         shell: false,
-        signal,
+        signal: expect.any(AbortSignal) as AbortSignal,
         stdio: ["ignore", "ignore", "pipe"],
         windowsHide: true,
       },

@@ -14,6 +14,26 @@ export function getAuthResponseError(
   responseError: AuthResponseError,
   isSignUp: boolean,
 ): AuthFormError {
+  if (responseError.status === 429 || responseError.code === "RATE_LIMIT_EXCEEDED")
+    return {
+      title: "Please wait before trying again",
+      message: isSignUp
+        ? "Too many attempts. Wait 10 minutes, then try again."
+        : "Too many attempts. Wait a minute, then try again.",
+      variant: "warning",
+    };
+  if (responseError.code === "PROTECTION_UNAVAILABLE")
+    return {
+      title: `${isSignUp ? "Sign-up" : "Sign-in"} is temporarily unavailable`,
+      message: "Please try again shortly.",
+      variant: "warning",
+    };
+  if (responseError.code === "REQUEST_BLOCKED")
+    return {
+      title: "Request blocked",
+      message: "Security protection blocked this request. Please try again using your browser.",
+      variant: "error",
+    };
   if (isSignUp && responseError.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
     return {
       title: "An account already exists",

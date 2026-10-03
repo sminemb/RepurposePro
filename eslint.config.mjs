@@ -53,6 +53,7 @@ export default tseslint.config(
   },
   {
     files: [
+      "apps/api/src/common/**/*.spec.ts",
       "apps/api/src/modules/billing/*.spec.ts",
       "apps/api/src/modules/infrastructure/*.spec.ts",
       "apps/api/src/modules/processing/*.spec.ts",
@@ -64,6 +65,16 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         project: ["./apps/api/tsconfig.eslint.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ["packages/config/src/*.spec.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./packages/config/tsconfig.eslint.json"],
         projectService: false,
         tsconfigRootDir: import.meta.dirname,
       },

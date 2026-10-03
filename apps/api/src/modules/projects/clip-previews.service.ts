@@ -119,7 +119,6 @@ export class ClipPreviewsService {
     } catch (error: unknown) {
       if (error instanceof ClipPreviewAccessError) throw error;
       this.logger.error({
-        error,
         event: "clip_preview_source_validation_failed",
         projectId,
         userId,

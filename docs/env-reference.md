@@ -627,7 +627,7 @@ Server-side Stripe API key.
 Required:
 
 ```text
-Yes for Checkout entry
+Yes for protected authentication and interactive mutation entry points
 ```
 
 Used by:
@@ -1240,6 +1240,18 @@ Equivalent to:
 
 # 13. Arcjet Variables
 
+VS11 also protects web signup/login and API project creation, uploads, rendering, regeneration,
+and framing starts. Server-side auth protection loads `ARCJET_KEY` and `ARCJET_MODE` independently
+of billing configuration. Production requires `LIVE`; local/test may use `DRY_RUN`.
+
+`ARCJET_TRUSTED_PROXIES` is an optional comma-separated list of API reverse-proxy IP addresses
+or CIDR ranges, default empty. Only matching socket peers may supply X-Forwarded-For. Proxies
+must replace client-supplied IP headers and restrict direct backend access. Never use a broad
+range containing untrusted clients. Production web auth currently supports Vercel's overwritten
+`x-vercel-forwarded-for`; other ingress fails safely until explicitly supported. Local auth uses
+loopback identity. Protection outages reject new protected mutations with a temporary-unavailable
+response; sessions, reads, logout and signed Stripe webhooks remain available.
+
 ## `ARCJET_KEY`
 
 Purpose:
@@ -1745,7 +1757,7 @@ TEST_DATABASE_RUNTIME_URL=postgresql://repurposepro_runtime:password@localhost:5
 | Whisper        |         No |             No |      Yes |
 | FFmpeg         |         No | Optional probe |      Yes |
 | Storage        |   Optional |            Yes |      Yes |
-| Arcjet         |   Optional |            Yes |       No |
+| Arcjet         |        Yes |            Yes |       No |
 | Logging        |        Yes |            Yes |      Yes |
 
 ---
@@ -1849,3 +1861,21 @@ Apply forward migrations 0044–0046 as the owner before starting updated API/wo
 Run PostgreSQL/Redis integration tests through `pnpm test:db-integration` so configured development
 roles are restored afterwards. Retention never recursively deletes the project directory or
 touches models/fonts/logs. See [ADR 0008](adr/0008-file-retention.md) for lease and rollout details.
+
+## VS11 operational boundaries
+
+`ARCJET_MODE=DRY_RUN` never bypasses SDK/configuration errors. Production validates LIVE;
+trusted API proxies must replace forwarded headers and prohibit direct ingress. The web adapter
+requires Vercel's overwritten client-IP header in production. See [ADR 0009](adr/0009-security-boundaries.md).
+
+Media executable settings accept approved ffmpeg/ffprobe/Python names or absolute paths with
+the expected executable basename. Relative executable paths, flags and shell commands are
+rejected. Whisper/model/face-tracking scripts remain trusted operator configuration. Media
+subprocesses use no shell, accept file/pipe media protocols, bound output and support timeout
+and cancellation. Audio extraction has a five-minute timeout; probe execution has 30 seconds.
+
+API/worker structured logging uses shared field allowlists and safe HTTP/error serializers at
+every configured log level. Request IDs accept 1–64 letters, digits, underscores or hyphens;
+other incoming IDs are replaced. Keep storage private to the service account and do not expose
+its filesystem to untrusted writers. Link checks validate current resolved paths and are not an
+operating-system sandbox against a concurrent privileged filesystem attacker.

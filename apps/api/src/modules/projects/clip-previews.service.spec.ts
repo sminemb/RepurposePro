@@ -172,7 +172,6 @@ describe("ClipPreviewsService", () => {
       code: "SOURCE_VIDEO_NOT_FOUND",
     });
     expect(loggerError).toHaveBeenCalledWith({
-      error: failure,
       event: "clip_preview_source_validation_failed",
       projectId,
       userId,

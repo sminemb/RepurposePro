@@ -76,7 +76,10 @@ describe("AnalysisTranscriptService", () => {
     const transcribe = vi.fn().mockResolvedValue(transcript);
     const service = new AnalysisTranscriptService(
       repository,
-      { extract } as unknown as TranscriptionAudioExtractor,
+      {
+        extract,
+        discard: (path: string) => rm(path, { force: true }),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );
@@ -116,7 +119,10 @@ describe("AnalysisTranscriptService", () => {
       .mockResolvedValue(transcript);
     const service = new AnalysisTranscriptService(
       repository,
-      { extract: vi.fn() } as unknown as TranscriptionAudioExtractor,
+      {
+        extract: vi.fn(),
+        discard: vi.fn().mockResolvedValue(undefined),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );
@@ -149,7 +155,10 @@ describe("AnalysisTranscriptService", () => {
     const transcribe = vi.fn();
     const service = new AnalysisTranscriptService(
       repository,
-      { extract } as unknown as TranscriptionAudioExtractor,
+      {
+        extract,
+        discard: (path: string) => rm(path, { force: true }),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );
@@ -190,7 +199,10 @@ describe("AnalysisTranscriptService", () => {
     const context = leaseContext(updateProgress);
     const service = new AnalysisTranscriptService(
       repository,
-      { extract } as unknown as TranscriptionAudioExtractor,
+      {
+        extract,
+        discard: (path: string) => rm(path, { force: true }),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );
@@ -250,7 +262,10 @@ describe("AnalysisTranscriptService", () => {
     const transcribe = vi.fn().mockResolvedValue(transcriptWithTrailingAudioPadding);
     const service = new AnalysisTranscriptService(
       repository,
-      { extract } as unknown as TranscriptionAudioExtractor,
+      {
+        extract,
+        discard: (path: string) => rm(path, { force: true }),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );

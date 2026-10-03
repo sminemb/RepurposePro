@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import { renderStartSchema, type RenderClipInput } from "@repurposepro/shared";
 export async function startClipRender(
   apiUrl: string,
@@ -15,10 +16,15 @@ export async function startClipRender(
       body: JSON.stringify(input),
     },
   );
-  const body = (await response.json()) as { data?: unknown; error?: { message?: string } };
+  const body = (await response.json().catch(() => null)) as {
+    data?: unknown;
+    error?: { message?: string; code?: string };
+  } | null;
   if (!response.ok)
     throw new Error(
-      body.error?.message ?? "Could not start the render. Your saved edits are safe; try again.",
+      protectionRetryMessage(body?.error?.code, "Rendering", response.headers.get("retry-after")) ??
+        body?.error?.message ??
+        "Could not start the render. Your saved edits are safe; try again.",
     );
-  return renderStartSchema.parse(body.data);
+  return renderStartSchema.parse(body?.data);
 }

@@ -90,13 +90,13 @@ def main():
         raise ValueError("Face model checksum mismatch; run setup-framing.py")
     import numpy as np
     import mediapipe as mp
-    probe = subprocess.run([args.ffprobe, "-v", "error", "-select_streams", "v:0", "-show_streams", "-of", "json", args.source], capture_output=True, check=True, timeout=30)
+    probe = subprocess.run([args.ffprobe, "-v", "error", "-select_streams", "v:0", "-show_streams", "-of", "json", "-protocol_whitelist", "file,pipe", args.source], capture_output=True, check=True, timeout=30)
     stream = json.loads(probe.stdout)["streams"][0]
     width, height = display_dimensions(stream)
     scale = min(1, 640 / max(width, height))
     w, h = max(2, round(width * scale / 2) * 2), max(2, round(height * scale / 2) * 2)
     # FFmpeg autorotates; explicit display dimensions also normalize non-square pixels.
-    command = [args.ffmpeg, "-nostdin", "-v", "error", "-i", args.source, "-map", "0:v:0", "-an", "-vf", f"fps=5,scale={w}:{h},setsar=1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"]
+    command = [args.ffmpeg, "-nostdin", "-v", "error", "-protocol_whitelist", "file,pipe", "-i", args.source, "-map", "0:v:0", "-an", "-vf", f"fps=5,scale={w}:{h},setsar=1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"]
     tracker = Tracker()
     options = mp.tasks.vision.FaceDetectorOptions(base_options=mp.tasks.BaseOptions(model_asset_path=args.model), running_mode=mp.tasks.vision.RunningMode.VIDEO, min_detection_confidence=.6)
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as video:

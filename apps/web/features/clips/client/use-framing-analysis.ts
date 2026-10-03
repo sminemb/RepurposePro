@@ -1,6 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { framingStatusSchema, type FramingStatus } from "@repurposepro/shared";
+import {
+  framingStatusSchema,
+  protectionRetryMessage,
+  type FramingStatus,
+} from "@repurposepro/shared";
 
 export function useFramingAnalysis(apiUrl: string, projectId: string, enabled = true) {
   const [status, setStatus] = useState<FramingStatus>({ status: "missing", data: null });
@@ -14,12 +18,21 @@ export function useFramingAnalysis(apiUrl: string, projectId: string, enabled = 
         `${apiUrl.replace(/\/$/u, "")}/projects/${encodeURIComponent(projectId)}/framing-analysis`,
         { method: start ? "POST" : "GET", credentials: "include", cache: "no-store", signal },
       );
-      if (!response.ok)
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: { code?: string };
+        } | null;
         throw new Error(
-          response.status === 404
-            ? "The source video is unavailable or expired. Manual framing is still available."
-            : "Could not load person tracking. Try again.",
+          protectionRetryMessage(
+            body?.error?.code,
+            "Person tracking",
+            response.headers.get("retry-after"),
+          ) ??
+            (response.status === 404
+              ? "The source video is unavailable or expired. Manual framing is still available."
+              : "Could not load person tracking. Try again."),
         );
+      }
       const body = (await response.json()) as { data: unknown };
       return framingStatusSchema.parse(body.data);
     },

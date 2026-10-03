@@ -201,7 +201,13 @@ describeIntegration("paid processing start API", () => {
       .overrideProvider(RedisService)
       .useValue({})
       .overrideProvider(ANALYSIS_RATE_LIMIT_CLIENT)
-      .useValue({ protect: vi.fn().mockResolvedValue({ isDenied: () => false }) })
+      .useValue({
+        protect: vi.fn().mockResolvedValue({
+          isDenied: () => false,
+          isErrored: () => false,
+          reason: { isRateLimit: () => true },
+        }),
+      })
       .overrideProvider(ANALYSIS_QUEUE_GATEWAY)
       .useValue({ enqueue, inspect: vi.fn().mockResolvedValue(null) })
       .overrideProvider(ANALYSIS_QUEUE_EVENTS)

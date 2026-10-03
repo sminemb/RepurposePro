@@ -1,10 +1,13 @@
-import type { WorkerConfig } from "@repurposepro/config";
+import { safeLogContext, safeLogSerializers, type WorkerConfig } from "@repurposepro/config";
 import type { Params } from "nestjs-pino";
 
 export function createLoggingConfig(config: WorkerConfig): Params {
   return {
     pinoHttp: {
       level: config.logLevel,
+      wrapSerializers: false,
+      serializers: safeLogSerializers,
+      formatters: { log: safeLogContext },
       redact: {
         paths: ["password", "secret", "token"],
         censor: "[REDACTED]",

@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import type { ApiSuccess, SourceVideoMetadata } from "@repurposepro/shared";
 
 export interface UploadProgress {
@@ -21,6 +22,7 @@ interface SourceVideoMetadataInput {
 interface ApiErrorResponse {
   readonly error?: {
     readonly message?: string;
+    readonly code?: string;
   };
 }
 
@@ -44,11 +46,17 @@ export function toUploadProgress(loadedBytes: number, totalBytes: number): Uploa
   };
 }
 
-function responseErrorMessage(responseText: string, fallback: string): string {
+function responseErrorMessage(
+  responseText: string,
+  fallback: string,
+  retryAfter?: string | null,
+): string {
   try {
     const response = JSON.parse(responseText) as ApiErrorResponse;
     if (response.error?.message) {
-      return response.error.message;
+      return (
+        protectionRetryMessage(response.error.code, "Upload", retryAfter) ?? response.error.message
+      );
     }
   } catch {
     // Preserve the safe fallback below for non-JSON responses.
@@ -109,6 +117,7 @@ export function uploadVideo({
           responseErrorMessage(
             request.responseText,
             "We could not upload this video. Please try again.",
+            request.getResponseHeader("retry-after"),
           ),
         ),
       );

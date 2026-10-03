@@ -1,7 +1,9 @@
+import { assertSafeStoragePath, assertSafeStorageTree } from "@repurposepro/config";
+import { resourceQueuePayload } from "../queue-contract";
 import { randomUUID, createHash } from "node:crypto";
 import { SummaryRenderer } from "./summary-renderer.service";
-import { copyFile, mkdir, readFile, realpath, rename, rm, stat } from "node:fs/promises";
-import { isAbsolute, join, relative, sep } from "node:path";
+import { copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import { join } from "node:path";
 import { Logger, type OnModuleInit, type OnModuleDestroy } from "@nestjs/common";
 import { type DatabaseClient, closeDatabaseClient } from "@repurposepro/db";
 import { type WorkerConfig } from "@repurposepro/config";
@@ -43,24 +45,16 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
     await this.connection?.quit();
     await closeDatabaseClient(this.database);
   }
+  private async safeRemove(path: string, options: Parameters<typeof rm>[1]): Promise<void> {
+    await assertSafeStorageTree(this.config.storageRoot, path);
+    await rm(path, options);
+  }
   private async query<T>(sql: string, args: unknown[]) {
     return (await this.database.pool.query<{ result: T }>(sql, args)).rows[0]?.result;
   }
   public async process(job: Pick<Job, "id" | "name" | "data">) {
-    const data = job.data as { jobId?: unknown; projectId?: unknown };
-    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
-    if (
-      ![RENDER_CLIP_JOB, RENDER_SUMMARY_JOB].includes(job.name) ||
-      !job.id ||
-      !uuid.test(job.id) ||
-      !data ||
-      typeof data.projectId !== "string" ||
-      !uuid.test(data.projectId) ||
-      data.jobId !== job.id ||
-      Object.keys(data).length !== 2
-    )
-      throw new UnrecoverableError("Invalid render job");
-    const jobId = job.id,
+    const data = resourceQueuePayload(job, [RENDER_CLIP_JOB, RENDER_SUMMARY_JOB]);
+    const jobId = data.jobId,
       token = randomUUID();
     if (job.name === RENDER_SUMMARY_JOB)
       return new SummaryRenderer(this.database, this.config).process(jobId, data.projectId);
@@ -115,17 +109,13 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
     try {
       if (snapshot.projectId !== projectId || snapshot.sourceExpiresAt.getTime() <= Date.now())
         throw new UnrecoverableError("Source video is unavailable");
-      const root = await realpath(this.config.storageRoot),
-        source = await realpath(snapshot.sourcePath);
-      const contained = relative(root, source);
-      if (
-        isAbsolute(contained) ||
-        contained === ".." ||
-        contained.startsWith(`..${sep}`) ||
-        (await stat(source)).size !== snapshot.sourceFileSizeBytes
-      )
+      const root = await assertSafeStoragePath(this.config.storageRoot, this.config.storageRoot);
+      const source = await assertSafeStoragePath(root, snapshot.sourcePath);
+      const sourceInfo = await stat(source);
+      if (!sourceInfo.isFile() || sourceInfo.size !== snapshot.sourceFileSizeBytes)
         throw new UnrecoverableError("Source video is unavailable");
       const workRoot = join(root, ".render-staging");
+      await assertSafeStoragePath(root, workRoot, true);
       await mkdir(workRoot, { recursive: true });
       directory = join(workRoot, `${jobId}-${token}-${randomUUID()}`);
       await registerJobAsset(
@@ -136,6 +126,7 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
         "render_temp",
         this.config.render.retentionDays,
       );
+      await assertSafeStoragePath(root, directory, true);
       await mkdir(directory);
       const font = await readFile(this.config.render.fontPath);
       if (
@@ -215,6 +206,7 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
         jobId,
         snapshot.clip.id,
       );
+      await assertSafeStoragePath(root, target, true);
       await mkdir(target, { recursive: true });
       finalPath = join(target, `${token}.mp4`);
       await registerJobAsset(
@@ -229,6 +221,8 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       await heartbeat;
       await touch();
       if (controller.signal.aborted) throw controller.signal.reason;
+      await assertSafeStoragePath(root, outputPath);
+      await assertSafeStoragePath(root, finalPath, true);
       await rename(outputPath, finalPath);
       const id = await this.query<string | null>(
         "SELECT public.complete_clip_render_item($1,$2,$3,$4,$5) AS result",
@@ -285,9 +279,9 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
           "SELECT public.clip_render_output_exists($1,$2) AS result",
           [jobId, finalPath.replaceAll("\\", "/")],
         ).catch(() => true);
-        if (!referenced) await rm(finalPath, { force: true });
+        if (!referenced) await this.safeRemove(finalPath, { force: true });
       }
-      if (directory) await rm(directory, { recursive: true, force: true });
+      if (directory) await this.safeRemove(directory, { recursive: true, force: true });
     }
   }
 }

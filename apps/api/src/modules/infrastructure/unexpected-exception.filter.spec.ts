@@ -45,13 +45,34 @@ describe("UnexpectedExceptionFilter", () => {
       },
     });
     expect(error).toHaveBeenCalledWith({
-      errorName: "Error",
+      errorName: "UnexpectedError",
       event: "unexpected_api_error",
       method: "POST",
-      projectId: "project-safe",
       requestId: "req_filter_test",
       route: "/billing/webhook",
     });
+  });
+
+  it.each([400, 401, 403, 404, 409, 410, 413, 422, 429, 503])(
+    "preserves expected HTTP status %s with safe messages",
+    (statusCode) => {
+      const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+      const { host, json, status } = setup();
+      new UnexpectedExceptionFilter().catch(
+        new HttpException("SECRET_MARKER /private/path", statusCode),
+        host,
+      );
+      expect(status).toHaveBeenCalledWith(statusCode);
+      expect(JSON.stringify(json.mock.calls)).not.toContain("SECRET_MARKER");
+      expect(error).not.toHaveBeenCalled();
+    },
+  );
+  it("bounds request IDs and omits raw unmatched paths and invalid identifiers", () => {
+    const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    const { host, json } = setup("SECRET_MARKER".repeat(20));
+    new UnexpectedExceptionFilter().catch(new Error("SECRET_MARKER"), host);
+    expect(JSON.stringify(json.mock.calls)).not.toContain("SECRET_MARKER");
+    expect(JSON.stringify(error.mock.calls)).not.toContain("SECRET_MARKER");
   });
 
   it("preserves an existing valid HttpException envelope without wrapping it", () => {

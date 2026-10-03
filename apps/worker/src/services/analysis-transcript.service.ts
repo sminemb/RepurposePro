@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { Inject } from "@nestjs/common";
@@ -165,7 +164,7 @@ export class AnalysisTranscriptService {
         transcript: { ...normalizedTranscript, id: persisted.transcriptId, model: this.model },
       };
     } finally {
-      await rm(audioPath, { force: true }).catch(() => undefined);
+      await this.extractor.discard(audioPath).catch(() => undefined);
     }
   }
 }

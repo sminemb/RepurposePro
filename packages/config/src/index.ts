@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { isIP } from "node:net";
 import { isAbsolute, resolve } from "node:path";
 
 import { config as loadDotEnv } from "dotenv";
@@ -8,6 +9,28 @@ const nodeEnvironmentSchema = z.enum(["development", "test", "production"]);
 const appEnvironmentSchema = z.enum(["local", "development", "staging", "production", "test"]);
 const logLevelSchema = z.enum(["debug", "info", "warn", "error"]);
 const arcjetModeSchema = z.enum(["DRY_RUN", "LIVE"]);
+const proxyListSchema = z
+  .string()
+  .default("")
+  .transform((value) =>
+    value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean),
+  )
+  .refine(
+    (entries) =>
+      entries.every((entry) => {
+        const [address, mask, ...extra] = entry.split("/");
+        const family = isIP(address ?? "");
+        return (
+          family !== 0 &&
+          extra.length === 0 &&
+          (mask === undefined || (/^\d+$/.test(mask) && Number(mask) <= (family === 4 ? 32 : 128)))
+        );
+      }),
+    "Trusted proxies must be IP addresses or CIDR ranges.",
+  );
 const databaseUrlSchema = (role: string) =>
   z
     .string()
@@ -472,6 +495,38 @@ export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
   };
 }
 
+export function loadProtectionConfig(environment?: NodeJS.ProcessEnv) {
+  const parsed = parseEnvironment(
+    z
+      .object({
+        APP_ENV: appEnvironmentSchema,
+        NODE_ENV: nodeEnvironmentSchema,
+        ARCJET_KEY: arcjetKeySchema,
+        ARCJET_MODE: arcjetModeSchema,
+        ARCJET_TRUSTED_PROXIES: proxyListSchema,
+      })
+      .superRefine((value, context) => {
+        if (
+          (value.APP_ENV === "production" || value.NODE_ENV === "production") &&
+          value.ARCJET_MODE !== "LIVE"
+        )
+          context.addIssue({
+            code: "custom",
+            path: ["ARCJET_MODE"],
+            message: "Production requires Arcjet LIVE enforcement.",
+          });
+      }),
+    "protection",
+    environment,
+  );
+  return {
+    key: parsed.ARCJET_KEY,
+    mode: parsed.ARCJET_MODE,
+    proxies: parsed.ARCJET_TRUSTED_PROXIES,
+    local: ["local", "test"].includes(parsed.APP_ENV),
+  };
+}
+
 export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig {
   const parsed = parseEnvironment(workerEnvironmentSchema, "worker", environment);
 
@@ -526,8 +581,13 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
       enableWordTimestamps: parsed.WHISPER_ENABLE_WORD_TIMESTAMPS,
       language: parsed.WHISPER_LANGUAGE,
       model: parsed.WHISPER_MODEL,
-      pythonPath: parsed.WHISPER_PYTHON_PATH,
+      pythonPath: /[/\\]/.test(parsed.WHISPER_PYTHON_PATH)
+        ? resolveStorageRoot(parsed.WHISPER_PYTHON_PATH)
+        : parsed.WHISPER_PYTHON_PATH,
       timeoutMs: parsed.WHISPER_TIMEOUT_MS,
     },
   };
 }
+export { assertSafeStoragePath, assertSafeStorageTree } from "./safe-storage";
+export { assertSafeExecutable } from "./safe-executable";
+export { safeRequestId, safeLogContext, safeLogSerializers } from "./safe-logging";

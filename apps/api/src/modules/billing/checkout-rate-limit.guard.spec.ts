@@ -15,7 +15,11 @@ const context = {
 
 describe("CheckoutRateLimitGuard", () => {
   it("uses authenticated user ID as Arcjet characteristic", async () => {
-    const protect = vi.fn().mockResolvedValue({ isDenied: () => false });
+    const protect = vi.fn().mockResolvedValue({
+      isDenied: () => false,
+      isErrored: () => false,
+      reason: { isRateLimit: () => true },
+    });
     const guard = new CheckoutRateLimitGuard({ protect });
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
@@ -27,7 +31,11 @@ describe("CheckoutRateLimitGuard", () => {
 
   it("returns documented 429 envelope when Arcjet denies Checkout", async () => {
     const guard = new CheckoutRateLimitGuard({
-      protect: vi.fn().mockResolvedValue({ isDenied: () => true }),
+      protect: vi.fn().mockResolvedValue({
+        isDenied: () => true,
+        isErrored: () => false,
+        reason: { isRateLimit: () => true },
+      }),
     });
 
     try {

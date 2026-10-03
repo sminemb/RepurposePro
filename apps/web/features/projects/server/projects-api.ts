@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import "server-only";
 
 import type {
@@ -22,7 +23,15 @@ interface CreateProjectResult {
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   const body = (await response.json().catch(() => null)) as ApiError | null;
-  return body?.error?.message ?? fallback;
+  return (
+    protectionRetryMessage(
+      body?.error?.code,
+      "Project creation",
+      response.headers.get("retry-after"),
+    ) ??
+    body?.error?.message ??
+    fallback
+  );
 }
 
 export async function createProject(input: CreateProjectInput): Promise<CreateProjectResult> {

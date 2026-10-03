@@ -7,6 +7,7 @@ import { Logger } from "nestjs-pino";
 
 import { AppModule } from "./app.module";
 import { describeApiStartupFailure } from "./startup-diagnostics";
+import { apiCorsOptions } from "./cors.config";
 
 let apiPort = 4000;
 
@@ -23,10 +24,7 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api/v1");
-  app.enableCors({
-    credentials: true,
-    origin: config.appUrl,
-  });
+  app.enableCors(apiCorsOptions(config.appUrl));
   app.enableShutdownHooks();
 
   process.stdout.write("API startup: connecting required services.\n");

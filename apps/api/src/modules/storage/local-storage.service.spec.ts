@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -30,6 +30,17 @@ afterEach(async () => {
 });
 
 describe("LocalStorageService", () => {
+  it("rejects junction-backed staging before committing or removing any file", async () => {
+    const service = await createService();
+    const external = await mkdtemp(join(tmpdir(), "vs11-outside-"));
+    roots.push(external);
+    await writeFile(join(external, "upload"), "unchanged");
+    await symlink(external, join(service.storageRoot, ".staging"), "junction");
+    const stagedPath = service.stagingPath("upload");
+    await expect(service.commitSourceUpload({ userId: "owner", projectId: "project", stagedPath, fileSizeBytes: 9, mimeType: "video/mp4", originalFileName: "video.mp4" })).rejects.toThrow();
+    await expect(service.discardStagedUpload(stagedPath)).rejects.toThrow();
+    expect(await readFile(join(external, "upload"), "utf8")).toBe("unchanged");
+  });
   it("stores source files under a deterministic private project directory", async () => {
     const service = await createService();
     const stagedPath = await stageFile(service, "staged-upload");

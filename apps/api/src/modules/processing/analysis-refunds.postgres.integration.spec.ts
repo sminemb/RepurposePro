@@ -318,7 +318,10 @@ describeIntegration("paid analysis worker-to-refund recovery", () => {
     });
     const transcripts = new AnalysisTranscriptService(
       repository,
-      { extract } as unknown as TranscriptionAudioExtractor,
+      {
+        extract,
+        discard: vi.fn().mockResolvedValue(undefined),
+      } as unknown as TranscriptionAudioExtractor,
       { transcribe } as unknown as WhisperTranscriber,
       "small.en",
     );

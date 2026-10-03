@@ -43,6 +43,18 @@ describe("getCreditBalance", () => {
 });
 
 describe("createCheckoutSession", () => {
+  it("explains the protection retry window", async () => {
+    requestApiMock.mockResolvedValue(
+      Response.json(
+        { error: { code: "RATE_LIMIT_EXCEEDED" } },
+        { status: 429, headers: { "Retry-After": "60" } },
+      ),
+    );
+    await expect(createCheckoutSession("creator")).resolves.toEqual({
+      kind: "unavailable",
+      message: "Too many attempts. Wait 60 seconds and try again.",
+    });
+  });
   beforeEach(() => {
     requestApiMock.mockReset();
   });

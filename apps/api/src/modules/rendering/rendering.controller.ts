@@ -1,6 +1,6 @@
+import { ProtectAction } from "../../common/protection/protection.guard";
 import { randomUUID } from "node:crypto";
-import { open, realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { open } from "node:fs/promises";
 import type { Response } from "express";
 import {
   Body,
@@ -17,7 +17,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { loadApiConfig } from "@repurposepro/config";
+import { assertSafeStoragePath, loadApiConfig } from "@repurposepro/config";
 import { renderInputSchema } from "@repurposepro/shared";
 import { z } from "zod";
 import { AuthGuard, type AuthenticatedRequest } from "../auth/auth.guard";
@@ -36,6 +36,7 @@ export class RenderingController {
       throw renderHttpError("VALIDATION_ERROR", request.id);
     return request.user.id;
   }
+  @ProtectAction("render")
   @Post(":projectId/render")
   @HttpCode(202)
   @Header("Cache-Control", "private, no-store")
@@ -78,11 +79,7 @@ export class RenderingController {
     );
     let handle;
     try {
-      const root = await realpath(resolve(loadApiConfig().storageRoot));
-      const path = await realpath(output.storagePath);
-      const contained = relative(root, path);
-      if (isAbsolute(contained) || contained === ".." || contained.startsWith(`..${sep}`))
-        throw new Error("Invalid storage path");
+      const path = await assertSafeStoragePath(loadApiConfig().storageRoot, output.storagePath);
       handle = await open(path, "r");
       const stat = await handle.stat();
       if (!stat.isFile() || stat.size !== output.fileSizeBytes)

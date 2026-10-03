@@ -1,6 +1,7 @@
+import { ProtectionGuard } from "./common/protection/protection.guard";
 import { Module } from "@nestjs/common";
 import { SummaryModule } from "./modules/summary/summary.module";
-import { APP_FILTER } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { loadApiConfig } from "@repurposepro/config";
 import { LoggerModule } from "nestjs-pino";
 
@@ -29,6 +30,7 @@ const config = loadApiConfig();
     SummaryModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ProtectionGuard },
     {
       provide: APP_FILTER,
       useClass: UnexpectedExceptionFilter,

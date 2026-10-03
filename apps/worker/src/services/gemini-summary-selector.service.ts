@@ -6,6 +6,7 @@ import {
 } from "@repurposepro/shared";
 import type { GeminiModelClient, GeminiClipSelectorOptions } from "./gemini-clip-selector.service";
 import type { SelectionAttempts } from "./analysis-retry";
+import { generateGeminiContent } from "./gemini-request";
 
 export class GeminiSummarySelectionError extends Error {
   public constructor(
@@ -36,14 +37,14 @@ export class GeminiSummarySelector {
     if (!input.transcriptSegments.some((s) => s.text.trim()))
       throw new Error("No speech is available for summary selection.");
     let issues: string[] = [];
-    const maxRetries = attempts ? 2 : this.options.maxRetries;
+    const maxRetries = attempts ? 2 : Math.min(2, this.options.maxRetries);
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       signal.throwIfAborted();
       const durableAttempt = attempts ? await attempts.begin() : attempt + 1;
       const prompt = createSummarySelectionPrompt(input, issues);
       let response: { readonly text?: string };
       try {
-        response = await this.client.generateContent({
+        response = await generateGeminiContent(this.client, {
           model: this.options.model,
           contents: prompt.contents,
           config: {
@@ -86,7 +87,7 @@ export class GeminiSummarySelector {
         });
       } catch (error: unknown) {
         signal.throwIfAborted();
-        if (!attempts) throw error;
+        if (!attempts) throw new GeminiSummarySelectionError("request_failed", { cause: error });
         await attempts.fail("GEMINI_FAILED");
         if (durableAttempt >= 3)
           throw new GeminiSummarySelectionError("request_failed", { cause: error });

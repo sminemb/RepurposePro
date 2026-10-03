@@ -1,7 +1,8 @@
+import { assertSafeStoragePath, assertSafeStorageTree } from "@repurposepro/config";
 import { randomUUID } from "node:crypto";
-import { mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { registerJobAsset } from "./storage-registration";
-import { isAbsolute, join, relative, sep } from "node:path";
+import { join } from "node:path";
 import type { DatabaseClient } from "@repurposepro/db";
 import type { WorkerConfig } from "@repurposepro/config";
 import { z } from "zod";
@@ -60,6 +61,10 @@ export class SummaryRenderer {
     private readonly database: DatabaseClient,
     private readonly config: WorkerConfig,
   ) {}
+  private async safeRemove(path: string, options: Parameters<typeof rm>[1]): Promise<void> {
+    await assertSafeStorageTree(this.config.storageRoot, path);
+    await rm(path, options);
+  }
   private async query<T>(sql: string, args: unknown[]) {
     return (await this.database.pool.query<{ result: T }>(sql, args)).rows[0]?.result;
   }
@@ -101,17 +106,13 @@ export class SummaryRenderer {
       const snapshot = snapshotSchema.parse(acquired);
       if (snapshot.projectId !== projectId || snapshot.sourceExpiresAt.getTime() <= Date.now())
         throw new UnrecoverableError("Source video is unavailable");
-      const root = await realpath(this.config.storageRoot),
-        source = await realpath(snapshot.sourcePath),
-        contained = relative(root, source);
-      if (
-        isAbsolute(contained) ||
-        contained === ".." ||
-        contained.startsWith(`..${sep}`) ||
-        (await stat(source)).size !== snapshot.sourceFileSizeBytes
-      )
+      const root = await assertSafeStoragePath(this.config.storageRoot, this.config.storageRoot);
+      const source = await assertSafeStoragePath(root, snapshot.sourcePath);
+      const sourceInfo = await stat(source);
+      if (!sourceInfo.isFile() || sourceInfo.size !== snapshot.sourceFileSizeBytes)
         throw new UnrecoverableError("Source video is unavailable");
       const staging = join(root, ".render-staging");
+      await assertSafeStoragePath(root, staging, true);
       await mkdir(staging, { recursive: true });
       directory = join(staging, `${jobId}-${token}-${randomUUID()}`);
       await registerJobAsset(
@@ -122,6 +123,7 @@ export class SummaryRenderer {
         "render_temp",
         this.config.render.retentionDays,
       );
+      await assertSafeStoragePath(root, directory, true);
       await mkdir(directory);
       const probe = await probeMedia(this.config.render.ffprobePath, source, abort.signal),
         video = probe.streams.find((s) => s.codec_type === "video");
@@ -151,6 +153,8 @@ export class SummaryRenderer {
           "-hide_banner",
           "-nostdin",
           "-y",
+          "-protocol_whitelist",
+          "file,pipe",
           "-i",
           source,
           "-filter_complex_script",
@@ -216,6 +220,7 @@ export class SummaryRenderer {
         jobId,
         "summary",
       );
+      await assertSafeStoragePath(root, target, true);
       await mkdir(target, { recursive: true });
       finalPath = join(target, `${token}.mp4`);
       await registerJobAsset(
@@ -230,6 +235,8 @@ export class SummaryRenderer {
       await heartbeat;
       await touch();
       abort.signal.throwIfAborted();
+      await assertSafeStoragePath(root, outputPath);
+      await assertSafeStoragePath(root, finalPath, true);
       await rename(outputPath, finalPath);
       const id = await this.query<string | null>(
         "SELECT public.complete_summary_render($1,$2,$3,$4) AS result",
@@ -280,9 +287,9 @@ export class SummaryRenderer {
           "SELECT public.clip_render_output_exists($1,$2) AS result",
           [jobId, finalPath.replaceAll("\\", "/")],
         ).catch(() => undefined);
-        if (exists === false) await rm(finalPath, { force: true });
+        if (exists === false) await this.safeRemove(finalPath, { force: true });
       }
-      if (directory) await rm(directory, { recursive: true, force: true });
+      if (directory) await this.safeRemove(directory, { recursive: true, force: true });
     }
   }
 }

@@ -1,3 +1,4 @@
+import { protectionRetryMessage } from "@repurposepro/shared";
 import { summaryStateSchema, renderStartSchema, type SummaryEdit } from "@repurposepro/shared";
 export async function summaryRequest(apiUrl: string, projectId: string, input?: SummaryEdit) {
   const response = await fetch(
@@ -13,10 +14,14 @@ export async function summaryRequest(apiUrl: string, projectId: string, input?: 
   );
   const body = (await response.json().catch(() => null)) as {
     data?: unknown;
-    error?: { message?: string };
+    error?: { message?: string; code?: string };
   } | null;
   if (!response.ok)
-    throw new Error(body?.error?.message ?? "The summary could not be loaded or saved. Try again.");
+    throw new Error(
+      protectionRetryMessage(body?.error?.code, "Rendering", response.headers.get("retry-after")) ??
+        body?.error?.message ??
+        "The summary could not be loaded or saved. Try again.",
+    );
   return summaryStateSchema.parse(body?.data);
 }
 export async function renderSummary(
@@ -37,9 +42,13 @@ export async function renderSummary(
   );
   const body = (await response.json().catch(() => null)) as {
     data?: unknown;
-    error?: { message?: string };
+    error?: { message?: string; code?: string };
   } | null;
   if (!response.ok)
-    throw new Error(body?.error?.message ?? "Your summary could not start rendering. Try again.");
+    throw new Error(
+      protectionRetryMessage(body?.error?.code, "Rendering", response.headers.get("retry-after")) ??
+        body?.error?.message ??
+        "Your summary could not start rendering. Try again.",
+    );
   return renderStartSchema.parse(body?.data);
 }

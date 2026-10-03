@@ -1,3 +1,4 @@
+import { validateCleanupQueue, type QueueInput } from "../queue-contract";
 import { randomUUID } from "node:crypto";
 import { Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import type { WorkerConfig } from "@repurposepro/config";
@@ -54,6 +55,11 @@ export class CleanupWorkerService implements OnModuleInit, OnModuleDestroy {
       { ...opts, jobId: `startup-${Math.floor(Date.now() / 3_600_000)}` },
     );
   }
+  async processQueue(job: QueueInput) {
+    validateCleanupQueue(job);
+    return this.sweep();
+  }
+
   async sweep() {
     try {
       this.projectCursor = await discoverOrphans(

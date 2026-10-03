@@ -1,3 +1,4 @@
+import { ProtectAction } from "../../common/protection/protection.guard";
 import type {
   ApiListSuccess,
   ApiSuccess,
@@ -45,6 +46,7 @@ import { UploadFileInterceptor } from "./upload-file.interceptor";
 export class ProjectsController {
   public constructor(private readonly projectsService: ProjectsService) {}
 
+  @ProtectAction("project")
   @Post()
   @HttpCode(201)
   public async create(
@@ -93,9 +95,11 @@ export class ProjectsController {
     }
   }
 
+  @ProtectAction("upload")
   @Post(":projectId/upload")
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(UploadFileInterceptor)
+  @UseGuards(UploadOwnershipGuard)
   @UseFilters(UploadExceptionFilter)
   public async upload(
     @Param("projectId") projectId: string,
@@ -205,3 +209,4 @@ export class ProjectsController {
     return request.user.id;
   }
 }
+import { UploadOwnershipGuard } from "./upload-ownership.guard";

@@ -6,6 +6,7 @@ import {
 } from "@repurposepro/shared";
 import { z } from "zod";
 import type { SelectionAttempts } from "./analysis-retry";
+import { generateGeminiContent } from "./gemini-request";
 
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const OVERLAP_DEDUPLICATION_RATIO = 0.8;
@@ -92,14 +93,14 @@ export class GeminiClipSelector {
     let best: SelectionValidation | undefined;
 
     let lastRequestError: GeminiClipSelectionError | undefined;
-    const maxRetries = attempts ? 2 : this.options.maxRetries;
+    const maxRetries = attempts ? 2 : Math.min(2, this.options.maxRetries);
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       if (signal.aborted) throwAbortReason(signal);
       const durableAttempt = attempts ? await attempts.begin() : attempt + 1;
 
       let response: { readonly text?: string };
       try {
-        response = await this.client.generateContent({
+        response = await generateGeminiContent(this.client, {
           config: {
             abortSignal: signal,
             httpOptions: {
@@ -127,6 +128,7 @@ export class GeminiClipSelector {
         break;
       }
 
+      if (signal.aborted) throwAbortReason(signal);
       lastRequestError = undefined;
       const validated = validateResponse(response.text, input.sourceDurationSeconds);
       if (isBetterSelection(validated, best)) {

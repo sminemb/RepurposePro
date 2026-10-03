@@ -1,14 +1,14 @@
+import { resourceQueuePayload } from "../queue-contract";
 import { randomUUID } from "node:crypto";
 
 import { Logger, type OnModuleDestroy } from "@nestjs/common";
 import { closeDatabaseClient, type DatabaseClient } from "@repurposepro/db";
-import { UnrecoverableError, type Job } from "bullmq";
+import { type Job } from "bullmq";
 import { z } from "zod";
 
 import { deriveCaptionLines } from "../services/analysis-pipeline.service";
 import type { GeminiClipRegenerator } from "../services/gemini-clip-regenerator.service";
 
-const payloadSchema = z.object({ jobId: z.uuid(), projectId: z.uuid() }).strict();
 const frozenRequestSchema = z.object({
   sourceId: z.uuid(),
   transcriptId: z.uuid(),
@@ -50,15 +50,7 @@ export class ClipRegenerationProcessor implements OnModuleDestroy {
   }
 
   public async process(job: Pick<Job, "id" | "name" | "data">): Promise<void> {
-    const payload = payloadSchema.safeParse(job.data as unknown);
-    if (
-      job.name !== "regenerate_clip_candidate" ||
-      !payload.success ||
-      job.id !== payload.data.jobId
-    ) {
-      throw new UnrecoverableError("Invalid clip regeneration queue contract.");
-    }
-    const { jobId, projectId } = payload.data;
+    const { jobId, projectId } = resourceQueuePayload(job, ["regenerate_clip_candidate"]);
     const token = randomUUID();
     const raw = await this.query<unknown>(
       "SELECT public.acquire_clip_regeneration($1,$2,$3) AS result",
