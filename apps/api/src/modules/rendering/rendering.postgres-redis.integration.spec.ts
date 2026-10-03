@@ -90,6 +90,122 @@ suite("saved one clip renders", () => {
       ],
     );
   });
+  it("rejects foreign owners and mixed clip/project IDs without mutations", async () => {
+    const otherProject = randomUUID();
+    await owner.pool.query<{ result: unknown; count: string }>(
+      "INSERT INTO users(id,name,email) VALUES('vs11-intruder','Intruder','vs11-intruder@example.test')",
+    );
+    await owner.pool.query<{ result: unknown; count: string }>(
+      "INSERT INTO projects(id,user_id,name,output_type,status) VALUES($1,'render-owner','Other','clips','draft')",
+      [otherProject],
+    );
+    const before = (
+      await owner.pool.query<{ result: unknown; count: string }>(
+        "SELECT to_jsonb(c) AS state FROM clip_candidates c WHERE id=$1",
+        [clip],
+      )
+    ).rows;
+    for (const [user, parent] of [
+      ["vs11-intruder", project],
+      ["render-owner", otherProject],
+    ]) {
+      const query = async (sql: string, args: unknown[]) =>
+        (await runtime.pool.query<{ result: unknown }>(sql, args)).rows[0]?.result;
+      expect(
+        await query("SELECT public.get_owned_clip_editor($1,$2,$3) AS result", [
+          user,
+          parent,
+          clip,
+        ]),
+      ).toBeNull();
+      expect(
+        await query("SELECT public.save_owned_clip_editor($1,$2,$3,$4::jsonb) AS result", [
+          user,
+          parent,
+          clip,
+          JSON.stringify({ expectedRevision: 0 }),
+        ]),
+      ).toMatchObject({ outcome: "CLIP_NOT_FOUND" });
+      expect(
+        await query("SELECT public.set_owned_clip_selection($1,$2,$3,false) AS result", [
+          user,
+          parent,
+          clip,
+        ]),
+      ).toMatchObject({ error: "CLIP_NOT_FOUND" });
+      expect(
+        await query("SELECT public.delete_owned_clip_candidate($1,$2,$3,0) AS result", [
+          user,
+          parent,
+          clip,
+        ]),
+      ).toMatchObject({ error: "CLIP_NOT_FOUND" });
+      expect(
+        await query("SELECT public.start_owned_clip_regeneration($1,$2,$3,0,$4) AS result", [
+          user,
+          parent,
+          clip,
+          randomUUID(),
+        ]),
+      ).toMatchObject({ error: "CLIP_NOT_FOUND" });
+    }
+    expect(
+      (
+        await owner.pool.query<{ result: unknown; count: string }>(
+          "SELECT to_jsonb(c) AS state FROM clip_candidates c WHERE id=$1",
+          [clip],
+        )
+      ).rows,
+    ).toEqual(before);
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT * FROM public.get_owned_source_video_content('vs11-intruder',$1)",
+          [project],
+        )
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT * FROM public.list_owned_project_clip_candidates('vs11-intruder',$1)",
+          [project],
+        )
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.owned_video_framing('vs11-intruder',$1,true) AS result",
+          [project],
+        )
+      ).rows[0]?.result,
+    ).toBeNull();
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.start_owned_clip_batch_render('vs11-intruder',$1,$2::jsonb,$3) AS result",
+          [project, JSON.stringify({ [clip]: 0 }), randomUUID()],
+        )
+      ).rows[0]?.result,
+    ).toMatchObject({ error: "PROJECT_NOT_FOUND" });
+    expect(
+      (
+        await owner.pool.query<{ result: unknown; count: string }>(
+          "SELECT count(*)::int AS count FROM processing_jobs WHERE project_id=$1",
+          [project],
+        )
+      ).rows[0]?.count,
+    ).toBe(1);
+    expect(
+      (
+        await owner.pool.query<{ result: unknown; count: string }>(
+          "SELECT count(*)::int AS count FROM credit_ledger WHERE project_id=$1",
+          [project],
+        )
+      ).rows[0]?.count,
+    ).toBe(0);
+  });
   it("replaces one slot with the best unused backup exactly once without charging", async () => {
     await owner.pool.query(
       "UPDATE projects SET current_job_id=$1,status='preview_ready' WHERE id=$2",

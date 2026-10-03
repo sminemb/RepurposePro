@@ -662,4 +662,57 @@ suite("summary lifecycle", () => {
       ).rows[0]!.count,
     ).toBe("2");
   });
+  it("isolates saved summaries and export metadata from foreign owners", async () => {
+    const own = await get();
+    expect(own).toBeTruthy();
+    expect(await get("foreign-owner")).toBeNull();
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.save_owned_summary($1,$2,0,'[]'::jsonb) AS result",
+          ["foreign-owner", project],
+        )
+      ).rows[0]?.result,
+    ).toMatchObject({ error: "PROJECT_NOT_FOUND" });
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.start_owned_summary_render($1,$2,0,$3) AS result",
+          ["foreign-owner", project, randomUUID()],
+        )
+      ).rows[0]?.result,
+    ).toMatchObject({ error: "PROJECT_NOT_FOUND" });
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.list_owned_render_outputs($1,$2) AS result",
+          ["foreign-owner", project],
+        )
+      ).rows[0]?.result,
+    ).toBeNull();
+    const output = (
+      await owner.pool.query<{ id: string }>(
+        "SELECT id FROM rendered_outputs WHERE project_id=$1 LIMIT 1",
+        [project],
+      )
+    ).rows[0];
+    expect(output).toBeDefined();
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.get_owned_render_output($1,$2,$3) AS result",
+          ["foreign-owner", project, output!.id],
+        )
+      ).rows[0]?.result,
+    ).toBeNull();
+    expect(
+      (
+        await runtime.pool.query<{ result: unknown; count: string }>(
+          "SELECT public.get_owned_render_output($1,$2,$3) AS result",
+          ["summary-owner", randomUUID(), output!.id],
+        )
+      ).rows[0]?.result,
+    ).toBeNull();
+    expect(await get()).toEqual(own);
+  });
 });
