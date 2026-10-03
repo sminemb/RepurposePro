@@ -4,6 +4,8 @@ import type { AddressInfo } from "node:net";
 import { resolve } from "node:path";
 
 import type { INestApplication } from "@nestjs/common";
+import { loadApiConfig } from "@repurposepro/config";
+import Stripe from "stripe";
 import { Test } from "@nestjs/testing";
 import { closeDatabaseClient, createDatabaseClient, type DatabaseClient } from "@repurposepro/db";
 import type { VideoAnalysisJobPayload } from "@repurposepro/shared";
@@ -19,6 +21,10 @@ import { ANALYSIS_RATE_LIMIT_CLIENT } from "./analysis-rate-limit.guard";
 import { ANALYSIS_QUEUE_GATEWAY } from "./analysis-queue.gateway";
 import { ProcessingModule } from "./processing.module";
 import { PROCESSING_DATABASE } from "./scoped-database.provider";
+import { CheckoutRepository } from "../billing/checkout.repository";
+import { StripeWebhookGateway } from "../billing/stripe-webhook.gateway";
+import { StripeWebhookRepository } from "../billing/stripe-webhook.repository";
+import { StripeWebhookService } from "../billing/stripe-webhook.service";
 
 const bootstrapUrl = process.env.TEST_DATABASE_BOOTSTRAP_URL;
 const migrationUrl = process.env.TEST_DATABASE_MIGRATION_URL;
@@ -52,6 +58,12 @@ describeIntegration("paid processing start API", () => {
     withDatabase(withRole(runtimeUrl, "repurposepro_processing"), database),
   );
   const enqueue = vi.fn(async (payload: VideoAnalysisJobPayload) => payload.jobId);
+  const checkoutClient = createClient(
+    withDatabase(withRole(runtimeUrl, "repurposepro_checkout"), database),
+  );
+  const webhookClient = createClient(
+    withDatabase(withRole(runtimeUrl, "repurposepro_webhook"), database),
+  );
   let failNextQueueMarker = false;
   let terminalFailureHandler:
     ((args: { readonly jobId: string }, eventId: string) => void) | undefined;
@@ -166,6 +178,7 @@ describeIntegration("paid processing start API", () => {
       const userId = {
         "session=processing-a": "processing-api-user-a",
         "session=processing-b": "processing-api-user-b",
+        "session=processing-c": "processing-api-user-c",
       }[headers.get("cookie") ?? ""];
 
       return userId
@@ -251,6 +264,8 @@ describeIntegration("paid processing start API", () => {
     }
     await closeDatabaseClient(runtimeClient);
     await closeDatabaseClient(processingClient);
+    await closeDatabaseClient(checkoutClient);
+    await closeDatabaseClient(webhookClient);
     await closeDatabaseClient(migrationClient);
     await adminClient.pool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
     await closeDatabaseClient(adminClient);
@@ -501,6 +516,118 @@ describeIntegration("paid processing start API", () => {
         },
       ],
     });
+  });
+
+  it("spends a replayed signed purchase once across concurrent starts and refunds only that deduction", async () => {
+    const config = loadApiConfig();
+    const userId = "processing-api-user-c";
+    const projectId = randomUUID();
+    const sessionId = `cs_test_${randomUUID().replaceAll("-", "")}`;
+    await migrationClient.pool.query(
+      "INSERT INTO users (id,name,email) VALUES ($1,'Purchase to analysis','processing-c@example.test')",
+      [userId],
+    );
+    await migrationClient.pool.query(
+      "INSERT INTO projects (id,user_id,name,output_type,status) VALUES ($1,$2,'Purchase to analysis','clips','uploaded')",
+      [projectId, userId],
+    );
+    await migrationClient.pool.query(
+      `INSERT INTO uploaded_videos (id,project_id,original_file_name,storage_path,mime_type,file_size_bytes,duration_seconds,width,height,has_audio,expires_at) VALUES ($1,$2,'source.mp4','/private/purchase-analysis.mp4','video/mp4',1024,60.001,640,360,true,now()+interval '7 days')`,
+      [randomUUID(), projectId],
+    );
+    const checkout = new CheckoutRepository({ database: checkoutClient });
+    const attempt = await checkout.createAttempt(
+      userId,
+      "starter",
+      config.stripe.priceIds.starter,
+      false,
+    );
+    await checkout.attach(attempt.attemptId, sessionId, new Date(Date.now() + 1_800_000));
+    const session = {
+      id: sessionId,
+      amount_total: 1000,
+      currency: "usd",
+      client_reference_id: userId,
+      livemode: false,
+      mode: "payment",
+      payment_status: "paid",
+      status: "complete",
+      payment_intent: `pi_${sessionId}`,
+      line_items: { data: [{ quantity: 1, price: { id: config.stripe.priceIds.starter } }] },
+    } as unknown as Stripe.Checkout.Session;
+    const verifier = new StripeWebhookGateway();
+    const webhook = new StripeWebhookService(
+      {
+        constructEvent: (...args) => verifier.constructEvent(...args),
+        retrieveCheckoutSession: async () => session,
+      },
+      new StripeWebhookRepository({ database: webhookClient }),
+    );
+    const payload = JSON.stringify({
+      id: `evt_${sessionId}`,
+      type: "checkout.session.completed",
+      data: { object: { id: sessionId } },
+    });
+    const signature = Stripe.webhooks.generateTestHeaderString({
+      payload,
+      secret: config.stripe.webhookSecret,
+    });
+    await Promise.all([
+      webhook.handle(Buffer.from(payload), signature),
+      webhook.handle(Buffer.from(payload), signature),
+    ]);
+    const responses = await Promise.all(
+      [0, 1].map(() =>
+        request(`/api/v1/projects/${projectId}/analyze`, {
+          method: "POST",
+          headers: { "content-type": "application/json", cookie: "session=processing-c" },
+          body: JSON.stringify({ confirmed: true }),
+        }),
+      ),
+    );
+    expect(responses.some((response) => response.status === 202)).toBe(true);
+    for (const response of responses) {
+      expect([202, 503]).toContain(response.status);
+      if (response.status === 503) {
+        await expect(response.json()).resolves.toMatchObject({
+          error: { code: "QUEUE_UNAVAILABLE" },
+        });
+      }
+    }
+    const jobs = await migrationClient.pool.query<{ id: string; credits_charged: number }>(
+      "SELECT id,credits_charged FROM processing_jobs WHERE project_id=$1",
+      [projectId],
+    );
+    expect(jobs.rows).toHaveLength(1);
+    expect(jobs.rows[0]!.credits_charged).toBe(2);
+    await waitForDispatchPublished(jobs.rows[0]!.id);
+    const retried = await request(`/api/v1/projects/${projectId}/analyze`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: "session=processing-c" },
+      body: JSON.stringify({ confirmed: true }),
+    });
+    expect(retried.status).toBe(202);
+    terminalFailureHandler!({ jobId: jobs.rows[0]!.id }, "purchase-analysis-exhausted");
+    await waitForJobStatus(jobs.rows[0]!.id, "refunded");
+    terminalFailureHandler!({ jobId: jobs.rows[0]!.id }, "purchase-analysis-replay");
+    await expect(
+      migrationClient.pool.query(
+        "SELECT type::text,amount FROM credit_ledger WHERE user_id=$1 ORDER BY amount DESC",
+        [userId],
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        { type: "purchase", amount: 40 },
+        { type: "refund", amount: 2 },
+        { type: "processing_deduction", amount: -2 },
+      ],
+    });
+    await expect(
+      migrationClient.pool.query(
+        "SELECT sum(amount)::int AS balance FROM credit_ledger WHERE user_id=$1",
+        [userId],
+      ),
+    ).resolves.toMatchObject({ rows: [{ balance: 40 }] });
   });
 
   function request(path: string, init?: RequestInit): Promise<Response> {
