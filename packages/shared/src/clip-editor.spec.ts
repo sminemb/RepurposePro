@@ -30,6 +30,14 @@ describe("clip editing", () => {
       "My phrase",
     );
   });
+  it("clips captions at fractional boundaries without mutating the baseline", () => {
+    const original = structuredClone(baseline);
+    expect(projectCaptionLines(baseline, { ...input, startTime: 1.125, endTime: 4.625 })).toEqual([
+      { id: "a", startTime: 1.125, endTime: 2, text: "My phrase", highlights: ["phrase"] },
+      { id: "b", startTime: 4, endTime: 4.625, text: "Second phrase", highlights: [] },
+    ]);
+    expect(baseline).toEqual(original);
+  });
   it("accepts disabled captions and full-source trims", () => {
     expect(clipEditInputSchema.parse(input).captionsEnabled).toBe(false);
     expect(validateClipEdit({ ...input, startTime: 0, endTime: 6 }, baseline, 6)).toBeNull();

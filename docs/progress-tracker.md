@@ -114,7 +114,7 @@ FAILED
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
 | VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
-| VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS12 | Full MVP happy path is tested, responsive, and demo-ready | IN_PROGRESS | 2026-10-03 | 11:39 | — | — | VS12-T2–T4 | 11% | — |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
 edge cases were fixed; both slices remain at 100%. See [audit evidence](verification/vs45-acceptance-audit.md).
@@ -691,22 +691,22 @@ This slice validates the whole product rather than isolated modules.
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS12        |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status     | IN_PROGRESS |
+| Start Date | 2026-10-03  |
+| Start Time | 11:39       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress   | 11%         |
 | Dependency | VS1–VS11    |
 
 ## Tasks
 
 | Task ID | Vertical Task                                                      | Layers Touched             | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ------------------------------------------------------------------ | -------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS12-T1 | Add critical domain unit tests                                     | Tests + Shared             | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T2 | Add billing and queue integration tests                            | Tests + API + DB + Queue   | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T3 | Add E2E clips happy path                                           | Web + API + Worker + Tests | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T4 | Add E2E summary happy path                                         | Web + API + Worker + Tests | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS12-T1 | Add critical domain unit tests | Tests + Shared | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 11:44 | 45 focused tests, shared typecheck and focused lint pass. |
+| VS12-T2 | Add billing and queue integration tests | Tests + API + DB + Queue | IN_PROGRESS | 2026-10-03 | 11:44 | — | — | Cross-component coverage audit and isolated harness. |
+| VS12-T3 | Add E2E clips happy path | Web + API + Worker + Tests | IN_PROGRESS | 2026-10-03 | 11:46 | — | — | Building real-stack browser harness. |
+| VS12-T4 | Add E2E summary happy path | Web + API + Worker + Tests | IN_PROGRESS | 2026-10-03 | 11:46 | — | — | Shared real-stack browser harness. |
 | VS12-T5 | Validate responsive dashboard, upload, billing, outputs            | Web + Manual/Visual Test   | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS12-T6 | Validate desktop-first editor behavior and smaller-screen fallback | Web + Manual/Visual Test   | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS12-T7 | Polish loading, empty, success, error, refund, expired states      | Web                        | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -778,17 +778,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS11 - Security, abuse protection and reliability
-Current Task: None
-Current Status: COMPLETED
-Last Completed Task: VS11-T7 at 11:20 Asia/Manila on 2026-10-03.
-Next Recommended Task: VS12 when requested.
-Uncommitted Changes: None after the verified T7 commit. Local fixtures/logs stay ignored under storage.
-Known Failing Tests: None. Full ci:check passed: 750 unit and 124 PostgreSQL/Redis tests, formatting, lint, typecheck and builds. Browser and live Arcjet outcomes verified.
-Known Blockers: npm registry metadata retries affect normal dependency re-verification. Verified CI used a temporary pre-run warn setting; see VS11 evidence. No remaining VS11 code work.
-Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Migrations 0044-0046 precede service startup. VS11 branch codex/vs11-hardening.
-Required Commands Before Continuing: Retry pnpm install --frozen-lockfile with normal policy when registry access recovers. Use pnpm test:db-integration for integration checks and automatic development-role restoration.
+Current Slice: VS12 - MVP verification and demo readiness
+Current Task: VS12-T2 through T4
+Current Status: IN_PROGRESS
+Last Completed Task: VS12-T1 at 11:44 Asia/Manila on 2026-10-03.
+Next Recommended Task: Complete isolated billing/queue and browser happy paths, then responsive/state and live-demo verification.
+Uncommitted Changes: Playwright dependency and isolated E2E harness are being implemented. Local fixtures/logs stay ignored under storage.
+Known Failing Tests: None in completed T1; 45 focused domain tests pass. E2E infrastructure is being validated.
+Known Blockers: None confirmed. Docker/browser execution requires sandbox escalation; harness startup diagnostics retained under storage/vs12-e2e.
+Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Normal frozen install passed supply-chain checks. VS12 branch codex/vs12-mvp-verification.
+Required Commands Before Continuing: Use pnpm test:db-integration for integration checks and automatic development-role restoration. Test E2E with disposable infrastructure only.
 Last Updated Date: 2026-10-03
-Last Updated Time: 11:20
+Last Updated Time: 11:52
 Last Updated By: Codex
 ```
