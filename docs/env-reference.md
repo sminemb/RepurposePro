@@ -1240,6 +1240,18 @@ Equivalent to:
 
 # 13. Arcjet Variables
 
+VS11 also protects web signup/login and API project creation, uploads, rendering, regeneration,
+and framing starts. Server-side auth protection loads `ARCJET_KEY` and `ARCJET_MODE` independently
+of billing configuration. Production requires `LIVE`; local/test may use `DRY_RUN`.
+
+`ARCJET_TRUSTED_PROXIES` is an optional comma-separated list of API reverse-proxy IP addresses
+or CIDR ranges, default empty. Only matching socket peers may supply X-Forwarded-For. Proxies
+must replace client-supplied IP headers and restrict direct backend access. Never use a broad
+range containing untrusted clients. Production web auth currently supports Vercel's overwritten
+`x-vercel-forwarded-for`; other ingress fails safely until explicitly supported. Local auth uses
+loopback identity. Protection outages reject new protected mutations with a temporary-unavailable
+response; sessions, reads, logout and signed Stripe webhooks remain available.
+
 ## `ARCJET_KEY`
 
 Purpose:

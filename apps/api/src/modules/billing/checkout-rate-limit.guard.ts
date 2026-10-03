@@ -2,69 +2,41 @@ import {
   type CanActivate,
   type ExecutionContext,
   HttpException,
-  HttpStatus,
   Inject,
   Injectable,
-  ServiceUnavailableException,
   UnauthorizedException,
+  Logger,
 } from "@nestjs/common";
-import { loadApiConfig } from "@repurposepro/config";
-
+import { protectionFailure, type ProtectionDecision } from "@repurposepro/shared";
+import { createProtectionClient } from "../../common/protection/arcjet-client";
 import type { AuthenticatedRequest } from "../auth/auth.guard";
-
 export const CHECKOUT_RATE_LIMIT_CLIENT = Symbol("CHECKOUT_RATE_LIMIT_CLIENT");
-
-export interface CheckoutRateLimitDecision {
-  isDenied(): boolean;
-}
-
+export type CheckoutRateLimitDecision = ProtectionDecision;
 export interface CheckoutRateLimitClient {
   protect(
     request: AuthenticatedRequest,
     properties: { readonly correlationId?: string; readonly userId: string },
   ): Promise<CheckoutRateLimitDecision>;
 }
-
 @Injectable()
 export class ArcjetCheckoutRateLimitClient implements CheckoutRateLimitClient {
-  private client: CheckoutRateLimitClient | undefined;
-
-  public async protect(
+  private readonly client = createProtectionClient("checkout");
+  public protect(
     request: AuthenticatedRequest,
     properties: { readonly correlationId?: string; readonly userId: string },
-  ): Promise<CheckoutRateLimitDecision> {
-    const config = loadApiConfig();
-    if (!this.client) {
-      const { default: arcjet, fixedWindow } = await import("@arcjet/node");
-      this.client = arcjet({
-        key: config.arcjet.key,
-        rules: [
-          fixedWindow({
-            characteristics: ["userId"],
-            max: 3,
-            mode: config.arcjet.mode,
-            window: "1m",
-          }),
-        ],
-      });
-    }
-
+  ) {
     return this.client.protect(request, properties);
   }
 }
-
 @Injectable()
 export class CheckoutRateLimitGuard implements CanActivate {
-  public constructor(
-    @Inject(CHECKOUT_RATE_LIMIT_CLIENT)
-    private readonly rateLimitClient: CheckoutRateLimitClient,
+  private readonly logger = new Logger(CheckoutRateLimitGuard.name);
+  constructor(
+    @Inject(CHECKOUT_RATE_LIMIT_CLIENT) private readonly client: CheckoutRateLimitClient,
   ) {}
-
-  public async canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const userId = request.user?.id;
-
-    if (!userId) {
+    if (!request.user)
       throw new UnauthorizedException({
         error: {
           code: "UNAUTHORIZED",
@@ -73,40 +45,45 @@ export class CheckoutRateLimitGuard implements CanActivate {
           requestId: request.id ?? "req_unknown",
         },
       });
-    }
-
-    let decision: CheckoutRateLimitDecision;
-
+    let decision: unknown;
     try {
-      decision = await this.rateLimitClient.protect(request, {
+      decision = await this.client.protect(request, {
         correlationId: request.id,
-        userId,
+        userId: request.user.id,
       });
     } catch {
-      throw new ServiceUnavailableException({
-        error: {
-          code: "BILLING_CHECKOUT_UNAVAILABLE",
-          details: null,
-          message: "Checkout is temporarily unavailable. Try again.",
-          requestId: request.id ?? "req_unknown",
-        },
-      });
+      decision = null;
     }
-
-    if (decision.isDenied()) {
+    const failure = protectionFailure(decision);
+    this.logger.log({
+      event: "protection_decision",
+      action: "checkout",
+      outcome: failure?.code ?? "allowed",
+      requestId: request.id,
+    });
+    if (failure) {
+      if (failure.retryAfter)
+        context
+          .switchToHttp()
+          .getResponse?.<{ setHeader(name: string, value: string): void }>()
+          ?.setHeader("Retry-After", String(failure.retryAfter));
       throw new HttpException(
         {
           error: {
-            code: "RATE_LIMIT_EXCEEDED",
+            code: failure.status === 503 ? "BILLING_CHECKOUT_UNAVAILABLE" : failure.code,
             details: null,
-            message: "Too many checkout attempts. Try again in a minute.",
+            message:
+              failure.status === 503
+                ? "Checkout is temporarily unavailable. Try again."
+                : failure.status === 429
+                  ? "Too many checkout attempts. Try again in a minute."
+                  : failure.message,
             requestId: request.id ?? "req_unknown",
           },
         },
-        HttpStatus.TOO_MANY_REQUESTS,
+        failure.status,
       );
     }
-
     return true;
   }
 }

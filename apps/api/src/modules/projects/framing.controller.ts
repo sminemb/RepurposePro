@@ -1,3 +1,4 @@
+import { ProtectAction } from "../../common/protection/protection.guard";
 import {
   Controller,
   Get,
@@ -25,6 +26,7 @@ export class FramingController {
     return this.run(projectId, request, false);
   }
 
+  @ProtectAction("framing")
   @Post()
   start(@Param("projectId") projectId: string, @Req() request: AuthenticatedRequest) {
     return this.run(projectId, request, true);

@@ -1,5 +1,10 @@
 import { toNextJsHandler } from "better-auth/next-js";
 
 import { auth } from "@/lib/auth";
+import { protectAuthRequest } from "@/lib/auth-protection";
 
-export const { GET, POST } = toNextJsHandler(auth);
+const handlers = toNextJsHandler(auth);
+export const GET = handlers.GET;
+export async function POST(request: Request) {
+  return (await protectAuthRequest(request)) ?? handlers.POST(request);
+}

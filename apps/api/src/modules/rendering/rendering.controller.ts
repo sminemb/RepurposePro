@@ -1,3 +1,4 @@
+import { ProtectAction } from "../../common/protection/protection.guard";
 import { randomUUID } from "node:crypto";
 import { open, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
@@ -36,6 +37,7 @@ export class RenderingController {
       throw renderHttpError("VALIDATION_ERROR", request.id);
     return request.user.id;
   }
+  @ProtectAction("render")
   @Post(":projectId/render")
   @HttpCode(202)
   @Header("Cache-Control", "private, no-store")

@@ -1,3 +1,4 @@
+import { ProtectAction } from "../../common/protection/protection.guard";
 import {
   BadRequestException,
   Body,
@@ -35,6 +36,7 @@ import { ClipEditorError, ClipEditorService } from "./clip-editor.service";
 export class ClipEditorController {
   public constructor(private readonly editor: ClipEditorService) {}
 
+  @ProtectAction("regenerate")
   @Post("regenerate")
   @HttpCode(200)
   public async regenerate(

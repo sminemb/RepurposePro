@@ -22,7 +22,13 @@ describe("POST /api/v1/billing/checkout", () => {
     createCheckout = vi
       .fn()
       .mockResolvedValue({ checkoutUrl: "https://checkout.stripe.com/c/pay_test" });
-    protect = vi.fn().mockResolvedValue({ isDenied: () => false });
+    protect = vi
+      .fn()
+      .mockResolvedValue({
+        isDenied: () => false,
+        isErrored: () => false,
+        reason: { isRateLimit: () => true },
+      });
     const getSession = vi.fn().mockImplementation(async ({ headers }: { headers: Headers }) => {
       if (headers.get("cookie") === "session=user-a") {
         return { user: { email: "a@example.test", id: "user-a", name: "User A" } };
@@ -115,7 +121,11 @@ describe("POST /api/v1/billing/checkout", () => {
   });
 
   it("returns documented 429 envelope when Arcjet denies Checkout", async () => {
-    protect.mockResolvedValue({ isDenied: () => true });
+    protect.mockResolvedValue({
+      isDenied: () => true,
+      isErrored: () => false,
+      reason: { isRateLimit: () => true },
+    });
     const response = await request("/api/v1/billing/checkout", {
       body: JSON.stringify({ pack: "pro" }),
       headers: { cookie: "session=user-a", "content-type": "application/json" },

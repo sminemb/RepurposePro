@@ -47,3 +47,4 @@ export * from "./rendering";
 export * from "./caption-layout";
 export * from "./summary";
 export * from "./retention";
+export * from "./protection";

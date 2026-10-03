@@ -1494,6 +1494,16 @@ cannot restart. UI refreshes cost/balance and requires explicit new-charge confi
 
 # 18. Rate Limiting and Abuse Protection
 
+VS11 applies Shield, bot detection and independent fixed windows: signup 5/10 minutes, login
+10/minute by client IP; project creation 10/minute and upload, analysis, Checkout, render,
+clip regeneration and framing starts 3/minute by authenticated user and action. Signup/login
+are actually `/api/auth/sign-up/email` and `/api/auth/sign-in/email` on the web app.
+Rate limits return `429 RATE_LIMIT_EXCEEDED` and `Retry-After` seconds; bot/attack denials return
+`403 REQUEST_BLOCKED`. SDK errors and malformed decisions return 503 before mutation. Existing
+`PROCESSING_START_UNAVAILABLE` and `BILLING_CHECKOUT_UNAVAILABLE` codes remain; new actions use
+`PROTECTION_UNAVAILABLE`. Auth returns Better Auth-compatible top-level code/message; API
+responses retain the standard error envelope. Signed webhooks and reads are outside these limits.
+
 Protect at minimum:
 
 ```text

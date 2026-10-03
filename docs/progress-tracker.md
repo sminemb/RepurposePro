@@ -113,7 +113,7 @@ FAILED
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
-| VS11  | Critical security, abuse protection, and reliability are hardened | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
+| VS11 | Critical security, abuse protection, and reliability are hardened | IN_PROGRESS | 2026-10-03 | 08:19 | — | — | None | 14% | — |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
@@ -647,20 +647,20 @@ This is a cross-cutting hardening slice and should not replace earlier security 
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS11        |
-| Status     | NOT_STARTED |
-| Start Date | —           |
-| Start Time | —           |
+| Status | IN_PROGRESS |
+| Start Date | 2026-10-03   |
+| Start Time | 08:19       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 0%          |
+| Progress | 14% |
 | Dependency | VS1–VS10    |
 
 ## Tasks
 
 | Task ID | Vertical Task                                                     | Layers Touched          | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | ----------------------------------------------------------------- | ----------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS11-T1 | Add Arcjet protection to signup, upload, analyze, render, billing | Web/API + Arcjet        | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS11-T2 | Audit ownership checks across all project resources               | API + DB + Tests        | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS11-T1 | Add Arcjet protection to signup, upload, analyze, render, billing | Web/API + Arcjet | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 08:34 | 659 unit tests, 121 PostgreSQL/Redis integration tests, typecheck and focused lint passed. |
+| VS11-T2 | Audit ownership checks across all project resources | API + DB + Tests | IN_PROGRESS | 2026-10-03 | 08:31 | — | — | — |
 | VS11-T3 | Audit upload validation and safe storage paths                    | API + Storage + Tests   | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS11-T4 | Audit worker job payload validation and safe subprocess execution | Worker + Security       | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS11-T5 | Audit Stripe webhook idempotency                                  | API + Stripe + Tests    | NOT_STARTED | —          | —          | —        | —        | —            |
@@ -778,17 +778,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS10 - Seven-day file retention
-Current Task: None - VS10 completed.
-Current Status: COMPLETED
-Last Completed Task: VS10-T6 at 07:13 Asia/Manila on 2026-10-03. All six VS10 tasks are completed.
-Next Recommended Task: VS11-T1 when requested; production rollout must apply migrations before updated service startup.
-Uncommitted Changes: None after the documentation completion commit. Local fixtures/logs/screenshots stay ignored under storage.
-Known Failing Tests: None. pnpm ci:check passes: 648 unit tests, 121 PostgreSQL/Redis integration tests and all production builds. Desktop/mobile fixtures and local retention function definitions verified.
-Known Blockers: None. Existing non-fatal Next.js dynamic tracing warning remains documented in verification evidence.
-Important Context: Source acceptance and export publication have independent deadlines; existing deadlines are preserved. API expiration is immediate. Durable asset targets and token leases defer active owners, fence stale publication and retry deletion safely. Retained transcripts, editing metadata, previews, project/job/payment/ledger/refund history survive. Cleanup itself has no financial mutation. Migration 0046 must follow 0044/0045 before updated API/worker startup. Database integration harness restores development roles.
-Required Commands Before Continuing: For production rollout, apply migrations 0044-0046 before updated API/worker startup. Local migrations and restored development roles are verified; PostgreSQL/Redis checks pass. Implementation milestone: 2b4bfb6. See docs/verification/vs10.md. Preserve VS9 refund invariants.
+Current Slice: VS11 - Security, abuse protection and reliability
+Current Task: None
+Current Status: IN_PROGRESS
+Last Completed Task: VS11-T1 at 08:34 Asia/Manila on 2026-10-03.
+Next Recommended Task: Continue all remaining VS11 tasks in tracker order.
+Uncommitted Changes: Active task changes until verified task commit; local fixtures/logs stay ignored under storage.
+Known Failing Tests: See docs/verification/vs11.md for executed checks and pending verification.
+Known Blockers: None.
+Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Migrations 0044-0046 precede service startup. VS11 branch codex/vs11-hardening.
+Required Commands Before Continuing: Run focused checks per increment and pnpm ci:check before slice completion. Use pnpm test:db-integration to restore development roles.
 Last Updated Date: 2026-10-03
-Last Updated Time: 07:13
+Last Updated Time: 08:34
 Last Updated By: Codex
 ```
