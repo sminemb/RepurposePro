@@ -79,6 +79,6 @@ describe("Gemini summary selector", () => {
         input,
         new AbortController().signal,
       ),
-    ).rejects.toThrow("timeout");
+    ).rejects.toMatchObject({ reason: "request_failed", cause: new Error("timeout") });
   });
 });

@@ -51,7 +51,7 @@ export class GeminiClipRegenerator {
       throw new GeminiClipRegenerationError("invalid_response");
     }
     let issues: readonly string[] = [];
-    for (let attempt = 0; attempt <= this.options.maxRetries; attempt += 1) {
+    for (let attempt = 0; attempt <= Math.min(2, this.options.maxRetries); attempt += 1) {
       if (input.signal?.aborted) throwAbortReason(input.signal);
       let response: { readonly text?: string };
       try {
@@ -60,6 +60,7 @@ export class GeminiClipRegenerator {
         if (input.signal?.aborted) throwAbortReason(input.signal);
         throw new GeminiClipRegenerationError("request_failed", { cause: error });
       }
+      if (input.signal?.aborted) throwAbortReason(input.signal);
       const validated = validateResponse(response.text, input);
       if (validated.candidate) return validated.candidate;
       issues = validated.issues;
