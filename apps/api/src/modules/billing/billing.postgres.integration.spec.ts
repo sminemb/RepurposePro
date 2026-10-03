@@ -535,6 +535,117 @@ describeIntegration("billing credits production query", () => {
     });
   });
 
+  it("recovers a durable receipt after an interrupted credit transaction under concurrent delivery", async () => {
+    const config = loadApiConfig();
+    const userId = "billing-api-user-a";
+    const attempt = await checkoutClient.pool.query<{ attempt_id: string }>(
+      "SELECT attempt_id FROM public.create_stripe_checkout_attempt($1,'starter',$2,$3)",
+      [userId, config.stripe.priceIds.starter, config.stripe.livemode],
+    );
+    const attemptId = attempt.rows[0]!.attempt_id;
+    const sessionId = `cs_test_${randomUUID().replaceAll("-", "")}`;
+    const paymentId = `pi_test_${randomUUID().replaceAll("-", "")}`;
+    const eventIds = [0, 1].map(() => `evt_test_${randomUUID().replaceAll("-", "")}`);
+    await checkoutClient.pool.query(
+      "SELECT public.attach_stripe_checkout_session($1,$2,now()+interval '30 minutes')",
+      [attemptId, sessionId],
+    );
+    retrieveCheckoutSession.mockResolvedValue({
+      amount_total: 1000,
+      client_reference_id: userId,
+      currency: "usd",
+      id: sessionId,
+      line_items: { data: [{ price: { id: config.stripe.priceIds.starter }, quantity: 1 }] },
+      livemode: config.stripe.livemode,
+      mode: "payment",
+      payment_intent: paymentId,
+      payment_status: "paid",
+      status: "complete",
+    });
+    const stripe = new (await import("stripe")).default(config.stripe.secretKey);
+    const deliveries = eventIds.map((id) => {
+      const payload = JSON.stringify({
+        id,
+        object: "event",
+        type: "checkout.session.completed",
+        data: { object: { id: sessionId, object: "checkout.session" } },
+        created: Math.floor(Date.now() / 1000),
+        livemode: config.stripe.livemode,
+      });
+      const signature = stripe.webhooks.generateTestHeaderString({
+        payload,
+        secret: config.stripe.webhookSecret,
+      });
+      stripe.webhooks.constructEvent(payload, signature, config.stripe.webhookSecret);
+      return { payload, signature };
+    });
+    await webhookClient.pool.query(
+      "SELECT public.receive_stripe_webhook_event($1,'checkout.session.completed')",
+      [eventIds[0]],
+    );
+    const transaction = await webhookClient.pool.connect();
+    try {
+      await transaction.query("BEGIN");
+      await transaction.query(
+        "SELECT public.grant_stripe_credit_purchase($1,'checkout.session.completed',$2,$3,$4,$5,1,1000,'usd',$6,'payment','paid','complete')",
+        [
+          eventIds[0],
+          userId,
+          sessionId,
+          paymentId,
+          config.stripe.priceIds.starter,
+          config.stripe.livemode,
+        ],
+      );
+      // Simulate process loss: receipt committed, atomic grant/ledger/event completion rolled back.
+      await transaction.query("ROLLBACK");
+    } finally {
+      transaction.release();
+    }
+    expect(
+      (
+        await migrationClient.pool.query<{ count: number }>(
+          "SELECT count(*)::int AS count FROM credit_ledger WHERE idempotency_key=$1",
+          [`stripe-checkout:${attemptId}`],
+        )
+      ).rows[0]!.count,
+    ).toBe(0);
+    const responses = await Promise.all(
+      [deliveries[0]!, deliveries[0]!, deliveries[1]!].map(({ payload, signature }) =>
+        request("/api/v1/billing/webhook", {
+          method: "POST",
+          body: payload,
+          headers: { "content-type": "application/json", "stripe-signature": signature },
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+    expect(
+      (
+        await migrationClient.pool.query<{ amount: number }>(
+          "SELECT amount FROM credit_ledger WHERE idempotency_key=$1",
+          [`stripe-checkout:${attemptId}`],
+        )
+      ).rows,
+    ).toEqual([{ amount: 40 }]);
+    expect(
+      (
+        await migrationClient.pool.query<{ count: number }>(
+          "SELECT count(*)::int AS count FROM stripe_payments WHERE stripe_checkout_session_id=$1",
+          [sessionId],
+        )
+      ).rows[0]!.count,
+    ).toBe(1);
+    expect(
+      (
+        await migrationClient.pool.query<{ status: string }>(
+          "SELECT status FROM stripe_webhook_events WHERE stripe_event_id=ANY($1) ORDER BY stripe_event_id",
+          [eventIds],
+        )
+      ).rows,
+    ).toEqual([{ status: "processed" }, { status: "processed" }]);
+  });
+
   it("persists nothing for an invalid Stripe signature", async () => {
     const eventId = `evt_test_${randomUUID().replaceAll("-", "")}`;
     const payload = JSON.stringify({

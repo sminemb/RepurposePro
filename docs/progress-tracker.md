@@ -113,7 +113,7 @@ FAILED
 | VS8 | User can generate, edit, render, and download a summary video | COMPLETED | 2026-10-02 | 12:32 | 2026-10-02 | 13:51 | None | 100% | — |
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
-| VS11 | Critical security, abuse protection, and reliability are hardened | IN_PROGRESS | 2026-10-03 | 08:19 | — | — | None | 57% | — |
+| VS11 | Critical security, abuse protection, and reliability are hardened | IN_PROGRESS | 2026-10-03 | 08:19 | — | — | None | 71% | — |
 | VS12  | Full MVP happy path is tested, responsive, and demo-ready         | NOT_STARTED | —          | —          | —          | —        | —            |       0% | —       |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
@@ -652,7 +652,7 @@ This is a cross-cutting hardening slice and should not replace earlier security 
 | Start Time | 08:19       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress | 57% |
+| Progress | 71% |
 | Dependency | VS1–VS10    |
 
 ## Tasks
@@ -663,7 +663,7 @@ This is a cross-cutting hardening slice and should not replace earlier security 
 | VS11-T2 | Audit ownership checks across all project resources | API + DB + Tests | COMPLETED | 2026-10-03 | 08:35 | 2026-10-03 | 08:44 | Ownership matrix; 25 PostgreSQL/Redis lifecycle and isolation tests passed; typecheck passed. |
 | VS11-T3 | Audit upload validation and safe storage paths | API + Storage + Tests | COMPLETED | 2026-10-03 | 08:45 | 2026-10-03 | 08:56 | 99 focused tests; 11 PostgreSQL retention tests; typecheck and focused lint passed. |
 | VS11-T4 | Audit worker job payload validation and safe subprocess execution | Worker + Security | COMPLETED | 2026-10-03 | 08:56 | 2026-10-03 | 09:06 | 78 focused regressions; 25 real clip/summary lifecycle tests; typecheck and lint passed. |
-| VS11-T5 | Audit Stripe webhook idempotency                                  | API + Stripe + Tests    | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS11-T5 | Audit Stripe webhook idempotency | API + Stripe + Tests | COMPLETED | 2026-10-03 | 09:07 | 2026-10-03 | 09:09 | 21 PostgreSQL billing tests including signed concurrent crash recovery; webhook unit tests and lint passed. |
 | VS11-T6 | Audit Gemini output validation and retry behavior                 | Worker + Gemini + Tests | NOT_STARTED | —          | —          | —        | —        | —            |
 | VS11-T7 | Add structured logs and human-readable error mapping              | API + Worker + Web      | NOT_STARTED | —          | —          | —        | —        | —            |
 
@@ -781,7 +781,7 @@ Do not mark a slice complete because only one technical layer is finished.
 Current Slice: VS11 - Security, abuse protection and reliability
 Current Task: None
 Current Status: IN_PROGRESS
-Last Completed Task: VS11-T4 at 09:06 Asia/Manila on 2026-10-03.
+Last Completed Task: VS11-T5 at 09:09 Asia/Manila on 2026-10-03.
 Next Recommended Task: Continue all remaining VS11 tasks in tracker order.
 Uncommitted Changes: Active task changes until verified task commit; local fixtures/logs stay ignored under storage.
 Known Failing Tests: See docs/verification/vs11.md for executed checks and pending verification.
@@ -789,6 +789,6 @@ Known Blockers: None.
 Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Migrations 0044-0046 precede service startup. VS11 branch codex/vs11-hardening.
 Required Commands Before Continuing: Run focused checks per increment and pnpm ci:check before slice completion. Use pnpm test:db-integration to restore development roles.
 Last Updated Date: 2026-10-03
-Last Updated Time: 09:06
+Last Updated Time: 09:09
 Last Updated By: Codex
 ```
