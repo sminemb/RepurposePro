@@ -696,7 +696,7 @@ This slice validates the whole product rather than isolated modules.
 | Start Time | 11:39       |
 | End Date   | —           |
 | End Time   | —           |
-| Progress   | 22%         |
+| Progress   | 33%         |
 | Dependency | VS1–VS11    |
 
 ## Tasks
@@ -706,11 +706,11 @@ This slice validates the whole product rather than isolated modules.
 | VS12-T1 | Add critical domain unit tests | Tests + Shared | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 11:44 | 45 focused tests, shared typecheck and focused lint pass. |
 | VS12-T2 | Add billing and queue integration tests | Tests + API + DB + Queue | COMPLETED | 2026-10-03 | 11:44 | 2026-10-03 | 12:03 | 125 PostgreSQL/Redis tests pass; signed purchase/replay, concurrent starts, durable dispatch and exact refund ledger. |
 | VS12-T3 | Add E2E clips happy path | Web + API + Worker + Tests | IN_PROGRESS | 2026-10-03 | 11:46 | — | — | Building real-stack browser harness. |
-| VS12-T4 | Add E2E summary happy path | Web + API + Worker + Tests | IN_PROGRESS | 2026-10-03 | 11:46 | — | — | Shared real-stack browser harness. |
-| VS12-T5 | Validate responsive dashboard, upload, billing, outputs            | Web + Manual/Visual Test   | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T6 | Validate desktop-first editor behavior and smaller-screen fallback | Web + Manual/Visual Test   | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T7 | Polish loading, empty, success, error, refund, expired states      | Web                        | NOT_STARTED | —          | —          | —        | —        | —            |
-| VS12-T8 | Run real video-processing demo and record results                  | Full Stack                 | NOT_STARTED | —          | —          | —        | —        | —            |
+| VS12-T4 | Add E2E summary happy path | Web + API + Worker + Tests | COMPLETED | 2026-10-03 | 11:46 | 2026-10-03 | 12:29 | Production browser journey passes; persisted edits, chronological playback, save-before-render, free render, probed/decoded MP4. |
+| VS12-T5 | Validate responsive dashboard, upload, billing, outputs | Web + Manual/Visual Test | IN_PROGRESS | 2026-10-03 | 12:17 | — | — | Six-viewport browser checks and screenshots. |
+| VS12-T6 | Validate desktop-first editor behavior and smaller-screen fallback | Web + Manual/Visual Test | IN_PROGRESS | 2026-10-03 | 12:17 | — | — | Breakpoint transitions, settings scroll and unsaved-change dialog. |
+| VS12-T7 | Polish loading, empty, success, error, refund, expired states | Web + API | IN_PROGRESS | 2026-10-03 | 11:56 | — | — | Full-stack boot and upload defects reproduced; regressions added. |
+| VS12-T8 | Run real video-processing demo and record results | Full Stack | IN_PROGRESS | 2026-10-03 | 12:10 | — | — | Source full decode, picture inspection and English Whisper preflight pass. |
 | VS12-T9 | Validate portfolio demo script end to end                          | Full Stack                 | NOT_STARTED | —          | —          | —        | —        | —            |
 
 ## Slice Acceptance Criteria
@@ -779,9 +779,9 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS12 - MVP verification and demo readiness
-Current Task: VS12-T3 through T4
+Current Task: VS12-T3, T5–T9
 Current Status: IN_PROGRESS
-Last Completed Task: VS12-T2 at 12:03 Asia/Manila on 2026-10-03.
+Last Completed Task: VS12-T4 at 12:29 Asia/Manila on 2026-10-03.
 Next Recommended Task: Complete isolated billing/queue and browser happy paths, then responsive/state and live-demo verification.
 Uncommitted Changes: Playwright dependency and isolated E2E harness are being implemented. Local fixtures/logs stay ignored under storage.
 Known Failing Tests: None in completed T1/T2; 45 focused unit tests and 125 integration tests pass. Browser purchase smoke passes.
@@ -789,6 +789,6 @@ Known Blockers: None confirmed. Docker/browser execution requires sandbox escala
 Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Normal frozen install passed supply-chain checks. VS12 branch codex/vs12-mvp-verification.
 Required Commands Before Continuing: Use pnpm test:db-integration for integration checks and automatic development-role restoration. Test E2E with disposable infrastructure only.
 Last Updated Date: 2026-10-03
-Last Updated Time: 12:05
+Last Updated Time: 12:35
 Last Updated By: Codex
 ```

@@ -1,4 +1,5 @@
 import { ProtectAction } from "../../common/protection/protection.guard";
+import { UploadOwnershipGuard } from "./upload-ownership.guard";
 import type {
   ApiListSuccess,
   ApiSuccess,
@@ -209,4 +210,3 @@ export class ProjectsController {
     return request.user.id;
   }
 }
-import { UploadOwnershipGuard } from "./upload-ownership.guard";

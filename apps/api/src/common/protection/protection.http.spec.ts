@@ -99,6 +99,28 @@ describe("protection before HTTP side effects", () => {
     }[];
     expect(providers).toContainEqual({ provide: APP_GUARD, useClass: ProtectionGuard });
   });
+  it("accepts a browser single-file upload after protection and ownership checks", async () => {
+    const body = new FormData();
+    body.set("file", new Blob(["sample video bytes"], { type: "video/mp4" }), "source.mp4");
+    const response = await fetch(`${base}/projects/${projectId}/upload`, { method: "POST", body });
+    expect(response.status).toBe(201);
+    expect(mutation).toHaveBeenCalledExactlyOnceWith("owner", projectId, {
+      fileSizeBytes: 18,
+      mimeType: "video/mp4",
+      originalFileName: "source.mp4",
+      stagedPath: expect.any(String) as string,
+    });
+  });
+  it.each(["field", "file"])("rejects an extra multipart %s before processing", async (extra) => {
+    const body = new FormData();
+    body.set("file", new Blob(["sample video bytes"], { type: "video/mp4" }), "source.mp4");
+    if (extra === "field") body.set("unexpected", "value");
+    else body.append("file", new Blob(["extra"], { type: "video/mp4" }), "extra.mp4");
+    const response = await fetch(`${base}/projects/${projectId}/upload`, { method: "POST", body });
+    expect(response.status).toBe(422);
+    expect(mutation).not.toHaveBeenCalled();
+    expect(await readdir(join(state.root, ".staging")).catch(() => [])).toHaveLength(0);
+  });
   it("exposes retry headers to the configured credentialed frontend", async () => {
     state.protect.mockResolvedValue({
       isDenied: () => true,
