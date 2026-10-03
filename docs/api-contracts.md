@@ -1634,7 +1634,8 @@ then contains `{ version, width, height, tracks }`. Each track has an `id` and o
 
 `POST /projects/:projectId/framing-analysis` requests background tracking and returns
 the same status shape (HTTP 201). Both endpoints require authentication and ownership;
-unavailable, expired, or foreign sources return 404. Requests deduplicate by source and
+missing or foreign sources return 404; owned expired sources return HTTP 410 with
+`SOURCE_VIDEO_EXPIRED`, including after physical deletion. Requests deduplicate by source and
 tracker version. Failed analysis can be retried; empty results have a 30-second cooldown.
 This operation does not transcribe, consume analysis credits, or change clip edits.
 
@@ -1663,3 +1664,30 @@ An API endpoint is not complete until:
 - Response shape is documented.
 - Relevant tests exist.
 - Expensive work is queued when applicable.
+
+## VS10 retention contract
+
+`ProjectSummary.expiresAt` is the accepted source deadline as an ISO timestamp; drafts without
+a source return null. Owned source metadata remains readable after cleanup and adds
+`status: "available" | "expired" | "deleted"` and nullable `deletedAt`. Expiration takes priority
+over deletion in availability status. Source metadata retains its original upload attributes
+and deadline. Output metadata adds nullable `deletedAt`; expired outputs remain listed with
+`status: "expired"` after automatic removal.
+
+At the exact deadline, source content/HEAD, paid analysis starts and restarts, clip regeneration,
+framing and clip/summary rendering reject with HTTP 410 and `SOURCE_VIDEO_EXPIRED`. Output
+content/download rejects with HTTP 410 and `OUTPUT_EXPIRED` at its own deadline. Ownership is
+checked first; foreign resources retain their existing not-found behavior. Expiration errors
+occur before storage access and do not expose private paths.
+
+Clip and summary metadata reads/saves remain available after source expiry and deletion, subject
+to existing ownership and revision rules. Existing exports remain downloadable until their
+individual deadlines, independently of source expiry. No new paid work or media work can acquire
+an expired source. Already queued/recovering unavailable-source work follows the existing terminal
+failure/refund rules; cleanup itself does not charge or refund credits.
+
+The reusable expiration badge shows relative text plus the exact browser-local deadline:
+normal at 24 hours or more, warning below 24 hours, urgent below one hour, expired at or after
+the deadline. Timers update deadline transitions and focus/visibility changes. Project lists,
+upload/processing views, editors and exports use the same states. Expired source playback/work
+controls and expired export download controls are unavailable; retained metadata editing stays usable.

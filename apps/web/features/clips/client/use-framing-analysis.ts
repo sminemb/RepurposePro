@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { framingStatusSchema, type FramingStatus } from "@repurposepro/shared";
 
-export function useFramingAnalysis(apiUrl: string, projectId: string) {
+export function useFramingAnalysis(apiUrl: string, projectId: string, enabled = true) {
   const [status, setStatus] = useState<FramingStatus>({ status: "missing", data: null });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,6 +26,7 @@ export function useFramingAnalysis(apiUrl: string, projectId: string) {
     [apiUrl, projectId],
   );
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     const current = ++generation.current;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -48,9 +49,9 @@ export function useFramingAnalysis(apiUrl: string, projectId: string) {
       clearTimeout(timer);
       ++generation.current;
     };
-  }, [request, refresh]);
+  }, [request, refresh, enabled]);
   const start = async () => {
-    if (busy) return;
+    if (busy || !enabled) return;
     const current = generation.current;
     setBusy(true);
     setError("");

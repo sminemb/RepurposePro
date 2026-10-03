@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { registerJobAsset } from "./storage-registration";
 import { isAbsolute, join, relative, sep } from "node:path";
 import type { DatabaseClient } from "@repurposepro/db";
 import type { WorkerConfig } from "@repurposepro/config";
@@ -112,7 +113,16 @@ export class SummaryRenderer {
         throw new UnrecoverableError("Source video is unavailable");
       const staging = join(root, ".render-staging");
       await mkdir(staging, { recursive: true });
-      directory = await mkdtemp(join(staging, `${jobId}-${token}-`));
+      directory = join(staging, `${jobId}-${token}-${randomUUID()}`);
+      await registerJobAsset(
+        this.database,
+        jobId,
+        token,
+        directory,
+        "render_temp",
+        this.config.render.retentionDays,
+      );
+      await mkdir(directory);
       const probe = await probeMedia(this.config.render.ffprobePath, source, abort.signal),
         video = probe.streams.find((s) => s.codec_type === "video");
       if (!video || !probe.streams.some((s) => s.codec_type === "audio"))
@@ -208,6 +218,14 @@ export class SummaryRenderer {
       );
       await mkdir(target, { recursive: true });
       finalPath = join(target, `${token}.mp4`);
+      await registerJobAsset(
+        this.database,
+        jobId,
+        token,
+        finalPath,
+        "render_temp",
+        this.config.render.retentionDays,
+      );
       clearInterval(timer);
       await heartbeat;
       await touch();

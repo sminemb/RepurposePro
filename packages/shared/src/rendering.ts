@@ -77,6 +77,7 @@ const clipOutputMetadataSchema = z
     status: z.enum(["ready", "failed", "expired", "deleted"]),
     createdAt: z.string(),
     expiresAt: z.string(),
+    deletedAt: z.string().nullable().optional().default(null),
   })
   .strip();
 export const outputMetadataSchema = z.discriminatedUnion("type", [

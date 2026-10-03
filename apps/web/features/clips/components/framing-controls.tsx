@@ -15,6 +15,7 @@ export function FramingControls({
   onAnalyze,
   onChange,
   range,
+  analyzeDisabled = false,
 }: {
   value: Framing | undefined;
   status: FramingStatus;
@@ -23,6 +24,7 @@ export function FramingControls({
   onAnalyze: () => void;
   onChange: (framing: Framing) => void;
   range: { startTime: number; endTime: number };
+  analyzeDisabled?: boolean;
 }) {
   const framing = value ?? defaultFraming;
   const tracks =
@@ -90,7 +92,7 @@ export function FramingControls({
           {(!tracks.length || error) && (
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || analyzeDisabled}
               onClick={onAnalyze}
               className="min-h-11 text-sm font-semibold text-rp-primary disabled:opacity-50"
             >

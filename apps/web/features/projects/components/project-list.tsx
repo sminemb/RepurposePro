@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { EmptyState } from "@/components/app/empty-state";
 import { StatusBadge } from "@/components/app/status-badge";
+import { ExpirationBadge } from "@/components/app/expiration-badge";
 
 import { getProjectCardAction } from "./project-card-action";
 
@@ -56,6 +57,11 @@ export function ProjectList({ projects }: ProjectListProps) {
             <p className="mt-2 text-sm text-rp-text-muted">{outputLabel}</p>
             <div className="mt-auto border-t border-rp-border pt-4 text-xs leading-5 text-rp-text-muted">
               <p>Created {formatCreatedAt(project.createdAt)}</p>
+              {project.expiresAt ? (
+                <div className="mt-2">
+                  <ExpirationBadge expiresAt={project.expiresAt} label="Source" />
+                </div>
+              ) : null}
               <Link
                 className="mt-3 inline-flex min-h-9 items-center text-sm font-semibold text-rp-primary hover:text-rp-text"
                 href={action.href}

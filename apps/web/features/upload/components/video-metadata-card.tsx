@@ -2,6 +2,7 @@ import type { SourceVideoMetadata } from "@repurposepro/shared";
 import { BadgeCheck, Clock3, FileVideo, Monitor } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { ExpirationBadge } from "@/components/app/expiration-badge";
 
 import { formatFileSize, formatVideoDuration, formatVideoFps } from "./video-metadata";
 
@@ -37,6 +38,9 @@ export function VideoMetadataCard({ metadata }: VideoMetadataCardProps) {
         </Badge>
       </div>
 
+      <div className="mt-4">
+        <ExpirationBadge expiresAt={metadata.expiresAt} label="Source video" />
+      </div>
       <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-rp-md border border-rp-border bg-rp-card/65 px-3 py-3">
           <dt className="flex items-center gap-2 text-xs text-rp-text-muted">

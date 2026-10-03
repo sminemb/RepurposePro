@@ -9,6 +9,7 @@ export type TranscriptionAudioExtractionFailureReason =
   "ffmpeg_failed" | "invalid_output" | "spawn_failed" | "storage_failed";
 
 export interface TranscriptionAudioExtractionInput {
+  readonly registerTemporary?: (path: string) => Promise<void>;
   readonly destinationPath: string;
   readonly signal: AbortSignal;
   readonly sourcePath: string;
@@ -102,6 +103,7 @@ export class TranscriptionAudioExtractor {
     let promoted = false;
 
     try {
+      await input.registerTemporary?.(temporaryPath);
       try {
         await mkdir(destinationDirectory, { recursive: true });
       } catch (error: unknown) {

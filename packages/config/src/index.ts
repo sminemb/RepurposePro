@@ -114,7 +114,37 @@ const serverEnvironmentSchema = z.object({
   LOG_PRETTY: booleanFromEnvironment,
 });
 
+function validCleanupCron(value: string): boolean {
+  const fields = value.split(/\s+/u);
+  const bounds = [
+    [0, 59],
+    [0, 23],
+    [1, 31],
+    [1, 12],
+    [0, 7],
+  ];
+  return (
+    fields.length === 5 &&
+    fields.every((field, index) =>
+      field.split(",").every((part) => {
+        const match = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/u.exec(part);
+        if (!match || (match[2] !== undefined && Number(match[2]) < 1)) return false;
+        if (match[1] === "*") return true;
+        const [start, end = start] = match[1]!.split("-").map(Number);
+        return start! >= bounds[index]![0]! && end! <= bounds[index]![1]! && end! >= start!;
+      }),
+    )
+  );
+}
+
 const workerEnvironmentSchema = serverEnvironmentSchema.extend({
+  CLEANUP_SCHEDULE_CRON: z
+    .string()
+    .trim()
+    .refine(validCleanupCron, "Must be a valid numeric five-field cron expression.")
+    .default("0 * * * *"),
+  CLEANUP_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
+  CLEANUP_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
   FFMPEG_PRESET: z
     .enum([
       "ultrafast",
@@ -165,7 +195,7 @@ const apiEnvironmentSchema = serverEnvironmentSchema
     DATABASE_PROCESSING_URL: databaseUrlSchema("repurposepro_processing"),
     DATABASE_WEBHOOK_URL: databaseUrlSchema("repurposepro_webhook"),
     FFPROBE_PATH: z.string().trim().min(1),
-    FILE_RETENTION_DAYS: z.coerce.number().int().positive(),
+    FILE_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(7),
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive(),
     MAX_VIDEO_DURATION_SECONDS: z.coerce.number().int().positive(),
     STORAGE_DRIVER: z.literal("local"),
@@ -267,6 +297,11 @@ export interface AuthConfig {
 }
 
 export interface WorkerConfig extends ServerConfig {
+  readonly cleanup: {
+    readonly cron: string;
+    readonly batchSize: number;
+    readonly concurrency: number;
+  };
   readonly render: {
     readonly preset: string;
     readonly crf: number;
@@ -441,6 +476,11 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
   const parsed = parseEnvironment(workerEnvironmentSchema, "worker", environment);
 
   return {
+    cleanup: {
+      cron: parsed.CLEANUP_SCHEDULE_CRON,
+      batchSize: parsed.CLEANUP_BATCH_SIZE,
+      concurrency: parsed.CLEANUP_WORKER_CONCURRENCY,
+    },
     render: {
       preset: parsed.FFMPEG_PRESET,
       crf: parsed.FFMPEG_CRF,

@@ -22,6 +22,8 @@ import { loadRenderJobStatus } from "@/features/rendering/client/job-status-api"
 import { RenderAction } from "@/features/rendering/components/render-action";
 import { selectClip, deleteClip, regenerateClip } from "../client/clip-management-api";
 import { ClipDeleteDialog } from "./clip-delete-dialog";
+import { useSourceRetention } from "@/features/upload/client/use-source-retention";
+import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
 
 interface Props {
   apiUrl: string;
@@ -221,7 +223,8 @@ function EditorSession({
   managementError: string;
 }) {
   const state = useClipEditor(initial, props.apiUrl, props.projectId, props.userId, onSaved);
-  const tracking = useFramingAnalysis(props.apiUrl, props.projectId);
+  const retention = useSourceRetention(props.apiUrl, props.projectId);
+  const tracking = useFramingAnalysis(props.apiUrl, props.projectId, retention.available);
   const navigation = useEditorNavigation(
     state.dirty,
     state.saving,
@@ -245,7 +248,7 @@ function EditorSession({
   const [regenerateError, setRegenerateError] = useState("");
   const regenerationKey = useRef<{ key: string; revision: number } | null>(null);
   const regenerate = async () => {
-    if (regenerationBusy) return;
+    if (regenerationBusy || !retention.available) return;
     setRegenerating(true);
     setRegenerateError("");
     const revision = state.getSaved().clip.revision ?? 0;
@@ -365,7 +368,11 @@ function EditorSession({
             <button
               type="button"
               disabled={
-                regenerationBusy || deleting || state.saving || Boolean(props.managementBusy)
+                !retention.available ||
+                regenerationBusy ||
+                deleting ||
+                state.saving ||
+                Boolean(props.managementBusy)
               }
               onClick={() => navigation.request(() => void regenerate())}
               className="min-h-11 rounded-rp-md border border-rp-border px-3 text-sm text-rp-text"
@@ -410,6 +417,11 @@ function EditorSession({
             {regenerateError}
           </p>
         ) : null}
+        <SourceRetentionNotice
+          metadata={retention.metadata}
+          available={retention.available}
+          error={retention.error}
+        />
         <RenderAction
           apiUrl={props.apiUrl}
           projectId={props.projectId}
@@ -417,6 +429,7 @@ function EditorSession({
           selectedIds={props.clips.filter((clip) => clip.selected !== false).map((clip) => clip.id)}
           dirty={state.dirty}
           disabled={
+            !retention.available ||
             !props.clips.some((clip) => clip.selected !== false) ||
             props.clips.some((clip) => Boolean(clip.regenerationJobId)) ||
             regenerationBusy ||
@@ -541,16 +554,23 @@ function EditorSession({
             </div>
           </section>
           <div className="min-w-0 md:order-1 xl:order-2">
-            <ClipPreviewPlayer
-              clip={preview}
-              apiUrl={props.apiUrl}
-              projectId={props.projectId}
-              onTimeChange={setTime}
-              tracks={tracking.status.data}
-              onFramingChange={(framing) => {
-                if (!regenerationBusy) state.update({ ...state.draft, framing });
-              }}
-            />
+            {retention.available ? (
+              <ClipPreviewPlayer
+                clip={preview}
+                apiUrl={props.apiUrl}
+                projectId={props.projectId}
+                onTimeChange={setTime}
+                tracks={tracking.status.data}
+                onFramingChange={(framing) => {
+                  if (!regenerationBusy) state.update({ ...state.draft, framing });
+                }}
+              />
+            ) : (
+              <div className="rounded-rp-lg border border-rp-border bg-rp-card p-6 text-sm text-rp-text-muted">
+                Source playback is unavailable. Your trim, captions and framing metadata can still
+                be edited.
+              </div>
+            )}
           </div>
           <aside
             inert={regenerationBusy}
@@ -569,6 +589,7 @@ function EditorSession({
               </p>
             ) : null}
             <FramingControls
+              analyzeDisabled={!retention.available}
               value={state.draft.framing}
               status={tracking.status}
               busy={tracking.busy}

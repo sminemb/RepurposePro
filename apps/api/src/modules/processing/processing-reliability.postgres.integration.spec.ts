@@ -808,7 +808,7 @@ describeIntegration("processing dispatch and automatic refund reliability", () =
       [projectId],
     );
     expect((await startAnalysis(processingClientA, "reliability-user-a", projectId)).outcome).toBe(
-      "video_required",
+      "video_expired",
     );
   });
 

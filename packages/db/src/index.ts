@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 
 import * as schema from "./schema/index.js";
 
@@ -17,11 +17,19 @@ export interface DatabaseClient {
   readonly pool: Pool;
 }
 
+const connectedClients = new WeakMap<Pool, Set<PoolClient>>();
+
 export function createDatabaseClient(options: DatabaseClientOptions): DatabaseClient {
   const pool = new Pool({
     connectionString: options.connectionString,
     max: options.poolMax,
     ssl: options.ssl ? { rejectUnauthorized: true } : undefined,
+  });
+  const clients = new Set<PoolClient>();
+  connectedClients.set(pool, clients);
+  pool.on("connect", (client: PoolClient) => {
+    clients.add(client);
+    client.once("end", () => clients.delete(client));
   });
 
   return {
@@ -36,6 +44,12 @@ export async function checkDatabaseConnection(client: DatabaseClient): Promise<v
 
 export async function closeDatabaseClient(client: DatabaseClient): Promise<void> {
   await client.pool.end();
+  // pg-pool removes idle clients from its count before their socket end callbacks run.
+  // Connections that finished opening during shutdown must also be included.
+  const disconnected = [...(connectedClients.get(client.pool) ?? [])].map(
+    (connection) => new Promise<void>((resolve) => connection.once("end", () => resolve())),
+  );
+  await Promise.all(disconnected);
 }
 
 export async function migrateDatabaseForTests(

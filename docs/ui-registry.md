@@ -768,6 +768,11 @@ Rules:
 
 ## 5.9 ExpirationBadge
 
+Implemented in `apps/web/components/app/expiration-badge.tsx`. Relative text is paired with a
+semantic `time` element showing the exact local deadline. Normal applies at 24 hours or more,
+warning below 24 hours, urgent below one hour and expired at the exact deadline. Timer/focus
+updates keep source work and export download controls synchronized with these transitions.
+
 Purpose:
 
 Show file expiration state.

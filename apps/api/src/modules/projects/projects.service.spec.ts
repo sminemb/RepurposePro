@@ -308,6 +308,8 @@ describe("ProjectsService.getSourceVideo", () => {
     );
 
     await expect(service.getSourceVideo("user-1", "project-1")).resolves.toEqual({
+      deletedAt: null,
+      status: "expired",
       durationSeconds: 60.001,
       expiresAt: "2026-07-20T02:00:00.000Z",
       fileName: "episode.mp4",

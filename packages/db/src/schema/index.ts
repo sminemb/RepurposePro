@@ -22,6 +22,36 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 export const projectOutputTypeEnum = pgEnum("project_output_type", ["clips", "summary"]);
 
+export const storageCleanupTargets = pgTable(
+  "storage_cleanup_targets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    kind: text("kind").notNull(),
+    assetId: uuid("asset_id"),
+    projectId: uuid("project_id"),
+    userId: text("user_id").notNull(),
+    jobId: uuid("job_id"),
+    storagePath: text("storage_path").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    writerToken: uuid("writer_token"),
+    writerExpiresAt: timestamp("writer_expires_at", { withTimezone: true }),
+    leaseToken: uuid("lease_token"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("storage_cleanup_pending_idx")
+      .on(table.expiresAt, table.nextAttemptAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check(
+      "storage_cleanup_kind_check",
+      sql`${table.kind} IN ('source','output','audio','render_temp','upload_temp','orphan')`,
+    ),
+  ],
+);
+
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",
   "uploaded",

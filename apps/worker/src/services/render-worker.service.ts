@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from "node:crypto";
 import { SummaryRenderer } from "./summary-renderer.service";
-import { copyFile, mkdir, mkdtemp, readFile, realpath, rename, rm, stat } from "node:fs/promises";
+import { copyFile, mkdir, readFile, realpath, rename, rm, stat } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { Logger, type OnModuleInit, type OnModuleDestroy } from "@nestjs/common";
 import { type DatabaseClient, closeDatabaseClient } from "@repurposepro/db";
@@ -17,6 +17,7 @@ import Redis from "ioredis";
 import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
 import { generateAss } from "./render-subtitles";
 import { displayDimensions, probeMedia, renderMp4 } from "./render-ffmpeg";
+import { registerJobAsset } from "./storage-registration";
 
 export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RenderWorkerService.name);
@@ -126,7 +127,16 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
         throw new UnrecoverableError("Source video is unavailable");
       const workRoot = join(root, ".render-staging");
       await mkdir(workRoot, { recursive: true });
-      directory = await mkdtemp(join(workRoot, `${jobId}-${token}-`));
+      directory = join(workRoot, `${jobId}-${token}-${randomUUID()}`);
+      await registerJobAsset(
+        this.database,
+        jobId,
+        token,
+        directory,
+        "render_temp",
+        this.config.render.retentionDays,
+      );
+      await mkdir(directory);
       const font = await readFile(this.config.render.fontPath);
       if (
         createHash("sha256").update(font).digest("hex") !==
@@ -207,6 +217,14 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
       );
       await mkdir(target, { recursive: true });
       finalPath = join(target, `${token}.mp4`);
+      await registerJobAsset(
+        this.database,
+        jobId,
+        token,
+        finalPath,
+        "render_temp",
+        this.config.render.retentionDays,
+      );
       clearInterval(timer);
       await heartbeat;
       await touch();
