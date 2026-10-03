@@ -586,3 +586,4 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
     },
   };
 }
+export { assertSafeStoragePath, assertSafeStorageTree } from "./safe-storage";

@@ -71,6 +71,16 @@ export default tseslint.config(
     },
   },
   {
+    files: ["packages/config/src/*.spec.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: ["./packages/config/tsconfig.eslint.json"],
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
     files: ["packages/shared/src/*.spec.ts"],
     languageOptions: {
       parserOptions: {

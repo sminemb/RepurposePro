@@ -111,7 +111,13 @@ export function parseSourceVideoUpload(file: SourceVideoFile | undefined): Sourc
   const extension = extname(originalFileName).toLowerCase() as keyof typeof sourceVideoFormats;
   const expectedMimeType = sourceVideoFormats[extension];
 
-  if (!expectedMimeType || file.mimetype !== expectedMimeType || file.size <= 0 || !file.path) {
+  if (
+    !expectedMimeType ||
+    file.mimetype !== expectedMimeType ||
+    !Number.isSafeInteger(file.size) ||
+    file.size <= 0 ||
+    !file.path
+  ) {
     throw new ProjectContractValidationError("Upload an MP4, MOV, WebM, or MKV video.");
   }
 

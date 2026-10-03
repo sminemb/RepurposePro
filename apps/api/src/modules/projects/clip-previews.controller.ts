@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { open } from "node:fs/promises";
 
 import type { Response } from "express";
 import type { ApiSuccess, ProjectClipList } from "@repurposepro/shared";
@@ -85,7 +85,15 @@ export class ClipPreviewsController {
     response.setHeader("Content-Length", plan.contentLength.toString());
     response.setHeader("Content-Type", source.mimeType);
     if (plan.contentRange) response.setHeader("Content-Range", plan.contentRange);
-    return new StreamableFile(createReadStream(source.path, { end: plan.end, start: plan.start }));
+    const handle = await open(source.path, "r");
+    const info = await handle.stat();
+    if (!info.isFile() || info.size !== source.fileSizeBytes) {
+      await handle.close();
+      throw this.notFound(new ClipPreviewAccessError("SOURCE_VIDEO_NOT_FOUND"), request);
+    }
+    return new StreamableFile(
+      handle.createReadStream({ end: plan.end, start: plan.start, autoClose: true }),
+    );
   }
 
   private errorBody(error: ClipPreviewAccessError, request: AuthenticatedRequest) {

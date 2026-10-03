@@ -20,6 +20,13 @@ import { UploadFileInterceptor } from "./upload-file.interceptor";
     ClipPreviewsController,
     ClipEditorController,
   ],
-  providers: [ProjectsService, ClipPreviewsService, ClipEditorService, UploadFileInterceptor],
+  providers: [
+    ProjectsService,
+    ClipPreviewsService,
+    ClipEditorService,
+    UploadFileInterceptor,
+    UploadOwnershipGuard,
+  ],
 })
 export class ProjectsModule {}
+import { UploadOwnershipGuard } from "./upload-ownership.guard";

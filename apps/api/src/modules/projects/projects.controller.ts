@@ -99,6 +99,7 @@ export class ProjectsController {
   @Post(":projectId/upload")
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(UploadFileInterceptor)
+  @UseGuards(UploadOwnershipGuard)
   @UseFilters(UploadExceptionFilter)
   public async upload(
     @Param("projectId") projectId: string,
@@ -208,3 +209,4 @@ export class ProjectsController {
     return request.user.id;
   }
 }
+import { UploadOwnershipGuard } from "./upload-ownership.guard";

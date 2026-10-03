@@ -1,3 +1,4 @@
+import { assertSafeStoragePath, assertSafeStorageTree } from "@repurposepro/config";
 import { randomUUID } from "node:crypto";
 import { access, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -75,7 +76,8 @@ export class LocalStorageService {
 
   public async commitSourceUpload(input: CommitSourceUploadInput): Promise<void> {
     const stagedPath = this.assertStagedPath(input.stagedPath);
-    await stat(stagedPath);
+    await assertSafeStoragePath(this.storageRoot, stagedPath);
+    if (!(await stat(stagedPath)).isFile()) throw new Error("Invalid staged file.");
 
     const sourcePaths = this.sourcePaths(input.userId, input.projectId);
     const replacementDirectory = this.assertWithinRoot(
@@ -88,46 +90,50 @@ export class LocalStorageService {
 
     for (const path of [replacementDirectory, backupDirectory, sourcePaths.directory])
       await this.registerTemporary?.(input.userId, input.projectId, path);
+    await assertSafeStoragePath(this.storageRoot, replacementDirectory, true);
     await mkdir(replacementDirectory, { recursive: true });
 
     try {
-      await rename(stagedPath, join(replacementDirectory, "video"));
+      await this.safeRename(stagedPath, join(replacementDirectory, "video"));
       await writeFile(
         join(replacementDirectory, "manifest.json"),
         JSON.stringify(this.createManifest(input)),
         "utf8",
       );
+      await assertSafeStoragePath(this.storageRoot, sourcePaths.directory, true);
       await mkdir(dirname(sourcePaths.directory), { recursive: true });
 
       if (await this.pathExists(sourcePaths.directory)) {
-        await rename(sourcePaths.directory, backupDirectory);
+        await this.safeRename(sourcePaths.directory, backupDirectory);
         backupCreated = true;
       }
 
       try {
-        await rename(replacementDirectory, sourcePaths.directory);
+        await this.safeRename(replacementDirectory, sourcePaths.directory);
       } catch (error) {
         if (backupCreated && (await this.pathExists(backupDirectory))) {
-          await rename(backupDirectory, sourcePaths.directory);
+          await this.safeRename(backupDirectory, sourcePaths.directory);
           backupCreated = false;
         }
 
         throw error;
       }
     } finally {
-      await rm(replacementDirectory, { force: true, recursive: true });
+      await this.safeRemove(replacementDirectory, { force: true, recursive: true });
       if (backupCreated) {
-        await rm(backupDirectory, { force: true, recursive: true });
+        await this.safeRemove(backupDirectory, { force: true, recursive: true });
       }
     }
   }
 
   public async discardStagedUpload(stagedPath: string): Promise<void> {
-    await rm(this.assertStagedPath(stagedPath), { force: true });
+    await this.safeRemove(this.assertStagedPath(stagedPath), { force: true });
   }
 
   public async readSourceUpload(userId: string, projectId: string): Promise<StoredSourceUpload> {
     const sourcePaths = this.sourcePaths(userId, projectId);
+    await assertSafeStoragePath(this.storageRoot, sourcePaths.manifest);
+    await assertSafeStoragePath(this.storageRoot, sourcePaths.video);
     const contents = await readFile(sourcePaths.manifest, "utf8");
     const manifest = this.parseManifest(contents);
     await stat(sourcePaths.video);
@@ -137,7 +143,18 @@ export class LocalStorageService {
 
   public async removeSourceUpload(userId: string, projectId: string): Promise<void> {
     const sourcePaths = this.sourcePaths(userId, projectId);
-    await rm(sourcePaths.directory, { force: true, recursive: true });
+    await this.safeRemove(sourcePaths.directory, { force: true, recursive: true });
+  }
+
+  private async safeRename(from: string, to: string): Promise<void> {
+    await assertSafeStoragePath(this.storageRoot, from);
+    await assertSafeStoragePath(this.storageRoot, to, true);
+    await rename(from, to);
+  }
+
+  private async safeRemove(path: string, options: Parameters<typeof rm>[1]): Promise<void> {
+    await assertSafeStorageTree(this.storageRoot, path);
+    await rm(path, options);
   }
 
   private assertStagedPath(stagedPath: string): string {
