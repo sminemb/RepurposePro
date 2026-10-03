@@ -114,7 +114,7 @@ FAILED
 | VS9 | Failed processing automatically refunds credits and explains why | COMPLETED | 2026-10-02 | 20:35 | 2026-10-02 | 21:57 | None | 100% | — |
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
 | VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
-| VS12 | Full MVP happy path is tested, responsive, and demo-ready | IN_PROGRESS | 2026-10-03 | 11:39 | — | — | VS12-T2–T4 | 11% | — |
+| VS12 | Full MVP happy path is tested, responsive, and demo-ready | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 13:45 | None | 100% | — |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
 edge cases were fixed; both slices remain at 100%. See [audit evidence](verification/vs45-acceptance-audit.md).
@@ -691,12 +691,12 @@ This slice validates the whole product rather than isolated modules.
 | Field      | Value       |
 | ---------- | ----------- |
 | Slice ID   | VS12        |
-| Status     | IN_PROGRESS |
+| Status     | COMPLETED   |
 | Start Date | 2026-10-03  |
 | Start Time | 11:39       |
-| End Date   | —           |
-| End Time   | —           |
-| Progress   | 78%         |
+| End Date   | 2026-10-03  |
+| End Time   | 13:45       |
+| Progress   | 100%        |
 | Dependency | VS1–VS11    |
 
 ## Tasks
@@ -710,18 +710,18 @@ This slice validates the whole product rather than isolated modules.
 | VS12-T5 | Validate responsive dashboard, upload, billing, outputs | Web + Manual/Visual Test | COMPLETED | 2026-10-03 | 12:17 | 2026-10-03 | 13:10 | All six viewport sizes pass overflow/navigation checks; 61 loaded screenshots, mobile/tablet/desktop inspection. |
 | VS12-T6 | Validate desktop-first editor behavior and smaller-screen fallback | Web + Manual/Visual Test | COMPLETED | 2026-10-03 | 12:17 | 2026-10-03 | 13:19 | Narrow preview guidance, intermediate tabs, desktop settings scrolling, summary stacking and both unsaved dialogs verified. |
 | VS12-T7 | Polish loading, empty, success, error, refund, expired states | Web + API | COMPLETED | 2026-10-03 | 11:56 | 2026-10-03 | 13:19 | Four browser scenarios and HTTP regressions verify loading/empty/error/refund/expiration; billing, form retries, completed upload and fractional input states fixed. |
-| VS12-T8 | Run real video-processing demo and record results | Full Stack | IN_PROGRESS | 2026-10-03 | 12:10 | — | — | Source full decode, picture inspection and English Whisper preflight pass. |
-| VS12-T9 | Validate portfolio demo script end to end | Full Stack | IN_PROGRESS | 2026-10-03 | 12:32 | — | — | Draft local guide; live rehearsal and supported retries underway. |
+| VS12-T8 | Run real video-processing demo and record results | Full Stack | COMPLETED | 2026-10-03 | 12:10 | 2026-10-03 | 13:28 | Real Sandbox-funded Whisper/Gemini/tracking/FFmpeg journeys; both MP4s probed/decoded, playback and refined summary speech verified. |
+| VS12-T9 | Validate portfolio demo script end to end | Full Stack | COMPLETED | 2026-10-03 | 12:32 | 2026-10-03 | 13:28 | Fresh-account rehearsal through both downloads and free refinement; supported retries, honest ledger/timings, no manual DB repairs; docs/demo-script.md. |
 
 ## Slice Acceptance Criteria
 
-- [ ] Clips happy path works end to end.
-- [ ] Summary happy path works end to end.
-- [ ] Critical tests pass.
-- [ ] Responsive pages work as defined.
-- [ ] Editor fallback works on smaller screens.
-- [ ] Demo can be completed without manual database fixes.
-- [ ] Real source video produces usable output.
+- [x] Clips happy path works end to end.
+- [x] Summary happy path works end to end.
+- [x] Critical tests pass.
+- [x] Responsive pages work as defined.
+- [x] Editor fallback works on smaller screens.
+- [x] Demo can be completed without manual database fixes.
+- [x] Real source video produces usable output.
 
 ---
 
@@ -779,16 +779,16 @@ Do not mark a slice complete because only one technical layer is finished.
 
 ```text
 Current Slice: VS12 - MVP verification and demo readiness
-Current Task: VS12-T8/T9 and final quality gate
-Current Status: IN_PROGRESS
-Last Completed Task: VS12-T6/T7 at 13:19 Asia/Manila on 2026-10-03.
-Next Recommended Task: Finish live media refinements/evidence and run pnpm ci:check.
-Uncommitted Changes: Verified Playwright harness, state polish and demo guide. Local media/logs stay ignored under storage.
-Known Failing Tests: None in accepted tasks. Full four-scenario gate passed; focused summary regression passes after millisecond-input fix.
-Known Blockers: None confirmed. Docker/browser execution requires sandbox escalation; harness startup diagnostics retained under storage/vs12-e2e.
-Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Normal frozen install passed supply-chain checks. VS12 branch codex/vs12-mvp-verification.
-Required Commands Before Continuing: Use pnpm test:db-integration for integration checks and automatic development-role restoration. Test E2E with disposable infrastructure only.
+Current Task: None; VS12-T1 through T9 verified.
+Current Status: COMPLETED
+Last Completed Task: Final pnpm ci:check passed at 13:40; slice acceptance recorded at 13:45 Asia/Manila on 2026-10-03.
+Next Recommended Task: Follow docs/demo-script.md for a fresh portfolio rehearsal. Deployment/public publishing is outside VS12.
+Uncommitted Changes: None intentionally retained; completed implementation, verification and guide are committed. Media, screenshots, traces and logs remain ignored.
+Known Failing Tests: None. Formatting, lint, typecheck, 781 unit tests, 125 PostgreSQL/Redis integration tests, production builds and four browser scenarios passed.
+Known Blockers: None. All seven slice acceptance criteria have evidence in docs/verification/vs12.md.
+Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Normal frozen install passed supply-chain checks. VS12 branch codex/vs12-mvp-verification. Real-provider downloads were decoded and inspected; the refined summary is the rehearsal output.
+Required Commands Before Continuing: No outstanding VS12 checks. Future checks use pnpm ci:check; use the repository integration runner for role restoration and disposable E2E infrastructure only. Final E2E containers were removed and development data preserved.
 Last Updated Date: 2026-10-03
-Last Updated Time: 13:22
+Last Updated Time: 13:45
 Last Updated By: Codex
 ```
