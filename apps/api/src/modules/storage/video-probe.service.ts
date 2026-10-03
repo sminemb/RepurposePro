@@ -1,3 +1,4 @@
+import { assertSafeExecutable } from "@repurposepro/config";
 import { spawn } from "node:child_process";
 
 const MAX_PROBE_OUTPUT_BYTES = 1_000_000;
@@ -77,11 +78,14 @@ function probeArguments(videoPath: string): readonly string[] {
     "format=duration,format_name:stream=codec_type,codec_name,width,height,avg_frame_rate",
     "-of",
     "json",
+    "-protocol_whitelist",
+    "file,pipe",
     videoPath,
   ];
 }
 
 function runFfprobe(binary: string, arguments_: readonly string[]): Promise<string> {
+  assertSafeExecutable(binary, "ffprobe");
   return new Promise((resolve, reject) => {
     const process = spawn(binary, arguments_, {
       shell: false,

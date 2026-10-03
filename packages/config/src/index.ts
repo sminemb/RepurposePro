@@ -581,9 +581,12 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
       enableWordTimestamps: parsed.WHISPER_ENABLE_WORD_TIMESTAMPS,
       language: parsed.WHISPER_LANGUAGE,
       model: parsed.WHISPER_MODEL,
-      pythonPath: parsed.WHISPER_PYTHON_PATH,
+      pythonPath: /[/\\]/.test(parsed.WHISPER_PYTHON_PATH)
+        ? resolveStorageRoot(parsed.WHISPER_PYTHON_PATH)
+        : parsed.WHISPER_PYTHON_PATH,
       timeoutMs: parsed.WHISPER_TIMEOUT_MS,
     },
   };
 }
 export { assertSafeStoragePath, assertSafeStorageTree } from "./safe-storage";
+export { assertSafeExecutable } from "./safe-executable";

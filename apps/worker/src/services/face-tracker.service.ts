@@ -1,6 +1,5 @@
 import { execFile, spawn } from "node:child_process";
-import { realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { assertSafeStoragePath, assertSafeExecutable } from "@repurposepro/config";
 import { framingTracksSchema, type FramingTracks } from "@repurposepro/shared";
 
 export interface FaceTrackerOptions {
@@ -14,15 +13,15 @@ export interface FaceTrackerOptions {
 }
 
 export class FaceTracker {
-  constructor(private readonly options: FaceTrackerOptions) {}
+  constructor(private readonly options: FaceTrackerOptions) {
+    assertSafeExecutable(options.pythonPath, "python");
+    assertSafeExecutable(options.ffmpegPath, "ffmpeg");
+    assertSafeExecutable(options.ffprobePath, "ffprobe");
+  }
 
   async analyze(sourcePath: string, signal: AbortSignal): Promise<FramingTracks> {
     signal.throwIfAborted();
-    const root = await realpath(this.options.storageRoot);
-    const source = await realpath(resolve(root, sourcePath));
-    const inside = relative(root, source);
-    if (!inside || inside === ".." || inside.startsWith(`..${sep}`) || isAbsolute(inside))
-      throw new Error("Framing source is outside storage.");
+    const source = await assertSafeStoragePath(this.options.storageRoot, sourcePath);
     return new Promise((resolveResult, reject) => {
       const child = spawn(
         this.options.pythonPath,

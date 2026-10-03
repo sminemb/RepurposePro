@@ -1,3 +1,4 @@
+import { framingQueueId, type QueueInput } from "../queue-contract";
 import { randomUUID } from "node:crypto";
 import { Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { closeDatabaseClient, type DatabaseClient } from "@repurposepro/db";
@@ -31,13 +32,17 @@ export class FramingService implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker<{ id: string }>(
       FRAMING_QUEUE,
       async (job) => {
-        await this.process(String(job.data.id));
+        await this.processQueue(job);
       },
       { connection, prefix: this.options.prefix, concurrency: 1 },
     );
     this.worker.on("error", () => this.logger.warn({ event: "framing_worker_unavailable" }));
     this.timer = setInterval(() => void this.dispatch(), 5_000);
     await this.dispatch();
+  }
+
+  async processQueue(job: QueueInput): Promise<void> {
+    await this.process(framingQueueId(job));
   }
 
   async forJob(jobId: string, signal: AbortSignal) {

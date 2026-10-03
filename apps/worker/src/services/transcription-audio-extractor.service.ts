@@ -1,3 +1,4 @@
+import { assertSafeStoragePath, assertSafeExecutable } from "@repurposepro/config";
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
@@ -69,6 +70,7 @@ export class TranscriptionAudioExtractor {
 
   public constructor(options: TranscriptionAudioExtractorOptions) {
     this.createTemporaryId = options.createTemporaryId ?? randomUUID;
+    assertSafeExecutable(options.ffmpegPath, "ffmpeg");
     this.ffmpegPath = options.ffmpegPath;
     this.spawnProcess = options.spawnProcess ?? defaultSpawn;
     this.storageRoot = resolve(options.storageRoot);
@@ -103,6 +105,9 @@ export class TranscriptionAudioExtractor {
     let promoted = false;
 
     try {
+      await assertSafeStoragePath(this.storageRoot, input.sourcePath, true);
+      await assertSafeStoragePath(this.storageRoot, temporaryPath, true);
+      await assertSafeStoragePath(this.storageRoot, input.destinationPath, true);
       await input.registerTemporary?.(temporaryPath);
       try {
         await mkdir(destinationDirectory, { recursive: true });
@@ -116,6 +121,8 @@ export class TranscriptionAudioExtractor {
       throwIfAborted(input.signal);
 
       try {
+        await assertSafeStoragePath(this.storageRoot, temporaryPath);
+        await assertSafeStoragePath(this.storageRoot, input.destinationPath, true);
         await rename(temporaryPath, input.destinationPath);
         promoted = true;
       } catch (error: unknown) {
@@ -125,9 +132,16 @@ export class TranscriptionAudioExtractor {
       return { outputPath: input.destinationPath };
     } finally {
       if (!promoted) {
-        await rm(temporaryPath, { force: true }).catch(() => undefined);
+        await assertSafeStoragePath(this.storageRoot, temporaryPath, true)
+          .then((path) => rm(path, { force: true }))
+          .catch(() => undefined);
       }
     }
+  }
+
+  public async discard(path: string): Promise<void> {
+    await assertSafeStoragePath(this.storageRoot, path, true);
+    await rm(path, { force: true });
   }
 
   private async extractToTemporaryFile(
@@ -141,6 +155,8 @@ export class TranscriptionAudioExtractor {
       "-loglevel",
       "error",
       "-y",
+      "-protocol_whitelist",
+      "file,pipe",
       "-i",
       sourcePath,
       "-map",
@@ -160,7 +176,12 @@ export class TranscriptionAudioExtractor {
     throwIfAborted(signal);
 
     try {
-      await runFfmpeg(this.ffmpegPath, arguments_, signal, this.spawnProcess);
+      await runFfmpeg(
+        this.ffmpegPath,
+        arguments_,
+        AbortSignal.any([signal, AbortSignal.timeout(300_000)]),
+        this.spawnProcess,
+      );
     } catch (error: unknown) {
       if (signal.aborted) {
         throwAbortReason(signal);

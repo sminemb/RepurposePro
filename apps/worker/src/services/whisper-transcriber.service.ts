@@ -1,3 +1,4 @@
+import { assertSafeStoragePath, assertSafeExecutable } from "@repurposepro/config";
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 
@@ -129,6 +130,13 @@ export class WhisperTranscriber {
   private readonly storageRoot: string;
 
   public constructor(options: WhisperTranscriberOptions) {
+    assertSafeExecutable(options.pythonPath, "python");
+    if (
+      ![options.model, options.computeType].every(
+        (value) => /^[a-zA-Z0-9_./:-]{1,200}$/.test(value) && !value.startsWith("-"),
+      )
+    )
+      throw new Error("Invalid transcription configuration.");
     this.options = options;
     this.spawnProcess = options.spawnProcess ?? defaultSpawn;
     this.storageRoot = resolve(options.storageRoot);
@@ -142,6 +150,8 @@ export class WhisperTranscriber {
       throw new WhisperTranscriptionError("storage_failed");
     }
 
+    await assertSafeStoragePath(this.storageRoot, input.audioPath, true);
+    if (input.signal.aborted) throwAbortReason(input.signal);
     const arguments_ = [
       this.options.scriptPath,
       "--audio",

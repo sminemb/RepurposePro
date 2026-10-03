@@ -1,5 +1,7 @@
+import { assertSafeExecutable, assertSafeStoragePath } from "@repurposepro/config";
 import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
+import { z } from "zod";
 import {
   cropAtTime,
   defaultFraming,
@@ -60,6 +62,16 @@ export function runMedia(
     onLine?: (line: string) => void;
   },
 ): Promise<string> {
+  assertSafeExecutable(
+    binary,
+    /(?:^|[/\\])ffprobe(?:\.exe)?$/i.test(binary) ? "ffprobe" : "ffmpeg",
+  );
+  if (
+    !Number.isSafeInteger(options.timeoutMs) ||
+    options.timeoutMs <= 0 ||
+    options.timeoutMs > 3_600_000
+  )
+    throw new Error("Invalid media time limit.");
   return new Promise((resolve, reject) => {
     if (options.signal?.aborted) {
       reject(new Error("Render cancelled", { cause: options.signal.reason }));
@@ -72,7 +84,6 @@ export function runMedia(
       stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "",
-      errors = "",
       pending = "",
       failure: Error | undefined;
     const abort = () => {
@@ -102,16 +113,17 @@ export function runMedia(
       }
     });
     child.stderr.on("data", (chunk: Buffer) => {
-      errors = (errors + chunk.toString()).slice(-8000);
+      void chunk;
     });
     child.once("error", (error) => {
-      failure = error;
+      void error;
+      failure = new Error("Media process could not start.");
     });
     child.once("close", (code) => {
       clearTimeout(timer);
       options.signal?.removeEventListener("abort", abort);
       if (failure) reject(failure);
-      else if (code !== 0) reject(new Error(`Media process failed (${code}): ${errors}`));
+      else if (code !== 0) reject(new Error("Media process failed."));
       else resolve(output);
     });
   });
@@ -121,12 +133,53 @@ export async function probeMedia(
   path: string,
   signal?: AbortSignal,
 ): Promise<{ streams: VideoStream[]; format: { duration: string } }> {
-  return JSON.parse(
-    await runMedia(binary, ["-v", "error", "-show_streams", "-show_format", "-of", "json", path], {
-      signal,
-      timeoutMs: 30000,
-    }),
-  ) as { streams: VideoStream[]; format: { duration: string } };
+  const output: unknown = JSON.parse(
+    await runMedia(
+      binary,
+      [
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_format",
+        "-of",
+        "json",
+        "-protocol_whitelist",
+        "file,pipe",
+        path,
+      ],
+      {
+        signal,
+        timeoutMs: 30000,
+      },
+    ),
+  );
+  return z
+    .object({
+      streams: z
+        .array(
+          z.object({
+            width: z.number().int().positive().max(16384).optional(),
+            height: z.number().int().positive().max(16384).optional(),
+            sample_aspect_ratio: z.string().max(64).optional(),
+            side_data_list: z
+              .array(z.object({ rotation: z.number().finite().optional() }))
+              .max(100)
+              .optional(),
+            codec_type: z.string().max(32).optional(),
+            codec_name: z.string().max(64).optional(),
+          }),
+        )
+        .max(100),
+      format: z.object({
+        duration: z
+          .string()
+          .refine(
+            (value) =>
+              Number.isFinite(Number(value)) && Number(value) > 0 && Number(value) <= 86400,
+          ),
+      }),
+    })
+    .parse(output) as { streams: VideoStream[]; format: { duration: string } };
 }
 export async function renderMp4(input: {
   ffmpegPath: string;
@@ -141,6 +194,10 @@ export async function renderMp4(input: {
   signal: AbortSignal;
   onProgress: (value: number) => void;
 }) {
+  await assertSafeStoragePath(input.directory, input.directory);
+  await assertSafeStoragePath(input.directory, `${input.directory}/crop.cmd`, true);
+  await assertSafeStoragePath(input.directory, `${input.directory}/filter.txt`, true);
+  await assertSafeStoragePath(input.directory, `${input.directory}/output.mp4`, true);
   const { clip, dimensions } = input;
   const crop = clip.framing
     ? cropAtTime(clip.framing, input.tracks, clip.startTime, dimensions, clip)
@@ -170,6 +227,8 @@ export async function renderMp4(input: {
       "-y",
       "-ss",
       String(clip.startTime),
+      "-protocol_whitelist",
+      "file,pipe",
       "-i",
       input.sourcePath,
       "-t",

@@ -7,6 +7,11 @@ import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { WhisperTranscriber, type WhisperSpawn } from "./whisper-transcriber.service";
 
+// Subprocess unit doubles use synthetic paths; resolved containment has filesystem tests.
+vi.mock("@repurposepro/config", async (original) => ({
+  ...(await original<object>()),
+  assertSafeStoragePath: async (_root: string, path: string) => path,
+}));
 interface FakeChild extends ChildProcess {
   readonly killMock: Mock<(signal?: number | NodeJS.Signals) => boolean>;
   readonly stderr: PassThrough;
@@ -127,6 +132,7 @@ describe("WhisperTranscriber", () => {
       signal: controller.signal,
     });
 
+    await Promise.resolve();
     controller.abort(leaseLoss);
 
     await expect(transcription).rejects.toBe(leaseLoss);
@@ -141,6 +147,7 @@ describe("WhisperTranscriber", () => {
       signal: controller.signal,
     });
 
+    await Promise.resolve();
     controller.abort("cancelled");
 
     await expect(transcription).rejects.toMatchObject({
