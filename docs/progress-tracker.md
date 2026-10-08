@@ -115,11 +115,15 @@ FAILED
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
 | VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
 | VS12 | Full MVP happy path is tested, responsive, and demo-ready | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 13:45 | None | 100% | — |
+| VS13 | User can manage account settings | NOT_STARTED | — | — | — | — | None | 0% | Email-provider decision blocks email-change flow |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
 edge cases were fixed; both slices remain at 100%. See [audit evidence](verification/vs45-acceptance-audit.md).
-VS5 settings-panel overflow was fixed and verified on 2026-09-27 at 13:13;
+VS5 clip-editor settings-panel overflow was fixed and verified on 2026-09-27 at 13:13;
 see [small-screen verification](verification/vs5-settings-scroll.md).
+
+VS13 is a planned post-MVP product increment. The approved requirements are in
+[the PRD](settings-page-prd.md) and [the feature specification](settings-page-spec.md).
 
 ---
 
@@ -725,6 +729,49 @@ This slice validates the whole product rather than isolated modules.
 
 ---
 
+# VS13 — User Can Manage Account Settings
+
+## User Outcome
+
+A signed-in creator can update their account name, change their sign-in email through current- and
+new-address confirmation, and change their password from a responsive Settings page.
+
+## Slice Metadata
+
+| Field      | Value                                      |
+| ---------- | ------------------------------------------ |
+| Slice ID   | VS13                                       |
+| Status     | NOT_STARTED                                |
+| Start Date | —                                          |
+| Start Time | —                                          |
+| End Date   | —                                          |
+| End Time   | —                                          |
+| Progress   | 0%                                         |
+| Dependency | VS1 + VS11 + VS12                          |
+
+## Tasks
+
+| Task ID | Vertical Task                                      | Layers Touched                | Status      | Start Date | Start Time | End Date | End Time | Verification |
+| ------- | -------------------------------------------------- | ----------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
+| VS13-T1 | Select transactional email provider                | Product decision              | BLOCKED     | —          | —          | —        | —        | Provider decision recorded; controlled delivery is verified in VS13-T4. |
+| VS13-T2 | Add protected Settings route, navigation, and name update | Web + Better Auth + Tests | NOT_STARTED | — | — | — | — | Auth redirect, shared navigation, name validation/update and failure recovery pass. |
+| VS13-T3 | Add password change and revoke other sessions      | Web + Better Auth + Tests     | NOT_STARTED  | —          | —          | —        | —        | Current password is required; success revokes other sessions and retains current session. |
+| VS13-T4 | Configure transactional email delivery              | Web + Email + Tests           | NOT_STARTED  | —          | —          | —        | —        | Both approval and verification message types deliver in a controlled environment. |
+| VS13-T5 | Implement verified email change                     | Web + Better Auth + Email     | NOT_STARTED  | —          | —          | —        | —        | Current-address approval precedes new-address verification; old email stays active until completion. |
+| VS13-T6 | Verify responsive, accessible Settings acceptance   | Web + Tests + Manual QA       | NOT_STARTED  | —          | —          | —        | —        | Focused tests and desktop/mobile checks cover all PRD acceptance criteria. |
+
+## Slice Acceptance Criteria
+
+- [ ] Unauthenticated visitors are redirected to `/login`; account data is private to the session.
+- [ ] Settings is reachable and active in shared desktop/mobile navigation; existing sign-out remains available.
+- [ ] Name updates validate, persist, and refresh the app-shell identity.
+- [ ] Email changes require current-address approval followed by new-address verification.
+- [ ] Password changes require the current password, validate new values, and revoke other sessions.
+- [ ] Each form exposes accessible pending, success, validation, and retry/error feedback.
+- [ ] Responsive and focused automated checks pass; delivery evidence is recorded.
+
+---
+
 ## 6. Why These Are Vertical Slices
 
 Each slice must deliver a usable capability.
@@ -778,17 +825,17 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS12 - MVP verification and demo readiness
-Current Task: None; VS12-T1 through T9 verified.
-Current Status: COMPLETED
-Last Completed Task: Final pnpm ci:check passed at 13:40; slice acceptance recorded at 13:45 Asia/Manila on 2026-10-03.
-Next Recommended Task: Follow docs/demo-script.md for a fresh portfolio rehearsal. Deployment/public publishing is outside VS12.
-Uncommitted Changes: None intentionally retained; completed implementation, verification and guide are committed. Media, screenshots, traces and logs remain ignored.
-Known Failing Tests: None. Formatting, lint, typecheck, 781 unit tests, 125 PostgreSQL/Redis integration tests, production builds and four browser scenarios passed.
-Known Blockers: None. All seven slice acceptance criteria have evidence in docs/verification/vs12.md.
-Important Context: Preserve VS9 exact-once refunds and VS10 retention leases/tombstones. Normal frozen install passed supply-chain checks. VS12 branch codex/vs12-mvp-verification. Real-provider downloads were decoded and inspected; the refined summary is the rehearsal output.
-Required Commands Before Continuing: No outstanding VS12 checks. Future checks use pnpm ci:check; use the repository integration runner for role restoration and disposable E2E infrastructure only. Final E2E containers were removed and development data preserved.
-Last Updated Date: 2026-10-03
-Last Updated Time: 13:45
+Current Slice: VS13 - account settings
+Current Task: None started; VS13-T1 through T6 are planned in tasks/plan.md and tasks/todo.md.
+Current Status: NOT_STARTED
+Last Completed Task: VS12-T1 through T9; full MVP verification and demo readiness completed on 2026-10-03.
+Next Recommended Task: Start VS13-T2 (protected route, navigation, and name update) while resolving the VS13-T1 provider decision; VS13-T4 and VS13-T5 depend on that decision.
+Uncommitted Changes: Settings specification and PRD, plus VS13 planning updates, are present as documentation changes; no VS13 application code has been implemented.
+Known Failing Tests: None reported. VS13 is not implemented, so no feature tests have been run.
+Known Blockers: The email-change flow and release depend on choosing and configuring a transactional email provider. Profile and password work are not blocked.
+Important Context: VS12 remains completed. Treat VS13 as a planned post-MVP increment. Preserve existing Better Auth signup/sign-in behavior, keep the current email active until the new address is verified, and do not add account deletion or a schema migration without evidence.
+Required Commands Before Continuing: Follow the VS13 task verification steps; run focused tests during implementation and `pnpm ci:check` before review. Do not record VS13 completion until all acceptance criteria and delivery evidence are present.
+Last Updated Date: 2026-10-06
+Last Updated Time: 14:10
 Last Updated By: Codex
 ```

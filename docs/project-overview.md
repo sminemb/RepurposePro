@@ -77,6 +77,15 @@ The following should not be built in the first MVP:
 - Music and sound effects
 - Watermarked free previews
 
+### Planned Post-MVP Increment
+
+VS13 adds an authenticated Settings page for individual creators to update their account name,
+change their sign-in email through current-address approval and new-address verification, and
+change their password. It follows the completed MVP and is tracked in the
+[Settings PRD](settings-page-prd.md), [Settings specification](settings-page-spec.md), and
+[implementation plan](../tasks/plan.md). Email-provider selection is still required before the
+email-change flow can ship.
+
 ---
 
 ## 4. Core User Flow

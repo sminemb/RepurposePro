@@ -126,6 +126,11 @@ repurposepro/
     ui-registry.md
     build-plan.md
     progress-tracker.md
+    settings-page-prd.md
+    settings-page-spec.md
+  tasks/
+    plan.md
+    todo.md
 ```
 
 Recommended tooling:
@@ -169,6 +174,7 @@ ASS subtitles
 | VS10 | Files expire and are deleted after 7 days | VS6 |
 | VS11 | Critical security, abuse protection, and reliability are hardened | VS1–VS10 |
 | VS12 | Full MVP happy path is tested, responsive, and demo-ready | VS1–VS11 |
+| VS13 | User can manage account settings | VS1 + VS11 + VS12 |
 
 ---
 
@@ -685,6 +691,7 @@ Create tables only when the current vertical slice needs them.
 | VS8 | `summary_segments` |
 | VS9 | Extend jobs/ledger with idempotent refund metadata as needed |
 | VS10 | Add/standardize `expires_at` and `deleted_at` on file-backed records |
+| VS13 | None expected; reuse Better Auth user, session, account, and verification tables |
 
 Do not create all future tables upfront unless a migration dependency genuinely requires it.
 
@@ -744,6 +751,14 @@ GET    /projects/:projectId/summary
 PATCH  /projects/:projectId/summary
 ```
 
+### VS13 — Account Settings
+
+Use Better Auth's existing authenticated client and email/password flows for name, email, and
+password changes. Do not add a parallel NestJS account API. Email changes require current-address
+approval followed by new-address verification; transactional email delivery must be selected and
+configured before that flow can ship. Delivery follows the protected route, profile, and password
+flows so the independent account controls can be verified while provider selection is pending.
+
 Do not build unused endpoints early just to complete an API layer.
 
 ---
@@ -762,7 +777,8 @@ Do not build unused endpoints early just to complete an API layer.
 | VS8 | Summary Preview Editor |
 | VS9 | Error/Refund states |
 | VS10 | Expiration states |
-| VS12 | Settings polish and full responsive validation |
+| VS12 | Editor polish and full responsive validation |
+| VS13 | Account Settings |
 
 ---
 
@@ -866,6 +882,15 @@ ErrorState
 ExpirationBadge
 ```
 
+### VS13
+
+```text
+Settings page
+Profile section
+Email change section
+Password change section
+```
+
 ---
 
 ## 11. Milestones
@@ -943,6 +968,18 @@ VS9 + VS10 + VS11 + VS12
 ```
 
 Refunds, retention, security, testing, responsiveness, and demo polish are complete.
+
+### Milestone H — Account Settings
+
+Complete when:
+
+```text
+VS13
+```
+
+A signed-in creator can update their name, securely change their sign-in email, and change their
+password from a responsive Settings page. This is a planned product increment after the completed
+VS12 MVP signoff.
 
 ---
 
@@ -1045,6 +1082,20 @@ regenerate
 render
 download
 ```
+
+### Risk 8 — Email Change Delivery
+
+Problem:
+
+The email-change flow depends on transactional delivery, and the project has no email provider
+configured. The flow also requires access to the current mailbox before verifying the new address.
+
+Mitigation:
+
+- Resolve provider selection before implementing email changes.
+- Verify both approval and new-address messages in a controlled environment.
+- Keep the current address active until the new address is verified.
+- Document that recovery for an inaccessible current mailbox remains out of scope.
 
 ---
 
