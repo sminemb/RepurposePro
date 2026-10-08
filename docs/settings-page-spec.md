@@ -16,7 +16,7 @@ does not change application code.
   sign-out controls in the app shell.
 - Better Auth's `users` and `verifications` tables already exist. The user record contains name,
   email, and email-verification state; verification tokens use the existing verification table.
-- No transactional email provider is configured in the repository.
+- Resend was selected on 2026-10-08; real delivery requires local credentials and a verified sender.
 
 ## Scope and Route
 
@@ -60,6 +60,8 @@ workspace or member management, or video-processing preferences.
   messages.
 - Do not enable immediate email changes for unverified current addresses, and do not turn on a
   global email-verification requirement for signup or sign-in as part of this feature.
+- Existing unverified users first verify their current address, then request the standard
+  current-address approval and new-address verification flow.
 
 ### Password
 

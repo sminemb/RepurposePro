@@ -49,6 +49,8 @@ Object.assign(env, {
   BETTER_AUTH_URL: appUrl,
   BETTER_AUTH_TRUSTED_ORIGINS: appUrl,
   BETTER_AUTH_SECRET: "e2e-auth-only-isolated-at-least-thirty-two-characters",
+  RESEND_API_KEY: "re_e2e_only",
+  RESEND_FROM: "RepurposePro <account@example.test>",
   ARCJET_KEY: "ajkey_e2e_isolated",
   ARCJET_MODE: "DRY_RUN",
   DATABASE_URL: dbUrl("repurposepro_runtime", "e2e-runtime-only"),
@@ -257,7 +259,7 @@ try {
   // Write the alias ONLY into the disposable copy. The source Next config is untouched.
   await writeFile(
     join(stagedWeb, "next.config.ts"),
-    `import type { NextConfig } from "next"; const config: NextConfig = { transpilePackages: ["@repurposepro/config", "@repurposepro/shared"], webpack(config) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; return config; } }; export default config;`,
+    `import type { NextConfig } from "next"; const config: NextConfig = { logging: { incomingRequests: { ignore: [/\\/api\\/auth\\/verify-email/] } }, transpilePackages: ["@repurposepro/config", "@repurposepro/shared"], webpack(config, { webpack }) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; config.plugins.push(new webpack.NormalModuleReplacementPlugin(/transactional-email(?:[.]ts)?$/, ${JSON.stringify(join(root, "scripts/e2e/email-fixture.mjs"))})); return config; } }; export default config;`,
   );
   const api = start(process.execPath, [join(root, "scripts/e2e/server.cjs"), "api"], "api");
   await waitFor(`${apiUrl}/health/ready`, api);

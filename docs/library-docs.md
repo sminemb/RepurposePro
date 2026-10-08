@@ -1889,3 +1889,24 @@ This keeps RepurposePro cheaper, faster, and easier to build.
 - [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html): paired trim/atrim, timestamp reset,
   chronological audio/video concat and square-pixel scaling. These docs were fetched through
   Context7; provider structured-output behavior was additionally verified with a live model.
+
+## VS13 implementation references
+
+- [Better Auth user/account management](https://www.better-auth.com/docs/concepts/users-accounts)
+  and [session management](https://www.better-auth.com/docs/concepts/session-management):
+  `updateUser`, `changeEmail`, and `changePassword` with session revocation. Context7 version
+  1.6.23 and the installed source confirm that unverified users skip current-address approval,
+  so the authenticated server hook requires current verification first. Integration tests verify
+  the actual installed implementation, including awaited delivery failure propagation.
+- [Resend send-email API](https://resend.com/docs/api-reference/emails/send-email): server-side
+  HTTP POST with text and HTML, server-only key/sender, sanitized errors, and a bounded timeout.
+- [Next.js useRouter](https://nextjs.org/docs/app/api-reference/functions/use-router):
+  `router.refresh()` reloads the session-backed server shell after profile changes. Account
+  queries are dynamic and do not use a shared data cache. Context7 16.2.9 documentation was
+  cross-checked against installed 16.2.11 types and the built browser implementation.
+- [Arcjet fingerprints](https://docs.arcjet.com/fingerprints): authenticated account mutations
+  use user ID and action characteristics; existing signup/login limits stay keyed by trusted IP.
+- [Next.js custom webpack configuration](https://nextjs.org/docs/app/api-reference/config/next-config-js/webpack)
+  and [NormalModuleReplacementPlugin](https://webpack.js.org/plugins/normal-module-replacement-plugin):
+  the disposable browser build replaces the email transport before TypeScript path resolution.
+  Production source configuration has no provider replacement.
