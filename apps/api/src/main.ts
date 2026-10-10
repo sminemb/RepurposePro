@@ -21,6 +21,17 @@ async function bootstrap(): Promise<void> {
   });
   // Bound long caption edit batches while retaining raw Stripe webhook bodies.
   app.useBodyParser("json", { limit: "2mb" });
+  app.use(
+    "/api/v1/admin",
+    (
+      _request: unknown,
+      response: { setHeader: (key: string, value: string) => void },
+      next: () => void,
+    ) => {
+      response.setHeader("Cache-Control", "private, no-store");
+      next();
+    },
+  );
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api/v1");

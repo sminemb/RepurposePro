@@ -6,6 +6,7 @@ import { loadApiConfig } from "@repurposepro/config";
 import { LoggerModule } from "nestjs-pino";
 
 import { AuthModule } from "./modules/auth/auth.module";
+import { AdminModule } from "./modules/admin/admin.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { HealthModule } from "./modules/health/health.module";
 import { InfrastructureModule } from "./modules/infrastructure/infrastructure.module";
@@ -23,6 +24,7 @@ const config = loadApiConfig();
     InfrastructureModule,
     HealthModule,
     AuthModule,
+    AdminModule,
     BillingModule,
     ProjectsModule,
     ProcessingModule,
