@@ -26,6 +26,7 @@ if (missingDatabaseVariables.length > 0) {
 
 export default defineConfig({
   test: {
+    globalSetup: ["packages/db/scripts/setup-admin-integration.ts"],
     environment: "node",
     fileParallelism: false,
     hookTimeout: 30_000,

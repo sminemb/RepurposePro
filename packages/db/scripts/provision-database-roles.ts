@@ -68,6 +68,12 @@ async function provisionDatabaseRoles(): Promise<void> {
   const webhookRole = connectionRole(requiredEnvironment("DATABASE_WEBHOOK_URL"));
   const processingRole = connectionRole(requiredEnvironment("DATABASE_PROCESSING_URL"));
   const restrictedRoles = [runtimeRole, checkoutRole, webhookRole, processingRole] as const;
+  const adminRole = process.env.DATABASE_ADMIN_URL
+    ? connectionRole(process.env.DATABASE_ADMIN_URL)
+    : undefined;
+  if (adminRole && adminRole.name !== "repurposepro_admin") {
+    throw new Error("DATABASE_ADMIN_URL must use repurposepro_admin.");
+  }
 
   if (
     [
@@ -76,6 +82,7 @@ async function provisionDatabaseRoles(): Promise<void> {
       "repurposepro_checkout",
       "repurposepro_webhook",
       "repurposepro_processing",
+      "repurposepro_admin",
     ].includes(bootstrapRole.name)
   ) {
     throw new Error(
@@ -102,6 +109,24 @@ async function provisionDatabaseRoles(): Promise<void> {
   await bootstrap.connect();
 
   try {
+    await bootstrap.query(
+      "DO $$ BEGIN CREATE ROLE repurposepro_admin NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; EXCEPTION WHEN duplicate_object THEN NULL; END $$",
+    );
+    if (adminRole) {
+      await runRoleStatement(
+        bootstrap,
+        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        adminRole,
+      );
+    } else {
+      await bootstrap.query(
+        "ALTER ROLE repurposepro_admin NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+      );
+    }
+    const memberships = await bootstrap.query<{ statement: string }>(
+      "SELECT format('REVOKE %I FROM repurposepro_admin',r.rolname) AS statement FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid WHERE m.member='repurposepro_admin'::regrole",
+    );
+    for (const row of memberships.rows) await bootstrap.query(row.statement);
     await runRoleStatement(
       bootstrap,
       "CREATE ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
