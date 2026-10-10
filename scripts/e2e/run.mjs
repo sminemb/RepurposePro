@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:net";
+import { createRequire } from "node:module";
 import { createWriteStream } from "node:fs";
 import { cp, mkdir, readFile, writeFile, symlink, access } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const runId = randomUUID().replaceAll("-", "");
@@ -49,6 +50,8 @@ Object.assign(env, {
   BETTER_AUTH_URL: appUrl,
   BETTER_AUTH_TRUSTED_ORIGINS: appUrl,
   BETTER_AUTH_SECRET: "e2e-auth-only-isolated-at-least-thirty-two-characters",
+  ADMIN_EMAIL: "e2e-admin@example.test",
+  DATABASE_ADMIN_URL: dbUrl("repurposepro_admin", "e2e-admin-only"),
   ARCJET_KEY: "ajkey_e2e_isolated",
   ARCJET_MODE: "DRY_RUN",
   DATABASE_URL: dbUrl("repurposepro_runtime", "e2e-runtime-only"),
@@ -238,6 +241,28 @@ try {
   });
   try {
     await migrateDatabaseForTests(database, join(root, "packages/db/drizzle"));
+    // Existing operator accounts exercise real sign-in/session checks without
+    // consuming the shared signup rate limit needed by the MVP signup scenarios.
+    const apiRequire = createRequire(join(root, "apps/api/package.json"));
+    const { hashPassword } = await import(
+      pathToFileURL(apiRequire.resolve("better-auth/crypto")).href
+    );
+    const passwordHash = await hashPassword("Admin-test-password-42!");
+    for (const [email, name] of [
+      ["e2e-admin@example.test", "Operator"],
+      ["e2e-non-admin@example.test", "Non Admin"],
+    ]) {
+      const userId = randomUUID();
+      await database.pool.query("INSERT INTO users(id,name,email) VALUES($1,$2,$3)", [
+        userId,
+        name,
+        email,
+      ]);
+      await database.pool.query(
+        "INSERT INTO accounts(id,account_id,provider_id,user_id,password) VALUES($1,$2,'credential',$2,$3)",
+        [randomUUID(), userId, passwordHash],
+      );
+    }
   } finally {
     await closeDatabaseClient(database);
   }
@@ -257,7 +282,10 @@ try {
   // Write the alias ONLY into the disposable copy. The source Next config is untouched.
   await writeFile(
     join(stagedWeb, "next.config.ts"),
-    `import type { NextConfig } from "next"; const config: NextConfig = { transpilePackages: ["@repurposepro/config", "@repurposepro/shared"], webpack(config) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; return config; } }; export default config;`,
+    (await readFile(join(root, "apps/web/next.config.ts"), "utf8")).replace(
+      "transpilePackages:",
+      `webpack(config) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; return config; }, transpilePackages:`,
+    ),
   );
   const api = start(process.execPath, [join(root, "scripts/e2e/server.cjs"), "api"], "api");
   await waitFor(`${apiUrl}/health/ready`, api);

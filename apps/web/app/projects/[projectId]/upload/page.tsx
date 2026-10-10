@@ -1,3 +1,4 @@
+import { isAdminEmail, loadAdminIdentityConfig } from "@repurposepro/config";
 import { ArrowLeft, UploadCloud } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -71,7 +72,10 @@ export default async function UploadPage({ params }: UploadPageProps) {
 
   return (
     <div className="flex min-h-dvh bg-rp-bg">
-      <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
+      <AppSidebar
+        isAdmin={isAdminEmail(session.user.email, loadAdminIdentityConfig())}
+        className="fixed inset-y-0 left-0 hidden lg:flex"
+      />
       <div className="min-w-0 flex-1 lg:pl-66">
         <AppTopbar
           title="Upload video"

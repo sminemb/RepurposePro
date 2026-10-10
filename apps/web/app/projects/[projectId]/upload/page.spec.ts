@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceVideoMetadata } from "@repurposepro/shared";
+import type * as Config from "@repurposepro/config";
 
 const {
   getCreditBalanceMock,
@@ -57,7 +58,9 @@ vi.mock("@/features/upload/server/source-video-api", () => ({
 vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: getSessionMock } },
 }));
-vi.mock("@repurposepro/config", () => ({
+vi.mock("@repurposepro/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof Config>()),
+  loadAdminIdentityConfig: () => "",
   loadWebConfig: () => ({ apiUrl: "http://api.test/api/v1" }),
 }));
 vi.mock("lucide-react", () => ({

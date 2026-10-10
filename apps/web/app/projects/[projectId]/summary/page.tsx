@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { loadWebConfig } from "@repurposepro/config";
+import { isAdminEmail, loadAdminIdentityConfig, loadWebConfig } from "@repurposepro/config";
 import { summaryStateSchema } from "@repurposepro/shared";
 import { auth } from "@/lib/auth";
 import { requestApi } from "@/lib/server-api";
@@ -24,7 +24,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ projec
   const parsed = summaryStateSchema.safeParse(body?.data);
   return (
     <div className="flex min-h-dvh bg-rp-bg">
-      <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
+      <AppSidebar
+        className="fixed inset-y-0 left-0 hidden lg:flex"
+        isAdmin={isAdminEmail(session.user.email, loadAdminIdentityConfig())}
+      />
       <div className="min-w-0 flex-1 lg:pl-66">
         <AppTopbar
           title="Summary editor"

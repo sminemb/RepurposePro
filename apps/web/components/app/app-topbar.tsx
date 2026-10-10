@@ -1,4 +1,5 @@
 import { LayoutDashboard } from "lucide-react";
+import { isAdminEmail, loadAdminIdentityConfig } from "@repurposepro/config";
 
 import { MobileNavigation } from "@/components/app/mobile-navigation";
 
@@ -20,7 +21,11 @@ function initials(name: string): string {
 export function AppTopbar({ title, userEmail, userName }: AppTopbarProps) {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center border-b border-rp-border bg-rp-bg/88 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-      <MobileNavigation userEmail={userEmail} userName={userName} />
+      <MobileNavigation
+        isAdmin={isAdminEmail(userEmail, loadAdminIdentityConfig())}
+        userEmail={userEmail}
+        userName={userName}
+      />
       <div className="ml-3 flex items-center gap-3 lg:ml-0">
         <LayoutDashboard aria-hidden="true" className="size-5 text-rp-primary" />
         <p className="text-sm font-medium text-rp-text">{title}</p>
