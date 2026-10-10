@@ -82,11 +82,11 @@ states.
 **Acceptance criteria:**
 
 - [ ] Unauthenticated visitors are redirected to `/login`; authenticated users see their own
-  account name.
+      account name.
 - [ ] Settings is a usable, active navigation link on desktop and mobile; existing sign-out
-  behavior remains available.
+      behavior remains available.
 - [ ] Name updates trim whitespace, reject empty values, persist through Better Auth, refresh the
-  app-shell name, and preserve input after recoverable failures.
+      app-shell name, and preserve input after recoverable failures.
 
 **Verification:** Add focused route, profile-update, and navigation tests; manually verify an
 authenticated and unauthenticated visit.
@@ -107,9 +107,9 @@ change, revoke other sessions while keeping the current session active.
 
 - [ ] All fields are required, the new values must match, and length must be 8–128 characters.
 - [ ] The current password is verified by Better Auth; passwords are never exposed in messages
-  or logs.
+      or logs.
 - [ ] Success clears password fields and leaves the current session usable while other sessions
-  are revoked.
+      are revoked.
 
 **Verification:** Add focused tests for missing fields, mismatch, length boundaries, invalid
 current password, successful session revocation, and current-session continuity.
@@ -138,7 +138,7 @@ by the later Better Auth email-change flow.
 - [ ] The sender can deliver both current-address approval and new-address verification messages.
 - [ ] Provider credentials are validated at startup and never exposed in logs or client errors.
 - [ ] Delivery behavior is tested in a controlled environment without changing signup or sign-in
-  verification policy.
+      verification policy.
 
 **Verification:** Send both message types through the provider's development or sandbox mode and
 verify delivery-failure handling.
@@ -158,7 +158,7 @@ flow and expose its request, pending, confirmation, and retry states in Settings
 **Acceptance criteria:**
 
 - [ ] Current-address approval precedes new-address verification; the current email stays active
-  until verification completes.
+      until verification completes.
 - [ ] Invalid, duplicate, expired, delivery-failure, and retry states are clear.
 - [ ] Signup and sign-in verification policy remains unchanged.
 
@@ -182,10 +182,10 @@ behavior, and record implementation evidence in the progress tracker.
 **Acceptance criteria:**
 
 - [ ] Profile, email, and password actions work independently and satisfy the PRD acceptance
-  criteria.
+      criteria.
 - [ ] Keyboard operation, visible focus, labels, and accessible status/error announcements work.
 - [ ] Desktop and mobile layouts have no horizontal overflow; sign-out and other navigation
-  behavior remain correct.
+      behavior remain correct.
 
 **Verification:** Run focused tests and `pnpm ci:check`; manually verify desktop and mobile
 flows, both email confirmation steps, and session behavior.
@@ -202,19 +202,19 @@ record under `docs/verification/` if the implementation produces durable evidenc
 - [ ] All VS13 acceptance criteria are met.
 - [ ] Formatting, lint, typecheck, tests, and build checks pass through `pnpm ci:check`.
 - [ ] Email delivery and verification behavior are tested in the selected provider's controlled
-  environment.
+      environment.
 - [ ] Start/end times, blockers, verification, and handoff state are recorded in
-  `docs/progress-tracker.md`.
+      `docs/progress-tracker.md`.
 - [ ] A human reviews and approves the completed slice.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Email provider has not been selected | Blocks the email-change implementation and release | Keep VS13-T1 explicit; progress profile and password work independently. |
-| User cannot access the current email address | User cannot self-serve an email change | Explain the requirement; keep recovery out of scope and use the existing out-of-band support process. |
-| Auth behavior or schema differs from the documented expectation | Could require extra work or migration | Confirm installed Better Auth behavior and existing schema before changing database structure. |
-| Pending email is mistaken for active sign-in email | User confusion or account access problems | Keep the current email active until new-address verification and clearly label each step. |
+| Risk                                                            | Impact                                             | Mitigation                                                                                            |
+| --------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Email provider has not been selected                            | Blocks the email-change implementation and release | Keep VS13-T1 explicit; progress profile and password work independently.                              |
+| User cannot access the current email address                    | User cannot self-serve an email change             | Explain the requirement; keep recovery out of scope and use the existing out-of-band support process. |
+| Auth behavior or schema differs from the documented expectation | Could require extra work or migration              | Confirm installed Better Auth behavior and existing schema before changing database structure.        |
+| Pending email is mistaken for active sign-in email              | User confusion or account access problems          | Keep the current email active until new-address verification and clearly label each step.             |
 
 ## Open Questions
 
@@ -278,9 +278,9 @@ all admin API requests using the existing Better Auth session.
 
 **Acceptance criteria:**
 
-- [ ] A valid session with a normalized email matching configured `ADMIN_EMAIL` is required.
-- [ ] Missing or blank configuration and non-matching users are denied on both page and API.
-- [ ] Client-supplied identity never affects authorization; existing auth behavior is unchanged.
+- [x] A valid session with a normalized email matching configured `ADMIN_EMAIL` is required.
+- [x] Missing or blank configuration and non-matching users are denied on both page and API.
+- [x] Client-supplied identity never affects authorization; existing auth behavior is unchanged.
 
 **Verification:** Focused tests cover signed-out, non-admin, admin, and missing-config cases,
 including direct API requests.
@@ -300,12 +300,12 @@ filters, and cursor pagination.
 
 **Acceptance criteria:**
 
-- [ ] The role cannot insert, update, delete, or access excluded transcript, media, provider,
-  credential, raw-error, or storage-path data.
-- [ ] The normal runtime, checkout, webhook, processing, and owner roles retain their current
-  permissions.
-- [ ] The migration is forward-only and can be applied without changing financial or retention
-  invariants.
+- [x] The role cannot insert, update, delete, or access excluded transcript, media, provider,
+      credential, raw-error, or storage-path data.
+- [x] The normal runtime, checkout, webhook, processing, and owner roles retain their current
+      permissions.
+- [x] The migration is forward-only and can be applied without changing financial or retention
+      invariants.
 
 **Verification:** Database integration tests assert both allowed reads and denied access/writes;
 run the repository database integration command.
@@ -326,11 +326,11 @@ users, projects, jobs, payment summaries, and current queued/active jobs.
 
 **Acceptance criteria:**
 
-- [ ] `7d`, `30d`, and `90d` are accepted; missing range defaults to `30d`; invalid ranges return
-  the existing validation error envelope.
-- [ ] Historical and current queue metrics are clearly separated and derived from persisted
-  records.
-- [ ] Output contains only fields defined by `AdminOverview` and is not cached.
+- [x] `7d`, `30d`, and `90d` are accepted; missing range defaults to `30d`; invalid ranges return
+      the existing validation error envelope.
+- [x] Historical and current queue metrics are clearly separated and derived from persisted
+      records.
+- [x] Output contains only fields defined by `AdminOverview` and is not cached.
 
 **Verification:** Focused API tests cover ranges, defaulting, invalid input, fixture aggregation,
 admin denial, and unavailable database responses.
@@ -349,10 +349,10 @@ payments, and ledger entries, including related user detail data.
 
 **Acceptance criteria:**
 
-- [ ] Search accepts exact email or opaque user/project/job ID only; partial names and content
-  search are unsupported.
-- [ ] Collections use bounded cursor pagination and documented status filters.
-- [ ] Projections follow the spec field allowlists and never return raw error or processor data.
+- [x] Search accepts exact email or opaque user/project/job ID only; partial names and content
+      search are unsupported.
+- [x] Collections use bounded cursor pagination and documented status filters.
+- [x] Projections follow the spec field allowlists and never return raw error or processor data.
 
 **Verification:** API tests cover exact match/no match, email normalization, related records,
 status filters, cursor boundaries, excluded fields, and authorization failures.
@@ -371,9 +371,9 @@ current queue counts, navigation to lookup/list views, and explicit loading/erro
 
 **Acceptance criteria:**
 
-- [ ] The overview defaults to 30 days and updates metrics for each supported range.
-- [ ] Current queue counts remain separate from historical metrics.
-- [ ] Layout follows existing UI conventions and works by keyboard and on mobile/desktop.
+- [x] The overview defaults to 30 days and updates metrics for each supported range.
+- [x] Current queue counts remain separate from historical metrics.
+- [x] Layout follows existing UI conventions and works by keyboard and on mobile/desktop.
 
 **Verification:** Focused component/page tests and manual responsive, keyboard, loading, empty,
 and error-state checks.
@@ -392,11 +392,11 @@ linked support details.
 
 **Acceptance criteria:**
 
-- [ ] The operator can find a record by exact email or opaque ID and navigate to its related
-  safe detail view.
-- [ ] Pagination and job/payment status filters work without losing query context.
-- [ ] No content previews, write actions, exports, raw exceptions, or hidden sensitive fields are
-  rendered.
+- [x] The operator can find a record by exact email or opaque ID and navigate to its related
+      safe detail view.
+- [x] Pagination and job/payment status filters work without losing query context.
+- [x] No content previews, write actions, exports, raw exceptions, or hidden sensitive fields are
+      rendered.
 
 **Verification:** Focused UI tests cover search, no results, pagination, filters, related detail,
 and field visibility; manually verify keyboard and responsive behavior.
@@ -416,9 +416,9 @@ gates; record evidence in the progress tracker when implementation begins.
 
 **Acceptance criteria:**
 
-- [ ] All spec scenarios pass, including direct API denial and read-only database enforcement.
-- [ ] The interface exposes no disallowed content and all responses are private/no-store.
-- [ ] Focused tests, database integration checks, and the repository quality gate pass.
+- [x] All spec scenarios pass, including direct API denial and read-only database enforcement.
+- [x] The interface exposes no disallowed content and all responses are private/no-store.
+- [x] Focused tests, database integration checks, and the repository quality gate pass.
 
 **Verification:** Run focused Vitest suites, `pnpm test:db-integration`, and `pnpm ci:check`;
 manually verify signed-out, non-admin, and authorized-admin flows across desktop and mobile.
@@ -432,21 +432,21 @@ evidence if needed.
 
 ## Checkpoints
 
-- [ ] **Security/data checkpoint:** VS14-T1 and VS14-T2 prove fail-closed authorization and
-  least-privilege database access.
-- [ ] **Read workflow checkpoint:** VS14-T3 through VS14-T6 provide end-to-end overview, lookup,
-  pagination, and safe detail workflows.
+- [x] **Security/data checkpoint:** VS14-T1 and VS14-T2 prove fail-closed authorization and
+      least-privilege database access.
+- [x] **Read workflow checkpoint:** VS14-T3 through VS14-T6 provide end-to-end overview, lookup,
+      pagination, and safe detail workflows.
 - [ ] **Completion checkpoint:** VS14-T7 passes focused, database, and full quality checks; a
-  human reviews the result before marking VS14 complete.
+      human reviews the result before marking VS14 complete.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Admin authorization is enforced only in the UI | Direct API calls could expose cross-user data | Apply and test the admin check at every API boundary. |
-| Admin database permissions are too broad | Sensitive data or writes could be exposed | Use a separate role and test column/table permissions and denied writes. |
-| Status/error fields contain unsafe details | User content or secrets could leak | Project allowlisted status and failure codes; omit raw exception text. |
-| Aggregates disagree with durable state | Support decisions may be misleading | Use persisted database records as the source of truth and distinguish live queue counts. |
+| Risk                                           | Impact                                        | Mitigation                                                                               |
+| ---------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Admin authorization is enforced only in the UI | Direct API calls could expose cross-user data | Apply and test the admin check at every API boundary.                                    |
+| Admin database permissions are too broad       | Sensitive data or writes could be exposed     | Use a separate role and test column/table permissions and denied writes.                 |
+| Status/error fields contain unsafe details     | User content or secrets could leak            | Project allowlisted status and failure codes; omit raw exception text.                   |
+| Aggregates disagree with durable state         | Support decisions may be misleading           | Use persisted database records as the source of truth and distinguish live queue counts. |
 
 ## Open Questions
 
@@ -460,3 +460,6 @@ evidence if needed.
 - [Security Boundaries ADR](../docs/adr/0009-security-boundaries.md)
 - [API Contracts](../docs/api-contracts.md)
 - [Progress Tracker](../docs/progress-tracker.md)
+
+VS14-T1 through T7 are implemented and verified. The slice remains IN_REVIEW until human review.
+See [verification evidence](../docs/verification/vs14-admin.md).

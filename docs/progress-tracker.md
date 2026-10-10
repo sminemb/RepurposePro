@@ -115,6 +115,7 @@ FAILED
 | VS10  | Files expire and are deleted after 7 days                         | COMPLETED | 2026-10-02 | 22:26 | 2026-10-03 | 07:13 | None | 100% | — |
 | VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
 | VS12 | Full MVP happy path is tested, responsive, and demo-ready | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 13:45 | None | 100% | — |
+| VS14 | Operator can inspect safe service metadata | IN_REVIEW | 2026-10-10 | 21:26 | — | — | Human review | 100% | — |
 | VS13 | User can manage account settings | NOT_STARTED | — | — | — | — | None | 0% | Email-provider decision blocks email-change flow |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
@@ -772,6 +773,46 @@ new-address confirmation, and change their password from a responsive Settings p
 
 ---
 
+# VS14 — Read-Only Admin Area
+
+## Slice Metadata
+
+| Field | Value |
+| --- | --- |
+| Slice ID | VS14 |
+| Status | IN_REVIEW |
+| Start Date | 2026-10-10 |
+| Start Time | 21:26 |
+| End Date | — |
+| End Time | — |
+| Progress | 100% |
+| Dependency | Existing authentication; independent of VS13 |
+
+## Tasks
+
+| Task ID | Vertical Task | Status | Start Date | Start Time | End Date | End Time | Verification |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| VS14-T1 | Admin identity and authorization | COMPLETED | 2026-10-10 | 21:26 | 2026-10-10 | 22:13 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T2 | Restricted metadata database role | COMPLETED | 2026-10-10 | 21:30 | 2026-10-10 | 22:13 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T3 | Overview read API | COMPLETED | 2026-10-10 | 21:33 | 2026-10-10 | 22:13 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T4 | Exact lookup, list and detail APIs | COMPLETED | 2026-10-10 | 21:33 | 2026-10-10 | 22:13 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T5 | Admin overview UI | COMPLETED | 2026-10-10 | 21:36 | 2026-10-10 | 22:13 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T6 | Lookup, lists and safe details UI | COMPLETED | 2026-10-10 | 21:38 | 2026-10-10 | 22:25 | Focused unit, PostgreSQL, build and admin browser checks pass; see [evidence](verification/vs14-admin.md). |
+| VS14-T7 | Acceptance verification and handoff | COMPLETED | 2026-10-10 | 21:53 | 2026-10-10 | 22:27 | pnpm ci:check passes: 799 unit, 132 database, 6 browser tests; [evidence](verification/vs14-admin.md). |
+
+## Slice Acceptance Criteria
+
+- [x] Authorization is enforced on pages and every API request.
+- [x] Separate database role reads only approved metadata and cannot write.
+- [x] Overview, exact search, related details, filters and pagination work.
+- [x] Responses are private/no-store and omit excluded data.
+- [x] Responsive, keyboard, database and full quality checks pass.
+
+Implementation verified on 2026-10-10 at 22:25 Asia/Manila. Human review is pending;
+the slice remains IN_REVIEW. No production deployment was performed.
+
+---
+
 ## 6. Why These Are Vertical Slices
 
 Each slice must deliver a usable capability.
@@ -825,17 +866,20 @@ Do not mark a slice complete because only one technical layer is finished.
 ## 8. Current Handoff State
 
 ```text
-Current Slice: VS13 - account settings
-Current Task: None started; VS13-T1 through T6 are planned in tasks/plan.md and tasks/todo.md.
-Current Status: NOT_STARTED
-Last Completed Task: VS12-T1 through T9; full MVP verification and demo readiness completed on 2026-10-03.
-Next Recommended Task: Start VS13-T2 (protected route, navigation, and name update) while resolving the VS13-T1 provider decision; VS13-T4 and VS13-T5 depend on that decision.
-Uncommitted Changes: Settings specification and PRD, plus VS13 planning updates, are present as documentation changes; no VS13 application code has been implemented.
-Known Failing Tests: None reported. VS13 is not implemented, so no feature tests have been run.
-Known Blockers: The email-change flow and release depend on choosing and configuring a transactional email provider. Profile and password work are not blocked.
-Important Context: VS12 remains completed. Treat VS13 as a planned post-MVP increment. Preserve existing Better Auth signup/sign-in behavior, keep the current email active until the new address is verified, and do not add account deletion or a schema migration without evidence.
-Required Commands Before Continuing: Follow the VS13 task verification steps; run focused tests during implementation and `pnpm ci:check` before review. Do not record VS13 completion until all acceptance criteria and delivery evidence are present.
-Last Updated Date: 2026-10-06
-Last Updated Time: 14:10
+Current Slice: VS14 - read-only admin area
+Current Task: Human review; VS14-T1 through T7 are implemented and verified.
+Current Status: IN_REVIEW
+Last Completed Task: VS14-T7; full acceptance gate passed on 2026-10-10 at 22:25 Asia/Manila.
+Next Recommended Task: Review the VS14 branch changes and verification screenshots before marking the slice COMPLETED.
+Uncommitted Changes: None after the acceptance/handoff commit; generated test artifacts remain ignored under storage.
+Known Failing Tests: None. pnpm ci:check passes (799 unit tests, 132 database integration tests, 6 browser scenarios).
+Known Blockers: None for VS14. VS13 email changes remain separately blocked on the provider decision.
+Important Context: Configure server-only ADMIN_EMAIL and DATABASE_ADMIN_URL, provision the dedicated role, then apply migration 0047 before enabling admin reads. Missing configuration fails closed. No production deployment was performed.
+Required Commands Before Continuing: No rerun needed for unchanged code. Use pnpm ci:check after implementation changes; see docs/verification/vs14-admin.md for evidence and review findings.
+Branch: codex/vs14-admin
+Implementation Commits: c1ca7d1 (metadata foundation), 1e3f502 (protected API), 512346e (admin interface and browser fixtures).
+Review Status: Independent review findings fixed and confirmed; optional Gemini review was unavailable and the user chose to continue. Human review is pending.
+Last Updated Date: 2026-10-10
+Last Updated Time: 22:27
 Last Updated By: Codex
 ```

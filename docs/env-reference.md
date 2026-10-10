@@ -1,5 +1,29 @@
 # RepurposePro Environment Reference
 
+## VS14 Admin Configuration
+
+`ADMIN_EMAIL` is an optional server-only setting shared by web and API. Set it to the operator's
+existing Better Auth email. Comparison trims whitespace and ignores case. Missing/blank values
+disable admin access. Never use a NEXT_PUBLIC variant.
+
+`DATABASE_ADMIN_URL` is an optional API connection using repurposepro_admin, a non-placeholder
+password, and no connection query parameters. Configure its provisioning copy in `.env.database`
+and runtime copy in `.env`. Web and workers do not use this connection. Pool size and TLS use
+DATABASE_POOL_MAX/DATABASE_SSL. Without the URL, authorized admin reads return an unavailable
+state while the existing app continues working; there is no privileged fallback.
+
+For existing databases, configure the provisioning URL, run `pnpm db:provision-roles`, then
+`pnpm db:migrate`. Provisioning strips admin memberships and sets restricted role flags. Fresh
+Compose installations create the role with NOLOGIN; provisioning enables login only when its
+URL is configured. Removing the provisioning URL disables login on the next provisioning run.
+Apply forward migration 0047_vs14_admin_metadata before enabling the runtime connection. It
+grants metadata columns, sanitizes job failures through a view, removes PUBLIC application
+function execution, and preserves existing application roles' effective function access.
+
+Use `pnpm test:db-integration` for synthetic credentials and disposable database verification;
+the runner restores development roles afterward. Do not run integration suites concurrently:
+PostgreSQL roles are cluster-wide.
+
 ## 1. Purpose
 
 This document defines environment variables used by **RepurposePro**.
