@@ -1177,6 +1177,18 @@ load only `.env.database`. Provision a new local volume through Compose. For an 
 
 Avoid schema drift between environments.
 
+For an empty Neon staging database, use direct (unpooled) connections for
+`DATABASE_BOOTSTRAP_URL` and `DATABASE_MIGRATION_URL`, configure the fixed application-role
+URLs, then run `pnpm db:provision-roles` followed by `pnpm db:migrate`. The existing-volume
+bootstrap migration is unnecessary on an empty database.
+
+Provisioning supports a managed PostgreSQL 17 administrator with `CREATEROLE`; it does not
+require a true superuser. Existing application roles must not be superusers, and the bootstrap
+login needs `ADMIN OPTION` on roles it updates. Reuse the original role creator when retrying.
+The bootstrap receives owner-role `INHERIT` and `SET` membership so database and schema
+ownership can transfer. This is an administrative login only; runtime roles receive no such
+membership. Keep its connection URL out of application environments.
+
 ---
 
 ## 27. Final Rule
