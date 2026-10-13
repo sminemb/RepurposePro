@@ -10,7 +10,13 @@ import {
 const clients = new Map<ProtectionAction, Awaited<ReturnType<typeof createClient>>>();
 async function createClient(action: ProtectionAction) {
   const config = loadProtectionConfig();
-  const { default: arcjet, shield, detectBot, fixedWindow } = await import("@arcjet/next");
+  const {
+    default: arcjet,
+    createRemoteClient,
+    shield,
+    detectBot,
+    fixedWindow,
+  } = await import("@arcjet/next");
   const rateRule = ["profile", "password", "email"].includes(action)
     ? fixedWindow({
         ...protectionPolicies[action],
@@ -25,6 +31,8 @@ async function createClient(action: ProtectionAction) {
   return {
     config,
     sdk: arcjet({
+      // Cold local connections can exceed the SDK's one-second development deadline.
+      ...(config.local ? { client: createRemoteClient({ timeout: 5_000 }) } : {}),
       key: config.key,
       log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       rules: [shield({ mode: config.mode }), detectBot({ mode: config.mode, allow: [] }), rateRule],

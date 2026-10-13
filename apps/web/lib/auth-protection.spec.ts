@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const protect = vi.hoisted(() => vi.fn());
 const getSession = vi.hoisted(() => vi.fn());
+const createRemoteClient = vi.hoisted(() => vi.fn(() => ({ remote: true })));
+const createArcjet = vi.hoisted(() => vi.fn((options: unknown) => ({ protect, options })));
+const loadProtectionConfig = vi.hoisted(() => vi.fn());
+vi.mock("@repurposepro/config", () => ({ loadProtectionConfig }));
 vi.mock("./auth", () => ({ auth: { api: { getSession } } }));
 vi.mock("@arcjet/next", () => ({
-  default: () => ({ protect }),
+  default: createArcjet,
+  createRemoteClient,
   shield: vi.fn(),
   detectBot: vi.fn(),
   fixedWindow: vi.fn(),
@@ -13,10 +18,41 @@ beforeEach(() => {
   protect.mockReset();
   getSession.mockReset();
   getSession.mockResolvedValue({ user: { id: "account-1" } });
+  createRemoteClient.mockClear();
+  createArcjet.mockClear();
+  vi.unstubAllEnvs();
+  loadProtectionConfig.mockReturnValue({ key: "ajkey_test", mode: "DRY_RUN", local: true });
 });
 describe("auth protection", () => {
-  it("preserves the body for Better Auth", async () => {
+  it("allows a bounded five-second decision timeout locally", async () => {
+    vi.resetModules();
+    const { protectAuthRequest: protectFresh } = await import("./auth-protection");
     protect.mockResolvedValue({ isDenied: () => false, isErrored: () => false });
+    expect(await protectFresh(new Request("http://localhost/api/auth/sign-up/email"))).toBeNull();
+    expect(createRemoteClient).toHaveBeenCalledWith({ timeout: 5_000 });
+    expect(createArcjet.mock.calls[0]?.[0]).toMatchObject({ client: { remote: true } });
+  });
+  it("retains the default remote timeout in production", async () => {
+    vi.resetModules();
+    vi.stubEnv("VERCEL", "1");
+    loadProtectionConfig.mockReturnValue({ key: "ajkey_test", mode: "LIVE", local: false });
+    const { protectAuthRequest: protectFresh } = await import("./auth-protection");
+    protect.mockResolvedValue({ isDenied: () => false, isErrored: () => false });
+    expect(
+      await protectFresh(
+        new Request("https://app.example/api/auth/sign-up/email", {
+          headers: { "x-vercel-forwarded-for": "203.0.113.1" },
+        }),
+      ),
+    ).toBeNull();
+    expect(createRemoteClient).not.toHaveBeenCalled();
+    expect(createArcjet.mock.calls[0]?.[0]).not.toHaveProperty("client");
+  });
+  it("preserves the body for Better Auth", async () => {
+    protect.mockImplementation(async (protectedRequest: Request) => {
+      await protectedRequest.text();
+      return { isDenied: () => false, isErrored: () => false };
+    });
     const request = new Request("http://localhost:3000/api/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify({ email: "user@example.test", password: "private-marker" }),

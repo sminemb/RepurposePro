@@ -1326,6 +1326,10 @@ Use explicit production behavior.
 Checkout creation uses an Arcjet fixed window keyed by authenticated user ID: three attempts
 per minute. Use `DRY_RUN` only for local development and tests; production must use `LIVE`.
 
+Web authentication uses a five-second Arcjet remote deadline in local environments to allow
+cold connections. Staging and production retain the SDK default. Unavailable protection still
+rejects mutations in every environment; the longer local deadline does not bypass protection.
+
 ---
 
 # 14. Logging Variables
