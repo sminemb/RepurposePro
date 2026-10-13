@@ -619,3 +619,34 @@ export function loadWorkerConfig(environment?: NodeJS.ProcessEnv): WorkerConfig 
 export { assertSafeStoragePath, assertSafeStorageTree } from "./safe-storage";
 export { assertSafeExecutable } from "./safe-executable";
 export { safeRequestId, safeLogContext, safeLogSerializers } from "./safe-logging";
+
+export function isAdminEmail(email: string, configuredEmail: string): boolean {
+  const normalized = configuredEmail.trim().toLowerCase();
+  return normalized.length > 0 && email.trim().toLowerCase() === normalized;
+}
+
+export function loadAdminIdentityConfig(environment?: NodeJS.ProcessEnv): string {
+  return (environmentSource(environment).ADMIN_EMAIL ?? "").trim().toLowerCase();
+}
+
+export function loadAdminDatabaseConfig(environment?: NodeJS.ProcessEnv) {
+  const source = environmentSource(environment);
+  if (!source.DATABASE_ADMIN_URL?.trim()) return undefined;
+  const parsed = parseEnvironment(
+    z.object({
+      DATABASE_ADMIN_URL: databaseUrlSchema("repurposepro_admin").refine(
+        (value) => new URL(value).search === "",
+        "Admin URLs must not contain connection override parameters.",
+      ),
+      DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(2),
+      DATABASE_SSL: booleanFromEnvironment.default(false),
+    }),
+    "admin database",
+    source,
+  );
+  return {
+    connectionString: parsed.DATABASE_ADMIN_URL,
+    poolMax: parsed.DATABASE_POOL_MAX,
+    ssl: parsed.DATABASE_SSL,
+  };
+}

@@ -1,6 +1,13 @@
 "use client";
 
-import { CreditCard, LayoutDashboard, LockKeyhole, Plus, Settings } from "lucide-react";
+import {
+  CreditCard,
+  LayoutDashboard,
+  LockKeyhole,
+  Plus,
+  Settings,
+  ShieldCheck,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { isNavigationItemActive } from "./app-navigation";
 
 interface AppSidebarProps {
+  readonly isAdmin?: boolean;
   readonly className?: string;
 }
 
@@ -55,7 +63,7 @@ const navigation: readonly NavigationItem[] = [
   },
 ];
 
-export function AppSidebar({ className }: AppSidebarProps) {
+export function AppSidebar({ className, isAdmin = false }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -68,7 +76,21 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <BrandMark className="px-2" href="/" />
       <nav className="mt-10 grid gap-2">
-        {navigation.map(({ activePath, href, icon: Icon, label, locked, matchDescendants }) => {
+        {[
+          ...navigation,
+          ...(isAdmin
+            ? [
+                {
+                  label: "Admin",
+                  icon: ShieldCheck,
+                  href: "/admin",
+                  activePath: "/admin",
+                  locked: false,
+                  matchDescendants: true,
+                },
+              ]
+            : []),
+        ].map(({ activePath, href, icon: Icon, label, locked, matchDescendants }) => {
           const active = activePath
             ? isNavigationItemActive(pathname, activePath, matchDescendants)
             : false;

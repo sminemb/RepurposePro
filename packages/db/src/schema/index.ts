@@ -153,7 +153,11 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [uniqueIndex("users_email_unique").on(table.email)],
+  (table) => [
+    uniqueIndex("users_email_unique").on(table.email),
+    index("users_admin_email_idx").on(sql`lower(${table.email})`),
+    index("users_admin_created_idx").on(table.createdAt.desc(), table.id.desc()),
+  ],
 );
 
 export const sessions = pgTable(
@@ -239,6 +243,7 @@ export const projects = pgTable(
   },
   (table) => [
     index("projects_user_created_at_idx").on(table.userId, table.createdAt),
+    index("projects_admin_created_idx").on(table.createdAt.desc(), table.id.desc()),
     index("projects_user_status_idx").on(table.userId, table.status),
     unique("projects_id_user_id_unique").on(table.id, table.userId),
   ],
@@ -310,6 +315,7 @@ export const processingJobs = pgTable(
   },
   (table) => [
     index("processing_jobs_project_created_at_idx").on(table.projectId, table.createdAt),
+    index("jobs_admin_created_idx").on(table.createdAt.desc(), table.id.desc()),
     index("processing_jobs_user_created_at_idx").on(table.userId, table.createdAt),
     index("processing_jobs_status_created_at_idx").on(table.status, table.createdAt),
     unique("processing_jobs_id_user_id_unique").on(table.id, table.userId),
@@ -901,6 +907,12 @@ export const stripePayments = pgTable(
       .on(table.stripePaymentIntentId)
       .where(sql`${table.stripePaymentIntentId} IS NOT NULL`),
     uniqueIndex("stripe_payments_event_id_unique").on(table.stripeEventId),
+    index("payments_admin_created_idx").on(table.createdAt.desc(), table.id.desc()),
+    index("payments_admin_user_created_idx").on(
+      table.userId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
     unique("stripe_payments_id_user_id_unique").on(table.id, table.userId),
     foreignKey({
       name: "stripe_payments_customer_owner_fk",

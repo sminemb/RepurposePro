@@ -295,9 +295,9 @@ all admin API requests using the existing Better Auth session.
 
 **Acceptance criteria:**
 
-- [ ] A valid session with a normalized email matching configured `ADMIN_EMAIL` is required.
-- [ ] Missing or blank configuration and non-matching users are denied on both page and API.
-- [ ] Client-supplied identity never affects authorization; existing auth behavior is unchanged.
+- [x] A valid session with a normalized email matching configured `ADMIN_EMAIL` is required.
+- [x] Missing or blank configuration and non-matching users are denied on both page and API.
+- [x] Client-supplied identity never affects authorization; existing auth behavior is unchanged.
 
 **Verification:** Focused tests cover signed-out, non-admin, admin, and missing-config cases,
 including direct API requests.
@@ -317,12 +317,12 @@ filters, and cursor pagination.
 
 **Acceptance criteria:**
 
-- [ ] The role cannot insert, update, delete, or access excluded transcript, media, provider,
-  credential, raw-error, or storage-path data.
-- [ ] The normal runtime, checkout, webhook, processing, and owner roles retain their current
-  permissions.
-- [ ] The migration is forward-only and can be applied without changing financial or retention
-  invariants.
+- [x] The role cannot insert, update, delete, or access excluded transcript, media, provider,
+      credential, raw-error, or storage-path data.
+- [x] The normal runtime, checkout, webhook, processing, and owner roles retain their current
+      permissions.
+- [x] The migration is forward-only and can be applied without changing financial or retention
+      invariants.
 
 **Verification:** Database integration tests assert both allowed reads and denied access/writes;
 run the repository database integration command.
@@ -343,11 +343,11 @@ users, projects, jobs, payment summaries, and current queued/active jobs.
 
 **Acceptance criteria:**
 
-- [ ] `7d`, `30d`, and `90d` are accepted; missing range defaults to `30d`; invalid ranges return
-  the existing validation error envelope.
-- [ ] Historical and current queue metrics are clearly separated and derived from persisted
-  records.
-- [ ] Output contains only fields defined by `AdminOverview` and is not cached.
+- [x] `7d`, `30d`, and `90d` are accepted; missing range defaults to `30d`; invalid ranges return
+      the existing validation error envelope.
+- [x] Historical and current queue metrics are clearly separated and derived from persisted
+      records.
+- [x] Output contains only fields defined by `AdminOverview` and is not cached.
 
 **Verification:** Focused API tests cover ranges, defaulting, invalid input, fixture aggregation,
 admin denial, and unavailable database responses.
@@ -366,10 +366,10 @@ payments, and ledger entries, including related user detail data.
 
 **Acceptance criteria:**
 
-- [ ] Search accepts exact email or opaque user/project/job ID only; partial names and content
-  search are unsupported.
-- [ ] Collections use bounded cursor pagination and documented status filters.
-- [ ] Projections follow the spec field allowlists and never return raw error or processor data.
+- [x] Search accepts exact email or opaque user/project/job ID only; partial names and content
+      search are unsupported.
+- [x] Collections use bounded cursor pagination and documented status filters.
+- [x] Projections follow the spec field allowlists and never return raw error or processor data.
 
 **Verification:** API tests cover exact match/no match, email normalization, related records,
 status filters, cursor boundaries, excluded fields, and authorization failures.
@@ -388,9 +388,9 @@ current queue counts, navigation to lookup/list views, and explicit loading/erro
 
 **Acceptance criteria:**
 
-- [ ] The overview defaults to 30 days and updates metrics for each supported range.
-- [ ] Current queue counts remain separate from historical metrics.
-- [ ] Layout follows existing UI conventions and works by keyboard and on mobile/desktop.
+- [x] The overview defaults to 30 days and updates metrics for each supported range.
+- [x] Current queue counts remain separate from historical metrics.
+- [x] Layout follows existing UI conventions and works by keyboard and on mobile/desktop.
 
 **Verification:** Focused component/page tests and manual responsive, keyboard, loading, empty,
 and error-state checks.
@@ -409,11 +409,11 @@ linked support details.
 
 **Acceptance criteria:**
 
-- [ ] The operator can find a record by exact email or opaque ID and navigate to its related
-  safe detail view.
-- [ ] Pagination and job/payment status filters work without losing query context.
-- [ ] No content previews, write actions, exports, raw exceptions, or hidden sensitive fields are
-  rendered.
+- [x] The operator can find a record by exact email or opaque ID and navigate to its related
+      safe detail view.
+- [x] Pagination and job/payment status filters work without losing query context.
+- [x] No content previews, write actions, exports, raw exceptions, or hidden sensitive fields are
+      rendered.
 
 **Verification:** Focused UI tests cover search, no results, pagination, filters, related detail,
 and field visibility; manually verify keyboard and responsive behavior.
@@ -433,9 +433,9 @@ gates; record evidence in the progress tracker when implementation begins.
 
 **Acceptance criteria:**
 
-- [ ] All spec scenarios pass, including direct API denial and read-only database enforcement.
-- [ ] The interface exposes no disallowed content and all responses are private/no-store.
-- [ ] Focused tests, database integration checks, and the repository quality gate pass.
+- [x] All spec scenarios pass, including direct API denial and read-only database enforcement.
+- [x] The interface exposes no disallowed content and all responses are private/no-store.
+- [x] Focused tests, database integration checks, and the repository quality gate pass.
 
 **Verification:** Run focused Vitest suites, `pnpm test:db-integration`, and `pnpm ci:check`;
 manually verify signed-out, non-admin, and authorized-admin flows across desktop and mobile.
@@ -449,21 +449,21 @@ evidence if needed.
 
 ## Checkpoints
 
-- [ ] **Security/data checkpoint:** VS14-T1 and VS14-T2 prove fail-closed authorization and
-  least-privilege database access.
-- [ ] **Read workflow checkpoint:** VS14-T3 through VS14-T6 provide end-to-end overview, lookup,
-  pagination, and safe detail workflows.
+- [x] **Security/data checkpoint:** VS14-T1 and VS14-T2 prove fail-closed authorization and
+      least-privilege database access.
+- [x] **Read workflow checkpoint:** VS14-T3 through VS14-T6 provide end-to-end overview, lookup,
+      pagination, and safe detail workflows.
 - [ ] **Completion checkpoint:** VS14-T7 passes focused, database, and full quality checks; a
-  human reviews the result before marking VS14 complete.
+      human reviews the result before marking VS14 complete.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Admin authorization is enforced only in the UI | Direct API calls could expose cross-user data | Apply and test the admin check at every API boundary. |
-| Admin database permissions are too broad | Sensitive data or writes could be exposed | Use a separate role and test column/table permissions and denied writes. |
-| Status/error fields contain unsafe details | User content or secrets could leak | Project allowlisted status and failure codes; omit raw exception text. |
-| Aggregates disagree with durable state | Support decisions may be misleading | Use persisted database records as the source of truth and distinguish live queue counts. |
+| Risk                                           | Impact                                        | Mitigation                                                                               |
+| ---------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Admin authorization is enforced only in the UI | Direct API calls could expose cross-user data | Apply and test the admin check at every API boundary.                                    |
+| Admin database permissions are too broad       | Sensitive data or writes could be exposed     | Use a separate role and test column/table permissions and denied writes.                 |
+| Status/error fields contain unsafe details     | User content or secrets could leak            | Project allowlisted status and failure codes; omit raw exception text.                   |
+| Aggregates disagree with durable state         | Support decisions may be misleading           | Use persisted database records as the source of truth and distinguish live queue counts. |
 
 ## Open Questions
 
@@ -477,3 +477,6 @@ evidence if needed.
 - [Security Boundaries ADR](../docs/adr/0009-security-boundaries.md)
 - [API Contracts](../docs/api-contracts.md)
 - [Progress Tracker](../docs/progress-tracker.md)
+
+VS14-T1 through T7 are implemented and verified. The slice remains IN_REVIEW until human review.
+See [verification evidence](../docs/verification/vs14-admin.md).

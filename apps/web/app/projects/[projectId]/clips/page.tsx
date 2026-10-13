@@ -1,3 +1,4 @@
+import { isAdminEmail, loadAdminIdentityConfig } from "@repurposepro/config";
 import { loadWebConfig } from "@repurposepro/config";
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
@@ -82,7 +83,10 @@ function ClipsShell({
 }) {
   return (
     <div className="flex min-h-dvh bg-rp-bg">
-      <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
+      <AppSidebar
+        isAdmin={isAdminEmail(user.email, loadAdminIdentityConfig())}
+        className="fixed inset-y-0 left-0 hidden lg:flex"
+      />
       <div className="min-w-0 flex-1 lg:pl-66">
         <AppTopbar title="Clip previews" userEmail={user.email} userName={user.name} />
         <main className="mx-auto max-w-[100rem] px-5 py-8 sm:px-8 lg:px-10 lg:py-12">

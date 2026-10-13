@@ -59,6 +59,7 @@ export default tseslint.config(
     files: [
       "apps/api/src/common/**/*.spec.ts",
       "apps/api/src/modules/billing/*.spec.ts",
+      "apps/api/src/modules/admin/*.spec.ts",
       "apps/api/src/modules/infrastructure/*.spec.ts",
       "apps/api/src/modules/processing/*.spec.ts",
       "apps/api/src/modules/projects/*.spec.ts",

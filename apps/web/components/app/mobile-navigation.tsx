@@ -7,11 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { AppSidebar } from "@/components/app/app-sidebar";
 
 interface MobileNavigationProps {
+  readonly isAdmin?: boolean;
   readonly userEmail: string;
   readonly userName: string;
 }
 
-export function MobileNavigation({ userEmail, userName }: MobileNavigationProps) {
+export function MobileNavigation({ userEmail, userName, isAdmin = false }: MobileNavigationProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -100,7 +101,10 @@ export function MobileNavigation({ userEmail, userName }: MobileNavigationProps)
                   <X aria-hidden="true" className="size-5" />
                 </button>
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                  <AppSidebar className="h-auto min-h-full w-full border-r-0 pt-20" />
+                  <AppSidebar
+                    isAdmin={isAdmin}
+                    className="h-auto min-h-full w-full border-r-0 pt-20"
+                  />
                 </div>
                 <div className="shrink-0 border-t border-rp-border bg-rp-surface px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
                   <p className="text-sm font-medium text-rp-text">{userName}</p>

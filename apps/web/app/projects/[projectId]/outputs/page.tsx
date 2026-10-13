@@ -1,3 +1,4 @@
+import { isAdminEmail, loadAdminIdentityConfig } from "@repurposepro/config";
 import { loadWebConfig } from "@repurposepro/config";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -13,7 +14,10 @@ export default async function OutputsPage({ params }: { params: Promise<{ projec
   const { projectId } = await params;
   return (
     <div className="flex min-h-dvh bg-rp-bg">
-      <AppSidebar className="fixed inset-y-0 left-0 hidden lg:flex" />
+      <AppSidebar
+        isAdmin={isAdminEmail(session.user.email, loadAdminIdentityConfig())}
+        className="fixed inset-y-0 left-0 hidden lg:flex"
+      />
       <div className="min-w-0 flex-1 lg:pl-66">
         <AppTopbar
           title="Your exports"

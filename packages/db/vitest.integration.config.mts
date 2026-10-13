@@ -26,10 +26,12 @@ if (missingDatabaseVariables.length > 0) {
 
 export default defineConfig({
   test: {
+    globalSetup: ["packages/db/scripts/setup-admin-integration.ts"],
     environment: "node",
     fileParallelism: false,
     hookTimeout: 30_000,
     include: [
+      "apps/api/src/modules/admin/admin.postgres.integration.spec.ts",
       "apps/api/src/modules/projects/cleanup.postgres.integration.spec.ts",
       "apps/api/src/modules/summary/summary.postgres-redis.integration.spec.ts",
       "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",

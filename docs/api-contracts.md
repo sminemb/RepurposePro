@@ -1,5 +1,53 @@
 # RepurposePro API Contracts
 
+## VS14 Admin Read API
+
+Every route below uses `/api/v1/admin`, requires a Better Auth session matching normalized
+server-only `ADMIN_EMAIL`, and returns `Cache-Control: private, no-store`, including errors.
+Missing/blank identity denies access. Owner filters select records and never authorize access.
+
+| GET route | Query | Response data |
+| --- | --- | --- |
+| `/overview` | range=7d/30d/90d; default 30d | AdminOverview |
+| `/search` | required q: exact email or opaque user/project/job ID | AdminSearchResult |
+| `/users` | cursor, limit | AdminUserSummary[] |
+| `/users/:userId` | — | AdminUserDetail |
+| `/projects` | cursor, limit, optional userId | AdminProjectSummary[] |
+| `/projects/:projectId` | — | AdminProjectSummary |
+| `/jobs` | cursor, limit, optional userId/projectId/status | AdminJobSummary[] |
+| `/jobs/:jobId` | — | AdminJobSummary |
+| `/payments` | cursor, limit, optional userId/status | AdminPaymentSummary[] |
+| `/ledger` | required userId, cursor, limit | AdminCreditLedgerEntry[] |
+
+Single reads use `{ data }`; collections use `{ data, meta: { nextCursor } }`. Lists default to
+20 rows, bounded to 1–50. Cursors are base64url JSON containing createdAt/id, ordered descending
+by both fields with full timestamp precision. Changing filters starts at the first page.
+Email lookup trims whitespace and ignores case; IDs match exactly. Search returns every matching
+category. Unsupported fields, malformed cursors, invalid ranges/statuses or lookups return 400
+`ADMIN_QUERY_INVALID`. Job filters use persisted processing statuses; payment filters accept
+pending/paid/failed/refunded.
+
+| Safe type | Fields |
+| --- | --- |
+| AdminUserSummary | id, name, email, createdAt, updatedAt |
+| AdminProjectSummary | id, userId, outputType, status, currentJobId, createdAt, updatedAt, deletedAt |
+| AdminJobSummary | id, userId, projectId, type, status, step, errorCode, attemptCount, startedAt, completedAt, createdAt, updatedAt |
+| AdminPaymentSummary | internal id, userId, amountCents, currency, status, createdAt |
+| AdminCreditLedgerEntry | id, userId, type, amount, createdAt |
+| AdminSearchResult | users/projects/jobs arrays of the corresponding summaries |
+| AdminUserDetail | user plus bounded projects/jobs/payments/ledger pages |
+
+AdminOverview contains range/from/to, usersCreated/projectsCreated, jobOutcomes grouped by status,
+payments grouped by currency/status with count and integer amountCents, and currentQueue
+queued/active counts. Historical windows are rolling UTC creation-time intervals `[from,to)`;
+statuses reflect current durable state. Current queue counts cover all dates. Payment totals are
+not net revenue; currencies are never combined. Unknown failure codes become UNKNOWN_FAILURE.
+
+Unauthenticated requests return 401; non-admin/missing identity returns 403 ADMIN_FORBIDDEN;
+missing details return 404 ADMIN_RECORD_NOT_FOUND; failed data reads return 503
+ADMIN_DATA_UNAVAILABLE. Errors use the existing envelope with safe messages and null details.
+No writes, exports, content previews, processor identifiers or impersonation are supported.
+
 ## 1. Purpose
 
 This document defines the HTTP API contract for **RepurposePro**.
