@@ -1,4 +1,4 @@
-# Account Settings Task List (VS13)
+# Feature Task Lists: Account Settings (VS13) and Admin Page (VS14)
 
 Source of truth: [Implementation Plan](plan.md), [Settings PRD](../docs/settings-page-prd.md),
 and [Settings Page Specification](../docs/settings-page-spec.md).
@@ -72,3 +72,78 @@ database test teardown fixes. All six tasks are complete; VS13 is in review.
       confirmation sequence.
 - [x] **Completion checkpoint:** VS13-T6 passes `pnpm ci:check`; update the progress tracker and
       request human review before marking VS13 complete.
+
+---
+
+# Admin Page Task List (VS14)
+
+Source of truth: [Implementation Plan](plan.md) and
+[Admin Page Specification](../docs/admin-page-spec.md).
+
+## Phase 1: Access and Data Foundation
+
+- [ ] **VS14-T1 — Add admin identity configuration and authorization**
+  - Acceptance: A valid Better Auth session and normalized configured admin email are required
+    for the page and every API route; missing configuration denies access.
+  - Verify: Focused signed-out, non-admin, admin, missing-config, and direct API tests.
+  - Dependencies: Existing Better Auth integration.
+  - Files: Environment configuration, admin page/API authorization, and focused tests.
+
+- [ ] **VS14-T2 — Add restricted admin database read access**
+  - Acceptance: Separate admin URL/role is read-only and limited to approved metadata columns;
+    existing runtime and financial permissions remain unchanged.
+  - Verify: `pnpm test:db-integration` scenarios for allowed reads, excluded data, and denied
+    writes.
+  - Dependencies: None; use the approved field allowlist in the specification.
+  - Files: Forward-only migration, role/configuration, and database integration tests.
+
+## Phase 2: Read API and Admin Screens
+
+- [ ] **VS14-T3 — Add overview read API**
+  - Acceptance: `7d`, `30d`, and `90d` ranges work, default to 30 days, separate current queue
+    counts, and return safe projections with no-store headers.
+  - Verify: Focused API tests for range validation/defaults, aggregation, errors, and access.
+  - Dependencies: VS14-T1 and VS14-T2.
+  - Files: Admin overview controller/service/contracts and focused API tests.
+
+- [ ] **VS14-T4 — Add search, list, and detail read APIs**
+  - Acceptance: Exact email/opaque-ID lookup and cursor-paginated safe user, project, job,
+    payment, and ledger data are available with approved status filters.
+  - Verify: Focused API tests for matching, no match, pagination, filters, safe fields, and
+    authorization.
+  - Dependencies: VS14-T1 and VS14-T2.
+  - Files: Admin API contracts/services/repositories and focused API tests.
+
+- [ ] **VS14-T5 — Build admin overview UI**
+  - Acceptance: Overview defaults to 30 days, supports each range, separates current queue state,
+    and provides loading/error/empty states with responsive accessible layout.
+  - Verify: Focused web tests and manual keyboard, mobile, and desktop checks.
+  - Dependencies: VS14-T1 and VS14-T3.
+  - Files: Admin route, overview components/data access, navigation visibility, and web tests.
+
+- [ ] **VS14-T6 — Build lookup, lists, and safe detail views**
+  - Acceptance: Exact lookup connects records to related details; lists paginate/filter; prohibited
+    content and state-changing controls are absent.
+  - Verify: Focused UI tests for search, no results, pagination, filters, details, and field
+    visibility; manual responsive/keyboard checks.
+  - Dependencies: VS14-T1 and VS14-T4.
+  - Files: Admin search/list/detail components and focused web tests.
+
+## Phase 3: Acceptance and Handoff
+
+- [ ] **VS14-T7 — Verify admin end-to-end and record evidence**
+  - Acceptance: All spec scenarios pass; admin data is private/no-store and read-only; evidence is
+    recorded before the slice is marked complete.
+  - Verify: Focused Vitest suites, `pnpm test:db-integration`, and `pnpm ci:check`; manually
+    check signed-out, non-admin, and authorized-admin flows.
+  - Dependencies: VS14-T3, VS14-T4, VS14-T5, and VS14-T6.
+  - Files: Focused tests, progress tracker, and verification evidence if needed.
+
+## Checkpoints
+
+- [ ] **Security/data checkpoint:** VS14-T1/T2 verify fail-closed authorization, least privilege,
+  excluded fields, and denied writes.
+- [ ] **Read workflow checkpoint:** VS14-T3–T6 verify overview, lookup, pagination, filters, and
+  detail flows end to end.
+- [ ] **Completion checkpoint:** VS14-T7 passes focused tests, database checks, quality gates,
+  and human review.
