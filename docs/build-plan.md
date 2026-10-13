@@ -755,9 +755,10 @@ PATCH  /projects/:projectId/summary
 
 Use Better Auth's existing authenticated client and email/password flows for name, email, and
 password changes. Do not add a parallel NestJS account API. Email changes require current-address
-approval followed by new-address verification; transactional email delivery must be selected and
-configured before that flow can ship. Delivery follows the protected route, profile, and password
-flows so the independent account controls can be verified while provider selection is pending.
+approval followed by new-address verification. Existing unverified users first verify their
+current address. Resend's HTTP API is configured server-side without a new dependency; real
+delivery through two controlled inboxes passed on 2026-10-13. Signup and login remain available
+without mandatory verification. See [VS13 verification](verification/vs13.md).
 
 Do not build unused endpoints early just to complete an API layer.
 

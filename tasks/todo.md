@@ -28,10 +28,10 @@ and [Settings Page Specification](../docs/settings-page-spec.md).
 
 ## Phase 2: Verified Email Change
 
-- [ ] **VS13-T4 — Configure transactional email delivery**
-  - Acceptance: The selected sender can deliver both message types and protects provider
+- [x] **VS13-T4 — Configure transactional email delivery**
+  - Acceptance: The selected sender delivers all three message types and protects provider
     credentials; signup/sign-in policy is unchanged.
-  - Verify: Send both messages through the provider's development or sandbox mode and check
+  - Verify: Send the messages through Resend test recipients and two controlled inboxes; check
     delivery-failure handling.
   - Dependencies: VS13-T1.
   - Files: Email-delivery integration, environment validation/reference, and focused tests.
@@ -46,7 +46,7 @@ and [Settings Page Specification](../docs/settings-page-spec.md).
 
 ## Phase 3: Full Acceptance and Handoff
 
-- [ ] **VS13-T6 — Verify responsive, accessible Settings acceptance**
+- [x] **VS13-T6 — Verify responsive, accessible Settings acceptance**
   - Acceptance: All PRD scenarios work independently; mobile/desktop layout, keyboard use, labels,
     focus, and live feedback pass.
   - Verify: Focused tests, manual desktop/mobile scenarios, then `pnpm ci:check`.
@@ -61,12 +61,14 @@ new dependency, database migration, or parallel account API is introduced. See
 [VS13 verification](../docs/verification/vs13.md) for current evidence and blockers.
 
 `pnpm ci:check` passed on 2026-10-08: 823 unit tests, 125 database integration tests, and
-6 browser scenarios. Settings screenshots and keyboard/layout checks passed. T4 and final T6
-acceptance remain open until Resend is configured and the controlled inbox procedure passes.
+6 browser scenarios. Settings screenshots and keyboard/layout checks passed. On 2026-10-13,
+Resend test recipients and the complete controlled inbox flow passed. The final quality gate
+passed with 828 unit tests, 125 database tests, and 6 browser scenarios after local timeout and
+database test teardown fixes. All six tasks are complete; VS13 is in review.
 
 - [x] **Profile/password checkpoint:** VS13-T2 and VS13-T3 pass focused tests, typecheck, and
       mobile/desktop layout checks.
-- [ ] **Email checkpoint:** VS13-T4 verifies message delivery; VS13-T5 verifies the full
+- [x] **Email checkpoint:** VS13-T4 verifies message delivery; VS13-T5 verifies the full
       confirmation sequence.
-- [ ] **Completion checkpoint:** VS13-T6 passes `pnpm ci:check`; update the progress tracker and
+- [x] **Completion checkpoint:** VS13-T6 passes `pnpm ci:check`; update the progress tracker and
       request human review before marking VS13 complete.

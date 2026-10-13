@@ -137,9 +137,9 @@ by the later Better Auth email-change flow.
 
 **Acceptance criteria:**
 
-- [ ] The sender can deliver both current-address approval and new-address verification messages.
+- [x] The sender can deliver current verification, current-address approval, and new-address verification.
 - [x] Provider credentials are validated at startup and never exposed in logs or client errors.
-- [ ] Delivery behavior is tested in a controlled environment without changing signup or sign-in
+- [x] Delivery behavior is tested in a controlled environment without changing signup or sign-in
       verification policy.
 
 **Verification:** Send both message types through the provider's development or sandbox mode and
@@ -183,7 +183,7 @@ behavior, and record implementation evidence in the progress tracker.
 
 **Acceptance criteria:**
 
-- [ ] Profile, email, and password actions work independently and satisfy the PRD acceptance
+- [x] Profile, email, and password actions work independently and satisfy the PRD acceptance
       criteria.
 - [x] Keyboard operation, visible focus, labels, and accessible status/error announcements work.
 - [x] Desktop and mobile layouts have no horizontal overflow; sign-out and other navigation
@@ -201,9 +201,9 @@ record under `docs/verification/` if the implementation produces durable evidenc
 
 ### Checkpoint: Complete
 
-- [ ] All VS13 acceptance criteria are met.
+- [x] All VS13 acceptance criteria are met.
 - [x] Formatting, lint, typecheck, tests, and build checks pass through `pnpm ci:check`.
-- [ ] Email delivery and verification behavior are tested in the selected provider's controlled
+- [x] Email delivery and verification behavior are tested in the selected provider's controlled
       environment.
 - [x] Start/end times, blockers, verification, and handoff state are recorded in
       `docs/progress-tracker.md`.
@@ -226,12 +226,15 @@ record under `docs/verification/` if the implementation produces durable evidenc
 - Better Auth 1.6.23 catches mail errors by default. Its account-email context extension awaits
   delivery and propagates safe failure responses, with no custom account API or token store.
 
-## Implementation Evidence — 2026-10-08
+## Implementation Evidence — 2026-10-08 and 2026-10-13
 
 T1, T2, T3, and T5 acceptance checks passed. `pnpm ci:check` passed with 823 unit tests,
 125 PostgreSQL/Redis integration tests, and 6 production browser scenarios. Keyboard and
-320–1440px layout checks passed; screenshots were reviewed. T4 and final T6 acceptance remain
-open for real Resend delivery through two controlled inboxes. See
+320–1440px layout checks passed; screenshots were reviewed. T4 passed on 2026-10-13: all three
+templates were accepted by Resend test recipients and received/opened through two controlled
+inboxes. The new address is verified, fresh login works, and the original address is rejected.
+T6 passed the final quality gate at 09:44 Asia/Manila: 828 unit tests, 125 database tests, and
+6 browser scenarios. All six tasks are complete; the slice awaits human review. See
 [VS13 verification](../docs/verification/vs13.md) for evidence and the delivery procedure.
 
 ## References
