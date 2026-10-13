@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { closeTestPool } from "../close-test-pool";
 
 const bootstrapUrl = process.env.TEST_DATABASE_BOOTSTRAP_URL;
 const migrationUrl = process.env.TEST_DATABASE_MIGRATION_URL;
@@ -95,12 +96,12 @@ describeIntegration("billing integrity migrations", () => {
   });
 
   afterAll(async () => {
-    await processingPool.end();
-    await webhookPool.end();
-    await checkoutPool.end();
-    await runtimePool.end();
-    await migrationPool.end();
-    await bootstrapDatabasePool.end();
+    await closeTestPool(processingPool);
+    await closeTestPool(webhookPool);
+    await closeTestPool(checkoutPool);
+    await closeTestPool(runtimePool);
+    await closeTestPool(migrationPool);
+    await closeTestPool(bootstrapDatabasePool);
     await adminPool.query(`DROP DATABASE IF EXISTS ${database} WITH (FORCE)`);
     await adminPool.end();
   });

@@ -46,7 +46,13 @@ const navigation: readonly NavigationItem[] = [
     activePath: "/billing",
     locked: false,
   },
-  { label: "Settings", icon: Settings, locked: true },
+  {
+    label: "Settings",
+    icon: Settings,
+    locked: false,
+    href: "/dashboard/settings",
+    activePath: "/dashboard/settings",
+  },
 ];
 
 export function AppSidebar({ className }: AppSidebarProps) {

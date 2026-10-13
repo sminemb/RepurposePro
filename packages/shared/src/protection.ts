@@ -1,6 +1,9 @@
 export const protectionPolicies = {
   signup: { max: 5, window: "10m" },
   login: { max: 10, window: "1m" },
+  profile: { max: 10, window: "1m" },
+  password: { max: 5, window: "10m" },
+  email: { max: 3, window: "10m" },
   project: { max: 10, window: "1m" },
   upload: { max: 3, window: "1m" },
   analyze: { max: 3, window: "1m" },

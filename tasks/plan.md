@@ -10,7 +10,8 @@ able to update their name, securely change their sign-in email, and change their
 This feature reuses the existing Next.js app shell and Better Auth integration. It does not add
 a separate account API, new user fields, account deletion, or a database migration unless
 implementation uncovers a concrete requirement. Current-address approval and new-address
-verification require transactional email delivery; the provider has not been selected.
+verification use Resend's HTTP API, selected by the product owner on 2026-10-08. Existing
+unverified accounts first verify their current address, then complete both email-change steps.
 
 ## Architecture Decisions
 
@@ -20,8 +21,9 @@ verification require transactional email delivery; the provider has not been sel
   compatibility against the installed Better Auth version before considering a migration.
 - Preserve current signup and sign-in verification behavior. Keep the current email active until
   the proposed address is verified.
-- Keep the email provider vendor-neutral in product behavior. Provider selection and setup are
-  a prerequisite for the email-change task; profile and password work can proceed meanwhile.
+- Keep the email provider vendor-neutral in product behavior. Use server-side fetch against
+  Resend without a new dependency. Validate `RESEND_API_KEY` and `RESEND_FROM` at startup;
+  require both for staging/production. Local environments without either disable email actions.
 - Keep Settings focused on individual account identity and credentials. Leave deletion, billing,
   workspace controls, and video-processing preferences outside VS13.
 
@@ -55,13 +57,13 @@ VS13-T3 -------------------------------------> VS13-T6
 
 #### VS13-T1 — Select Transactional Email Provider
 
-**Description:** Obtain the product owner's provider decision and confirm the delivery
-configuration needed for current-address approval and new-address verification.
+**Description:** Resend was selected by the product owner on 2026-10-08. Configure a verified
+sender and API key locally, then verify delivery in VS13-T4.
 
 **Acceptance criteria:**
 
-- [ ] Provider selection is recorded before provider-specific implementation begins.
-- [ ] The provider can support the two required transactional email messages.
+- [x] Provider selection is recorded before provider-specific implementation begins: Resend.
+- [x] The provider supports current verification, approval, and new-address verification emails.
 
 **Verification:** Confirm and record the provider decision. VS13-T4 verifies development or
 sandbox delivery after configuration.
@@ -81,12 +83,12 @@ states.
 
 **Acceptance criteria:**
 
-- [ ] Unauthenticated visitors are redirected to `/login`; authenticated users see their own
-  account name.
-- [ ] Settings is a usable, active navigation link on desktop and mobile; existing sign-out
-  behavior remains available.
-- [ ] Name updates trim whitespace, reject empty values, persist through Better Auth, refresh the
-  app-shell name, and preserve input after recoverable failures.
+- [x] Unauthenticated visitors are redirected to `/login`; authenticated users see their own
+      account name.
+- [x] Settings is a usable, active navigation link on desktop and mobile; existing sign-out
+      behavior remains available.
+- [x] Name updates trim whitespace, reject empty values, persist through Better Auth, refresh the
+      app-shell name, and preserve input after recoverable failures.
 
 **Verification:** Add focused route, profile-update, and navigation tests; manually verify an
 authenticated and unauthenticated visit.
@@ -105,11 +107,11 @@ change, revoke other sessions while keeping the current session active.
 
 **Acceptance criteria:**
 
-- [ ] All fields are required, the new values must match, and length must be 8–128 characters.
-- [ ] The current password is verified by Better Auth; passwords are never exposed in messages
-  or logs.
-- [ ] Success clears password fields and leaves the current session usable while other sessions
-  are revoked.
+- [x] All fields are required, the new values must match, and length must be 8–128 characters.
+- [x] The current password is verified by Better Auth; passwords are never exposed in messages
+      or logs.
+- [x] Success clears password fields and leaves the current session usable while other sessions
+      are revoked.
 
 **Verification:** Add focused tests for missing fields, mismatch, length boundaries, invalid
 current password, successful session revocation, and current-session continuity.
@@ -122,9 +124,9 @@ current password, successful session revocation, and current-session continuity.
 
 ### Checkpoint: Profile and Password
 
-- [ ] VS13-T2 and VS13-T3 acceptance criteria pass.
-- [ ] `pnpm test` and `pnpm typecheck` pass.
-- [ ] Settings shell remains usable at mobile and desktop widths.
+- [x] VS13-T2 and VS13-T3 acceptance criteria pass.
+- [x] `pnpm test` and `pnpm typecheck` pass.
+- [x] Settings shell remains usable at mobile and desktop widths.
 
 ### Phase 2: Verified Email Change
 
@@ -135,10 +137,10 @@ by the later Better Auth email-change flow.
 
 **Acceptance criteria:**
 
-- [ ] The sender can deliver both current-address approval and new-address verification messages.
-- [ ] Provider credentials are validated at startup and never exposed in logs or client errors.
-- [ ] Delivery behavior is tested in a controlled environment without changing signup or sign-in
-  verification policy.
+- [x] The sender can deliver current verification, current-address approval, and new-address verification.
+- [x] Provider credentials are validated at startup and never exposed in logs or client errors.
+- [x] Delivery behavior is tested in a controlled environment without changing signup or sign-in
+      verification policy.
 
 **Verification:** Send both message types through the provider's development or sandbox mode and
 verify delivery-failure handling.
@@ -157,10 +159,10 @@ flow and expose its request, pending, confirmation, and retry states in Settings
 
 **Acceptance criteria:**
 
-- [ ] Current-address approval precedes new-address verification; the current email stays active
-  until verification completes.
-- [ ] Invalid, duplicate, expired, delivery-failure, and retry states are clear.
-- [ ] Signup and sign-in verification policy remains unchanged.
+- [x] Current-address approval precedes new-address verification; the current email stays active
+      until verification completes.
+- [x] Invalid, duplicate, expired, delivery-failure, and retry states are clear.
+- [x] Signup and sign-in verification policy remains unchanged.
 
 **Verification:** Cover request, both confirmation steps, duplicate address, expired link,
 delivery failure, and retry behavior with focused tests and controlled email delivery.
@@ -181,11 +183,11 @@ behavior, and record implementation evidence in the progress tracker.
 
 **Acceptance criteria:**
 
-- [ ] Profile, email, and password actions work independently and satisfy the PRD acceptance
-  criteria.
-- [ ] Keyboard operation, visible focus, labels, and accessible status/error announcements work.
-- [ ] Desktop and mobile layouts have no horizontal overflow; sign-out and other navigation
-  behavior remain correct.
+- [x] Profile, email, and password actions work independently and satisfy the PRD acceptance
+      criteria.
+- [x] Keyboard operation, visible focus, labels, and accessible status/error announcements work.
+- [x] Desktop and mobile layouts have no horizontal overflow; sign-out and other navigation
+      behavior remain correct.
 
 **Verification:** Run focused tests and `pnpm ci:check`; manually verify desktop and mobile
 flows, both email confirmation steps, and session behavior.
@@ -199,26 +201,41 @@ record under `docs/verification/` if the implementation produces durable evidenc
 
 ### Checkpoint: Complete
 
-- [ ] All VS13 acceptance criteria are met.
-- [ ] Formatting, lint, typecheck, tests, and build checks pass through `pnpm ci:check`.
-- [ ] Email delivery and verification behavior are tested in the selected provider's controlled
-  environment.
-- [ ] Start/end times, blockers, verification, and handoff state are recorded in
-  `docs/progress-tracker.md`.
+- [x] All VS13 acceptance criteria are met.
+- [x] Formatting, lint, typecheck, tests, and build checks pass through `pnpm ci:check`.
+- [x] Email delivery and verification behavior are tested in the selected provider's controlled
+      environment.
+- [x] Start/end times, blockers, verification, and handoff state are recorded in
+      `docs/progress-tracker.md`.
 - [ ] A human reviews and approves the completed slice.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Email provider has not been selected | Blocks the email-change implementation and release | Keep VS13-T1 explicit; progress profile and password work independently. |
-| User cannot access the current email address | User cannot self-serve an email change | Explain the requirement; keep recovery out of scope and use the existing out-of-band support process. |
-| Auth behavior or schema differs from the documented expectation | Could require extra work or migration | Confirm installed Better Auth behavior and existing schema before changing database structure. |
-| Pending email is mistaken for active sign-in email | User confusion or account access problems | Keep the current email active until new-address verification and clearly label each step. |
+| Risk                                                            | Impact                                       | Mitigation                                                                                            |
+| --------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Real Resend delivery is not verified                            | Blocks email-delivery acceptance and release | Configure the key and verified sender; test controlled inboxes in VS13-T4.                            |
+| User cannot access the current email address                    | User cannot self-serve an email change       | Explain the requirement; keep recovery out of scope and use the existing out-of-band support process. |
+| Auth behavior or schema differs from the documented expectation | Could require extra work or migration        | Confirm installed Better Auth behavior and existing schema before changing database structure.        |
+| Pending email is mistaken for active sign-in email              | User confusion or account access problems    | Keep the current email active until new-address verification and clearly label each step.             |
 
-## Open Questions
+## Confirmed Decisions and Delivery Prerequisites
 
-- Which transactional email provider should VS13 use? This decision is required before VS13-T4.
+- Provider: Resend HTTP API, without an SDK dependency.
+- Unverified users verify the current address before requesting a change. Signup/login remain unchanged.
+- Configure credentials in ignored `.env`; real delivery requires a verified sender and two controlled inboxes.
+- Better Auth 1.6.23 catches mail errors by default. Its account-email context extension awaits
+  delivery and propagates safe failure responses, with no custom account API or token store.
+
+## Implementation Evidence — 2026-10-08 and 2026-10-13
+
+T1, T2, T3, and T5 acceptance checks passed. `pnpm ci:check` passed with 823 unit tests,
+125 PostgreSQL/Redis integration tests, and 6 production browser scenarios. Keyboard and
+320–1440px layout checks passed; screenshots were reviewed. T4 passed on 2026-10-13: all three
+templates were accepted by Resend test recipients and received/opened through two controlled
+inboxes. The new address is verified, fresh login works, and the original address is rejected.
+T6 passed the final quality gate at 09:44 Asia/Manila: 828 unit tests, 125 database tests, and
+6 browser scenarios. All six tasks are complete; the slice awaits human review. See
+[VS13 verification](../docs/verification/vs13.md) for evidence and the delivery procedure.
 
 ## References
 
