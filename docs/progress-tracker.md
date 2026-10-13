@@ -116,15 +116,16 @@ FAILED
 | VS11 | Critical security, abuse protection, and reliability are hardened | COMPLETED | 2026-10-03 | 08:19 | 2026-10-03 | 11:20 | None | 100% | — |
 | VS12 | Full MVP happy path is tested, responsive, and demo-ready | COMPLETED | 2026-10-03 | 11:39 | 2026-10-03 | 13:45 | None | 100% | — |
 | VS14 | Operator can inspect safe service metadata | IN_REVIEW | 2026-10-10 | 21:26 | — | — | Human review | 100% | — |
-| VS13 | User can manage account settings | NOT_STARTED | — | — | — | — | None | 0% | Email-provider decision blocks email-change flow |
+| VS13 | User can manage account settings | IN_REVIEW | 2026-10-08 | 12:05 | 2026-10-13 | 09:44 | None | 100% | Human slice review |
 
 VS4 and VS5 acceptance re-audit completed on 2026-09-14 at 11:12 Asia/Manila. Preview
 edge cases were fixed; both slices remain at 100%. See [audit evidence](verification/vs45-acceptance-audit.md).
 VS5 clip-editor settings-panel overflow was fixed and verified on 2026-09-27 at 13:13;
 see [small-screen verification](verification/vs5-settings-scroll.md).
 
-VS13 is a planned post-MVP product increment. The approved requirements are in
-[the PRD](settings-page-prd.md) and [the feature specification](settings-page-spec.md).
+VS13 account settings are implemented and in review. The requirements are in
+[the PRD](settings-page-prd.md), [the feature specification](settings-page-spec.md), and
+[verification evidence](verification/vs13.md).
 
 ---
 
@@ -742,34 +743,34 @@ new-address confirmation, and change their password from a responsive Settings p
 | Field      | Value                                      |
 | ---------- | ------------------------------------------ |
 | Slice ID   | VS13                                       |
-| Status     | NOT_STARTED                                |
-| Start Date | —                                          |
-| Start Time | —                                          |
-| End Date   | —                                          |
-| End Time   | —                                          |
-| Progress   | 0%                                         |
+| Status     | IN_REVIEW                                  |
+| Start Date | 2026-10-08                                 |
+| Start Time | 12:05                                      |
+| End Date   | 2026-10-13                                 |
+| End Time   | 09:44                                      |
+| Progress   | 100% — ready for human review               |
 | Dependency | VS1 + VS11 + VS12                          |
 
 ## Tasks
 
 | Task ID | Vertical Task                                      | Layers Touched                | Status      | Start Date | Start Time | End Date | End Time | Verification |
 | ------- | -------------------------------------------------- | ----------------------------- | ----------- | ---------- | ---------- | -------- | -------- | ------------ |
-| VS13-T1 | Select transactional email provider                | Product decision              | BLOCKED     | —          | —          | —        | —        | Provider decision recorded; controlled delivery is verified in VS13-T4. |
-| VS13-T2 | Add protected Settings route, navigation, and name update | Web + Better Auth + Tests | NOT_STARTED | — | — | — | — | Auth redirect, shared navigation, name validation/update and failure recovery pass. |
-| VS13-T3 | Add password change and revoke other sessions      | Web + Better Auth + Tests     | NOT_STARTED  | —          | —          | —        | —        | Current password is required; success revokes other sessions and retains current session. |
-| VS13-T4 | Configure transactional email delivery              | Web + Email + Tests           | NOT_STARTED  | —          | —          | —        | —        | Both approval and verification message types deliver in a controlled environment. |
-| VS13-T5 | Implement verified email change                     | Web + Better Auth + Email     | NOT_STARTED  | —          | —          | —        | —        | Current-address approval precedes new-address verification; old email stays active until completion. |
-| VS13-T6 | Verify responsive, accessible Settings acceptance   | Web + Tests + Manual QA       | NOT_STARTED  | —          | —          | —        | —        | Focused tests and desktop/mobile checks cover all PRD acceptance criteria. |
+| VS13-T1 | Select transactional email provider | Product decision | COMPLETED | 2026-10-08 | 12:05 | 2026-10-08 | 12:06 | Resend selected; unverified users verify the current address first. |
+| VS13-T2 | Add protected Settings route, navigation, and name update | Web + Better Auth + Tests | COMPLETED | 2026-10-08 | 12:12 | 2026-10-08 | 13:28 | Protected route, navigation, name validation/recovery, app identity refresh, and responsive browser checks pass. |
+| VS13-T3 | Add password change and revoke other sessions | Web + Better Auth + Tests | COMPLETED | 2026-10-08 | 12:09 | 2026-10-08 | 13:28 | Password boundaries, incorrect password, field clearing, other-session revocation, and current-browser continuity pass. |
+| VS13-T4 | Configure transactional email delivery | Web + Email + Tests | COMPLETED | 2026-10-08 | 12:07 | 2026-10-13 | 09:24 | All three templates accepted by Resend test recipients and received/opened through two controlled inboxes. Final verified address and fresh login confirmed. |
+| VS13-T5 | Implement verified email change | Web + Better Auth + Email | COMPLETED | 2026-10-08 | 12:09 | 2026-10-08 | 13:28 | Real Better Auth and production browser checks verify prerequisites, both confirmations, errors, and retries. Provider delivery is tracked separately in T4. |
+| VS13-T6 | Verify responsive, accessible Settings acceptance | Web + Tests + Manual QA | COMPLETED | 2026-10-08 | 12:23 | 2026-10-13 | 09:44 | Full quality gate passes: 828 unit, 125 database, and 6 browser tests. Keyboard and 320–1440px layouts pass; controlled Resend delivery and fresh login confirmed. |
 
 ## Slice Acceptance Criteria
 
-- [ ] Unauthenticated visitors are redirected to `/login`; account data is private to the session.
-- [ ] Settings is reachable and active in shared desktop/mobile navigation; existing sign-out remains available.
-- [ ] Name updates validate, persist, and refresh the app-shell identity.
-- [ ] Email changes require current-address approval followed by new-address verification.
-- [ ] Password changes require the current password, validate new values, and revoke other sessions.
-- [ ] Each form exposes accessible pending, success, validation, and retry/error feedback.
-- [ ] Responsive and focused automated checks pass; delivery evidence is recorded.
+- [x] Unauthenticated visitors are redirected to `/login`; account data is private to the session.
+- [x] Settings is reachable and active in shared desktop/mobile navigation; existing sign-out remains available.
+- [x] Name updates validate, persist, and refresh the app-shell identity.
+- [x] Email changes require current-address approval followed by new-address verification.
+- [x] Password changes require the current password, validate new values, and revoke other sessions.
+- [x] Each form exposes accessible pending, success, validation, and retry/error feedback.
+- [x] Responsive and focused automated checks pass; delivery evidence is recorded.
 
 ---
 
@@ -871,15 +872,15 @@ Current Task: Human review; VS14-T1 through T7 are implemented and verified.
 Current Status: IN_REVIEW
 Last Completed Task: VS14-T7; full acceptance gate passed on 2026-10-10 at 22:25 Asia/Manila.
 Next Recommended Task: Review the VS14 branch changes and verification screenshots before marking the slice COMPLETED.
-Uncommitted Changes: None after the acceptance/handoff commit; generated test artifacts remain ignored under storage.
-Known Failing Tests: None. pnpm ci:check passes (799 unit tests, 132 database integration tests, 6 browser scenarios).
-Known Blockers: None for VS14. VS13 email changes remain separately blocked on the provider decision.
-Important Context: Configure server-only ADMIN_EMAIL and DATABASE_ADMIN_URL, provision the dedicated role, then apply migration 0047 before enabling admin reads. Missing configuration fails closed. No production deployment was performed.
-Required Commands Before Continuing: No rerun needed for unchanged code. Use pnpm ci:check after implementation changes; see docs/verification/vs14-admin.md for evidence and review findings.
+Uncommitted Changes: None after the merge commit; generated test artifacts remain ignored under storage.
+Known Failing Tests: None reported. VS14's gate passed on 2026-10-10 (799 unit tests, 132 database integration tests, 6 browser scenarios); VS13's gate passed on 2026-10-13 (828 unit tests, 125 database tests, 6 browser scenarios). The merged branch has not been rerun.
+Known Blockers: None for VS14. VS13 implementation and delivery are complete; human review remains for both slices.
+Important Context: Configure server-only ADMIN_EMAIL and DATABASE_ADMIN_URL, provision the dedicated role, then apply migration 0047 before enabling admin reads. Missing configuration fails closed. No production deployment was performed. VS13 preserves existing Better Auth signup/sign-in behavior and keeps the current email active until the new address is verified.
+Required Commands Before Continuing: Run pnpm ci:check on the merged branch when acceptance verification is next performed; both source slices passed independently. See docs/verification/vs14-admin.md and docs/verification/vs13.md for evidence.
 Branch: codex/vs14-admin
 Implementation Commits: c1ca7d1 (metadata foundation), 1e3f502 (protected API), 512346e (admin interface and browser fixtures).
 Review Status: Independent review findings fixed and confirmed; optional Gemini review was unavailable and the user chose to continue. Human review is pending.
-Last Updated Date: 2026-10-10
-Last Updated Time: 22:27
+Last Updated Date: 2026-10-13
+Last Updated Time: 09:46
 Last Updated By: Codex
 ```

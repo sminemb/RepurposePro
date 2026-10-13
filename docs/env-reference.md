@@ -570,6 +570,24 @@ CLEANUP_WORKER_CONCURRENCY=1
 
 # 7. Better Auth Variables
 
+## Transactional account email (VS13)
+
+The Next.js server alone loads `RESEND_API_KEY` and `RESEND_FROM`. Never expose them with a
+`NEXT_PUBLIC_` prefix or load them into the API/worker email configuration.
+
+`RESEND_FROM` is an email address or a display name followed by an address in angle brackets,
+for example `RepurposePro <account@your-verified-domain.com>`. Configure a Resend API key and a
+verified sending domain. Keep the actual key and sender in ignored `.env`.
+
+Both values are required at startup for `APP_ENV=staging` and `APP_ENV=production`. Local,
+development, and test environments may omit both; profile/password controls remain available
+and email actions fail closed. Supplying only one value or malformed values fails validation.
+
+Account mail includes initial verification of an unverified current address, current-address
+approval, and verification of the proposed new address. Links expire after one hour. Existing
+signup/login flows do not automatically send verification mail or require a verified address.
+Delivery failures return safe retry guidance. Never log verification URLs or provider responses.
+
 ## `BETTER_AUTH_SECRET`
 
 Purpose:
@@ -1331,6 +1349,10 @@ Use explicit production behavior.
 
 Checkout creation uses an Arcjet fixed window keyed by authenticated user ID: three attempts
 per minute. Use `DRY_RUN` only for local development and tests; production must use `LIVE`.
+
+Web authentication uses a five-second Arcjet remote deadline in local environments to allow
+cold connections. Staging and production retain the SDK default. Unavailable protection still
+rejects mutations in every environment; the longer local deadline does not bypass protection.
 
 ---
 

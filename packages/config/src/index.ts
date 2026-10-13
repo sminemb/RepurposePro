@@ -369,6 +369,34 @@ export class ConfigValidationError extends Error {
   }
 }
 
+export interface TransactionalEmailConfig {
+  readonly apiKey: string;
+  readonly from: string;
+}
+
+export function loadTransactionalEmailConfig(
+  environment?: NodeJS.ProcessEnv,
+): TransactionalEmailConfig | null {
+  const source = environmentSource(environment);
+  const required = source.APP_ENV === "production" || source.APP_ENV === "staging";
+  if (!required && !source.RESEND_API_KEY && !source.RESEND_FROM) return null;
+  const result = z
+    .object({
+      RESEND_API_KEY: z.string().regex(/^re_[A-Za-z0-9_-]+$/),
+      RESEND_FROM: z
+        .string()
+        .trim()
+        .refine((value) => {
+          if (/[\r\n]/.test(value)) return false;
+          const address = value.match(/^[^<>]+<([^<>]+)>$/)?.[1] ?? value;
+          return z.email().safeParse(address).success;
+        }),
+    })
+    .safeParse(source);
+  if (!result.success) throw new ConfigValidationError("transactional email", result.error.issues);
+  return { apiKey: result.data.RESEND_API_KEY, from: result.data.RESEND_FROM };
+}
+
 let environmentLoaded = false;
 
 function loadWorkspaceEnvironment(): void {

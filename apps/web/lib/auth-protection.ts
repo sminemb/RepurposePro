@@ -8,23 +8,34 @@ import {
 } from "@repurposepro/shared";
 
 const clients = new Map<ProtectionAction, Awaited<ReturnType<typeof createClient>>>();
-async function createClient(action: "signup" | "login") {
+async function createClient(action: ProtectionAction) {
   const config = loadProtectionConfig();
-  const { default: arcjet, shield, detectBot, fixedWindow } = await import("@arcjet/next");
+  const {
+    default: arcjet,
+    createRemoteClient,
+    shield,
+    detectBot,
+    fixedWindow,
+  } = await import("@arcjet/next");
+  const rateRule = ["profile", "password", "email"].includes(action)
+    ? fixedWindow({
+        ...protectionPolicies[action],
+        mode: config.mode,
+        characteristics: ["userId", "protectionAction"],
+      })
+    : fixedWindow({
+        ...protectionPolicies[action],
+        mode: config.mode,
+        characteristics: ["ip.src", "protectionAction"],
+      });
   return {
     config,
     sdk: arcjet({
+      // Cold local connections can exceed the SDK's one-second development deadline.
+      ...(config.local ? { client: createRemoteClient({ timeout: 5_000 }) } : {}),
       key: config.key,
       log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-      rules: [
-        shield({ mode: config.mode }),
-        detectBot({ mode: config.mode, allow: [] }),
-        fixedWindow({
-          ...protectionPolicies[action],
-          mode: config.mode,
-          characteristics: ["ip.src", "protectionAction"],
-        }),
-      ],
+      rules: [shield({ mode: config.mode }), detectBot({ mode: config.mode, allow: [] }), rateRule],
     }),
   };
 }
@@ -35,11 +46,31 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
     ? "signup"
     : path.endsWith("/sign-in/email")
       ? "login"
-      : null;
+      : path.endsWith("/update-user")
+        ? "profile"
+        : path.endsWith("/change-password")
+          ? "password"
+          : path.endsWith("/change-email") || path.endsWith("/send-verification-email")
+            ? "email"
+            : null;
   if (!action) return null;
   const requestId = `req_${randomUUID()}`;
   let decision: unknown;
   try {
+    let userId: string | undefined;
+    if (["profile", "password", "email"].includes(action)) {
+      const { auth } = await import("./auth");
+      const session = await auth.api.getSession({
+        headers: request.headers,
+        query: { disableCookieCache: true },
+      });
+      if (!session)
+        return Response.json(
+          { code: "SESSION_EXPIRED", message: "Sign in again to manage your account." },
+          { status: 401 },
+        );
+      userId = session.user.id;
+    }
     let client = clients.get(action);
     if (!client) {
       client = await createClient(action);
@@ -67,6 +98,7 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
     headers.delete("authorization");
     decision = await client.sdk.protect(new Request(request.clone(), { headers }), {
       protectionAction: action,
+      userId: userId ?? "anonymous",
     });
   } catch {
     decision = null;

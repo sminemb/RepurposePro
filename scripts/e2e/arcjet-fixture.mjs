@@ -6,3 +6,4 @@ export default function arcjet() {
 export const shield = () => [];
 export const detectBot = () => [];
 export const fixedWindow = () => [];
+export const createRemoteClient = () => ({});

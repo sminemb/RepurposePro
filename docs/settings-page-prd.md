@@ -76,10 +76,11 @@ An empty name is rejected. If saving fails, keep the user's entered value availa
 
 ### Change Sign-In Email
 
-1. The user enters a valid email address different from the active sign-in address.
-2. The app sends an approval link to the current address.
-3. After approval, the app sends a verification link to the proposed address.
-4. The proposed address becomes the sign-in email only after it is verified.
+1. If their current address is unverified, the user verifies it from their current inbox first.
+2. The user enters a valid email address different from the active sign-in address.
+3. The app sends an approval link to the current address.
+4. After approval, the app sends a verification link to the proposed address.
+5. The proposed address becomes the sign-in email only after it is verified.
 
 Until the final verification succeeds, the current email remains active. The page explains each
 step and provides clear recovery guidance for invalid or expired links, an address already in use,
@@ -158,8 +159,10 @@ address must use an out-of-band support process.
   version during implementation.
 - Preserve existing signup and sign-in behavior. Pending email changes must not lock a user out
   of their current account.
-- The project has no configured transactional email provider. Provider selection and setup are
-  implementation prerequisites and require a separate decision.
+- Resend was selected by the product owner on 2026-10-08. Use its HTTP API with server-only
+  `RESEND_API_KEY` and `RESEND_FROM`; real delivery requires a verified sender.
+- Existing unverified users first verify their current address, then request current-address
+  approval and new-address verification. This prerequisite does not change signup/login policy.
 - Follow [ADR 0009](adr/0009-security-boundaries.md) for security boundaries and
   [ADR 0008](adr/0008-file-retention.md) for account-retention policy.
 

@@ -52,6 +52,8 @@ Object.assign(env, {
   BETTER_AUTH_SECRET: "e2e-auth-only-isolated-at-least-thirty-two-characters",
   ADMIN_EMAIL: "e2e-admin@example.test",
   DATABASE_ADMIN_URL: dbUrl("repurposepro_admin", "e2e-admin-only"),
+  RESEND_API_KEY: "re_e2e_only",
+  RESEND_FROM: "RepurposePro <account@example.test>",
   ARCJET_KEY: "ajkey_e2e_isolated",
   ARCJET_MODE: "DRY_RUN",
   DATABASE_URL: dbUrl("repurposepro_runtime", "e2e-runtime-only"),
@@ -284,7 +286,7 @@ try {
     join(stagedWeb, "next.config.ts"),
     (await readFile(join(root, "apps/web/next.config.ts"), "utf8")).replace(
       "transpilePackages:",
-      `webpack(config) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; return config; }, transpilePackages:`,
+      `webpack(config, { webpack }) { config.resolve.alias["@arcjet/next"] = ${JSON.stringify(join(root, "scripts/e2e/arcjet-fixture.mjs"))}; config.plugins.push(new webpack.NormalModuleReplacementPlugin(/transactional-email(?:[.]ts)?$/, ${JSON.stringify(join(root, "scripts/e2e/email-fixture.mjs"))})); return config; }, transpilePackages:`,
     ),
   );
   const api = start(process.execPath, [join(root, "scripts/e2e/server.cjs"), "api"], "api");
