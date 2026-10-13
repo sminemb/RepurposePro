@@ -3,7 +3,7 @@
 import { CircleAlert, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,19 +83,16 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<AuthFormError | null>(null);
-  const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isSignUp = mode === "signup";
   const feedbackStyle = error ? feedbackStyles[error.variant] : null;
 
-  async function submit(formData: FormData) {
+  const [, submit, isPending] = useActionState(async (_previousState: null, formData: FormData) => {
     setError(null);
-    setIsPending(true);
     const validationError = validateForm(formData, isSignUp);
     if (validationError) {
       setError(validationError);
-      setIsPending(false);
-      return;
+      return null;
     }
     const email = formValue(formData, "email").trim();
     const password = formValue(formData, "password");
@@ -110,17 +107,16 @@ export function AuthForm({ mode }: AuthFormProps) {
         message: "Check your connection and try again.",
         variant: "error",
       });
-      setIsPending(false);
-      return;
+      return null;
     }
     if (response.error) {
       setError(getAuthResponseError(response.error, isSignUp));
-      setIsPending(false);
-      return;
+      return null;
     }
     router.replace("/dashboard");
     router.refresh();
-  }
+    return null;
+  }, null);
 
   return (
     <form
@@ -206,6 +202,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </div>
       ) : null}
       <Button
+        aria-busy={isPending}
         className="h-11 bg-rp-primary text-rp-primary-foreground hover:bg-rp-primary-hover"
         disabled={isPending}
         type="submit"
