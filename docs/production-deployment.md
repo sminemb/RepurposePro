@@ -1,7 +1,7 @@
 # Production deployment
 
-Prepared 2026-10-14. Production deployment is in progress; the custom production domains have not
-been released.
+Deployed 2026-10-14, Asia/Manila. Production web and API are live over verified HTTPS, while Stripe
+remains in sandbox mode.
 
 ## Completed preparation
 
@@ -20,8 +20,27 @@ been released.
 - `RepurposePro-Production-Configuration` reached CREATE_COMPLETE with nine provider/database
   secrets. The runtime stack will create REDIS_URL and BETTER_AUTH_SECRET separately.
 - The final 33-resource production runtime change set `production-runtime-1791943230249` was
-  AVAILABLE and executed using the issued certificate ARN. Runtime creation is in progress.
+  AVAILABLE and executed using the issued certificate ARN. The runtime stack is CREATE_COMPLETE.
   The certificate stack is UPDATE_COMPLETE.
+- Both ECS rollouts are COMPLETED: two desired/running API tasks and one desired/running worker,
+  with zero pending tasks. API containers and both load-balancer targets are healthy. Worker
+  container health is UNKNOWN because no container health check is configured, but it is RUNNING.
+- Public API readiness returned its `status: ok` response over normal DNS and verified HTTPS,
+  with database and Redis both up. A 30-minute startup log scan found zero error events in
+  167 API events and 12 worker events. No media job was submitted.
+- Vercel promotion confirmed the READY web build is already the current production deployment
+  (HTTP 409 for the idempotent promotion attempt).
+- Both GoDaddy authoritative servers publish only the two Vercel apex addresses, and Vercel's
+  domain check reports `misconfigured: false`. The old Parked record was removed.
+- Vercel certificate `cert_s8BnhcvGe0DurSx1FvhZUsBy` was issued for `re-purpose.pro` with automatic
+  renewal enabled. After refreshing domain verification and requesting issuance, public HTTPS
+  returned HTTP 200 with `Server: Vercel` and the expected RepurposePro page title.
+- Anonymous production home, login, signup and session routes all returned HTTP 200 through the
+  normal hostname. The API rejects an unauthenticated projects request with HTTP 401; production
+  checkout CORS preflight returns HTTP 204, the exact web origin and credentials support.
+- Final Stripe reads reconfirmed the webhook and all three active prices are sandbox-only. Final
+  database reads still show 48 migrations, 29 application tables and zero application rows in
+  both production and staging. No signup, email, checkout, credit grant or media job was created.
 - Both production execution policies were attached to the CloudFormation execution role with
   explicit user approval. Root was used only for approved policy creation/attachment; normal
   deployment operations use RepurposeProDeploy.
@@ -111,9 +130,31 @@ The user added the validation record in GoDaddy because regular Chrome control i
 in this chat. Keep it for renewal. The production web apex still has GoDaddy parking A records.
 After adding the domain to the Vercel project, its first-ranked apex recommendation is
 `216.198.79.1` and `64.29.17.1`; `76.76.21.21` remains the second-ranked fallback. The domain is
-verified but apex DNS is not configured. The API load balancer CNAME is
+verified and apex DNS is configured. Both apex A records have a 600-second TTL. The API load balancer CNAME is
 `repurposepro-production-api-937443546.ap-southeast-1.elb.amazonaws.com`. The user confirmed
-adding it as the GoDaddy `api` CNAME; propagation must be verified.
+adding it as the GoDaddy `api` CNAME. An initial incorrect target was corrected. Both authoritative
+GoDaddy DNS servers now return the load balancer target, and normal public API requests succeed.
+
+## Production release artifacts
+
+- Web deployment: `dpl_E2hQ3x8zv84ZoR7bcucWG2GEZxmZ`.
+- API task definition: `repurposepro-production-api:1`.
+- Worker task definition: `repurposepro-production-worker:1`.
+- Shared storage: `fs-024dd357ca4d127e4`; access point: `fsap-0be7075998c29ae5c`.
+- Queue: `repurposepro-production-queue`.
+- Deployment branch: `codex/production-deploy`; initial infrastructure commit: `48ec2d6`.
+- Application source deployed to the web and represented by the immutable container images is
+  unchanged from the recorded staging release. Vercel's configured Git production branch remains
+  `main`; this release used the CLI. Merge the deployment branch through the repository's normal
+  review process before relying on future production Git builds.
+
+The temporary root-profile cached credentials were removed with `aws logout` after completing
+the explicitly approved IAM actions. Further routine work uses the restricted deployment role.
+
+These are deployment/readiness checks. Signup/login with real sessions, email delivery, a sandbox
+checkout/webhook credit grant and an actual media-processing job remain separate functional
+acceptance work. The worker has no container health check; its running state and error-free startup
+logs do not establish successful job execution.
 
 ## Release and rollback
 
@@ -127,9 +168,7 @@ adding it as the GoDaddy `api` CNAME; propagation must be verified.
 7. Build Vercel with `--prod --skip-domain`, verify the built deployment, then promote it.
 8. Assign production DNS and verify public web/API responses.
 
-Before the first successful production release, staging remains the known working environment.
-On release failure, keep production domain assignment pending; repair the new stack and retain its
-stateful resources. After a successful release, record its deployment ID and ECS task definitions
-here; subsequent rollback can restore those exact artifacts. Do not delete or reset database,
-filesystem, queue or secrets as a rollback step. No schema or application behavior changes are
-required for this release.
+For a subsequent failed release, restore the web deployment ID and ECS task definitions recorded
+above, and verify readiness again. Repair infrastructure separately while retaining stateful
+dependencies. Do not delete or reset the database, filesystem, queue or secrets as a rollback step.
+No schema or application behavior changes were required for this release.
