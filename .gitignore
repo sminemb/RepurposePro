@@ -31,3 +31,4 @@ Thumbs.db
 # Codebase indexing artifacts
 .codebase-memory/
 .vercel/
+.elasticache/

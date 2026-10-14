@@ -1,0 +1,342 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "RepurposePro staging configuration secrets and API certificate. Secret parameters are masked and all resources are retained.",
+  "Parameters": {
+    "ValueARCJETKEY": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for ARCJET_KEY"
+    },
+    "ValueGEMINIAPIKEY": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for GEMINI_API_KEY"
+    },
+    "ValueSTRIPESECRETKEY": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for STRIPE_SECRET_KEY"
+    },
+    "ValueSTRIPEWEBHOOKSECRET": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for STRIPE_WEBHOOK_SECRET"
+    },
+    "ValueDATABASEURL": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for DATABASE_URL"
+    },
+    "ValueDATABASECHECKOUTURL": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for DATABASE_CHECKOUT_URL"
+    },
+    "ValueDATABASEWEBHOOKURL": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for DATABASE_WEBHOOK_URL"
+    },
+    "ValueDATABASEPROCESSINGURL": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for DATABASE_PROCESSING_URL"
+    },
+    "ValueDATABASEADMINURL": {
+      "Type": "String",
+      "NoEcho": true,
+      "MinLength": 1,
+      "Description": "Private staging value for DATABASE_ADMIN_URL"
+    }
+  },
+  "Resources": {
+    "SecretARCJETKEY": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/ARCJET_KEY",
+        "Description": "RepurposePro staging ARCJET_KEY",
+        "SecretString": {
+          "Ref": "ValueARCJETKEY"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretGEMINIAPIKEY": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/GEMINI_API_KEY",
+        "Description": "RepurposePro staging GEMINI_API_KEY",
+        "SecretString": {
+          "Ref": "ValueGEMINIAPIKEY"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretSTRIPESECRETKEY": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/STRIPE_SECRET_KEY",
+        "Description": "RepurposePro staging STRIPE_SECRET_KEY",
+        "SecretString": {
+          "Ref": "ValueSTRIPESECRETKEY"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretSTRIPEWEBHOOKSECRET": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/STRIPE_WEBHOOK_SECRET",
+        "Description": "RepurposePro staging STRIPE_WEBHOOK_SECRET",
+        "SecretString": {
+          "Ref": "ValueSTRIPEWEBHOOKSECRET"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretDATABASEURL": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/DATABASE_URL",
+        "Description": "RepurposePro staging DATABASE_URL",
+        "SecretString": {
+          "Ref": "ValueDATABASEURL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretDATABASECHECKOUTURL": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/DATABASE_CHECKOUT_URL",
+        "Description": "RepurposePro staging DATABASE_CHECKOUT_URL",
+        "SecretString": {
+          "Ref": "ValueDATABASECHECKOUTURL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretDATABASEWEBHOOKURL": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/DATABASE_WEBHOOK_URL",
+        "Description": "RepurposePro staging DATABASE_WEBHOOK_URL",
+        "SecretString": {
+          "Ref": "ValueDATABASEWEBHOOKURL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretDATABASEPROCESSINGURL": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/DATABASE_PROCESSING_URL",
+        "Description": "RepurposePro staging DATABASE_PROCESSING_URL",
+        "SecretString": {
+          "Ref": "ValueDATABASEPROCESSINGURL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "SecretDATABASEADMINURL": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": "repurposepro/staging/DATABASE_ADMIN_URL",
+        "Description": "RepurposePro staging DATABASE_ADMIN_URL",
+        "SecretString": {
+          "Ref": "ValueDATABASEADMINURL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    },
+    "ApiCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "DomainName": "api-staging.re-purpose.pro",
+        "ValidationMethod": "DNS",
+        "KeyAlgorithm": "RSA_2048",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "RepurposePro"
+          },
+          {
+            "Key": "Environment",
+            "Value": "staging"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ArnARCJETKEY": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretARCJETKEY"
+      }
+    },
+    "ArnGEMINIAPIKEY": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretGEMINIAPIKEY"
+      }
+    },
+    "ArnSTRIPESECRETKEY": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretSTRIPESECRETKEY"
+      }
+    },
+    "ArnSTRIPEWEBHOOKSECRET": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretSTRIPEWEBHOOKSECRET"
+      }
+    },
+    "ArnDATABASEURL": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretDATABASEURL"
+      }
+    },
+    "ArnDATABASECHECKOUTURL": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretDATABASECHECKOUTURL"
+      }
+    },
+    "ArnDATABASEWEBHOOKURL": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretDATABASEWEBHOOKURL"
+      }
+    },
+    "ArnDATABASEPROCESSINGURL": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretDATABASEPROCESSINGURL"
+      }
+    },
+    "ArnDATABASEADMINURL": {
+      "Description": "Secret ARN for ECS runtime injection",
+      "Value": {
+        "Ref": "SecretDATABASEADMINURL"
+      }
+    },
+    "ApiCertificateArn": {
+      "Description": "Singapore API certificate ARN",
+      "Value": {
+        "Ref": "ApiCertificate"
+      }
+    }
+  }
+}

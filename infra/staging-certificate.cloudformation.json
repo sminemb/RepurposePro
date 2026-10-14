@@ -1,0 +1,22 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "DNS-validated certificate for the RepurposePro staging API only.",
+  "Resources": {
+    "ApiCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "DomainName": "api-staging.re-purpose.pro",
+        "ValidationMethod": "DNS",
+        "KeyAlgorithm": "RSA_2048"
+      }
+    }
+  },
+  "Outputs": {
+    "ApiCertificateArn": {
+      "Description": "Singapore staging API certificate ARN",
+      "Value": { "Ref": "ApiCertificate" }
+    }
+  }
+}
