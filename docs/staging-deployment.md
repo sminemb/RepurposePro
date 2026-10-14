@@ -3,6 +3,21 @@
 This deployment uses AWS account `402365884836` in `ap-southeast-1`, Neon in Singapore,
 and the existing Vercel project `sminembs-projects/repurposepro`.
 
+## Deployment status
+
+Deployed on 2026-10-14:
+
+- `RepurposePro-Staging-Runtime` reached `UPDATE_COMPLETE`.
+- Both ECS services completed deployment with one desired task, one running task, and no
+  pending tasks. The API container and load-balancer target are healthy.
+- The API readiness URL returned HTTP 200 with Neon and Redis both reported as `up`.
+- Vercel Preview deployment `dpl_89i6nEhq4631xrbZv6M4J4yD79et` reached `READY`, and the
+  staging web URL returned HTTP 200 using the owner's existing Vercel authentication.
+- Neon has 48 applied migrations and no users, projects, uploads, processing jobs, or payments.
+
+These checks cover deployment readiness. Signup, email delivery, sandbox checkout, and
+media processing still need separate functional checks.
+
 ## Addresses
 
 | Service | Address |
