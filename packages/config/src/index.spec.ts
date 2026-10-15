@@ -6,6 +6,7 @@ import {
   ConfigValidationError,
   loadApiConfig,
   loadAuthConfig,
+  loadProtectionConfig,
   loadWebConfig,
   loadWorkerConfig,
 } from "./index";
@@ -55,6 +56,24 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe("configuration loaders", () => {
+  it.each(["local", "staging", "production"])(
+    "gives protection a bounded five-second default in %s",
+    (appEnv) => {
+      const environment = { ...validServerEnvironment, APP_ENV: appEnv, ARCJET_MODE: "LIVE" };
+      expect(loadProtectionConfig(environment).timeoutMs).toBe(5_000);
+      expect(loadProtectionConfig({ ...environment, ARCJET_TIMEOUT_MS: "3000" }).timeoutMs).toBe(
+        3_000,
+      );
+    },
+  );
+  it.each(["0", "-1", "10001", "1.5", "invalid", ""])(
+    "rejects invalid protection deadlines (%s)",
+    (timeout) => {
+      expect(() =>
+        loadProtectionConfig({ ...validServerEnvironment, ARCJET_TIMEOUT_MS: timeout }),
+      ).toThrow(ConfigValidationError);
+    },
+  );
   it("defaults and validates bounded cleanup scheduling", () => {
     expect(loadWorkerConfig(validServerEnvironment).cleanup).toEqual({
       cron: "0 * * * *",

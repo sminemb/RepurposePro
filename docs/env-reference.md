@@ -1350,9 +1350,17 @@ Use explicit production behavior.
 Checkout creation uses an Arcjet fixed window keyed by authenticated user ID: three attempts
 per minute. Use `DRY_RUN` only for local development and tests; production must use `LIVE`.
 
-Web authentication uses a five-second Arcjet remote deadline in local environments to allow
-cold connections. Staging and production retain the SDK default. Unavailable protection still
-rejects mutations in every environment; the longer local deadline does not bypass protection.
+### `ARCJET_TIMEOUT_MS`
+
+Optional remote decision deadline for web authentication and all protected API mutations.
+Defaults to `5000` milliseconds in every environment; accepts integers from 1 to 10000.
+The explicit deadline allows cold connections and provider latency beyond the SDK's 500 ms
+production default. Unavailable protection still rejects mutations in every environment.
+No mutation or paid action is automatically retried.
+
+Protection logs include elapsed `durationMs` and fixed failure `classification` values
+(`timeout`, `exception`, `provider_error`, `invalid_decision`). Raw provider messages, request
+bodies, credentials and headers remain excluded.
 
 ---
 
