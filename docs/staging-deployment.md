@@ -3,6 +3,14 @@
 This deployment uses AWS account `402365884836` in `ap-southeast-1`, Neon in Singapore,
 and the existing Vercel project `sminembs-projects/repurposepro`.
 
+## Application update — 2026-10-15
+
+The protection latency fix (`b47e259`) was deployed and verified here before production. Web
+deployment `dpl_7WLWmLFJXxFai2k64mR3rXG38Msz` is READY; API task definition
+`repurposepro-staging-api:2` completed rollout with one healthy target. Signup, sign-in and
+authenticated checkout/analysis/render protection checks passed. No purchase or media job was
+created by these staging checks. See [release evidence](verification/protection-timeout-2026-10-15.md).
+
 ## Deployment status
 
 Deployed on 2026-10-14:

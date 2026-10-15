@@ -3,6 +3,15 @@
 Deployed 2026-10-14, Asia/Manila. Production web and API are live over verified HTTPS, while Stripe
 remains in sandbox mode.
 
+## Application update — 2026-10-15
+
+The protection latency fix was verified in staging before production. Both adapters now use
+an explicit five-second remote deadline with safe failure categories and elapsed-time logging.
+Production web deployment `dpl_9AmRgSaNrkgENpPynrA194vBqtBB` was checked and promoted; API task
+definition `repurposepro-production-api:2` completed rollout with two healthy targets. Database
+and Redis readiness and live auth protection checks passed. No migrations or worker changes
+were required. See [release evidence and rollback](verification/protection-timeout-2026-10-15.md).
+
 ## Completed preparation
 
 - Neon production branch `br-crimson-leaf-b3iyv97b` is isolated from staging. Endpoint:
