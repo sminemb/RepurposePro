@@ -121,17 +121,6 @@ export function AppSidebar({ className, isAdmin = false }: AppSidebarProps) {
           );
         })}
       </nav>
-      <div className="mt-auto rounded-rp-md border border-rp-border bg-rp-bg/70 p-4">
-        <div className="flex gap-3">
-          <Plus aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-rp-primary" />
-          <div>
-            <p className="text-sm font-medium text-rp-text">Start with a project.</p>
-            <p className="mt-1 text-xs leading-5 text-rp-text-muted">
-              Upload your source video in the next step.
-            </p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
