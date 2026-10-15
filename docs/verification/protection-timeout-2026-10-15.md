@@ -64,6 +64,15 @@ No dependencies, migrations, queue behavior, worker image or application credent
 
 ## Release and rollback
 
+Production cleanup could not deregister the replaced revision-1 API task definition. The existing
+CloudFormation execution policy scopes `ecs:DeregisterTaskDefinition` to task-definition ARNs,
+but the request was denied on resource `*`. The current [ECS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_ecs.html)
+does not list resource-level support for this action. No permissions were expanded. The unused
+old definition remains available; both revision-2 production tasks are healthy and their ECS
+rollout is COMPLETED. The production stack reached UPDATE_COMPLETE with the warning
+"Update successful. One or more resources could not be deleted." The old definition was retained
+after three cleanup attempts, consistent with the [update monitoring guide](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-monitor-stack.html).
+
 Both CloudFormation updates reused their existing templates and previous parameter values,
 changing only `ApiImage`. Inspected change sets modified only `ApiTaskDefinition` and `ApiService`.
 Source and image uploads used the existing verified Vercel project and AWS registry. Local secrets,
