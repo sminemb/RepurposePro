@@ -7,7 +7,11 @@ import {
   SetMetadata,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { protectionFailure, protectionOutcome, type ProtectionAction } from "@repurposepro/shared";
+import {
+  protectionFailure,
+  protectionDiagnostics,
+  type ProtectionAction,
+} from "@repurposepro/shared";
 import { AuthGuard, type AuthenticatedRequest } from "../../modules/auth/auth.guard";
 import { createProtectionClient } from "./arcjet-client";
 
@@ -26,6 +30,8 @@ export class ProtectionGuard implements CanActivate {
     await this.auth.canActivate(context);
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     let decision: unknown;
+    let protectionError: unknown;
+    const startedAt = Date.now();
     try {
       let client = this.clients.get(action);
       if (!client) {
@@ -33,14 +39,16 @@ export class ProtectionGuard implements CanActivate {
         this.clients.set(action, client);
       }
       decision = await client.protect(request, { userId: request.user!.id });
-    } catch {
+    } catch (error) {
+      protectionError = error;
       decision = null;
     }
     const failure = protectionFailure(decision);
     this.logger.log({
       event: "protection_decision",
       action,
-      outcome: protectionOutcome(decision),
+      ...protectionDiagnostics(decision, protectionError),
+      durationMs: Date.now() - startedAt,
       requestId: request.id,
     });
     if (failure) {

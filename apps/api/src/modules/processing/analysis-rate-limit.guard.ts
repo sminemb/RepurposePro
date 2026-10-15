@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import {
   protectionFailure,
-  protectionOutcome,
+  protectionDiagnostics,
   type ProtectionDecision,
 } from "@repurposepro/shared";
 import { createProtectionClient } from "../../common/protection/arcjet-client";
@@ -50,19 +50,23 @@ export class AnalysisRateLimitGuard implements CanActivate {
         },
       });
     let decision: unknown;
+    let protectionError: unknown;
+    const startedAt = Date.now();
     try {
       decision = await this.client.protect(request, {
         correlationId: request.id,
         userId: request.user.id,
       });
-    } catch {
+    } catch (error) {
+      protectionError = error;
       decision = null;
     }
     const failure = protectionFailure(decision);
     this.logger.log({
       event: "protection_decision",
       action: "analyze",
-      outcome: protectionOutcome(decision),
+      ...protectionDiagnostics(decision, protectionError),
+      durationMs: Date.now() - startedAt,
       requestId: request.id,
     });
     if (failure) {

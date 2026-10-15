@@ -34,11 +34,18 @@ export function createProtectionClient(action: ProtectionAction) {
   let client: Awaited<ReturnType<typeof initialize>> | undefined;
   async function initialize() {
     const config = loadProtectionConfig();
-    const { default: arcjet, fixedWindow, shield, detectBot } = await import("@arcjet/node");
+    const {
+      default: arcjet,
+      createRemoteClient,
+      fixedWindow,
+      shield,
+      detectBot,
+    } = await import("@arcjet/node");
     const policy = protectionPolicies[action];
     return {
       config,
       sdk: arcjet({
+        client: createRemoteClient({ timeout: config.timeoutMs }),
         key: config.key,
         log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
         proxies: config.proxies,

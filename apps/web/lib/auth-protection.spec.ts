@@ -21,7 +21,12 @@ beforeEach(() => {
   createRemoteClient.mockClear();
   createArcjet.mockClear();
   vi.unstubAllEnvs();
-  loadProtectionConfig.mockReturnValue({ key: "ajkey_test", mode: "DRY_RUN", local: true });
+  loadProtectionConfig.mockReturnValue({
+    key: "ajkey_test",
+    mode: "DRY_RUN",
+    local: true,
+    timeoutMs: 5_000,
+  });
 });
 describe("auth protection", () => {
   it("allows a bounded five-second decision timeout locally", async () => {
@@ -32,10 +37,15 @@ describe("auth protection", () => {
     expect(createRemoteClient).toHaveBeenCalledWith({ timeout: 5_000 });
     expect(createArcjet.mock.calls[0]?.[0]).toMatchObject({ client: { remote: true } });
   });
-  it("retains the default remote timeout in production", async () => {
+  it("uses the configured remote timeout in production", async () => {
     vi.resetModules();
     vi.stubEnv("VERCEL", "1");
-    loadProtectionConfig.mockReturnValue({ key: "ajkey_test", mode: "LIVE", local: false });
+    loadProtectionConfig.mockReturnValue({
+      key: "ajkey_test",
+      mode: "LIVE",
+      local: false,
+      timeoutMs: 3_000,
+    });
     const { protectAuthRequest: protectFresh } = await import("./auth-protection");
     protect.mockResolvedValue({ isDenied: () => false, isErrored: () => false });
     expect(
@@ -45,8 +55,8 @@ describe("auth protection", () => {
         }),
       ),
     ).toBeNull();
-    expect(createRemoteClient).not.toHaveBeenCalled();
-    expect(createArcjet.mock.calls[0]?.[0]).not.toHaveProperty("client");
+    expect(createRemoteClient).toHaveBeenCalledWith({ timeout: 3_000 });
+    expect(createArcjet.mock.calls[0]?.[0]).toHaveProperty("client");
   });
   it("preserves the body for Better Auth", async () => {
     protect.mockImplementation(async (protectedRequest: Request) => {

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { loadProtectionConfig } from "@repurposepro/config";
 import {
   protectionFailure,
-  protectionOutcome,
+  protectionDiagnostics,
   protectionPolicies,
   type ProtectionAction,
 } from "@repurposepro/shared";
@@ -31,8 +31,8 @@ async function createClient(action: ProtectionAction) {
   return {
     config,
     sdk: arcjet({
-      // Cold local connections can exceed the SDK's one-second development deadline.
-      ...(config.local ? { client: createRemoteClient({ timeout: 5_000 }) } : {}),
+      // Fail-closed actions need time for cold connections and provider latency.
+      client: createRemoteClient({ timeout: config.timeoutMs }),
       key: config.key,
       log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       rules: [shield({ mode: config.mode }), detectBot({ mode: config.mode, allow: [] }), rateRule],
@@ -56,6 +56,8 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
   if (!action) return null;
   const requestId = `req_${randomUUID()}`;
   let decision: unknown;
+  let protectionError: unknown;
+  const startedAt = Date.now();
   try {
     let userId: string | undefined;
     if (["profile", "password", "email"].includes(action)) {
@@ -100,7 +102,8 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
       protectionAction: action,
       userId: userId ?? "anonymous",
     });
-  } catch {
+  } catch (error) {
+    protectionError = error;
     decision = null;
   }
   const failure = protectionFailure(decision);
@@ -109,7 +112,8 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
       event: "protection_decision",
       action,
       requestId,
-      outcome: protectionOutcome(decision),
+      ...protectionDiagnostics(decision, protectionError),
+      durationMs: Date.now() - startedAt,
     }),
   );
   if (!failure) return null;

@@ -46,8 +46,46 @@ describe("protection decisions", () => {
     ).toMatchObject({ retryAfter: 600 });
   });
 });
-import { protectionOutcome, protectionRetryMessage } from "./protection";
+import { protectionDiagnostics, protectionOutcome, protectionRetryMessage } from "./protection";
 describe("safe protection diagnostics and guidance", () => {
+  it("classifies timeouts without exposing provider messages or request data", () => {
+    const decision = {
+      isDenied: () => false,
+      isErrored: () => true,
+      reason: { message: "[deadline_exceeded] SECRET_MARKER https://private.example/token" },
+    };
+    expect(protectionDiagnostics(decision)).toEqual({
+      outcome: "PROTECTION_UNAVAILABLE",
+      classification: "timeout",
+    });
+    expect(protectionDiagnostics(null, new Error("SECRET_MARKER"))).toEqual({
+      outcome: "PROTECTION_UNAVAILABLE",
+      classification: "exception",
+    });
+    expect(JSON.stringify(protectionDiagnostics(decision))).not.toContain("SECRET_MARKER");
+  });
+  it("distinguishes rule errors from successful and denied decisions", () => {
+    const allowed = { isDenied: () => false, isErrored: () => false };
+    expect(protectionDiagnostics(allowed)).toEqual({ outcome: "allowed" });
+    expect(protectionDiagnostics({ ...allowed, results: [{ conclusion: "ERROR" }] })).toEqual({
+      outcome: "PROTECTION_UNAVAILABLE",
+      classification: "provider_error",
+    });
+    expect(
+      protectionDiagnostics({
+        ...allowed,
+        results: [
+          {
+            conclusion: "ERROR",
+            reason: { message: "Request timed out: SECRET_MARKER" },
+          },
+        ],
+      }),
+    ).toMatchObject({ classification: "timeout" });
+    expect(protectionDiagnostics({ ...allowed, isDenied: () => true })).toEqual({
+      outcome: "REQUEST_BLOCKED",
+    });
+  });
   it("enforces individual rule errors even with an allow decision", () => {
     expect(
       protectionFailure({

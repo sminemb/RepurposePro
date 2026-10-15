@@ -97,6 +97,15 @@ describe("production log serialization", () => {
       expect(captured).toContain("processing_stage");
       expect(captured).toContain("selecting");
       expect(captured).toContain("00000000-0000-4000-8000-000000003101");
+      logger.info({
+        event: "protection_decision",
+        classification: "timeout",
+        durationMs: 750,
+        providerPayload: { secret: marker },
+      });
+      expect(captured).toContain('"classification":"timeout"');
+      expect(captured).toContain('"durationMs":750');
+      expect(captured).not.toContain(marker);
     },
   );
   it("allows only bounded request IDs", () => {

@@ -78,6 +78,35 @@ export function protectionOutcome(value: unknown): string {
     : "allowed";
 }
 
+/** Return fixed categories only; provider errors may contain private request data. */
+export function protectionDiagnostics(value: unknown, error?: unknown) {
+  const outcome = protectionOutcome(value);
+  if (outcome !== "PROTECTION_UNAVAILABLE") return { outcome };
+  try {
+    const decision = value as {
+      reason?: { message?: unknown };
+      results?: readonly { conclusion?: string; reason?: { message?: unknown } }[];
+    } | null;
+    const messages = [
+      error instanceof Error ? error.message : undefined,
+      decision?.reason?.message,
+      ...(decision?.results ?? [])
+        .filter((result) => result.conclusion === "ERROR")
+        .map((result) => result.reason?.message),
+    ];
+    const timedOut = messages.some(
+      (message) =>
+        typeof message === "string" && /timeout|timed out|deadline[_ ]exceeded/i.test(message),
+    );
+    return {
+      outcome,
+      classification: timedOut ? "timeout" : error ? "exception" : "provider_error",
+    };
+  } catch {
+    return { outcome, classification: "invalid_decision" };
+  }
+}
+
 export function protectionRetryMessage(
   code: string | undefined,
   action: string,
