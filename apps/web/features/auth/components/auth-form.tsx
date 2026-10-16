@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { CircleAlert, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
+import { formValue, validatePasswordConfirmation } from "../validation";
 import { getAuthResponseError } from "./auth-form-errors";
 import type { AuthFormError } from "./auth-form-errors";
+import { PasswordInput } from "./password-input";
 
 interface AuthFormProps {
   readonly mode: "login" | "signup";
@@ -28,11 +30,6 @@ const feedbackStyles = {
     title: "text-rp-warning",
   },
 } as const;
-
-function formValue(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : "";
-}
 
 function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | null {
   if (isSignUp && !formValue(formData, "name").trim()) {
@@ -77,13 +74,17 @@ function validateForm(formData: FormData, isSignUp: boolean): AuthFormError | nu
     };
   }
 
+  if (isSignUp) {
+    const message = validatePasswordConfirmation(password, formValue(formData, "confirmPassword"));
+    if (message) return { title: "Check your password", message, variant: "warning" };
+  }
+
   return null;
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<AuthFormError | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const isSignUp = mode === "signup";
   const feedbackStyle = error ? feedbackStyles[error.variant] : null;
 
@@ -150,39 +151,43 @@ export function AuthForm({ mode }: AuthFormProps) {
         <label className="text-sm font-medium text-rp-text" htmlFor="password">
           Password
         </label>
-        <div className="relative">
-          <Input
-            aria-describedby={isSignUp ? "password-help" : undefined}
-            autoComplete={isSignUp ? "new-password" : "current-password"}
-            className="h-11 pr-12"
-            disabled={isPending}
-            id="password"
-            minLength={8}
-            name="password"
-            required
-            type={showPassword ? "text" : "password"}
-          />
-          <button
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            aria-pressed={showPassword}
-            className="absolute inset-y-0 right-0 grid min-w-11 place-items-center text-rp-text-muted hover:text-rp-text focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-rp-primary disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isPending}
-            type="button"
-            onClick={() => setShowPassword((visible) => !visible)}
-          >
-            {showPassword ? (
-              <EyeOff aria-hidden="true" className="size-4" />
-            ) : (
-              <Eye aria-hidden="true" className="size-4" />
-            )}
-          </button>
-        </div>
+        <PasswordInput
+          aria-describedby={isSignUp ? "password-help" : undefined}
+          autoComplete={isSignUp ? "new-password" : "current-password"}
+          disabled={isPending}
+          id="password"
+          minLength={8}
+          name="password"
+          required
+        />
         {isSignUp ? (
           <p className="text-xs leading-5 text-rp-text-muted" id="password-help">
-            Use at least 8 characters.
+            Use between 8 and 128 characters.
           </p>
         ) : null}
       </div>
+      {isSignUp ? (
+        <div className="grid gap-2">
+          <label className="text-sm font-medium text-rp-text" htmlFor="confirm-password">
+            Confirm password
+          </label>
+          <PasswordInput
+            autoComplete="new-password"
+            disabled={isPending}
+            id="confirm-password"
+            name="confirmPassword"
+            required
+            visibilityLabel="confirm password"
+          />
+        </div>
+      ) : (
+        <Link
+          className="justify-self-end text-sm text-rp-primary hover:text-rp-primary-hover"
+          href="/forgot-password"
+        >
+          Forgot password?
+        </Link>
+      )}
       {error ? (
         <div
           aria-live="assertive"

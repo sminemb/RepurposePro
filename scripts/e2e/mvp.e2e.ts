@@ -208,6 +208,7 @@ async function signUp(page: Page) {
   await page.getByLabel("Name", { exact: true }).fill("MVP Creator");
   await page.getByLabel("Email", { exact: true }).fill(`vs12-${randomUUID()}@example.test`);
   await page.getByLabel("Password", { exact: true }).fill("MvpCreatorTest2026!");
+  await page.getByLabel("Confirm password", { exact: true }).fill("MvpCreatorTest2026!");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
