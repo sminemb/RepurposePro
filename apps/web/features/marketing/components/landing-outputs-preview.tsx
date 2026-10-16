@@ -25,7 +25,7 @@ export function OutputsSection() {
 
         <div>
           <div className="grid grid-cols-3 gap-3 sm:gap-5">
-            {["18%", "50%", "78%"].map((position, index) => (
+            {["14%", "88%", "22%"].map((position, index) => (
               <div
                 className="relative aspect-[9/16] overflow-hidden rounded-rp-lg border border-white/12 bg-rp-video-canvas"
                 key={position}
@@ -34,8 +34,8 @@ export function OutputsSection() {
                   fill
                   alt={`Vertical clip preview ${index + 1}`}
                   className="object-cover"
-                  sizes="(max-width: 1024px) 29vw, 17vw"
-                  src="/images/podcast-studio.png"
+                  sizes="(max-width: 1024px) 92vw, 54vw"
+                  src="/images/landing-podcast.webp"
                   style={{ objectPosition: position }}
                 />
                 <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/90 to-transparent" />
@@ -56,7 +56,7 @@ export function OutputsSection() {
                   alt=""
                   className="object-cover"
                   sizes="200px"
-                  src="/images/podcast-studio.png"
+                  src="/images/landing-podcast.webp"
                   style={{ objectPosition: position }}
                 />
               </div>
@@ -93,9 +93,9 @@ export function PreviewSection() {
             fill
             alt="Vertical crop preview of a podcast speaker"
             className="object-cover"
-            sizes="320px"
-            src="/images/podcast-studio.png"
-            style={{ objectPosition: "22%" }}
+            sizes="1024px"
+            src="/images/landing-podcast.webp"
+            style={{ objectPosition: "14%" }}
           />
           <div className="absolute inset-4 border border-dashed border-white/65" />
           <div className="absolute inset-y-4 left-1/4 border-l border-dashed border-rp-primary/80" />

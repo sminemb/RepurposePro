@@ -46,7 +46,7 @@ export function LandingHero({ isAuthenticated }: SessionAwareProps) {
               alt="Two creators recording a long-form podcast"
               className="object-cover"
               sizes="(max-width: 1024px) 92vw, 55vw"
-              src="/images/podcast-studio.png"
+              src="/images/landing-podcast.webp"
             />
             <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-rp-bg-deep to-transparent" />
             <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3 text-xs text-rp-text-muted">
@@ -61,7 +61,7 @@ export function LandingHero({ isAuthenticated }: SessionAwareProps) {
             aria-hidden="true"
             className="pointer-events-none absolute -bottom-7 right-2 flex items-end gap-2 sm:-right-4 sm:gap-3"
           >
-            {["20%", "51%", "73%"].map((position) => (
+            {["14%", "88%", "22%"].map((position) => (
               <div
                 className="relative h-44 w-25 overflow-hidden rounded-rp-md border border-rp-primary/45 bg-rp-bg-deep shadow-rp-card sm:h-58 sm:w-34"
                 key={position}
@@ -70,8 +70,8 @@ export function LandingHero({ isAuthenticated }: SessionAwareProps) {
                   fill
                   alt=""
                   className="object-cover"
-                  sizes="136px"
-                  src="/images/podcast-studio.png"
+                  sizes="416px"
+                  src="/images/landing-podcast.webp"
                   style={{ objectPosition: position }}
                 />
                 <div className="absolute inset-x-2 bottom-3 text-center text-[10px] font-bold uppercase leading-tight text-white sm:text-xs">
