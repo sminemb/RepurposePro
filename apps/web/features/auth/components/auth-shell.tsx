@@ -18,10 +18,10 @@ export function AuthShell({ children, description, title }: AuthShellProps) {
         <Image
           fill
           priority
-          alt="Two creators recording a podcast"
+          alt="Podcast creator speaking into a studio microphone"
           className="object-cover"
           sizes="55vw"
-          src="/images/podcast-studio.png"
+          src="/images/auth-creator.webp"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(5_6_8_/_0.15),rgb(5_6_8_/_0.6)),linear-gradient(0deg,rgb(5_6_8_/_0.94),transparent_55%)]" />
         <BrandMark className="absolute left-10 top-8 z-10" href="/" />
@@ -36,7 +36,7 @@ export function AuthShell({ children, description, title }: AuthShellProps) {
               </p>
             </div>
             <div aria-hidden="true" className="ml-auto flex items-end gap-2">
-              {["18%", "52%", "77%"].map((position, index) => (
+              {["14%", "88%", "22%"].map((position, index) => (
                 <div
                   className="relative h-28 w-17 overflow-hidden rounded-rp-sm border border-rp-primary/35"
                   key={position}
@@ -45,8 +45,8 @@ export function AuthShell({ children, description, title }: AuthShellProps) {
                     fill
                     alt=""
                     className="object-cover"
-                    sizes="68px"
-                    src="/images/podcast-studio.png"
+                    sizes="200px"
+                    src="/images/landing-podcast.webp"
                     style={{ objectPosition: position }}
                   />
                   {index === 1 ? (

@@ -1,0 +1,22 @@
+# Website image assets
+
+Updated 2026-10-16 (Asia/Manila). These original images were generated with the built-in image generation tool and exported to WebP at quality 90 without resizing or upscaling.
+
+| Asset                                                                    | Native dimensions | File size     | Usage                                                          |
+| ------------------------------------------------------------------------ | ----------------- | ------------- | -------------------------------------------------------------- |
+| [`landing-podcast.webp`](../apps/web/public/images/landing-podcast.webp) | 1672 × 941        | 202,608 bytes | Landing hero, output and editor previews, auth clip thumbnails |
+| [`auth-creator.webp`](../apps/web/public/images/auth-creator.webp)       | 1024 × 1536       | 122,720 bytes | Sign-in, sign-up and password recovery portrait panel          |
+
+Both files retain their native HD detail. The generator returned the dimensions above; the larger dimensions requested in the prompts are not the delivered resolution. Existing Next.js responsive image delivery serves smaller derivatives where appropriate. The two WebP sources total 325,328 bytes, replacing the previous 1,666,871-byte PNG. New filenames prevent stale browser/CDN image cache reuse.
+
+Keep the wide scene's portrait crops on a speaker (approximately 14% and 88% horizontal object position), rather than the empty middle of the studio. The auth portrait leaves quiet areas for the existing logo and text overlays. Decorative preview thumbnails retain empty alt text; the main photographs have descriptive alternatives.
+
+## Generation prompts
+
+### Landing photograph
+
+Use case: photorealistic-natural. Asset type: high-definition website landing-page hero photography for RepurposePro, a premium video repurposing tool. Create a brand-new photorealistic editorial photograph, 3840 by 2160 pixels, horizontal 16:9. A female podcast host with shoulder-length dark curly hair wearing a muted cream overshirt and a male guest with short dark hair wearing a charcoal sweater, engaged in a lively thoughtful conversation across a walnut recording desk. Black broadcast microphones on plausible boom arms, acoustic panels, discreet warm amber practical lighting, charcoal studio walls, one softly blurred plant. Place the woman's face around 28 percent of image width and the man's face around 73 percent, both faces in the upper-middle area with generous headroom, hands naturally posed, microphones below their faces. Both faces sharp, detailed natural skin, excellent photographic clarity, balanced soft key light and subtle warm edge light, rich but visible shadows. Premium contemporary creator studio, intimate documentary still, 50mm lens, realistic perspective, restrained cinematic grading, highly detailed clean image. The scene must crop well into narrow portrait previews around either speaker. No text, captions, logos, watermarks, borders, interface elements, split panels, or collages. Do not imitate or retain the people in any prior image.
+
+### Authentication photograph
+
+Use case: photorealistic-natural. Asset type: high-definition portrait photography filling the left half of RepurposePro sign-in and sign-up pages, a premium creator video production tool. Generate a brand-new photorealistic editorial studio photograph, 2048 by 3072 pixels, vertical 2:3 aspect ratio. A confident female podcast creator with shoulder-length naturally curly dark hair, wearing a cream linen overshirt over a charcoal top, seated in a beautiful professional recording studio with a black broadcast microphone on a plausible boom arm beside her face. Medium three-quarter portrait, head and upper body in the upper-middle of the image, face centered horizontally around 48 percent and vertically around 36 percent, natural lively conversational expression looking slightly to camera right, hands resting naturally on a walnut desk. A charcoal acoustic wall and softly blurred amber practical lamps create depth; a little plant detail in the background. Leave the top 15 percent and bottom 28 percent quiet and dark enough for website logo and short text overlays. Highly detailed natural skin and fabric, tack-sharp eyes, realistic anatomy and equipment, soft photographic key light, warm amber edge lighting, premium restrained cinematic color grade, visible rich shadows. No text, no logos, no watermarks, no borders, no UI, no collage. This is authentic creator photography, not an illustration or artificial glamour portrait.
