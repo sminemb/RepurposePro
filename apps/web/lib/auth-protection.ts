@@ -44,15 +44,19 @@ export async function protectAuthRequest(request: Request): Promise<Response | n
   const path = new URL(request.url).pathname;
   const action = path.endsWith("/sign-up/email")
     ? "signup"
-    : path.endsWith("/sign-in/email")
-      ? "login"
-      : path.endsWith("/update-user")
-        ? "profile"
-        : path.endsWith("/change-password")
-          ? "password"
-          : path.endsWith("/change-email") || path.endsWith("/send-verification-email")
-            ? "email"
-            : null;
+    : path.endsWith("/request-password-reset")
+      ? "passwordResetRequest"
+      : path.endsWith("/reset-password")
+        ? "passwordReset"
+        : path.endsWith("/sign-in/email")
+          ? "login"
+          : path.endsWith("/update-user")
+            ? "profile"
+            : path.endsWith("/change-password")
+              ? "password"
+              : path.endsWith("/change-email") || path.endsWith("/send-verification-email")
+                ? "email"
+                : null;
   if (!action) return null;
   const requestId = `req_${randomUUID()}`;
   let decision: unknown;

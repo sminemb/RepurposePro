@@ -18,7 +18,7 @@ async function setup() {
     database: memoryAdapter({ user: [], session: [], account: [], verification: [] }),
     logger: { disabled: true },
     emailAndPassword: { enabled: true, requireEmailVerification: false },
-    ...createAccountSettingsOptions(send, true),
+    ...createAccountSettingsOptions(send, true, "http://localhost:3000"),
   });
   async function request(path: string, body?: Record<string, unknown>, cookie = "") {
     return auth.handler(

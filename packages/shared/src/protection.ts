@@ -1,6 +1,8 @@
 export const protectionPolicies = {
   signup: { max: 5, window: "10m" },
   login: { max: 10, window: "1m" },
+  passwordResetRequest: { max: 3, window: "10m" },
+  passwordReset: { max: 5, window: "10m" },
   profile: { max: 10, window: "1m" },
   password: { max: 5, window: "10m" },
   email: { max: 3, window: "10m" },

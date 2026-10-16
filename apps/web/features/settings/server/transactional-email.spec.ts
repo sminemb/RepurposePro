@@ -6,7 +6,7 @@ import { createTransactionalEmailSender } from "./transactional-email";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("transactional account email", () => {
-  it.each(["current", "approval", "new"] as const)(
+  it.each(["current", "approval", "new", "reset"] as const)(
     "sends a %s message with text and escaped HTML",
     async (kind) => {
       const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: "delivery-1" }));

@@ -4,7 +4,9 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { loadAuthConfig, loadTransactionalEmailConfig } from "@repurposepro/config";
 import { createDatabaseClient, schema } from "@repurposepro/db";
 import { betterAuth } from "better-auth";
+import { after } from "next/server";
 
+import { createPasswordResetOptions } from "@/features/auth/server/password-reset";
 import { createAccountSettingsOptions } from "@/features/settings/server/account-settings-auth";
 import { createTransactionalEmailSender } from "@/features/settings/server/transactional-email";
 
@@ -12,6 +14,7 @@ import { resolveAuthCookieConfiguration } from "./auth-cookie";
 
 const config = loadAuthConfig();
 const emailConfig = loadTransactionalEmailConfig();
+const sendAccountEmail = createTransactionalEmailSender(emailConfig);
 export const transactionalEmailConfigured = emailConfig !== null;
 const cookieConfiguration = resolveAuthCookieConfiguration(config.appUrl, config.apiUrl);
 const database = createDatabaseClient({
@@ -21,10 +24,7 @@ const database = createDatabaseClient({
 });
 
 export const auth = betterAuth({
-  ...createAccountSettingsOptions(
-    createTransactionalEmailSender(emailConfig),
-    transactionalEmailConfigured,
-  ),
+  ...createAccountSettingsOptions(sendAccountEmail, transactionalEmailConfigured, config.appUrl),
   ...(cookieConfiguration ? { advanced: cookieConfiguration } : {}),
   baseURL: config.url,
   database: drizzleAdapter(database.db, {
@@ -34,6 +34,7 @@ export const auth = betterAuth({
     usePlural: true,
   }),
   emailAndPassword: {
+    ...createPasswordResetOptions(sendAccountEmail, after),
     enabled: true,
     requireEmailVerification: false,
     minPasswordLength: 8,
