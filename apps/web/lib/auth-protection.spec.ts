@@ -29,6 +29,26 @@ beforeEach(() => {
   });
 });
 describe("auth protection", () => {
+  it.each(["request-password-reset", "reset-password"])(
+    "protects anonymous %s requests and preserves rate-limit responses",
+    async (endpoint) => {
+      protect.mockResolvedValue({
+        isDenied: () => true,
+        isErrored: () => false,
+        reason: { isRateLimit: () => true, resetTime: new Date(Date.now() + 600_000) },
+      });
+      const response = await protectAuthRequest(
+        new Request(`http://localhost/api/auth/${endpoint}`, { method: "POST" }),
+      );
+      expect(response?.status).toBe(429);
+      expect(response?.headers.get("Retry-After")).toBe("600");
+      expect(getSession).not.toHaveBeenCalled();
+      expect(protect.mock.calls[0]?.[1]).toMatchObject({
+        userId: "anonymous",
+        protectionAction: endpoint === "reset-password" ? "passwordReset" : "passwordResetRequest",
+      });
+    },
+  );
   it("allows a bounded five-second decision timeout locally", async () => {
     vi.resetModules();
     const { protectAuthRequest: protectFresh } = await import("./auth-protection");

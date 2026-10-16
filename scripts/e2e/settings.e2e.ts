@@ -25,6 +25,7 @@ async function signup(page: Page, email: string) {
   await page.getByLabel("Name", { exact: true }).fill("Settings Creator");
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill("SettingsPassword2026!");
+  await page.getByLabel("Confirm password", { exact: true }).fill("SettingsPassword2026!");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }

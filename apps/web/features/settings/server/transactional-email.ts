@@ -4,7 +4,7 @@ import type { TransactionalEmailConfig } from "@repurposepro/config";
 import { APIError } from "better-auth/api";
 
 export interface AccountEmail {
-  readonly kind: "current" | "approval" | "new";
+  readonly kind: "current" | "approval" | "new" | "reset";
   readonly to: string;
   readonly url: string;
 }
@@ -12,6 +12,11 @@ export interface AccountEmail {
 export type AccountEmailSender = (email: AccountEmail) => Promise<void>;
 
 const messages = {
+  reset: {
+    subject: "Reset your RepurposePro password",
+    action:
+      "Choose a new password for your RepurposePro account. Resetting your password signs out all devices.",
+  },
   current: {
     subject: "Verify your current RepurposePro email",
     action: "Verify your current email address before requesting an email change.",

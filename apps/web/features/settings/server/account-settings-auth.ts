@@ -10,7 +10,11 @@ function emailLink(url: string, stage: "current" | "approved" | "verified"): str
   return link.href;
 }
 
-export function createAccountSettingsOptions(send: AccountEmailSender, emailAvailable: boolean) {
+export function createAccountSettingsOptions(
+  send: AccountEmailSender,
+  emailAvailable: boolean,
+  appUrl: string,
+) {
   const deliver: AccountEmailSender = async (message) => {
     try {
       await send(message);
@@ -38,6 +42,21 @@ export function createAccountSettingsOptions(send: AccountEmailSender, emailAvai
     ],
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/request-password-reset") {
+          if (!emailAvailable)
+            throw new APIError("SERVICE_UNAVAILABLE", {
+              code: "EMAIL_DELIVERY_UNAVAILABLE",
+              message: "Email delivery is unavailable. Please try again later.",
+            });
+          return {
+            context: {
+              body: {
+                ...(ctx.body as Record<string, unknown> | undefined),
+                redirectTo: new URL("/reset-password", appUrl).href,
+              },
+            },
+          };
+        }
         if (
           ![
             "/update-user",

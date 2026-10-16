@@ -18,6 +18,8 @@ export default tseslint.config(
       "**/next-env.d.ts",
       "packages/db/drizzle/**",
       "storage/**",
+      "tmp/**",
+      "**/.vercel/**",
     ],
   },
   eslint.configs.recommended,
