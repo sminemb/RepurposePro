@@ -1,0 +1,37 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["acm:AddTagsToCertificate", "acm:ListTagsForCertificate"],
+      "Resource": "arn:aws:acm:ap-southeast-1:402365884836:certificate/3c1de807-4439-45f1-b4a2-8f64460a5475",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "acm:AddTagsToCertificate",
+      "Resource": "arn:aws:acm:ap-southeast-1:402365884836:certificate/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1",
+          "aws:RequestTag/Project": "RepurposePro",
+          "aws:RequestTag/Environment": "production"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "acm:ListTagsForCertificate",
+      "Resource": "arn:aws:acm:ap-southeast-1:402365884836:certificate/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1",
+          "aws:ResourceTag/Project": "RepurposePro",
+          "aws:ResourceTag/Environment": "production"
+        }
+      }
+    }
+  ]
+}

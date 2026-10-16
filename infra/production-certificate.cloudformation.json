@@ -1,0 +1,28 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "DNS-validated certificate for the RepurposePro production API only.",
+  "Resources": {
+    "ApiCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "DomainName": "api.re-purpose.pro",
+        "ValidationMethod": "DNS",
+        "KeyAlgorithm": "RSA_2048",
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ApiCertificateArn": {
+      "Description": "Singapore production API certificate ARN",
+      "Value": {
+        "Ref": "ApiCertificate"
+      }
+    }
+  }
+}

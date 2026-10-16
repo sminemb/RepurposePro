@@ -46,17 +46,41 @@ function connectionRole(connectionString: string): {
   return { name, password };
 }
 
+async function assertRoleIsNotSuperuser(client: Client, roleName: string): Promise<void> {
+  const result = await client.query<{ readonly rolsuper: boolean }>(
+    "SELECT rolsuper FROM pg_roles WHERE rolname = $1",
+    [roleName],
+  );
+
+  if (result.rows[0]?.rolsuper) {
+    throw new Error(`Refusing to provision ${roleName}: application roles must not be superusers.`);
+  }
+}
+
 async function runRoleStatement(
   client: Client,
   template: string,
   role: { readonly name: string; readonly password: string },
 ): Promise<void> {
+  // Managed Postgres administrators cannot alter the SUPERUSER attribute, even to false.
+  // Keep NOSUPERUSER on CREATE ROLE and reject existing superuser roles before updating them.
+  if (template.startsWith("ALTER ROLE ")) {
+    await assertRoleIsNotSuperuser(client, role.name);
+  }
   const formatted = await client.query<{ readonly statement: string }>(
     "SELECT format($1::text, $2::text, $3::text) AS statement",
     [template, role.name, role.password],
   );
 
-  await client.query(formatted.rows[0]!.statement);
+  try {
+    await client.query(formatted.rows[0]!.statement);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      const operation = template.startsWith("CREATE ROLE ") ? "Create" : "Alter";
+      error.message = `${operation} ${role.name}: ${error.message}`;
+    }
+    throw error;
+  }
 }
 
 async function provisionDatabaseRoles(): Promise<void> {
@@ -115,12 +139,13 @@ async function provisionDatabaseRoles(): Promise<void> {
     if (adminRole) {
       await runRoleStatement(
         bootstrap,
-        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
         adminRole,
       );
     } else {
+      await assertRoleIsNotSuperuser(bootstrap, "repurposepro_admin");
       await bootstrap.query(
-        "ALTER ROLE repurposepro_admin NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        "ALTER ROLE repurposepro_admin NOLOGIN NOINHERIT NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
       );
     }
     const memberships = await bootstrap.query<{ statement: string }>(
@@ -140,7 +165,7 @@ async function provisionDatabaseRoles(): Promise<void> {
     });
     await runRoleStatement(
       bootstrap,
-      "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+      "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
       migrationRole,
     );
     for (const role of restrictedRoles) {
@@ -157,16 +182,29 @@ async function provisionDatabaseRoles(): Promise<void> {
       });
       await runRoleStatement(
         bootstrap,
-        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
+        "ALTER ROLE %I LOGIN PASSWORD %L NOINHERIT NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS",
         role,
       );
 
       const revokeMemberships = await bootstrap.query<{ readonly statement: string }>(
-        "SELECT format('REVOKE repurposepro_owner, %I FROM %I', $1::text, $2::text) AS statement",
+        `SELECT format('REVOKE %I FROM %I', granted.rolname, member.rolname) AS statement
+         FROM pg_auth_members AS membership
+         JOIN pg_roles AS granted ON granted.oid = membership.roleid
+         JOIN pg_roles AS member ON member.oid = membership.member
+         WHERE member.rolname = $2 AND granted.rolname IN ('repurposepro_owner', $1)`,
         [bootstrapRole.name, role.name],
       );
-      await bootstrap.query(revokeMemberships.rows[0]!.statement);
+      for (const row of revokeMemberships.rows) await bootstrap.query(row.statement);
     }
+
+    // PostgreSQL 16+ gives role creators ADMIN but not SET permission by default.
+    // SET permits ownership transfers; INHERIT retains access to pg_database_owner's
+    // public schema after the database owner changes. Only the bootstrap receives this grant.
+    const ownerMembership = await bootstrap.query<{ readonly statement: string }>(
+      "SELECT format('GRANT repurposepro_owner TO %I WITH INHERIT TRUE, SET TRUE', $1::text) AS statement",
+      [bootstrapRole.name],
+    );
+    await bootstrap.query(ownerMembership.rows[0]!.statement);
 
     const databaseName = new URL(bootstrapUrl).pathname.slice(1);
     const database = await bootstrap.query<{ readonly statement: string }>(
@@ -203,5 +241,15 @@ async function provisionDatabaseRoles(): Promise<void> {
 void provisionDatabaseRoles().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : "Unknown role provisioning error.";
   process.stderr.write(`Database role provisioning failed: ${message}\n`);
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "42501" &&
+    "detail" in error &&
+    typeof error.detail === "string"
+  ) {
+    process.stderr.write(`${error.detail}\n`);
+  }
   process.exitCode = 1;
 });

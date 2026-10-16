@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RequestOnlyStagingApiDnsCertificate",
+      "Effect": "Allow",
+      "Action": "acm:RequestCertificate",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1",
+          "acm:ValidationMethod": "DNS"
+        },
+        "ForAllValues:StringEquals": { "acm:DomainNames": ["api-staging.re-purpose.pro"] },
+        "Null": { "acm:DomainNames": "false" }
+      }
+    },
+    {
+      "Sid": "ReadRegionalCertificateStatusAndDnsRecord",
+      "Effect": "Allow",
+      "Action": "acm:DescribeCertificate",
+      "Resource": "arn:aws:acm:ap-southeast-1:402365884836:certificate/*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" }
+      }
+    }
+  ]
+}

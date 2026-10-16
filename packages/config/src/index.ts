@@ -531,6 +531,7 @@ export function loadProtectionConfig(environment?: NodeJS.ProcessEnv) {
         NODE_ENV: nodeEnvironmentSchema,
         ARCJET_KEY: arcjetKeySchema,
         ARCJET_MODE: arcjetModeSchema,
+        ARCJET_TIMEOUT_MS: z.coerce.number().int().min(1).max(10_000).default(5_000),
         ARCJET_TRUSTED_PROXIES: proxyListSchema,
       })
       .superRefine((value, context) => {
@@ -550,6 +551,7 @@ export function loadProtectionConfig(environment?: NodeJS.ProcessEnv) {
   return {
     key: parsed.ARCJET_KEY,
     mode: parsed.ARCJET_MODE,
+    timeoutMs: parsed.ARCJET_TIMEOUT_MS,
     proxies: parsed.ARCJET_TRUSTED_PROXIES,
     local: ["local", "test"].includes(parsed.APP_ENV),
   };
