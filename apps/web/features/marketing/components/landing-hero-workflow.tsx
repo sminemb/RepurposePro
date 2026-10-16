@@ -70,6 +70,7 @@ export function LandingHero({ isAuthenticated }: SessionAwareProps) {
                   fill
                   alt=""
                   className="object-cover"
+                  loading="eager"
                   sizes="416px"
                   src="/images/landing-podcast.webp"
                   style={{ objectPosition: position }}
