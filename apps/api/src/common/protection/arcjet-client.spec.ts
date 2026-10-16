@@ -21,6 +21,23 @@ vi.mock("@arcjet/node", async (importOriginal) => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("protection remote deadline", () => {
+  it("enforces local action limits without the remote provider", async () => {
+    vi.stubEnv("LOCAL_SERVICES_ENABLED", "true");
+    vi.stubEnv("APP_ENV", "local");
+    vi.stubEnv("NODE_ENV", "development");
+    const client = createProtectionClient("project");
+    const request = {
+      method: "POST",
+      headers: {},
+      socket: { remoteAddress: "127.0.0.1" },
+    } as never;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      expect(protectionFailure(await client.protect(request, { userId: "local-user" }))).toBeNull();
+    }
+    expect(
+      protectionFailure(await client.protect(request, { userId: "local-user" })),
+    ).toMatchObject({ status: 429 });
+  });
   it.each([
     { timeout: "2000", status: 200, completed: true, errored: false },
     { timeout: "2000", status: 503, completed: true, errored: true },

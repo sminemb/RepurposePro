@@ -9,6 +9,7 @@ import {
   loadProtectionConfig,
   loadWebConfig,
   loadWorkerConfig,
+  localServicesEnabled,
 } from "./index";
 
 const validServerEnvironment: NodeJS.ProcessEnv = {
@@ -56,6 +57,35 @@ const validServerEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe("configuration loaders", () => {
+  it("requires explicit opt-in for local services", () => {
+    expect(localServicesEnabled(validServerEnvironment)).toBe(false);
+    expect(
+      localServicesEnabled({
+        ...validServerEnvironment,
+        APP_URL: "http://localhost:3000",
+        LOCAL_SERVICES_ENABLED: "true",
+      }),
+    ).toBe(true);
+  });
+  it.each([
+    { APP_ENV: "staging" },
+    { APP_ENV: "production" },
+    { APP_ENV: "test" },
+    { NODE_ENV: "production" },
+    { NODE_ENV: "test" },
+    { APP_URL: "https://app.example.com" },
+    { DATABASE_URL: "postgresql://user:secret@remote.example/app" },
+    { REDIS_URL: "redis://:secret@remote.example:6379" },
+  ])("rejects local services outside isolated development (%j)", (overrides) => {
+    expect(() =>
+      localServicesEnabled({
+        ...validServerEnvironment,
+        APP_URL: "http://localhost:3000",
+        LOCAL_SERVICES_ENABLED: "true",
+        ...overrides,
+      }),
+    ).toThrow(ConfigValidationError);
+  });
   it.each(["local", "staging", "production"])(
     "gives protection a bounded five-second default in %s",
     (appEnv) => {

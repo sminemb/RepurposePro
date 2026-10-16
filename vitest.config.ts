@@ -38,6 +38,7 @@ export default defineConfig({
       GEMINI_TIMEOUT_MS: "60000",
       LOG_LEVEL: "error",
       LOG_PRETTY: "false",
+      LOCAL_SERVICES_ENABLED: "false",
       MAX_UPLOAD_BYTES: "524288000",
       MAX_VIDEO_DURATION_SECONDS: "1800",
       NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1",

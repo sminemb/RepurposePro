@@ -76,7 +76,7 @@ export async function resolveStripeCommand(
 }
 
 export function redactStripeSecrets(value: string): string {
-  return value.replace(/whsec_[A-Za-z0-9]+/gu, "[REDACTED]");
+  return value.replace(/(?:whsec_|[sr]k_(?:test|live)_)[A-Za-z0-9_]+/gu, "[REDACTED]");
 }
 
 export async function runStripeListener(
@@ -192,9 +192,17 @@ function createDefaultDependencies(): StripeListenerDependencies {
       const command = await getStripeCommand();
       const { stdout } = await execFileAsync(
         command.executable,
-        [...command.prefixArguments, "listen", `--events=${stripeEvents}`, "--print-secret"],
+        [
+          ...command.prefixArguments,
+          "listen",
+          "--skip-update",
+          `--events=${stripeEvents}`,
+          "--print-secret",
+        ],
         {
           encoding: "utf8",
+          env: stripeEnvironment(),
+          timeout: 60_000,
           windowsHide: true,
         },
       );
@@ -212,11 +220,23 @@ function createDefaultDependencies(): StripeListenerDependencies {
   };
 }
 
+function stripeEnvironment(): NodeJS.ProcessEnv {
+  return { ...process.env, STRIPE_API_KEY: loadApiConfig().stripe.secretKey };
+}
+
 async function startListenerProcess(command: StripeCommand): Promise<number> {
   const child = spawn(
     command.executable,
-    [...command.prefixArguments, "listen", `--events=${stripeEvents}`, "--forward-to", webhookUrl],
+    [
+      ...command.prefixArguments,
+      "listen",
+      "--skip-update",
+      `--events=${stripeEvents}`,
+      "--forward-to",
+      webhookUrl,
+    ],
     {
+      env: stripeEnvironment(),
       shell: false,
       stdio: ["inherit", "pipe", "pipe"],
       windowsHide: true,

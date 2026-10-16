@@ -461,6 +461,7 @@ export function loadWebConfig(environment?: NodeJS.ProcessEnv): WebConfig {
 }
 
 export function loadApiConfig(environment?: NodeJS.ProcessEnv): ApiConfig {
+  localServicesEnabled(environment);
   const parsed = parseEnvironment(apiEnvironmentSchema, "API", environment);
 
   return {
@@ -523,6 +524,48 @@ export function loadAuthConfig(environment?: NodeJS.ProcessEnv): AuthConfig {
   };
 }
 
+export function localServicesEnabled(environment?: NodeJS.ProcessEnv): boolean {
+  const source = environmentSource(environment);
+  const { LOCAL_SERVICES_ENABLED: enabled } = parseEnvironment(
+    z.object({ LOCAL_SERVICES_ENABLED: booleanFromEnvironment.default(false) }),
+    "local services",
+    source,
+  );
+  if (!enabled) return false;
+  const loopbackUrl = z
+    .string()
+    .url()
+    .refine((value) => {
+      try {
+        return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname);
+      } catch {
+        return false;
+      }
+    });
+  parseEnvironment(
+    z.object({
+      APP_ENV: z.literal("local"),
+      NODE_ENV: z.literal("development"),
+      APP_URL: loopbackUrl,
+      NEXT_PUBLIC_API_URL: loopbackUrl,
+      BETTER_AUTH_URL: loopbackUrl.optional(),
+      DATABASE_URL: loopbackUrl,
+      DATABASE_CHECKOUT_URL: loopbackUrl.optional(),
+      DATABASE_WEBHOOK_URL: loopbackUrl.optional(),
+      DATABASE_PROCESSING_URL: loopbackUrl.optional(),
+      DATABASE_ADMIN_URL: z.union([z.literal(""), loopbackUrl]).optional(),
+      REDIS_URL: loopbackUrl,
+    }),
+    "local services",
+    source,
+  );
+  return true;
+}
+
+export function localEmailOutboxPath(): string {
+  return resolve(workspaceRoot(), "storage/local-mail");
+}
+
 export function loadProtectionConfig(environment?: NodeJS.ProcessEnv) {
   const parsed = parseEnvironment(
     z
@@ -549,6 +592,7 @@ export function loadProtectionConfig(environment?: NodeJS.ProcessEnv) {
     environment,
   );
   return {
+    localServicesEnabled: localServicesEnabled(environment),
     key: parsed.ARCJET_KEY,
     mode: parsed.ARCJET_MODE,
     timeoutMs: parsed.ARCJET_TIMEOUT_MS,

@@ -29,6 +29,31 @@ beforeEach(() => {
   });
 });
 describe("auth protection", () => {
+  it("protects local signup without waiting for the remote provider", async () => {
+    vi.resetModules();
+    loadProtectionConfig.mockReturnValue({
+      key: "ajkey_test",
+      mode: "DRY_RUN",
+      local: true,
+      localServicesEnabled: true,
+      timeoutMs: 5_000,
+    });
+    const { protectAuthRequest: protectLocal } = await import("./auth-protection");
+    for (let attempt = 0; attempt < 5; attempt++) {
+      expect(
+        await protectLocal(
+          new Request("http://localhost/api/auth/sign-up/email", { method: "POST" }),
+        ),
+      ).toBeNull();
+    }
+    const limited = await protectLocal(
+      new Request("http://localhost/api/auth/sign-up/email", { method: "POST" }),
+    );
+    expect(limited?.status).toBe(429);
+    expect(await limited?.json()).toMatchObject({ code: "RATE_LIMIT_EXCEEDED" });
+    expect(createRemoteClient).not.toHaveBeenCalled();
+    expect(protect).not.toHaveBeenCalled();
+  });
   it.each(["request-password-reset", "reset-password"])(
     "protects anonymous %s requests and preserves rate-limit responses",
     async (endpoint) => {

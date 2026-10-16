@@ -109,6 +109,12 @@ cd ../.. && pnpm build:packages && pnpm --filter @repurposepro/web build
 Private local configuration is stored in ignored files. `.vercelignore` excludes environment
 files, temporary operational files, generated output, and local media from uploads.
 
+Staging application overrides are in `.env.staging`, database administration belongs in
+`.env.database.staging`, and queue provisioning credentials / Stripe endpoint metadata are in
+`.env.deployment.staging`. Each scope has a committed `.example` template. Select these files
+explicitly for deployment operations; local development continues to use `.env` and
+`.env.database`. See [environment file strategy](env-reference.md#2-environment-file-strategy).
+
 ## Operational checks
 
 The template was checked with isolated cfn-lint 1.57.2 and cfn-guard 3.2.1 tools.

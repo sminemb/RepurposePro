@@ -1,7 +1,11 @@
 import "server-only";
 
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { loadAuthConfig, loadTransactionalEmailConfig } from "@repurposepro/config";
+import {
+  loadAuthConfig,
+  loadTransactionalEmailConfig,
+  localServicesEnabled,
+} from "@repurposepro/config";
 import { createDatabaseClient, schema } from "@repurposepro/db";
 import { betterAuth } from "better-auth";
 import { after } from "next/server";
@@ -9,13 +13,17 @@ import { after } from "next/server";
 import { createPasswordResetOptions } from "@/features/auth/server/password-reset";
 import { createAccountSettingsOptions } from "@/features/settings/server/account-settings-auth";
 import { createTransactionalEmailSender } from "@/features/settings/server/transactional-email";
+import { createLocalAccountEmailSender } from "@/features/settings/server/local-account-email";
 
 import { resolveAuthCookieConfiguration } from "./auth-cookie";
 
 const config = loadAuthConfig();
-const emailConfig = loadTransactionalEmailConfig();
-const sendAccountEmail = createTransactionalEmailSender(emailConfig);
-export const transactionalEmailConfigured = emailConfig !== null;
+const localServices = localServicesEnabled();
+const emailConfig = localServices ? null : loadTransactionalEmailConfig();
+const sendAccountEmail = localServices
+  ? createLocalAccountEmailSender()
+  : createTransactionalEmailSender(emailConfig);
+export const transactionalEmailConfigured = localServices || emailConfig !== null;
 const cookieConfiguration = resolveAuthCookieConfiguration(config.appUrl, config.apiUrl);
 const database = createDatabaseClient({
   connectionString: config.databaseUrl,

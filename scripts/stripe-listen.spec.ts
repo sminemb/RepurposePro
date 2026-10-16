@@ -1,4 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
+import { EventEmitter } from "node:events";
+import type * as ChildProcess from "node:child_process";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const subprocess = vi.hoisted(() => ({
+  execFile:
+    vi.fn<(executable: string, args: string[], options: object) => Promise<{ stdout: string }>>(),
+  spawn: vi.fn(),
+}));
+
+vi.mock("node:child_process", async (importOriginal) => ({
+  ...(await importOriginal<typeof ChildProcess>()),
+  execFile: Object.assign(vi.fn(), {
+    [Symbol.for("nodejs.util.promisify.custom")]: subprocess.execFile,
+  }),
+  spawn: subprocess.spawn,
+}));
 
 import {
   redactStripeSecrets,
@@ -36,6 +53,40 @@ const fastOptions: StripeListenerOptions = {
   readinessTimeoutMs: 2_000,
 };
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
+
+it("uses the application's Stripe account for secret validation and forwarding", async () => {
+  vi.stubEnv("STRIPE_API_KEY", "sk_test_unrelated_cli_account");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+  subprocess.execFile.mockImplementation(async (_executable: string, args: string[]) => ({
+    stdout: args.includes("--print-secret") ? "whsec_vitestsecurity\n" : "C:\\Stripe\\stripe.exe\n",
+  }));
+  subprocess.spawn.mockImplementation(() => {
+    const child = Object.assign(new EventEmitter(), { stdout: null, stderr: null });
+    queueMicrotask(() => child.emit("close", 0));
+    return child;
+  });
+
+  await expect(runStripeListener()).resolves.toBe(0);
+
+  const secretCheck = subprocess.execFile.mock.calls.find((call) =>
+    call[1].includes("--print-secret"),
+  );
+  expect(secretCheck?.[2]).toMatchObject({
+    env: { STRIPE_API_KEY: "sk_test_vitestsecurity" },
+    timeout: 60_000,
+  });
+  expect(subprocess.spawn.mock.calls[0]?.[2]).toMatchObject({
+    env: { STRIPE_API_KEY: "sk_test_vitestsecurity" },
+  });
+  expect(secretCheck?.[1]).toContain("--skip-update");
+  expect(subprocess.spawn.mock.calls[0]?.[1]).toContain("--skip-update");
+});
+
 describe("resolveStripeCommand", () => {
   it("runs the underlying npm Stripe shim through Node on Windows without shell mode", async () => {
     const command = await resolveStripeCommand({
@@ -59,6 +110,12 @@ describe("redactStripeSecrets", () => {
         "Ready! webhook signing secret is whsec_superSecret123; keep whsec_anotherSecret safe.",
       ),
     ).toBe("Ready! webhook signing secret is [REDACTED]; keep [REDACTED] safe.");
+  });
+
+  it("removes API keys and complete signing secrets from command errors", () => {
+    expect(
+      redactStripeSecrets("failed sk_test_example_key rk_live_restricted_key whsec_signing_secret"),
+    ).toBe("failed [REDACTED] [REDACTED] [REDACTED]");
   });
 });
 

@@ -11,7 +11,10 @@ remains in sandbox mode.
 - Stripe sandbox webhook `we_1UQHCaFfO8YnaNpSXuINhj4d` targets the production API. Stripe
   confirmed `livemode: false` for the endpoint and all three active configured prices.
 - Vercel has 14 production-only configuration variables. Private configuration remains in
-  ignored `.env.production`; no credential values were printed.
+  ignored `.env.production`; database administration is separated into `.env.database.production`,
+  and queue provisioning credentials / Stripe endpoint metadata into `.env.deployment.production`.
+  Each scope has a committed `.example` template. No credential values were printed. See the
+  [environment file strategy](env-reference.md#2-environment-file-strategy) for explicit selection.
 - Vercel production deployment `dpl_E2hQ3x8zv84ZoR7bcucWG2GEZxmZ` is READY at
   `https://repurposepro-weou2iopo-sminembs-projects.vercel.app`. It was built with `--skip-domain`.
   Its home, login, signup and `/api/auth/get-session` routes returned HTTP 200 through existing

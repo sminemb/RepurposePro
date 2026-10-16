@@ -43,6 +43,7 @@ const dbUrl = (role, password) =>
 Object.assign(env, {
   NODE_ENV: "development",
   APP_ENV: "test",
+  LOCAL_SERVICES_ENABLED: "false",
   APP_URL: appUrl,
   API_URL: apiUrl,
   NEXT_PUBLIC_API_URL: apiUrl,

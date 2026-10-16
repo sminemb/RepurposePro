@@ -7,8 +7,9 @@ existing Better Auth email. Comparison trims whitespace and ignores case. Missin
 disable admin access. Never use a NEXT_PUBLIC variant.
 
 `DATABASE_ADMIN_URL` is an optional API connection using repurposepro_admin, a non-placeholder
-password, and no connection query parameters. Configure its provisioning copy in `.env.database`
-and runtime copy in `.env`. Web and workers do not use this connection. Pool size and TLS use
+password, and no connection query parameters. Configure its provisioning copy in the selected
+database administration file and its runtime copy in the matching application file below.
+Web and workers do not use this connection. Pool size and TLS use
 DATABASE_POOL_MAX/DATABASE_SSL. Without the URL, authorized admin reads return an unavailable
 state while the existing app continues working; there is no privileged fallback.
 
@@ -42,8 +43,14 @@ Never commit real secrets.
 Provide:
 
 ```text
-.env.example
-.env.database.example
+.env.example                         local application runtime
+.env.database.example                local Compose and database administration
+.env.staging.example                 staging application runtime
+.env.database.staging.example        staging database administration
+.env.deployment.staging.example      staging deployment operations
+.env.production.example              production application runtime
+.env.database.production.example     production database administration
+.env.deployment.production.example   production deployment operations
 ```
 
 with safe placeholders only.
@@ -52,38 +59,73 @@ with safe placeholders only.
 
 ## 2. Environment File Strategy
 
-Recommended files:
+Use one environment at a time, with separate application, administration, and deployment scopes:
 
-```text
-.env                  runtime processes only
-.env.database         Compose, migrations, role provisioning, and PostgreSQL integration tests
+| Environment | Application runtime | Database administration | Deployment operations |
+| --- | --- | --- | --- |
+| Local | `.env` | `.env.database` | Compose settings in `.env.database` |
+| Staging | `.env.staging` | `.env.database.staging` | `.env.deployment.staging` |
+| Production | `.env.production` | `.env.database.production` | `.env.deployment.production` |
+
+Create only the files needed from their committed `.example` counterparts. All populated files
+are ignored by Git. The root `.env.local` contains Vercel-generated local tooling credentials;
+it is not the application's local configuration file.
+
+The shared application loader reads only `.env` from the working directory or repository root,
+without overriding values already supplied by the process. Local database tools independently
+read only `.env.database`. Neither loader selects files based on `APP_ENV` or `NODE_ENV`.
+Do not rename a remote file to `.env` or replace the local `.env.database` to deploy remotely.
+
+For remote deployments, explicitly select the target runtime file when supplying values to the
+hosting environment or secret manager. The remote runtime examples list the full settings for
+web, API, and worker; populated remote files may contain only overrides because the corresponding
+`infra/<environment>-runtime.cloudformation.json` supplies container paths, queue prefixes,
+logging, and other defaults. `REDIS_URL` is injected from the queue secret; `REDIS_PASSWORD` is
+only a queue provisioning input. Both remote environments use `NODE_ENV=production`, with
+`APP_ENV=staging` or `APP_ENV=production`. Local uses `NODE_ENV=development` and `APP_ENV=local`.
+
+Keep database bootstrap, migration-owner and provisioning `DATABASE_RUNTIME_URL` credentials in
+the database administration file. Provisioning also needs copies of scoped application URLs.
+Use direct endpoints for administrative operations, the correct restricted roles for runtime
+connections, and `DATABASE_SSL=true` remotely. `DATABASE_ADMIN_URL` has no query parameters.
+Remote administration files do not contain local Compose passwords or disposable test settings.
+
+Database tools accept credentials already supplied in the process. From the repository root,
+an explicit production migration invocation is:
+
+```powershell
+Push-Location packages/db
+try {
+  node --env-file=../../.env.database.production --run=db:migrate
+} finally {
+  Pop-Location
+}
 ```
 
-Create them from their committed `.example` counterparts. API, worker, auth, and web processes
-must never load `.env.database`.
+This selects production credentials without copying them into the local file. Use
+`.env.database.staging` for staging. Required remote variables must be populated first, and an
+existing process variable takes precedence over the selected file. Run in a clean shell with no
+other database credentials exported. The local database file may fill missing values, so never
+use remote administration for the disposable integration-test runner or local Compose commands.
+Node's [environment file](https://nodejs.org/download/release/v22.18.0/docs/api/cli.html#--env-filefile)
+and [script runner](https://nodejs.org/download/release/v22.18.0/docs/api/cli.html#--run)
+documentation describes this precedence and working-directory behavior.
 
-Do not commit:
+Deployment files contain only `REDIS_PASSWORD` and the remote Stripe `STRIPE_WEBHOOK_ID` (`we_...`).
+The signing secret (`STRIPE_WEBHOOK_SECRET`, `whsec_...`) belongs in runtime settings. Both remote
+environments currently use Stripe sandbox keys and prices; production deployment does not imply
+live billing. Use separate auth secrets, database branches, queues, and webhook endpoints.
 
-```text
-.env
-.env.local
-.env.production
-real API keys
-real webhook secrets
-real database passwords
-```
+API, worker, auth, and web processes must never load database administration or deployment files.
+Supply only the settings each service consumes, following the ownership matrix below.
 
-For a monorepo, environment ownership should be explicit.
-
-Example:
-
-```text
-apps/web/.env.local
-apps/api/.env
-apps/worker/.env
-```
-
-Or use a secure shared environment loader if preferred.
+`LOCAL_SERVICES_ENABLED=true` is a local-only opt-in for in-process web/API action limits and
+account email delivery to ignored `storage/local-mail/`. It defaults to false and is rejected
+outside `APP_ENV=local`, `NODE_ENV=development`, and loopback application/database/Redis URLs.
+This keeps local signup, login, profile changes, verification, and password recovery independent
+of Arcjet/Resend connectivity. It is not a fallback on provider failures. The isolated test
+runner explicitly disables it; set it to false for a local production build. See
+[ADR 0011](adr/0011-isolated-local-services.md).
 
 ---
 

@@ -98,14 +98,40 @@ test video has no faces; live speaker tracking is verified separately with real 
 
 ## Environment configuration
 
-Runtime processes load only `.env`, created from `.env.example`. Compose, migration, role
-provisioning, and disposable PostgreSQL integration tests use `.env.database`, created from
-`.env.database.example`. Never copy administrative database credentials into `.env`.
+Local runtime processes load `.env`, created from `.env.example`. Local Compose, migrations,
+role provisioning, and disposable PostgreSQL integration tests use `.env.database`, created
+from `.env.database.example`.
 
-Real secrets and both local environment files are ignored by Git.
+| Environment | Application settings | Database administration    | Deployment operations                        |
+| ----------- | -------------------- | -------------------------- | -------------------------------------------- |
+| Local       | `.env`               | `.env.database`            | Local Docker settings are in `.env.database` |
+| Staging     | `.env.staging`       | `.env.database.staging`    | `.env.deployment.staging`                    |
+| Production  | `.env.production`    | `.env.database.production` | `.env.deployment.production`                 |
+
+Each file has a committed `.example` template. Real values remain ignored by Git. Remote
+runtime files hold deployment overrides; the matching infrastructure template and secret
+manager supply the remaining container settings, including `REDIS_URL`. Remote files are
+selected explicitly when configuring deployments; the application loader does not read them
+automatically. `NODE_ENV=production` applies to both staging and production.
+
+Keep bootstrap/migration credentials and deployment-only `REDIS_PASSWORD` / `STRIPE_WEBHOOK_ID`
+out of application settings. The root `.env.local` is reserved for Vercel's generated local
+tooling token; application settings belong in `.env`. See the
+[environment reference](docs/env-reference.md#2-environment-file-strategy) for service ownership
+and administrative loading instructions.
 
 The public web configuration contains only `APP_URL`, `APP_ENV`, `NODE_ENV`, and
 `NEXT_PUBLIC_API_URL`. Database and Redis connection values are loaded only by server processes.
+
+For local account flows, set `LOCAL_SERVICES_ENABLED=true` in `.env` (as in `.env.example`).
+This uses the existing action limits in memory and writes account email links to private JSON
+files in `storage/local-mail/`, so signup, sign-in, settings, and password recovery work without
+Arcjet or Resend connectivity. Open the newest file to use an email link; messages are never sent
+to real inboxes in this mode. The flag is rejected unless `APP_ENV=local`,
+`NODE_ENV=development`, and application/database/Redis URLs all point to loopback addresses.
+Restart the development apps after changing it. Staging and production continue using Arcjet and
+Resend; local mode is never an automatic fallback. For a local production build, explicitly set
+`LOCAL_SERVICES_ENABLED=false`. See [ADR 0011](docs/adr/0011-isolated-local-services.md).
 
 PostgreSQL integration tests temporarily rotate shared local test-role passwords. Always run them
 through `pnpm test:db-integration`; its cleanup restores the configured development role
@@ -131,6 +157,10 @@ IPv4 API readiness, compares the Stripe CLI secret with API configuration withou
 value, and then forwards paid and expired Checkout events. Use `pnpm dev:apps` only when local work
 intentionally excludes Stripe. Use `pnpm stripe:listen` to run the same validated listener beside an
 already-running API.
+
+The listener uses the application's `STRIPE_SECRET_KEY` for both signing-secret validation and
+forwarding, so a different saved CLI account cannot silently receive the payment events. It skips
+CLI update checks and allows up to 60 seconds for the signing-secret request on slow connections.
 
 Restart `pnpm dev` whenever the signing secret changes. Do not commit or paste the secret into logs,
 task records, or source files.

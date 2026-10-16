@@ -48,3 +48,7 @@ not depend on Arcjet availability. No new schema migration was necessary; existi
 retention migrations 0044–0046 still precede service startup. Local verified outcomes and the
 separate live Arcjet smoke are recorded in [VS11 evidence](../verification/vs11.md). Deployment
 must verify the real ingress IP replacement and LIVE enforcement; no deployment is part of VS11.
+
+[ADR 0011](0011-isolated-local-services.md) adds an explicitly selected provider for isolated
+local development: in-process action limits and private file email delivery. Arcjet provider
+errors continue to fail closed; staging and production cannot select the local provider.

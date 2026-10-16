@@ -4,12 +4,23 @@ import {
   protectionFailure,
   protectionDiagnostics,
   protectionPolicies,
+  createLocalProtection,
   type ProtectionAction,
 } from "@repurposepro/shared";
 
 const clients = new Map<ProtectionAction, Awaited<ReturnType<typeof createClient>>>();
+const localProtect = createLocalProtection();
 async function createClient(action: ProtectionAction) {
   const config = loadProtectionConfig();
+  if (config.localServicesEnabled) {
+    return {
+      config,
+      sdk: {
+        protect: async (_request: Request, properties: { userId: string }) =>
+          localProtect(action, properties.userId),
+      },
+    };
+  }
   const {
     default: arcjet,
     createRemoteClient,

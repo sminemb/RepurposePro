@@ -13,6 +13,12 @@ __pycache__/
 .env.*
 !.env.example
 !.env.database.example
+!.env.staging.example
+!.env.production.example
+!.env.database.staging.example
+!.env.database.production.example
+!.env.deployment.staging.example
+!.env.deployment.production.example
 
 # Local runtime files
 /storage/

@@ -1,6 +1,10 @@
 import { BlockList, isIP } from "node:net";
 import { loadProtectionConfig } from "@repurposepro/config";
-import { protectionPolicies, type ProtectionAction } from "@repurposepro/shared";
+import {
+  createLocalProtection,
+  protectionPolicies,
+  type ProtectionAction,
+} from "@repurposepro/shared";
 import type { AuthenticatedRequest } from "../../modules/auth/auth.guard";
 
 export function protectionRequest(request: AuthenticatedRequest, proxies: readonly string[]) {
@@ -30,10 +34,21 @@ export function protectionRequest(request: AuthenticatedRequest, proxies: readon
   };
 }
 
+const localProtect = createLocalProtection();
+
 export function createProtectionClient(action: ProtectionAction) {
   let client: Awaited<ReturnType<typeof initialize>> | undefined;
   async function initialize() {
     const config = loadProtectionConfig();
+    if (config.localServicesEnabled) {
+      return {
+        config,
+        sdk: {
+          protect: async (_request: unknown, properties: { userId: string }) =>
+            localProtect(action, properties.userId),
+        },
+      };
+    }
     const {
       default: arcjet,
       createRemoteClient,
