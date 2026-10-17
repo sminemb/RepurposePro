@@ -56,7 +56,9 @@ An earlier export failed transiently; bounded worker failure diagnostics were ad
 subsequent complete flows passed without render errors. A standalone Fargate render also passed.
 
 Staging runs migrations through 0049 (50 total), API task revision 3, and worker revision 3.
-Web deployment `dpl_5HossDRYTaidKcw655sKrmWDLjLU` serves `staging.re-purpose.pro`.
+The tested web deployment was `dpl_5HossDRYTaidKcw655sKrmWDLjLU`; the subsequent
+documentation-only deployment `dpl_GniuhTXMT2EXUgK3N72c17NknMW5` serves
+`staging.re-purpose.pro` from staging commit `0cff6a129237b96ee5dc873a95ca3b3d640d0dc9`.
 The focused staging commits preserve that branch's existing authentication configuration.
 
 Immutable images tested on staging and selected for production:
@@ -64,7 +66,19 @@ Immutable images tested on staging and selected for production:
 - API: `repurposepro-staging-api@sha256:3d3f6501c73a43f81984b8e025769fc9e7da46a18d0ddac50a166983b01bf4ea`.
 - Worker: `repurposepro-staging-worker@sha256:e4128c1e986fc75b2c8c03592b4a9e00e43ab18f72c0bcd145806a93058130bf`.
 
-Production promotion and verification are pending. Previous production rollback references:
+Production verification passed all 23 checks using a disposable account and project, including
+a real export, stale-batch rollback, subset and all-five deletion, retained source and export,
+physical cleanup completion, deleted-resource rejection, and idempotent project deletion.
+The successful fixture account was removed after verifying it had no payment or ledger records.
+Public API readiness reports database and Redis up; unauthenticated deletion returns 401.
+
+Production runs migrations through 0049 (50 total), API task revision 3 (two instances), and
+worker revision 2 (one instance), with completed rollouts and unchanged capacity/configuration.
+Verified application release: main commit `3274c3ca880c76f567a47041d354c2abb018f699`,
+web deployment `dpl_6Vrj4TnuZ6SEnKjWw5122wPzpxuF` at `re-purpose.pro`.
+The immutable API/worker image digests above are identical in staging and production.
+
+Previous production rollback references:
 API task revision 2; worker revision 1; web deployment `dpl_F95fVDULzCG8EPgw26Q2k8FEk99J`
 from main commit `4bd49711b39ad820e1d69c7264225626134f7228`.
 Use these application revisions to roll back; retain the additive migration and durable cleanup
