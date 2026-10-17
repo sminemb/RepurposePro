@@ -1,4 +1,8 @@
+"use client";
+
 import type { ProjectSummary } from "@repurposepro/shared";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Clapperboard, FileVideo, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -7,6 +11,7 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { ExpirationBadge } from "@/components/app/expiration-badge";
 
 import { getProjectCardAction } from "./project-card-action";
+import { ProjectDeleteButton } from "./project-delete-button";
 
 interface ProjectListProps {
   readonly projects: readonly ProjectSummary[];
@@ -17,7 +22,10 @@ function formatCreatedAt(value: string): string {
 }
 
 export function ProjectList({ projects }: ProjectListProps) {
-  if (projects.length === 0) {
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  const router = useRouter();
+  const visible = projects.filter((project) => !removed.has(project.id));
+  if (visible.length === 0) {
     return (
       <EmptyState
         action={
@@ -37,7 +45,7 @@ export function ProjectList({ projects }: ProjectListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {projects.map((project) => {
+      {visible.map((project) => {
         const Icon = project.outputType === "clips" ? Clapperboard : FileVideo;
         const outputLabel = project.outputType === "clips" ? "Short clips" : "Summary video";
         const action = getProjectCardAction(project.id, project.status, project.outputType);
@@ -62,12 +70,22 @@ export function ProjectList({ projects }: ProjectListProps) {
                   <ExpirationBadge expiresAt={project.expiresAt} label="Source" />
                 </div>
               ) : null}
-              <Link
-                className="mt-3 inline-flex min-h-9 items-center text-sm font-semibold text-rp-primary hover:text-rp-text"
-                href={action.href}
-              >
-                {action.label}
-              </Link>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <Link
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-rp-primary hover:text-rp-text"
+                  href={action.href}
+                >
+                  {action.label}
+                </Link>
+                <ProjectDeleteButton
+                  projectId={project.id}
+                  name={project.name}
+                  onDeleted={() => {
+                    setRemoved((items) => new Set([...items, project.id]));
+                    router.refresh();
+                  }}
+                />
+              </div>
             </div>
           </article>
         );

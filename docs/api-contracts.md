@@ -543,7 +543,10 @@ PROJECT_ACCESS_DENIED
 
 ## DELETE `/projects/:projectId`
 
-Deletes project files and marks project deleted.
+Marks the owned project deleted and durably schedules removal of its source, previews,
+outputs, and temporary files. The project becomes inaccessible immediately; physical removal
+runs through the retryable cleanup worker. Repeating the request for the same owned, deleted
+project returns 204.
 
 Billing history and immutable ledger history remain.
 
@@ -555,8 +558,31 @@ No body.
 
 ```text
 PROJECT_NOT_FOUND
+PROJECT_BUSY
 PROJECT_DELETE_FAILED
 ```
+
+`PROJECT_BUSY` returns 409 while an upload writer, queued/active processing job, or
+queued/active framing task exists. Missing or foreign projects return 404.
+
+## POST `/projects/:projectId/clips/bulk-delete`
+
+Removes a batch of current primary preview clips. The source video and previous exports remain.
+
+```json
+{
+  "clips": [
+    { "id": "00000000-0000-4000-8000-000000000001", "expectedRevision": 0 },
+    { "id": "00000000-0000-4000-8000-000000000002", "expectedRevision": 3 }
+  ]
+}
+```
+
+Requires authentication and project ownership. Accepts 1–100 unique clip IDs with nonnegative
+integer saved revisions. Validates the entire batch before deleting any clip; repeated requests
+with unchanged revisions succeed. Returns 204 without a body. Invalid batches return 400
+`VALIDATION_ERROR`; missing/foreign clips return 404 `CLIP_NOT_FOUND`; stale revisions or an
+ongoing render/regeneration return 409 `CLIP_EDIT_CONFLICT` or `CLIP_BUSY`.
 
 ---
 
