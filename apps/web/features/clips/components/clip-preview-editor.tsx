@@ -24,6 +24,7 @@ import { selectClip, deleteClip, regenerateClip } from "../client/clip-managemen
 import { ClipDeleteDialog } from "./clip-delete-dialog";
 import { useSourceRetention } from "@/features/upload/client/use-source-retention";
 import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
+import { formatClipTime, parseClipTime } from "../client/clip-time";
 
 interface Props {
   apiUrl: string;
@@ -301,8 +302,8 @@ function EditorSession({
   useEffect(() => {
     if (!state.trimError)
       setValidTrim({
-        startTime: Number(state.draft.startText),
-        endTime: Number(state.draft.endText),
+        startTime: parseClipTime(state.draft.startText)!,
+        endTime: parseClipTime(state.draft.endText)!,
       });
   }, [state.draft.startText, state.draft.endText, state.trimError]);
   const effective = {
@@ -327,7 +328,8 @@ function EditorSession({
   return (
     <div>
       <div className="mb-5 rounded-rp-md border border-rp-border bg-rp-surface px-4 py-3 text-sm leading-6 text-rp-text-muted md:hidden">
-        The clip editor works best on a larger screen. Your saved preview is available below.
+        Trim below and save your changes. Caption and framing settings are available on a larger
+        screen.
       </div>
       {state.recovery ? (
         <div
@@ -458,14 +460,14 @@ function EditorSession({
             ))}
           </select>
         </label>
-        <div className="sticky top-16 z-30 mb-5 hidden items-center justify-between gap-4 border-b border-rp-border bg-rp-bg py-4 md:flex">
+        <div className="sticky top-16 z-30 mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-rp-border bg-rp-bg py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-rp-primary">
               Edit preview
             </p>
             <h2 className="mt-1 text-lg font-semibold text-rp-text">{state.saved.clip.title}</h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span role="status" aria-live="polite" className="text-xs text-rp-text-muted">
               {state.saving ? "Saving…" : state.dirty ? "Unsaved changes" : "All changes saved"}
             </span>
@@ -489,6 +491,11 @@ function EditorSession({
             </button>
           </div>
         </div>
+        {state.validation ? (
+          <p role="alert" className="mb-4 text-sm text-rp-danger md:hidden">
+            {state.validation}
+          </p>
+        ) : null}
         {state.error ? (
           <div className="mb-4">
             <p role="alert" className="text-sm text-rp-danger">
@@ -560,6 +567,15 @@ function EditorSession({
                 apiUrl={props.apiUrl}
                 projectId={props.projectId}
                 onTimeChange={setTime}
+                sourceDuration={state.saved.sourceDurationSeconds}
+                trimDisabled={regenerationBusy || deleting}
+                onTrimChange={(startTime, endTime) => {
+                  state.update({
+                    ...state.draft,
+                    startText: formatClipTime(startTime),
+                    endText: formatClipTime(endTime),
+                  });
+                }}
                 tracks={tracking.status.data}
                 onFramingChange={(framing) => {
                   if (!regenerationBusy) state.update({ ...state.draft, framing });

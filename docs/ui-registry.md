@@ -1419,6 +1419,7 @@ Behavior:
 
 - Seek to start time.
 - Stop or loop at end time.
+- Provide a full-source trim timeline with accessible Start and End handles synchronized with TrimControls.
 - Preview 9:16 crop.
 - Render captions as HTML/CSS overlay.
 - Do not render final MP4.
@@ -1603,6 +1604,7 @@ Rules:
 - Must remain within source duration.
 - Show guidance for recommended social duration.
 - Update preview immediately.
+- Use `HH:MM:SS.mmm` for trim fields and duration feedback, preserving milliseconds and accepting unfinished input while typing.
 
 ---
 
