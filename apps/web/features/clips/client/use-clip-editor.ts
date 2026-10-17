@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { requestClipEditor } from "./clip-editor-api";
 import { prepareClipRender } from "./prepare-clip-render";
+import { recoverClipTime } from "./clip-time";
 import {
   draftInput,
   editorDraft,
@@ -67,7 +68,12 @@ export function useClipEditor(
         if (
           typeof recovered.startText === "string" &&
           typeof recovered.endText === "string" &&
-          draftInput({ ...recovered, startText: "0", endText: "1", captionEdits: [] }) &&
+          draftInput({
+            ...recovered,
+            startText: "00:00:00",
+            endText: "00:00:01",
+            captionEdits: [],
+          }) &&
           Array.isArray(recovered.captionEdits) &&
           recovered.captionEdits.length <= 2000 &&
           recovered.captionEdits.every(
@@ -83,7 +89,12 @@ export function useClipEditor(
           )
         ) {
           if (recovered.captionEdits.every((edit) => captionEditSchema.safeParse(edit).success)) {
-            setRecovery({ ...editorDraft(clipEditorInput(initial)), ...recovered });
+            setRecovery({
+              ...editorDraft(clipEditorInput(initial)),
+              ...recovered,
+              startText: recoverClipTime(recovered.startText),
+              endText: recoverClipTime(recovered.endText),
+            });
           } else clearRecovery();
         } else clearRecovery();
       }

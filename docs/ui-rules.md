@@ -777,6 +777,10 @@ Rules:
 - Warn if clip is too short.
 - Warn if clip is too long.
 - Show calculated duration.
+- Show clip trim timestamps as `HH:MM:SS.mmm`; accept optional milliseconds in text fields.
+- Provide synchronized Start and End handles on a full-source timeline below the clip player.
+- Preserve at least one millisecond between handles. Arrow keys adjust milliseconds and Page Up/Down adjusts seconds.
+- Keep Save and Discard available for touch trimming on mobile; changes remain drafts until saved.
 
 Recommended duration guidance:
 

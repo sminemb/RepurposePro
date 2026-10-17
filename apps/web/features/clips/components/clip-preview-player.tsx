@@ -18,6 +18,8 @@ import {
   type ClipPlaybackBoundaryEvent,
 } from "../client/clip-preview-playback";
 import { CaptionOverlay } from "./caption-overlay";
+import { ClipTrimTimeline } from "./clip-trim-timeline";
+import { formatClipTime } from "../client/clip-time";
 
 export function ClipPreviewPlayer({
   clip,
@@ -26,6 +28,9 @@ export function ClipPreviewPlayer({
   onTimeChange,
   tracks = null,
   onFramingChange,
+  sourceDuration,
+  onTrimChange,
+  trimDisabled,
 }: {
   clip: ClipPreviewCandidate;
   apiUrl: string;
@@ -33,6 +38,9 @@ export function ClipPreviewPlayer({
   onTimeChange: (time: number) => void;
   tracks?: FramingTracks | null;
   onFramingChange?: (framing: Framing) => void;
+  sourceDuration: number;
+  onTrimChange: (startTime: number, endTime: number) => void;
+  trimDisabled?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [time, setTime] = useState(clip.startTime);
@@ -179,6 +187,14 @@ export function ClipPreviewPlayer({
           />
         ) : null}
       </div>
+      <ClipTrimTimeline
+        startTime={clip.startTime}
+        endTime={clip.endTime}
+        duration={sourceDuration}
+        currentTime={time}
+        disabled={trimDisabled}
+        onChange={onTrimChange}
+      />
       {failed ? (
         <p role="alert" className="mt-3 text-sm text-rp-danger">
           The source video could not be played. It may have expired or use an unsupported format.
@@ -186,7 +202,7 @@ export function ClipPreviewPlayer({
         </p>
       ) : null}
       <p className="mt-3 text-center text-xs text-rp-text-muted">
-        {time.toFixed(2)}s / {clip.endTime.toFixed(2)}s · Preview updates instantly
+        {formatClipTime(time)} / {formatClipTime(clip.endTime)} · Preview updates instantly
       </p>
     </section>
   );

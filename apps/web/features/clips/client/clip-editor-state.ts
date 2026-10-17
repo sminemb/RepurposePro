@@ -1,4 +1,5 @@
 import { clipEditInputSchema, type ClipEditInput } from "@repurposepro/shared";
+import { formatClipTime, parseClipTime } from "./clip-time";
 
 export type EditorDraft = Omit<ClipEditInput, "startTime" | "endTime"> & {
   startText: string;
@@ -6,18 +7,13 @@ export type EditorDraft = Omit<ClipEditInput, "startTime" | "endTime"> & {
 };
 export function editorDraft(input: ClipEditInput): EditorDraft {
   const { startTime, endTime, ...rest } = input;
-  return { ...rest, startText: String(startTime), endText: String(endTime) };
+  return { ...rest, startText: formatClipTime(startTime), endText: formatClipTime(endTime) };
 }
 export function trimValidation(draft: EditorDraft, sourceDuration: number): string {
-  const start = Number(draft.startText);
-  const end = Number(draft.endText);
-  if (
-    !draft.startText.trim() ||
-    !draft.endText.trim() ||
-    !Number.isFinite(start) ||
-    !Number.isFinite(end)
-  )
-    return "Enter a start and end time.";
+  const start = parseClipTime(draft.startText);
+  const end = parseClipTime(draft.endText);
+  if (start === null || end === null)
+    return "Enter start and end as HH:MM:SS, with up to three decimal places.";
   // Compare the persisted millisecond boundaries, avoiding floating-point subtraction errors.
   if (start < 0 || end <= start || Math.round(start * 1000) >= Math.round(end * 1000))
     return "Start and end must differ at millisecond precision.";
@@ -26,11 +22,13 @@ export function trimValidation(draft: EditorDraft, sourceDuration: number): stri
 }
 export function draftInput(draft: EditorDraft): ClipEditInput | null {
   const { startText, endText, ...rest } = draft;
-  if (!startText.trim() || !endText.trim()) return null;
+  const startTime = parseClipTime(startText);
+  const endTime = parseClipTime(endText);
+  if (startTime === null || endTime === null) return null;
   const parsed = clipEditInputSchema.safeParse({
     ...rest,
-    startTime: Number(startText),
-    endTime: Number(endText),
+    startTime,
+    endTime,
   });
   return parsed.success ? parsed.data : null;
 }

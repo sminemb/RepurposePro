@@ -111,11 +111,14 @@ async function editorBreakpoints(page: Page, summary: boolean) {
     } else if (width < 768) {
       await expect(
         page.getByText(
-          "The clip editor works best on a larger screen. Your saved preview is available below.",
+          "Trim below and save your changes. Caption and framing settings are available on a larger screen.",
         ),
       ).toBeVisible();
       await expect(page.getByLabel("Clip settings", { exact: true })).toBeHidden();
       await expect(page.getByLabel("Choose a clip (2)")).toBeVisible();
+      await expect(page.getByRole("slider", { name: "Start time", exact: true })).toBeVisible();
+      await expect(page.getByRole("slider", { name: "End time", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeVisible();
     } else {
       await expect(page.getByLabel("Clip settings", { exact: true })).toBeVisible();
       if (width < 1280) {
@@ -402,8 +405,61 @@ test("clips: save trim and captions, select one clip, render and download its sa
   } finally {
     await writeFile(join(runRoot, "control.json"), JSON.stringify({ failAnalysis: false }));
   }
-  await page.getByLabel("Start (seconds)", { exact: true }).fill("0.125");
-  await page.getByLabel("End (seconds)", { exact: true }).fill("3.125");
+  const startField = page.getByLabel("Start (HH:MM:SS)", { exact: true });
+  const endField = page.getByLabel("End (HH:MM:SS)", { exact: true });
+  const startHandle = page.getByRole("slider", { name: "Start time", exact: true });
+  const endHandle = page.getByRole("slider", { name: "End time", exact: true });
+  await startField.fill("00:00:00.125");
+  await endField.fill("00:00:03.125");
+  await endField.press("Tab");
+  await expect(startHandle).toHaveValue("125");
+  await expect(endHandle).toHaveValue("3125");
+  await startHandle.focus();
+  await startHandle.press("ArrowRight");
+  await expect(startField).toHaveValue("00:00:00.126");
+  await startHandle.press("ArrowLeft");
+  await endHandle.focus();
+  await endHandle.press("PageUp");
+  await expect(endField).toHaveValue("00:00:04.125");
+  await endHandle.press("PageDown");
+  await expect(endField).toHaveValue("00:00:03.125");
+  // Invalid text keeps the previous valid preview and cannot be saved.
+  await endField.fill("00:00:");
+  await expect(endHandle).toHaveValue("3125");
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
+  await expect(
+    page.getByLabel("Clip settings", { exact: true }).getByText(/Enter start and end as HH:MM:SS/),
+  ).toBeVisible();
+  await endField.fill("00:00:03.125");
+  await endField.press("Tab");
+  // The full-source timeline supports extending beyond the original clip and won't cross.
+  const handleBox = await endHandle.locator("..").boundingBox();
+  const trackBox = await startHandle.locator("../..").boundingBox();
+  if (!handleBox || !trackBox) throw new Error("Trim handles are missing.");
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(trackBox.x + trackBox.width * 0.8, handleBox.y + handleBox.height / 2, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  expect(Number(await endHandle.inputValue())).toBeGreaterThan(30_000);
+  await expect(endField).not.toHaveValue("00:00:03.125");
+  await startField.fill("00:00:01.000");
+  await endField.fill("00:00:02.000");
+  await endField.press("Tab");
+  await startHandle.focus();
+  await startHandle.press("End");
+  expect(Number(await startHandle.inputValue())).toBeLessThan(Number(await endHandle.inputValue()));
+  await expect(endHandle).toHaveValue("2000");
+  const nearStart = await startHandle.locator("..").boundingBox();
+  const nearEnd = await endHandle.locator("..").boundingBox();
+  if (!nearStart || !nearEnd) throw new Error("Trim touch targets are missing.");
+  expect(nearStart.width).toBeGreaterThanOrEqual(44);
+  expect(nearEnd.width).toBeGreaterThanOrEqual(44);
+  expect(nearStart.y + nearStart.height).toBeLessThanOrEqual(nearEnd.y);
+  // Restore the final saved trim after exercising the picker.
+  await startField.fill("00:00:00.125");
+  await endField.fill("00:00:03.125");
   await page
     .getByRole("textbox", { name: /Caption at/ })
     .first()
@@ -411,17 +467,87 @@ test("clips: save trim and captions, select one clip, render and download its sa
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByText("All changes saved", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("Start (seconds)", { exact: true })).toHaveValue("0.125");
+  await expect(startField).toHaveValue("00:00:00.125");
+  await expect(endHandle).toHaveValue("3125");
   await expect(page.getByRole("textbox", { name: /Caption at/ }).first()).toHaveValue(
     "Saved portfolio caption",
   );
+  // Recover a draft written by the previous seconds-only editor.
+  await startField.fill("00:00:00.126");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(sessionStorage).some((key) => key.startsWith("rp:clip-draft:")),
+      ),
+    )
+    .toBe(true);
+  await page.evaluate(() => {
+    const key = Object.keys(sessionStorage).find((key) => key.startsWith("rp:clip-draft:"))!;
+    const draft = JSON.parse(sessionStorage.getItem(key)!) as Record<string, unknown>;
+    sessionStorage.setItem(key, JSON.stringify({ ...draft, startText: "0.126", endText: "3.625" }));
+  });
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.reload();
+  await page.getByRole("button", { name: "Restore draft", exact: true }).click();
+  await expect(startField).toHaveValue("00:00:00.126");
+  await expect(endField).toHaveValue("00:00:03.625");
+  await expect(page.getByRole("textbox", { name: /Caption at/ }).first()).toHaveValue(
+    "Saved portfolio caption",
+  );
+  await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(startField).toHaveValue("00:00:00.125");
   await editorBreakpoints(page, false);
-  await page.getByLabel("End (seconds)", { exact: true }).fill("3.625");
+  // Exercise a real touch drag and the mobile save/discard controls.
+  await page.setViewportSize({ width: 375, height: 812 });
+  await endHandle.scrollIntoViewIfNeeded();
+  const touchBox = await endHandle.locator("..").boundingBox();
+  if (!touchBox) throw new Error("The mobile end handle is missing.");
+  const touch = await page.context().newCDPSession(page);
+  await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  const point = { x: touchBox.x + touchBox.width / 2, y: touchBox.y + touchBox.height / 2 };
+  await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] });
+  await touch.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ ...point, x: point.x + 80 }],
+  });
+  await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(endHandle).not.toHaveValue("3125");
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(endHandle).toHaveValue("3125");
+  await touch.detach();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // The native player stops at the selected end and loops back to the selected start.
+  const video = page.locator("video");
+  await page.getByLabel("Loop clip", { exact: true }).uncheck();
+  await video.evaluate((element: HTMLVideoElement) => {
+    element.muted = true;
+    void element.play();
+  });
+  await expect
+    .poll(() =>
+      video.evaluate(
+        (element: HTMLVideoElement) =>
+          element.paused && Math.abs(element.currentTime - 3.125) < 0.05,
+      ),
+    )
+    .toBe(true);
+  await page.getByLabel("Loop clip", { exact: true }).check();
+  await video.evaluate((element: HTMLVideoElement) => void element.play());
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => !element.paused && element.currentTime < 1),
+    )
+    .toBe(true);
+  await video.evaluate((element: HTMLVideoElement) => element.pause());
+  await endField.fill("00:00:03.625");
   await page.getByRole("button", { name: "Conclusion", exact: false }).click();
   await expect(page.getByRole("dialog", { name: "Save your changes?" })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByLabel("End (seconds)", { exact: true })).toHaveValue("3.625");
+  await expect(endField).toHaveValue("00:00:03.625");
   await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(endField).toHaveValue("00:00:03.125");
+  await expect(endHandle).toHaveValue("3125");
   const checkboxes = page
     .getByRole("region", { name: "Choose a clip", exact: true })
     .getByRole("checkbox", { name: /Select .* for export/ });
