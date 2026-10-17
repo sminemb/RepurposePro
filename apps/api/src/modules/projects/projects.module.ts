@@ -12,16 +12,20 @@ import { ClipPreviewsService } from "./clip-previews.service";
 import { ProjectsController } from "./projects.controller";
 import { ProjectsService } from "./projects.service";
 import { UploadFileInterceptor } from "./upload-file.interceptor";
+import { DeletionController } from "./deletion.controller";
+import { DeletionService } from "./deletion.service";
 
 @Module({
   imports: [AuthModule, InfrastructureModule, StorageModule],
   controllers: [
+    DeletionController,
     FramingController,
     ProjectsController,
     ClipPreviewsController,
     ClipEditorController,
   ],
   providers: [
+    DeletionService,
     ProjectsService,
     ClipPreviewsService,
     ClipEditorService,

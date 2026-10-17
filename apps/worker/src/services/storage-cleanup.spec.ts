@@ -32,6 +32,26 @@ async function fixture() {
   };
 }
 describe("private media deletion", () => {
+  it("removes only the exact owned project directory and tolerates retries", async () => {
+    const { root, target } = await fixture();
+    const directory = join(target.storage_path, "..");
+    const neighbor = join(directory, "..", randomUUID(), "keep");
+    await mkdir(join(neighbor, ".."), { recursive: true });
+    await writeFile(neighbor, "safe");
+    const projectTarget = { ...target, kind: "project", storage_path: directory };
+    await removeCleanupAsset(root, projectTarget);
+    await removeCleanupAsset(root, projectTarget);
+    expect(await readFile(neighbor, "utf8")).toBe("safe");
+    await expect(readFile(join(target.storage_path, "video"))).rejects.toThrow();
+    for (const storage_path of [
+      root,
+      join(directory, ".."),
+      target.storage_path,
+      directory.replace("owner", "foreign"),
+    ]) {
+      await expect(removeCleanupAsset(root, { ...projectTarget, storage_path })).rejects.toThrow();
+    }
+  });
   it("still removes the source when a separately cleaned child disappears during inspection", async () => {
     const { root, directory, target } = await fixture();
     const actual = await vi.importActual<typeof FileSystem>("node:fs/promises");

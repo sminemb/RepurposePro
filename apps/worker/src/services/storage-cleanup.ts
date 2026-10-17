@@ -49,6 +49,7 @@ export function validateCleanupLayout(root: string, target: CleanupAsset): strin
       throw new Error("Cleanup ownership layout mismatch.");
     const asset = parts.slice(4).join("/");
     const valid =
+      (target.kind === "project" && parts.length === 4) ||
       (target.kind === "source" && asset === "source") ||
       (["output", "render_temp"].includes(target.kind) && output.test(asset)) ||
       (target.kind === "audio" && audio.test(asset)) ||

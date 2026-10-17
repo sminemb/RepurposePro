@@ -1,4 +1,6 @@
 export type ExpirationState = "normal" | "warning" | "urgent" | "expired";
+export const CLEANUP_QUEUE = "cleanup-queue";
+export const CLEANUP_JOB = "cleanup_expired_project_files";
 export function expirationState(expiresAt: string, now = Date.now()): ExpirationState {
   const remaining = Date.parse(expiresAt) - now;
   if (!Number.isFinite(remaining) || remaining <= 0) return "expired";
