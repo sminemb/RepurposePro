@@ -7,9 +7,9 @@ import { Queue, Worker, type ConnectionOptions } from "bullmq";
 import Redis from "ioredis";
 import { removeCleanupAsset, type CleanupAsset } from "./storage-cleanup";
 import { discoverOrphans } from "./orphan-discovery";
+import { CLEANUP_QUEUE, CLEANUP_JOB } from "@repurposepro/shared";
 
-export const CLEANUP_QUEUE = "cleanup-queue";
-export const CLEANUP_JOB = "cleanup_expired_project_files";
+export { CLEANUP_QUEUE, CLEANUP_JOB } from "@repurposepro/shared";
 export class CleanupWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CleanupWorkerService.name);
   private connection?: Redis;

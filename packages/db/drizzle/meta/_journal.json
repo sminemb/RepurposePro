@@ -337,6 +337,20 @@
       "when": 1791639091325,
       "tag": "0047_vs14_admin_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792217177599,
+      "tag": "0048_typical_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792217200000,
+      "tag": "0049_project_and_bulk_clip_deletion",
+      "breakpoints": true
     }
   ]
 }

@@ -33,6 +33,7 @@ export default defineConfig({
     include: [
       "apps/api/src/modules/admin/admin.postgres.integration.spec.ts",
       "apps/api/src/modules/projects/cleanup.postgres.integration.spec.ts",
+      "apps/api/src/modules/projects/deletion.postgres.integration.spec.ts",
       "apps/api/src/modules/summary/summary.postgres-redis.integration.spec.ts",
       "apps/api/src/modules/billing/billing.postgres.integration.spec.ts",
       "apps/api/src/modules/processing/analysis-queue.redis.integration.spec.ts",

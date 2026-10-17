@@ -47,7 +47,7 @@ export const storageCleanupTargets = pgTable(
       .where(sql`${table.deletedAt} IS NULL`),
     check(
       "storage_cleanup_kind_check",
-      sql`${table.kind} IN ('source','output','audio','render_temp','upload_temp','orphan')`,
+      sql`${table.kind} IN ('source','output','audio','render_temp','upload_temp','orphan','project')`,
     ),
   ],
 );
