@@ -1,4 +1,5 @@
 import { protectionRetryMessage } from "@repurposepro/shared";
+import { bulkClipDeleteInputSchema, type BulkClipDeleteInput } from "@repurposepro/shared";
 import { clipPreviewCandidateSchema, clipRegenerationResultSchema } from "@repurposepro/shared";
 
 export async function mutateClip(
@@ -67,4 +68,27 @@ export async function deleteClip(
   expectedRevision: number,
 ): Promise<void> {
   await mutateClip(apiUrl, projectId, clipId, "delete", { expectedRevision });
+}
+
+export async function deleteClips(
+  apiUrl: string,
+  projectId: string,
+  input: BulkClipDeleteInput,
+): Promise<void> {
+  const response = await fetch(
+    `${apiUrl.replace(/\/$/u, "")}/projects/${encodeURIComponent(projectId)}/clips/bulk-delete`,
+    {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bulkClipDeleteInputSchema.parse(input)),
+    },
+  );
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+    } | null;
+    throw new Error(body?.error?.message ?? "Could not delete these clips. Please try again.");
+  }
 }

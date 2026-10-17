@@ -20,7 +20,9 @@ import { EditorLeaveDialog } from "./editor-leave-dialog";
 import { editorFieldClass, TrimControls } from "./trim-controls";
 import { loadRenderJobStatus } from "@/features/rendering/client/job-status-api";
 import { RenderAction } from "@/features/rendering/components/render-action";
-import { selectClip, deleteClip, regenerateClip } from "../client/clip-management-api";
+import { selectClip, deleteClip, deleteClips, regenerateClip } from "../client/clip-management-api";
+import { BulkClipSelection, type ClipDeleteSelection } from "./bulk-clip-selection";
+import { DeleteConfirmationDialog } from "@/components/app/delete-confirmation-dialog";
 import { ClipDeleteDialog } from "./clip-delete-dialog";
 import { useSourceRetention } from "@/features/upload/client/use-source-retention";
 import { SourceRetentionNotice } from "@/features/upload/components/source-retention-notice";
@@ -40,6 +42,10 @@ export function ClipPreviewEditor(props: Props) {
   const [retry, setRetry] = useState(0);
   const [managementBusy, setManagementBusy] = useState("");
   const [managementError, setManagementError] = useState("");
+  const [deleteSelection, setDeleteSelection] = useState<ClipDeleteSelection>({
+    enabled: false,
+    ids: [],
+  });
   const onSelection = async (id: string, selected: boolean) => {
     if (managementBusy) return;
     setManagementBusy(id);
@@ -167,16 +173,21 @@ export function ClipPreviewEditor(props: Props) {
       clips={clips}
       managementBusy={managementBusy}
       managementError={managementError}
+      deleteSelection={deleteSelection}
+      onDeleteSelection={setDeleteSelection}
       onSelection={onSelection}
       onRegenerationJob={(id, jobId) =>
         setClips((items) =>
           items.map((clip) => (clip.id === id ? { ...clip, regenerationJobId: jobId } : clip)),
         )
       }
-      onDeleted={(id) => {
-        const next = clips.filter((clip) => clip.id !== id);
+      onDeleted={(ids) => {
+        const next = clips.filter((clip) => !ids.includes(clip.id));
         setClips(next);
-        setActiveId(next[0]?.id ?? "");
+        setDeleteSelection({ enabled: false, ids: [] });
+        setActiveId((active) =>
+          next.some((clip) => clip.id === active) ? active : (next[0]?.id ?? ""),
+        );
       }}
       initial={loaded}
       onSelect={setActiveId}
@@ -217,7 +228,9 @@ function EditorSession({
   onSelect: (id: string) => void;
   onSaved: (editor: ClipEditor) => void;
   onSelection: (id: string, selected: boolean) => Promise<void>;
-  onDeleted: (id: string) => void;
+  onDeleted: (ids: readonly string[]) => void;
+  deleteSelection: ClipDeleteSelection;
+  onDeleteSelection: (next: ClipDeleteSelection) => void;
   onReplaced: (id: string, originalId: string) => Promise<void>;
   onRegenerationJob: (id: string, jobId: string | null) => void;
   managementBusy: string;
@@ -239,6 +252,7 @@ function EditorSession({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const regenerationJob =
     props.clips.find((clip) => clip.id === initial.clip.id)?.regenerationJobId ?? "";
@@ -288,9 +302,34 @@ function EditorSession({
         state.getSaved().clip.revision ?? 0,
       );
       state.clearRecovery();
-      props.onDeleted(initial.clip.id);
+      setDeleteOpen(false);
+      props.onDeleted([initial.clip.id]);
     } catch (failure) {
       setDeleteError(failure instanceof Error ? failure.message : "Could not delete clip.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+  const bulkSelected = props.clips.filter((clip) => props.deleteSelection.ids.includes(clip.id));
+  const removeBulk = async () => {
+    if (deleting || !bulkSelected.length) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteClips(props.apiUrl, props.projectId, {
+        clips: bulkSelected.map((clip) => ({
+          id: clip.id,
+          expectedRevision:
+            clip.id === initial.clip.id
+              ? (state.getSaved().clip.revision ?? 0)
+              : (clip.revision ?? 0),
+        })),
+      });
+      if (bulkSelected.some((clip) => clip.id === initial.clip.id)) state.clearRecovery();
+      setBulkDeleteOpen(false);
+      props.onDeleted(bulkSelected.map((clip) => clip.id));
+    } catch (failure) {
+      setDeleteError(failure instanceof Error ? failure.message : "Could not delete these clips.");
     } finally {
       setDeleting(false);
     }
@@ -361,6 +400,24 @@ function EditorSession({
         </div>
       ) : null}
       <div inert={Boolean(state.recovery)}>
+        <BulkClipSelection
+          clips={props.clips}
+          selection={props.deleteSelection}
+          onChange={props.onDeleteSelection}
+          disabled={
+            deleting ||
+            regenerationBusy ||
+            state.saving ||
+            Boolean(props.managementBusy) ||
+            props.clips.some((clip) => Boolean(clip.regenerationJobId))
+          }
+          onDelete={() =>
+            navigation.request(() => {
+              setDeleteError("");
+              setBulkDeleteOpen(true);
+            })
+          }
+        />
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-rp-md border border-rp-border bg-rp-surface p-3">
           <p role="status" className="text-sm text-rp-text-muted">
             {props.clips.filter((clip) => clip.selected !== false).length} of {props.clips.length}{" "}
@@ -629,6 +686,21 @@ function EditorSession({
           onCancel={navigation.cancel}
           onDiscard={navigation.discardAndLeave}
           onSave={() => void navigation.saveAndLeave()}
+        />
+        <DeleteConfirmationDialog
+          open={bulkDeleteOpen}
+          heading={`Delete ${bulkSelected.length} ${bulkSelected.length === 1 ? "clip" : "clips"}?`}
+          description={
+            <>
+              Remove {bulkSelected.length} selected {bulkSelected.length === 1 ? "clip" : "clips"}{" "}
+              from your previews? Your source video and existing downloads stay available.
+            </>
+          }
+          confirmLabel={`Delete ${bulkSelected.length} ${bulkSelected.length === 1 ? "clip" : "clips"}`}
+          busy={deleting}
+          error={deleteError}
+          onCancel={() => setBulkDeleteOpen(false)}
+          onConfirm={() => void removeBulk()}
         />
         <ClipDeleteDialog
           open={deleteOpen}
