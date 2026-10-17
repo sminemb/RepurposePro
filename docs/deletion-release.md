@@ -49,6 +49,23 @@ dependency advisory is unexploitable.
 
 ## Deployment record
 
-Staging and production deployment IDs, task revisions, and verification results are recorded
-here after their respective releases. Use the previous web deployment and task revisions to
-roll back application code; never reset the database, storage, queue, or secrets.
+Staging verification passed twice with separate disposable accounts and projects: 23 checks per
+run, including a real export, atomic conflict rejection, subset/all-five deletion, retained source
+and export, project cleanup completion, inaccessible deleted resources, and repeated deletion.
+An earlier export failed transiently; bounded worker failure diagnostics were added, and both
+subsequent complete flows passed without render errors. A standalone Fargate render also passed.
+
+Staging runs migrations through 0049 (50 total), API task revision 3, and worker revision 3.
+Web deployment `dpl_5HossDRYTaidKcw655sKrmWDLjLU` serves `staging.re-purpose.pro`.
+The focused staging commits preserve that branch's existing authentication configuration.
+
+Immutable images tested on staging and selected for production:
+
+- API: `repurposepro-staging-api@sha256:3d3f6501c73a43f81984b8e025769fc9e7da46a18d0ddac50a166983b01bf4ea`.
+- Worker: `repurposepro-staging-worker@sha256:e4128c1e986fc75b2c8c03592b4a9e00e43ab18f72c0bcd145806a93058130bf`.
+
+Production promotion and verification are pending. Previous production rollback references:
+API task revision 2; worker revision 1; web deployment `dpl_F95fVDULzCG8EPgw26Q2k8FEk99J`
+from main commit `4bd49711b39ad820e1d69c7264225626134f7228`.
+Use these application revisions to roll back; retain the additive migration and durable cleanup
+records. Never reset the database, storage, queue, or secrets.
