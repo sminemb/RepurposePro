@@ -268,7 +268,19 @@ export class RenderWorkerService implements OnModuleInit, OnModuleDestroy {
           sourceFailure ? "RENDER_SOURCE_UNAVAILABLE" : "RENDER_FAILED",
         ],
       ).catch(() => false);
-      this.logger.warn({ event: "render_failed", jobId, retry });
+      this.logger.warn({
+        event: "render_failed",
+        jobId,
+        retry,
+        step,
+        failureName: error instanceof Error ? error.name : "UnknownError",
+        failureReason:
+          error instanceof Error
+            ? error.message
+                .replace(/(?:postgres(?:ql)?|rediss?|https?):\/\/\S+/gi, "[redacted URL]")
+                .slice(0, 300)
+            : "Unknown rendering failure",
+      });
       if (!failed || controller.signal.aborted) throw error;
     } finally {
       clearInterval(timer);
