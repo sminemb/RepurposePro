@@ -1300,6 +1300,16 @@ fix/stripe-webhook-idempotency
 chore/update-drizzle-schema
 ```
 
+Avoid:
+
+```text
+codex/upload-flow
+codex/credit-ledger
+codex/clip-preview-editor
+codex/stripe-webhook-idempotency
+codex/update-drizzle-schema
+```
+
 ### 19.2 Commit Messages
 
 Use clear commit messages.
