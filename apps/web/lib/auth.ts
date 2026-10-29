@@ -16,6 +16,7 @@ import { createTransactionalEmailSender } from "@/features/settings/server/trans
 import { createLocalAccountEmailSender } from "@/features/settings/server/local-account-email";
 
 import { resolveAuthCookieConfiguration } from "./auth-cookie";
+import { authMaintenanceEnabled } from "./auth-maintenance";
 
 const config = loadAuthConfig();
 const localServices = localServicesEnabled();
@@ -32,7 +33,12 @@ const database = createDatabaseClient({
 });
 
 export const auth = betterAuth({
-  ...createAccountSettingsOptions(sendAccountEmail, transactionalEmailConfigured, config.appUrl),
+  ...createAccountSettingsOptions(
+    sendAccountEmail,
+    transactionalEmailConfigured,
+    config.appUrl,
+    authMaintenanceEnabled,
+  ),
   ...(cookieConfiguration ? { advanced: cookieConfiguration } : {}),
   baseURL: config.url,
   database: drizzleAdapter(database.db, {

@@ -14,6 +14,7 @@ export function createAccountSettingsOptions(
   send: AccountEmailSender,
   emailAvailable: boolean,
   appUrl: string,
+  maintenanceEnabled: () => boolean = () => false,
 ) {
   const deliver: AccountEmailSender = async (message) => {
     try {
@@ -42,6 +43,11 @@ export function createAccountSettingsOptions(
     ],
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (maintenanceEnabled())
+          throw new APIError("SERVICE_UNAVAILABLE", {
+            code: "AUTH_MAINTENANCE",
+            message: "Account services are undergoing maintenance. Please try again later.",
+          });
         if (ctx.path === "/request-password-reset") {
           if (!emailAvailable)
             throw new APIError("SERVICE_UNAVAILABLE", {

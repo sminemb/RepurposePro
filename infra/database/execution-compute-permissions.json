@@ -1,0 +1,172 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadDatabaseNetworkAndAmi",
+      "Effect": "Allow",
+      "Action": ["ec2:Describe*"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" } }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameters"],
+      "Resource": "arn:aws:ssm:ap-southeast-1::parameter/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id"
+    },
+    {
+      "Sid": "LaunchOnlyTheDatabaseInstance",
+      "Effect": "Allow",
+      "Action": ["ec2:RunInstances"],
+      "Resource": "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "RepurposePro",
+          "aws:RequestTag/Environment": "production",
+          "ec2:InstanceType": "t4g.small"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:RunInstances"],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-1::image/*",
+        "arn:aws:ec2:ap-southeast-1::snapshot/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:subnet/subnet-04ccf2a9fbbfe5142",
+        "arn:aws:ec2:ap-southeast-1:402365884836:security-group/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:network-interface/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:volume/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:launch-template/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:TerminateInstances",
+        "ec2:ModifyInstanceAttribute",
+        "ec2:ModifyInstanceCreditSpecification"
+      ],
+      "Resource": "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+      "Condition": {
+        "StringEquals": { "aws:ResourceTag/Name": "repurposepro-production-postgres" }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:CreateVolume"],
+      "Resource": "arn:aws:ec2:ap-southeast-1:402365884836:volume/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "RepurposePro",
+          "aws:RequestTag/Environment": "production",
+          "ec2:VolumeType": "gp3"
+        },
+        "Bool": { "ec2:Encrypted": "true" },
+        "NumericLessThanEquals": { "ec2:VolumeSize": "12" }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:AttachVolume", "ec2:DetachVolume"],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:volume/*"
+      ],
+      "Condition": { "StringLike": { "aws:ResourceTag/Name": "repurposepro-production-postgres*" } }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:CreateSecurityGroup", "ec2:CreateLaunchTemplate", "ec2:AllocateAddress"],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-1:402365884836:vpc/vpc-0c53f5864c38d570a",
+        "arn:aws:ec2:ap-southeast-1:402365884836:security-group/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:launch-template/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:elastic-ip/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:CreateLaunchTemplateVersion",
+        "ec2:DeleteLaunchTemplate",
+        "ec2:DeleteLaunchTemplateVersions",
+        "ec2:ReleaseAddress",
+        "ec2:AssociateAddress",
+        "ec2:DisassociateAddress"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-1:402365884836:security-group/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:launch-template/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:elastic-ip/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:network-interface/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "RepurposePro",
+          "aws:ResourceTag/Environment": "production"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:CreateTags", "ec2:DeleteTags"],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:volume/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:security-group/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:launch-template/*",
+        "arn:aws:ec2:ap-southeast-1:402365884836:elastic-ip/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "RepurposePro",
+          "aws:RequestTag/Environment": "production"
+        }
+      }
+    },
+    {
+      "Sid": "ManageOnlyDatabaseRoleAndProfile",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:CreateInstanceProfile",
+        "iam:DeleteInstanceProfile",
+        "iam:GetInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:TagInstanceProfile"
+      ],
+      "Resource": [
+        "arn:aws:iam::402365884836:role/RepurposeProProductionDatabaseRole",
+        "arn:aws:iam::402365884836:instance-profile/RepurposeProProductionDatabaseProfile"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iam:AttachRolePolicy", "iam:DetachRolePolicy"],
+      "Resource": "arn:aws:iam::402365884836:role/RepurposeProProductionDatabaseRole",
+      "Condition": {
+        "ArnEquals": { "iam:PolicyARN": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore" }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::402365884836:role/RepurposeProProductionDatabaseRole",
+      "Condition": { "StringEquals": { "iam:PassedToService": "ec2.amazonaws.com" } }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+let volumes = Resources.*[ Type == 'AWS::EC2::Volume' ]
+let buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+let launches = Resources.*[ Type == 'AWS::EC2::LaunchTemplate' ]
+let alarms = Resources.*[ Type == 'AWS::CloudWatch::Alarm' ]
+let security_groups = Resources.*[ Type == 'AWS::EC2::SecurityGroup' ]
+
+rule retained_encrypted_database_storage {
+    %volumes !empty
+    %volumes {
+        DeletionPolicy == 'Retain'
+        UpdateReplacePolicy == 'Retain'
+        Properties.Encrypted == true
+        Properties.VolumeType == 'gp3'
+    }
+}
+
+rule private_encrypted_retained_backups {
+    %buckets !empty
+    %buckets {
+        DeletionPolicy == 'Retain'
+        UpdateReplacePolicy == 'Retain'
+        Properties.PublicAccessBlockConfiguration {
+            BlockPublicAcls == true
+            BlockPublicPolicy == true
+            IgnorePublicAcls == true
+            RestrictPublicBuckets == true
+        }
+        Properties.BucketEncryption.ServerSideEncryptionConfiguration[*].ServerSideEncryptionByDefault.SSEAlgorithm == 'AES256'
+        Properties.VersioningConfiguration.Status == 'Enabled'
+    }
+}
+
+rule imdsv2_and_encrypted_root_disk {
+    %launches !empty
+    %launches.Properties.LaunchTemplateData {
+        MetadataOptions.HttpTokens == 'required'
+        MetadataOptions.HttpPutResponseHopLimit == 1
+        CreditSpecification.CpuCredits == 'standard'
+        BlockDeviceMappings[*].Ebs.Encrypted == true
+    }
+}
+
+rule no_ssh_ingress {
+    %security_groups.Properties.SecurityGroupIngress[*].FromPort != 22
+}
+
+rule missing_health_is_an_alarm {
+    %alarms !empty
+    %alarms.Properties.TreatMissingData == 'breaching'
+    %alarms.Properties.AlarmActions exists
+}

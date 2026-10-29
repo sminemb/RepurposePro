@@ -14,6 +14,12 @@ export function getAuthResponseError(
   responseError: AuthResponseError,
   isSignUp: boolean,
 ): AuthFormError {
+  if (responseError.code === "AUTH_MAINTENANCE")
+    return {
+      title: "Account services are undergoing maintenance",
+      message: "Please try again after maintenance finishes.",
+      variant: "warning",
+    };
   if (responseError.status === 429 || responseError.code === "RATE_LIMIT_EXCEEDED")
     return {
       title: "Please wait before trying again",

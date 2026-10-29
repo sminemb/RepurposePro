@@ -3,6 +3,43 @@
 Deployed 2026-10-14, Asia/Manila. Production web and API are live over verified HTTPS, while Stripe
 remains in sandbox mode.
 
+Production switched to a fresh PostgreSQL EC2 database on October 29, 2026, after the owner
+confirmed an empty start. Existing accounts, projects, credits and payment history were not
+imported; the old Neon data remains untouched, and users must register again. DNS, verified TLS,
+certificate renewal, email alerts and S3 point-in-time recovery were checked. Follow the
+[database migration runbook](database-server-migration.md) and [ADR 0012](adr/0012-production-postgresql-server.md).
+The fresh cutover supersedes the original November 1 export plan. Production API and worker are
+running on the new connections and web authentication maintenance is off. Staging stays on Neon.
+The current infrastructure estimate is $24.56/month before tax. Real-account signup and mailbox
+delivery still need owner validation; old-data restoration requires reconciliation with new writes.
+
+Authentication submissions currently return HTTP 503 because Arcjet Shield reports
+`Failed to check shield block - contact Arcjet support`. The owner chose to keep Shield
+enforced; bot detection and rate limits were healthy in a synthetic Shield-free diagnostic,
+but no production protection was disabled. Database migration is complete; authentication
+availability still depends on resolving this separate provider failure.
+
+## Database quota outage — 2026-10-26
+
+Password-reset link requests failed because the production database rejected connections with
+SQLSTATE `53000`: `Your account or project has exceeded the quota. Upgrade your plan to increase limits.`
+Neon project `late-lake-42220882` (named `repurposepro-staging`) contains both the production and
+staging branches. The project reported `free_v3`, 396,995 compute seconds (about 110.3 CU-hours),
+and a consumption period ending `2026-11-01T00:00:00Z`. Both compute endpoints were suspended
+around `2026-10-23T04:44Z`; their configured suspend timeout was zero.
+
+The Free plan's compute allowance is shared by all branches in a project. Restoring database
+access requires upgrading the owning organization or waiting for the allowance to reset.
+See [Neon's Free plan limits](https://neon.com/docs/introduction/plans). Code changes and
+redeployments cannot restore exhausted provider capacity. A local password-recovery UI change
+distinguishes server failures from invalid requests with a temporary-unavailability message;
+it has not yet been deployed.
+
+After capacity is restored, verify a database connection and the complete password-reset flow.
+Repeated recovery attempts can independently trigger the three-attempt, ten-minute action limit.
+Review continuous API health checks and worker polling before relying on scale-to-zero for savings;
+these can keep an otherwise idle database active.
+
 ## Completed preparation
 
 - Neon production branch `br-crimson-leaf-b3iyv97b` is isolated from staging. Endpoint:

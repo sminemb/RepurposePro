@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { authMaintenanceResponse } from "@/lib/auth-maintenance";
 
 /**
  * Keep sign-out as a native server-post form while adapting its request to
@@ -8,6 +9,8 @@ import { auth } from "@/lib/auth";
  * this route only adds the post/redirect behavior expected by the dashboard.
  */
 export async function POST(request: Request) {
+  const maintenance = authMaintenanceResponse();
+  if (maintenance) return maintenance;
   const authResponse = await auth.api.signOut({
     asResponse: true,
     headers: request.headers,

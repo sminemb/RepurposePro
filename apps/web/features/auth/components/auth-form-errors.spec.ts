@@ -3,6 +3,16 @@ import { describe, expect, it } from "vitest";
 import { getAuthResponseError } from "./auth-form-errors";
 
 describe("getAuthResponseError", () => {
+  it.each([true, false])(
+    "explains maintenance without blaming credentials for signup=%s",
+    (signup) => {
+      expect(getAuthResponseError({ code: "AUTH_MAINTENANCE", status: 503 }, signup)).toEqual({
+        title: "Account services are undergoing maintenance",
+        message: "Please try again after maintenance finishes.",
+        variant: "warning",
+      });
+    },
+  );
   it.each([true, false])("gives safe protection guidance for signup=%s", (signup) => {
     expect(getAuthResponseError({ code: "RATE_LIMIT_EXCEEDED" }, signup).message).toContain(
       signup ? "10 minutes" : "a minute",

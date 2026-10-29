@@ -8,6 +8,7 @@ import type { AccountEmail } from "./transactional-email";
 afterEach(() => vi.useRealTimers());
 
 async function setup() {
+  let maintenance = false;
   const messages: AccountEmail[] = [];
   const send = vi.fn(async (message: AccountEmail) => {
     messages.push(message);
@@ -18,7 +19,7 @@ async function setup() {
     database: memoryAdapter({ user: [], session: [], account: [], verification: [] }),
     logger: { disabled: true },
     emailAndPassword: { enabled: true, requireEmailVerification: false },
-    ...createAccountSettingsOptions(send, true, "http://localhost:3000"),
+    ...createAccountSettingsOptions(send, true, "http://localhost:3000", () => maintenance),
   });
   async function request(path: string, body?: Record<string, unknown>, cookie = "") {
     return auth.handler(
@@ -61,11 +62,39 @@ async function setup() {
     expect((await request(message.url)).status).toBe(302);
     expect((await user())?.emailVerified).toBe(true);
   }
-  return { request, cookies, cookie, user, messages, send, verifyCurrent };
+  return {
+    request,
+    cookies,
+    cookie,
+    user,
+    messages,
+    send,
+    verifyCurrent,
+    auth,
+    setMaintenance: () => {
+      maintenance = true;
+    },
+  };
 }
 
 // Real password hashing needs extra time when the complete repository suite runs concurrently.
 describe("account settings with real Better Auth", { timeout: 30_000 }, () => {
+  it("blocks internal session calls and mutations during maintenance", async () => {
+    const { auth, request, cookie, setMaintenance } = await setup();
+    setMaintenance();
+    for (const [path, body] of [
+      ["get-session", undefined],
+      ["update-user", { name: "Changed" }],
+      ["sign-out", {}],
+    ] as const) {
+      const response = await request(path, body, cookie);
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({ code: "AUTH_MAINTENANCE" });
+    }
+    await expect(auth.api.getSession({ headers: new Headers({ cookie }) })).rejects.toMatchObject({
+      status: "SERVICE_UNAVAILABLE",
+    });
+  });
   it("keeps signup/sign-in unverified and sends no automatic mail", async () => {
     const { request, messages, user } = await setup();
     expect((await user())?.emailVerified).toBe(false);

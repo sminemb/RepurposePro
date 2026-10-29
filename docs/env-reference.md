@@ -612,6 +612,15 @@ CLEANUP_WORKER_CONCURRENCY=1
 
 # 7. Better Auth Variables
 
+## `AUTH_MAINTENANCE_MODE`
+
+Server-only, default absent/`false`. Set `true` on the existing Vercel production project during
+database cutover, then redeploy. It returns retryable HTTP 503 from all auth routes and rejects
+internal Better Auth API calls before database access, including session refresh and GET email
+callbacks. Any configured value other than literal `false` fails closed. Keep it enabled while
+copying data and publishing connections. See [the database migration runbook](database-server-migration.md).
+
+
 ## Transactional account email (VS13)
 
 The Next.js server alone loads `RESEND_API_KEY` and `RESEND_FROM`. Never expose them with a

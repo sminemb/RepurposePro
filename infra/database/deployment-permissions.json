@@ -1,0 +1,127 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InspectDatabaseHealthAlarms",
+      "Effect": "Allow",
+      "Action": ["cloudwatch:DescribeAlarms"],
+      "Resource": "arn:aws:cloudwatch:ap-southeast-1:402365884836:alarm:repurposepro-production-database-*"
+    },
+    {
+      "Sid": "OfficialDatabaseCostPreflight",
+      "Effect": "Allow",
+      "Action": ["pricing:GetProducts", "pricing:DescribeServices", "pricing:GetAttributeValues"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "us-east-1" } }
+    },
+    {
+      "Sid": "ReadCanonicalUbuntuImage",
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+      "Resource": "arn:aws:ssm:ap-southeast-1::parameter/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id"
+    },
+    {
+      "Sid": "InspectDatabaseInfrastructure",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSecurityGroups",
+        "ssm:DescribeInstanceInformation"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" } }
+    },
+    {
+      "Sid": "InspectDatabasePermissionPackage",
+      "Effect": "Allow",
+      "Action": ["iam:GetPolicy", "iam:GetPolicyVersion"],
+      "Resource": "arn:aws:iam::402365884836:policy/RepurposeProProductionDatabase*"
+    },
+    {
+      "Sid": "ManageDatabaseStack",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResources"
+      ],
+      "Resource": "arn:aws:cloudformation:ap-southeast-1:402365884836:stack/RepurposePro-Production-Database/*"
+    },
+    {
+      "Sid": "ReadDatabaseDeploymentValidation",
+      "Effect": "Allow",
+      "Action": ["cloudformation:DescribeEvents"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" } }
+    },
+    {
+      "Sid": "DatabaseSsmSession",
+      "Effect": "Allow",
+      "Action": ["ssm:StartSession", "ssm:SendCommand"],
+      "Resource": "arn:aws:ec2:ap-southeast-1:402365884836:instance/*",
+      "Condition": {
+        "StringEquals": { "ssm:resourceTag/Name": "repurposepro-production-postgres" }
+      }
+    },
+    {
+      "Sid": "DatabaseSsmDocuments",
+      "Effect": "Allow",
+      "Action": ["ssm:StartSession", "ssm:SendCommand"],
+      "Resource": [
+        "arn:aws:ssm:ap-southeast-1::document/AWS-RunShellScript",
+        "arn:aws:ssm:ap-southeast-1::document/SSM-SessionManagerRunShell"
+      ]
+    },
+    {
+      "Sid": "InspectDatabaseSsmCommands",
+      "Effect": "Allow",
+      "Action": ["ssm:GetCommandInvocation"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "ap-southeast-1" } }
+    },
+    {
+      "Sid": "StageEncryptedMigrationArtifacts",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::repurposepro-production-db-402365884836-ap-southeast-1/migration/*"
+    },
+    {
+      "Sid": "InspectMigrationArtifacts",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::repurposepro-production-db-402365884836-ap-southeast-1",
+      "Condition": { "StringLike": { "s3:prefix": ["migration", "migration/*"] } }
+    },
+    {
+      "Sid": "PublishProductionDatabaseConnectionsAtCutover",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:UpdateSecretVersionStage"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:ap-southeast-1:402365884836:secret:repurposepro/production/DATABASE_URL-??????",
+        "arn:aws:secretsmanager:ap-southeast-1:402365884836:secret:repurposepro/production/DATABASE_CHECKOUT_URL-??????",
+        "arn:aws:secretsmanager:ap-southeast-1:402365884836:secret:repurposepro/production/DATABASE_WEBHOOK_URL-??????",
+        "arn:aws:secretsmanager:ap-southeast-1:402365884836:secret:repurposepro/production/DATABASE_PROCESSING_URL-??????",
+        "arn:aws:secretsmanager:ap-southeast-1:402365884836:secret:repurposepro/production/DATABASE_ADMIN_URL-??????"
+      ]
+    },
+    {
+      "Sid": "InspectDatabaseAlerts",
+      "Effect": "Allow",
+      "Action": ["sns:GetTopicAttributes", "sns:ListSubscriptionsByTopic"],
+      "Resource": "arn:aws:sns:ap-southeast-1:402365884836:repurposepro-production-database-alerts"
+    }
+  ]
+}

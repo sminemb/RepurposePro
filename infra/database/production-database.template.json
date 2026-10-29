@@ -1,0 +1,489 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Production PostgreSQL on a single EC2 host with retained encrypted storage and S3 point-in-time recovery; deployment requires the database cost preflight.",
+  "Metadata": {
+    "AWSToolsMetrics": { "AWSAgentToolkit": "aws-cloudformation@3" },
+    "com.aws.cloudformation.Context": {
+      "ref": "docs/database-server-migration.md",
+      "must": "Never replace the data volume or enable production writers without a verified restore. Staging remains on Neon."
+    }
+  },
+  "Parameters": {
+    "VpcId": { "Type": "AWS::EC2::VPC::Id", "Default": "vpc-0c53f5864c38d570a" },
+    "SubnetId": { "Type": "AWS::EC2::Subnet::Id", "Default": "subnet-04ccf2a9fbbfe5142" },
+    "AvailabilityZone": {
+      "Type": "AWS::EC2::AvailabilityZone::Name",
+      "Default": "ap-southeast-1a"
+    },
+    "UbuntuImage": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id"
+    },
+    "DatabaseHostname": {
+      "Type": "String",
+      "Default": "db.re-purpose.pro",
+      "AllowedValues": ["db.re-purpose.pro"]
+    },
+    "ProductionTaskSecurityGroup": { "Type": "AWS::EC2::SecurityGroup::Id" },
+    "AlarmTopicArn": {
+      "Type": "String",
+      "Default": "",
+      "AllowedPattern": "^$|^arn:aws:sns:ap-southeast-1:402365884836:[A-Za-z0-9_-]+$"
+    },
+    "AlertEmail": {
+      "Type": "String",
+      "Default": "",
+      "AllowedPattern": "^$|^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    }
+  },
+  "Conditions": {
+    "CreateAlarmTopic": { "Fn::Equals": [{ "Ref": "AlarmTopicArn" }, ""] },
+    "HasAlarmTopic": { "Fn::Not": [{ "Fn::Equals": [{ "Ref": "AlarmTopicArn" }, ""] }] }
+  },
+  "Resources": {
+    "DatabaseAlarmTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Condition": "CreateAlarmTopic",
+      "Properties": {
+        "TopicName": "repurposepro-production-database-alerts",
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "DatabaseAlarmSubscription": {
+      "Type": "AWS::SNS::Subscription",
+      "Condition": "CreateAlarmTopic",
+      "Properties": {
+        "TopicArn": { "Ref": "DatabaseAlarmTopic" },
+        "Protocol": "email",
+        "Endpoint": { "Ref": "AlertEmail" }
+      }
+    },
+    "DatabaseAlarmTopicPolicy": {
+      "Type": "AWS::SNS::TopicPolicy",
+      "Condition": "CreateAlarmTopic",
+      "Properties": {
+        "Topics": [{ "Ref": "DatabaseAlarmTopic" }],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": { "Service": "cloudwatch.amazonaws.com" },
+              "Action": "sns:Publish",
+              "Resource": { "Ref": "DatabaseAlarmTopic" },
+              "Condition": {
+                "StringEquals": { "aws:SourceAccount": { "Ref": "AWS::AccountId" } },
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::Sub": "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:repurposepro-production-database-*"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "BackupBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Independent pgBackRest full backups and WAL",
+          "must": "Retain the bucket; never expire live pgBackRest WAL with S3 lifecycle rules"
+        }
+      },
+      "Properties": {
+        "BucketName": { "Fn::Sub": "repurposepro-production-db-${AWS::AccountId}-${AWS::Region}" },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            { "ServerSideEncryptionByDefault": { "SSEAlgorithm": "AES256" } }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "OwnershipControls": { "Rules": [{ "ObjectOwnership": "BucketOwnerEnforced" }] },
+        "VersioningConfiguration": { "Status": "Enabled" },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "ExpireOldVersionsAndIncompleteUploads",
+              "Status": "Enabled",
+              "NoncurrentVersionExpiration": { "NoncurrentDays": 30 },
+              "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+            },
+            {
+              "Id": "ExpirePrivateMigrationArtifacts",
+              "Prefix": "migration/private/",
+              "Status": "Enabled",
+              "ExpirationInDays": 7,
+              "NoncurrentVersionExpiration": { "NoncurrentDays": 7 }
+            }
+          ]
+        },
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "BackupBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": { "Ref": "BackupBucket" },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                { "Fn::GetAtt": ["BackupBucket", "Arn"] },
+                { "Fn::Sub": "${BackupBucket.Arn}/*" }
+              ],
+              "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+            }
+          ]
+        }
+      }
+    },
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "RepurposeProProductionDatabaseRole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": { "Service": "ec2.amazonaws.com" },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"],
+        "Policies": [
+          {
+            "PolicyName": "DatabaseBackupsAndMetrics",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": ["s3:ListBucket"],
+                  "Resource": { "Fn::GetAtt": ["BackupBucket", "Arn"] },
+                  "Condition": {
+                    "StringLike": {
+                      "s3:prefix": ["production", "production/*", "migration", "migration/*"]
+                    }
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["s3:GetBucketLocation"],
+                  "Resource": { "Fn::GetAtt": ["BackupBucket", "Arn"] }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListMultipartUploadParts"
+                  ],
+                  "Resource": { "Fn::Sub": "${BackupBucket.Arn}/production/*" }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["s3:GetObject"],
+                  "Resource": { "Fn::Sub": "${BackupBucket.Arn}/migration/*" }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["s3:PutObject"],
+                  "Resource": { "Fn::Sub": "${BackupBucket.Arn}/migration/private/*" }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["cloudwatch:PutMetricData"],
+                  "Resource": "*",
+                  "Condition": {
+                    "StringEquals": { "cloudwatch:namespace": "RepurposePro/Database" }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "InstanceProfileName": "RepurposeProProductionDatabaseProfile",
+        "Roles": [{ "Ref": "InstanceRole" }]
+      }
+    },
+    "DatabaseSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Vercel has dynamic outbound IPs; public TLS permits only the runtime role in pg_hba.conf",
+          "must": "No SSH ingress; PostgreSQL must remain localhost-only until trusted TLS is installed"
+        }
+      },
+      "Properties": {
+        "GroupDescription": "Production PostgreSQL: TLS from Vercel and private ECS; HTTP ACME renewal",
+        "VpcId": { "Ref": "VpcId" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 5432,
+            "ToPort": 5432,
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Vercel runtime role only; SCRAM and verified TLS required"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0",
+            "Description": "ACME certificate issuance and renewal only"
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIp": "0.0.0.0/0",
+            "Description": "SSM, S3, metrics, PostgreSQL packages and ACME"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Ubuntu package mirrors"
+          }
+        ],
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "PrivateDatabaseIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "DatabaseSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": 5432,
+        "ToPort": 5432,
+        "SourceSecurityGroupId": { "Ref": "ProductionTaskSecurityGroup" },
+        "Description": "Production ECS database roles over the private address"
+      }
+    },
+    "DataVolume": {
+      "Type": "AWS::EC2::Volume",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Database data survives instance/stack deletion; root and data total 20 GiB",
+          "must": "Never format an existing filesystem or replace this volume during an ordinary update"
+        }
+      },
+      "Properties": {
+        "AvailabilityZone": { "Ref": "AvailabilityZone" },
+        "Encrypted": true,
+        "Size": 12,
+        "VolumeType": "gp3",
+        "Tags": [
+          { "Key": "Name", "Value": "repurposepro-production-postgres-data" },
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "DatabaseLaunchTemplate": {
+      "Type": "AWS::EC2::LaunchTemplate",
+      "Properties": {
+        "LaunchTemplateData": {
+          "ImageId": { "Ref": "UbuntuImage" },
+          "InstanceType": "t4g.small",
+          "SecurityGroupIds": [{ "Ref": "DatabaseSecurityGroup" }],
+          "IamInstanceProfile": { "Name": { "Ref": "InstanceProfile" } },
+          "MetadataOptions": {
+            "HttpTokens": "required",
+            "HttpEndpoint": "enabled",
+            "HttpPutResponseHopLimit": 1
+          },
+          "CreditSpecification": { "CpuCredits": "standard" },
+          "BlockDeviceMappings": [
+            {
+              "DeviceName": "/dev/sda1",
+              "Ebs": {
+                "Encrypted": true,
+                "VolumeSize": 8,
+                "VolumeType": "gp3",
+                "DeleteOnTermination": true
+              }
+            }
+          ],
+          "UserData": "__DATABASE_USER_DATA__"
+        }
+      }
+    },
+    "DatabaseInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Small dedicated PostgreSQL host with instance-role backups",
+          "must": "Bootstrap completion and successful TLS, backup and restore checks are required before cutover; instance replacements need a maintenance window"
+        }
+      },
+      "Properties": {
+        "PropagateTagsToVolumeOnCreation": true,
+        "LaunchTemplate": {
+          "LaunchTemplateId": { "Ref": "DatabaseLaunchTemplate" },
+          "Version": { "Fn::GetAtt": ["DatabaseLaunchTemplate", "LatestVersionNumber"] }
+        },
+        "AvailabilityZone": { "Ref": "AvailabilityZone" },
+        "SubnetId": { "Ref": "SubnetId" },
+        "Tags": [
+          { "Key": "Name", "Value": "repurposepro-production-postgres" },
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "DataVolumeAttachment": {
+      "Type": "AWS::EC2::VolumeAttachment",
+      "Properties": {
+        "Device": "/dev/sdf",
+        "InstanceId": { "Ref": "DatabaseInstance" },
+        "VolumeId": { "Ref": "DataVolume" }
+      }
+    },
+    "DatabaseAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "DatabaseAddressAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": { "Fn::GetAtt": ["DatabaseAddress", "AllocationId"] },
+        "InstanceId": { "Ref": "DatabaseInstance" }
+      }
+    },
+    "PrivateDatabaseZone": {
+      "Type": "AWS::Route53::HostedZone",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Name": { "Ref": "DatabaseHostname" },
+        "VPCs": [{ "VPCId": { "Ref": "VpcId" }, "VPCRegion": { "Ref": "AWS::Region" } }],
+        "HostedZoneConfig": {
+          "Comment": "Production database hostname resolves privately inside ECS VPC"
+        },
+        "HostedZoneTags": [
+          { "Key": "Project", "Value": "RepurposePro" },
+          { "Key": "Environment", "Value": "production" }
+        ]
+      }
+    },
+    "PrivateDatabaseRecord": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneId": { "Ref": "PrivateDatabaseZone" },
+        "Name": { "Ref": "DatabaseHostname" },
+        "Type": "A",
+        "TTL": "60",
+        "ResourceRecords": [{ "Fn::GetAtt": ["DatabaseInstance", "PrivateIp"] }]
+      }
+    },
+    "HostHealthAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "repurposepro-production-database-host",
+        "AlarmDescription": "Production database EC2 system or instance check failed",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [{ "Name": "InstanceId", "Value": { "Ref": "DatabaseInstance" } }],
+        "Statistic": "Maximum",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "TreatMissingData": "breaching",
+        "AlarmActions": {
+          "Fn::If": [
+            "HasAlarmTopic",
+            [{ "Ref": "AlarmTopicArn" }],
+            [{ "Ref": "DatabaseAlarmTopic" }]
+          ]
+        }
+      }
+    },
+    "DatabaseHealthAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "repurposepro-production-database-health",
+        "AlarmDescription": "Database down, disk above 80%, backup stale, or WAL archive lag above 10 minutes; missing monitor is unhealthy",
+        "Namespace": "RepurposePro/Database",
+        "MetricName": "Unhealthy",
+        "Dimensions": [{ "Name": "Environment", "Value": "production" }],
+        "Statistic": "Maximum",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "TreatMissingData": "breaching",
+        "AlarmActions": {
+          "Fn::If": [
+            "HasAlarmTopic",
+            [{ "Ref": "AlarmTopicArn" }],
+            [{ "Ref": "DatabaseAlarmTopic" }]
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "AlarmTopicArn": {
+      "Value": {
+        "Fn::If": ["HasAlarmTopic", { "Ref": "AlarmTopicArn" }, { "Ref": "DatabaseAlarmTopic" }]
+      }
+    },
+    "InstanceId": { "Value": { "Ref": "DatabaseInstance" } },
+    "PublicIp": {
+      "Value": { "Ref": "DatabaseAddress" },
+      "Description": "Add this A record at the existing public DNS provider; do not change web/API DNS"
+    },
+    "PrivateIp": { "Value": { "Fn::GetAtt": ["DatabaseInstance", "PrivateIp"] } },
+    "BackupBucket": { "Value": { "Ref": "BackupBucket" } },
+    "DataVolumeId": { "Value": { "Ref": "DataVolume" } },
+    "Hostname": { "Value": { "Ref": "DatabaseHostname" } }
+  }
+}

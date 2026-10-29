@@ -46,5 +46,7 @@ export function recoveryError(
     return "Security protection blocked this request. Please try again using your browser.";
   if (error?.code === "PROTECTION_UNAVAILABLE")
     return "Password recovery is temporarily unavailable. Please try again shortly.";
+  if (error?.status && error.status >= 500 && error.status < 600)
+    return "Password recovery is temporarily unavailable. Please try again later.";
   return "We could not complete your request. Please try again.";
 }
